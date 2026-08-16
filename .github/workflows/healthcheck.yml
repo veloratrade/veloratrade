@@ -17,7 +17,7 @@ permissions:
 jobs:
   probe:
     name: بررسی سایت زنده
-    if: github.repository == 'yadgarsict-del/veloratrade'
+    if: github.repository == 'veloratrade/veloratrade'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
