@@ -27,7 +27,10 @@ function step(name, ok, detail) {
 
 (async () => {
   const browser = await chromium.launch();
-  const ctx = await browser.newContext({ locale: 'fa-IR' });
+  const ctx = await browser.newContext({
+    locale: 'fa-IR',
+    viewport: { width: 1280, height: 1200 },
+  });
   const page = await ctx.newPage();
 
   page.on('console', (m) => {
@@ -81,6 +84,8 @@ function step(name, ok, detail) {
   // ---------------------------------------------------------------- log out
   const logoutBtn = page.locator('#logoutBtn');
   if (await logoutBtn.count()) {
+    // The sidebar control sits below the fold on a 720px viewport.
+    await logoutBtn.first().scrollIntoViewIfNeeded();
     await logoutBtn.first().click();
     const confirm = page.locator('#confirmLogout');
     if (await confirm.count()) {
