@@ -16,6 +16,12 @@ RewriteRule ^(?:api/(?:storage|vendor|tests?|\.env)|tools|localized)(?:/|$) - [F
   Require all denied
 </FilesMatch>
 
+# Package manifests and release notes describe the internal file layout and must
+# not be publicly readable. Matching is case-sensitive on purpose: the PWA
+# manifest.json is lower-case and stays reachable.
+RewriteRule ^(?:DEPLOYMENT_MANIFEST|MANIFEST|PACKAGE_MANIFEST|PATCH_MANIFEST)\.json$ - [F,L]
+RewriteRule ^(?:README|CHANGELOG_FA|00-INSTALL-FA|ALL_INCLUDED_CHANGES_FA|DEPLOYMENT_README|PATCH_INSTRUCTIONS_FA)\.txt$ - [F,L]
+
 # Block direct front-controller requests while allowing the internal rewrite.
 RewriteCond %{THE_REQUEST} "\s/+locale-router\.php(?:[?\s]|$)" [NC]
 RewriteRule ^locale-router\.php$ - [F,L]
