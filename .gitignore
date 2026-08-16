@@ -4,3 +4,15 @@ api/storage/*.sqlite-*
 api/storage/*.log
 *.env
 !api/.env.example
+# داده واقعی کاربران هرگز نباید در مخزن عمومی باشد
+_database/*.sql
+!_database/schema.sql
+*.dump
+*.sql.gz
+
+# بسته‌های ساخته‌شده
+*.zip
+
+# فایل‌های موقت
+.DS_Store
+Thumbs.db
