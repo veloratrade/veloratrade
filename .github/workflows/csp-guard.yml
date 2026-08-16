@@ -1,0 +1,133 @@
+# نگهبان CSP و اطلاعات حساس
+#
+# جلوی همان فاجعه‌ای را می‌گیرد که سایت را ۵۰۳ کرد:
+# اگر HTML عوض شود ولی منیفست بازتولید نشده باشد، merge مسدود می‌شود.
+#
+# توجه: lint مربوط به PHP و Python در ci.yml موجود انجام می‌شود؛
+# اینجا تکرار نشده است.
+
+name: CSP Guard
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-csp:
+    name: تطابق منیفست با صفحات
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: بررسی سازگاری منیفست و صفحات
+        run: |
+          python3 - <<'PY'
+          import json, hashlib, sys, pathlib
+
+          root = pathlib.Path('.')
+          man_p = root / 'public/locales/csp-manifest.json'
+          rel_p = root / 'localized/.csp-release.json'
+          errors = []
+
+          if not man_p.exists():
+              print('::error::csp-manifest.json یافت نشد'); sys.exit(1)
+          if not rel_p.exists():
+              print('::error::.csp-release.json یافت نشد'); sys.exit(1)
+
+          raw = man_p.read_bytes()
+          man = json.loads(raw)
+          rel = json.loads(rel_p.read_text())
+
+          actual = hashlib.sha256(raw).hexdigest()
+          if rel.get('cspManifestSha256') != actual:
+              errors.append(
+                  "cspManifestSha256 نمی‌خواند\n"
+                  f"  انتظار: {rel.get('cspManifestSha256')}\n"
+                  f"  واقعی : {actual}")
+
+          for key in ('policyVersion', 'releaseId', 'releaseHtmlSha256', 'routeCount'):
+              if man.get(key) != rel.get(key):
+                  errors.append(f"ناسازگاری {key}: منیفست={man.get(key)} انتشار={rel.get(key)}")
+
+          routes = man.get('routes', {})
+          if man.get('routeCount') != len(routes):
+              errors.append(f"routeCount={man.get('routeCount')} ولی تعداد واقعی={len(routes)}")
+
+          mismatch, missing = [], []
+          for rel_path, entry in routes.items():
+              f = root / 'localized' / rel_path
+              if not f.exists():
+                  missing.append(rel_path); continue
+              if hashlib.sha256(f.read_bytes()).hexdigest() != entry.get('htmlSha256'):
+                  mismatch.append(rel_path)
+
+          on_disk = {str(p.relative_to(root / 'localized'))
+                     for p in (root / 'localized').rglob('*.html')}
+          untracked = sorted(on_disk - set(routes))
+
+          if missing:
+              errors.append("در منیفست هست ولی فایلش نیست:\n  " + "\n  ".join(missing))
+          if mismatch:
+              errors.append("هش نمی‌خواند (منیفست بازتولید نشده):\n  " + "\n  ".join(mismatch))
+          if untracked:
+              errors.append("صفحه بدون رکورد در منیفست:\n  " + "\n  ".join(untracked))
+
+          if errors:
+              print('::error::نگهبان CSP شکست خورد — این تغییر سایت را ۵۰۳ می‌کند')
+              for e in errors:
+                  print('\n' + e)
+              print('\nراه حل: منیفست را بازتولید و دوباره کامیت کنید.')
+              sys.exit(1)
+
+          print(f'✅ هر {len(routes)} صفحه با منیفست می‌خواند')
+          print(f'   releaseId {man.get("releaseId")} | policyVersion {man.get("policyVersion")}')
+          PY
+
+  secret-scan:
+    name: جلوگیری از نشت اطلاعات حساس
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: فایل‌های ممنوعه
+        run: |
+          bad=$(find . -path ./.git -prune -o \
+                 \( -name '.env' -o -name '*.sqlite' -o -name '*.sqlite3' \
+                    -o -name 'id_rsa' -o -name '*.pem' -o -name '*.key' \) -print)
+          if [ -n "$bad" ]; then
+            echo "::error::فایل حساس در مخزن:"; echo "$bad"; exit 1
+          fi
+          echo "✅ فایل حساسی نیست"
+
+      - name: داده واقعی کاربران در فایل‌های SQL
+        run: |
+          python3 - <<'PY'
+          import re, pathlib, sys
+          # داده واقعی کاربران نباید در مخزن باشد، حتی خصوصی.
+          # بکاپ واقعی جای دیگری نگهداری شود.
+          PUBLIC_MAIL = ('gmail.com','yahoo.com','outlook.com','hotmail.com',
+                         'icloud.com','proton.me','protonmail.com','live.com')
+          bad = []
+          for p in list(pathlib.Path('.').rglob('*.sql')) + list(pathlib.Path('.').rglob('*.dump')):
+              if '.git' in p.parts:
+                  continue
+              t = p.read_text(encoding='utf-8', errors='replace')
+              h = len(re.findall(r'\$2[aby]\$\d{2}\$', t))
+              m = {e for e in re.findall(r'[\w.%-]+@[\w.-]+\.[a-z]{2,}', t, re.I)
+                   if e.split('@')[1].lower() in PUBLIC_MAIL}
+              if h or m:
+                  bad.append((p, h, len(m)))
+          if bad:
+              print('::error::داده واقعی کاربران در مخزن عمومی')
+              for p, h, m in bad:
+                  print(f'  {p}: {h} هش رمز، {m} ایمیل واقعی')
+              print('\nراه حل: فایل را با داده ساختگی جایگزین کنید.')
+              sys.exit(1)
+          print('✅ داده واقعی کاربری پیدا نشد')
+          PY
