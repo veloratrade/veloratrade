@@ -82,18 +82,26 @@ function step(name, ok, detail) {
   );
 
   // ---------------------------------------------------------------- log out
+  // velora-dialog.js owns #logoutBtn via a capture-phase document listener and
+  // renders the shared .velora-dialog confirmation, so that is what a real user
+  // clicks. Anything else would be testing markup the browser never reaches.
   const logoutBtn = page.locator('#logoutBtn');
   if (await logoutBtn.count()) {
-    // The sidebar control sits below the fold on a 720px viewport.
     await logoutBtn.first().scrollIntoViewIfNeeded();
     await logoutBtn.first().click();
-    const confirm = page.locator('#confirmLogout');
+
+    const confirm = page.locator('.velora-dialog-confirm');
+    try {
+      await confirm.waitFor({ state: 'visible', timeout: 10000 });
+      step('logout confirmation dialog opens', true, 'velora-dialog shown');
+    } catch {
+      step('logout confirmation dialog opens', false, 'no .velora-dialog-confirm appeared');
+    }
+
     if (await confirm.count()) {
       await Promise.all([
-        page.waitForResponse(
-          (r) => r.url().includes('/api/v1/auth/logout'),
-          { timeout: 15000 }
-        )
+        page
+          .waitForResponse((r) => r.url().includes('/api/v1/auth/logout'), { timeout: 15000 })
           .then((r) => {
             logoutStatus = r.status();
             return r;
@@ -115,7 +123,14 @@ function step(name, ok, detail) {
   step(
     'logout API returned 200',
     logoutStatus === 200,
-    `status=${logoutStatus} (403 SAME_ORIGIN_REQUIRED means the Origin header did not match frontend_url)`
+    `status=${logoutStatus}`
+  );
+
+  const remaining = (await ctx.cookies()).map((c) => c.name);
+  step(
+    'refresh cookie cleared after logout',
+    !remaining.includes('__Host-velora_refresh'),
+    `cookies=${JSON.stringify(remaining)}`
   );
 
   // ------------------------------- the reported bug: dashboard after logout

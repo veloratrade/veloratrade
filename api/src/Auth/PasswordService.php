@@ -127,10 +127,15 @@ final class PasswordService
         $cost = (int) Config::get('bcrypt_cost', 12);
         $hash = password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => $cost]);
 
+        // NOW() is MySQL-only; bind the timestamp so SQLite deployments work too.
         $stmt = \Velora\Core\Database::connection()->prepare(
-            'UPDATE users SET password_hash = :hash, updated_at = NOW() WHERE id = :id'
+            'UPDATE users SET password_hash = :hash, updated_at = :now WHERE id = :id'
         );
-        $stmt->execute(['hash' => $hash, 'id' => $userId]);
+        $stmt->execute([
+            'hash' => $hash,
+            'now' => gmdate('Y-m-d H:i:s'),
+            'id' => $userId,
+        ]);
     }
 
     private static function assertResetPasswordRules(string $password): void
