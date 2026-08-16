@@ -73,7 +73,7 @@ jobs:
           for i in $(seq 1 20); do
             sleep 1
             code=$(curl -s -o /tmp/health.json -w '%{http_code}' --max-time 5 \
-                   http://127.0.0.1:8080/api/v1/health 2>/dev/null || echo 000)
+                   http://127.0.0.1:8080/health 2>/dev/null || echo 000)
             if [ "$code" = "200" ]; then
               echo "Health OK:"; cat /tmp/health.json; exit 0
             fi
