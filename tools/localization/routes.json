@@ -1,0 +1,194 @@
+{
+  "version": "2026.08.13.11",
+  "routes": [
+    {
+      "template": "index.html",
+      "outputs": [
+        "index.html"
+      ]
+    },
+    {
+      "template": "404.html",
+      "outputs": [
+        "404.html"
+      ]
+    },
+    {
+      "template": "404/index.html",
+      "outputs": [
+        "404/index.html"
+      ]
+    },
+    {
+      "template": "accounts/connect/index.html",
+      "outputs": [
+        "accounts/connect/index.html"
+      ]
+    },
+    {
+      "template": "admin/index.html",
+      "outputs": [
+        "admin/index.html"
+      ]
+    },
+    {
+      "template": "checkout/index.html",
+      "outputs": [
+        "checkout/index.html"
+      ]
+    },
+    {
+      "template": "dashboard/index.html",
+      "outputs": [
+        "dashboard/index.html"
+      ]
+    },
+    {
+      "template": "forgot-password/index.html",
+      "outputs": [
+        "forgot-password/index.html"
+      ]
+    },
+    {
+      "template": "intelligence/index.html",
+      "outputs": [
+        "intelligence/index.html"
+      ]
+    },
+    {
+      "template": "login/index.html",
+      "outputs": [
+        "login/index.html"
+      ]
+    },
+    {
+      "template": "markets/index.html",
+      "outputs": [
+        "markets/index.html"
+      ]
+    },
+    {
+      "template": "news/index.html",
+      "outputs": [
+        "news/index.html"
+      ]
+    },
+    {
+      "template": "performance/index.html",
+      "outputs": [
+        "performance/index.html"
+      ]
+    },
+    {
+      "template": "privacy/index.html",
+      "outputs": [
+        "privacy/index.html"
+      ]
+    },
+    {
+      "template": "profile/index.html",
+      "outputs": [
+        "profile/index.html"
+      ]
+    },
+    {
+      "template": "register/index.html",
+      "outputs": [
+        "register/index.html"
+      ]
+    },
+    {
+      "template": "reset-password/index.html",
+      "outputs": [
+        "reset-password/index.html"
+      ]
+    },
+    {
+      "template": "support/index.html",
+      "outputs": [
+        "support/index.html"
+      ]
+    },
+    {
+      "template": "terms/index.html",
+      "outputs": [
+        "terms/index.html"
+      ]
+    },
+    {
+      "template": "trades/index.html",
+      "outputs": [
+        "trades/index.html"
+      ]
+    },
+    {
+      "template": "trades/new/index.html",
+      "outputs": [
+        "trades/new/index.html"
+      ]
+    },
+    {
+      "template": "verify-email/index.html",
+      "outputs": [
+        "verify-email/index.html"
+      ]
+    },
+    {
+      "template": "wallet/index.html",
+      "outputs": [
+        "wallet/index.html"
+      ]
+    },
+    {
+      "template": "blog/index.html",
+      "outputs": [
+        "blog/index.html"
+      ]
+    },
+    {
+      "template": "blog/what-is-trading-journal/index.html",
+      "outputs": [
+        "blog/what-is-trading-journal/index.html"
+      ],
+      "localeOutputs": {
+        "en": [
+          "blog/what-is-a-trading-journal/index.html"
+        ]
+      }
+    },
+    {
+      "template": "blog/forex-trading-journal/index.html",
+      "outputs": [
+        "blog/forex-trading-journal/index.html"
+      ]
+    },
+    {
+      "template": "blog/why-traders-need-journal/index.html",
+      "outputs": [
+        "blog/why-traders-need-journal/index.html"
+      ],
+      "localeOutputs": {
+        "en": [
+          "blog/why-traders-need-a-journal/index.html"
+        ]
+      }
+    },
+    {
+      "template": "blog/risk-management-trading/index.html",
+      "outputs": [
+        "blog/risk-management-trading/index.html"
+      ],
+      "localeOutputs": {
+        "en": [
+          "blog/risk-management-in-trading/index.html"
+        ]
+      }
+    },
+    {
+      "template": "blog/mt4-mt5-trading-journal/index.html",
+      "outputs": [
+        "blog/mt4-mt5-trading-journal/index.html"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+
+<html data-route-locale="fa" dir="rtl" lang="fa">
+<head>
+<meta charset="utf-8"/><script src="/public/assets/velora-locale-registry.js?v=2026.08.13.11"></script><script src="/public/assets/velora-locale-bootstrap.js?v=2026.08.13.11"></script><link href="/public/assets/velora-localization.css?v=2026.08.13.11" rel="stylesheet"/><script src="/public/assets/velora-localization.js?v=2026.08.13.11"></script><script src="/public/assets/velora-data.js?v=2026.08.13.11"></script><script defer="" src="/public/assets/velora-dynamic-content.js?v=2026.08.13.11"></script>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
+<meta content="#060A14" name="theme-color"/>
+<title data-i18n="pages.verify_email.email.verification.velora.c0ee3088">تأیید ایمیل | VELORA</title>
+<link href="/favicon-32.png" rel="icon" sizes="32x32" type="image/png"/>
+<style>
+:root{--bg:#04050a;--line:rgba(212,175,55,.34);--gold:#e9c45c;--gold2:#c9972e;--txt:#edeae0;--mut:#a39d8d;--ok:#4CD39A;--err:#F87171}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(620px 420px at 82% 18%,rgba(212,175,55,.12),transparent 62%),radial-gradient(720px 520px at 15% 8%,rgba(59,130,246,.13),transparent 62%),var(--bg);color:var(--txt);font-family:Tahoma,Arial,sans-serif}.shell{min-height:100vh;display:grid;place-items:center;padding:24px}.card{width:100%;max-width:440px;border:1px solid var(--line);border-radius:26px;background:linear-gradient(180deg,rgba(15,27,61,.94),rgba(8,13,28,.97));box-shadow:0 40px 90px rgba(0,0,0,.62);padding:34px 30px;text-align:center}.brand{display:inline-flex;align-items:center;gap:12px;text-decoration:none;margin-bottom:24px}.brand img{width:42px;height:42px}.brand span{font-size:20px;font-weight:900;letter-spacing:4px;background:linear-gradient(120deg,#fce38a,var(--gold),var(--gold2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}.icon{width:72px;height:72px;margin:0 auto 20px;border-radius:50%;display:grid;place-items:center;border:1px solid rgba(212,175,55,.44);background:rgba(212,175,55,.09);font-size:34px}.icon.loading{animation:pulse 1.1s infinite alternate}.icon.ok{border-color:rgba(76,211,154,.55);background:rgba(16,185,129,.10);color:var(--ok)}.icon.err{border-color:rgba(239,68,68,.55);background:rgba(239,68,68,.10);color:var(--err)}@keyframes pulse{from{opacity:.55;transform:scale(.98)}to{opacity:1;transform:scale(1.02)}}h1{margin:0;font-size:24px;color:#fff}p{color:var(--mut);line-height:2;font-size:13.5px}.btn{display:inline-flex;margin-top:18px;border:0;border-radius:14px;padding:13px 24px;background:linear-gradient(135deg,#fce38a 0%,#d4af37 50%,#b88d1d 100%);color:#0b121e;font-weight:900;font-size:14px;text-decoration:none}.secondary{display:inline-flex;margin-top:12px;color:var(--gold);font-weight:800;font-size:13px;text-decoration:none}</style>
+</head>
+<body>
+<div class="shell"><main class="card">
+<a class="brand" href="/"><img alt="VELORA" data-i18n-alt="common.velora.2e043621" src="/velora-logo.svg"/><span data-i18n="common.velora.2e043621">VELORA</span></a>
+<div class="icon loading" id="icon">…</div>
+<h1 data-i18n="pages.verify_email.verifying.email.2a98010f" id="title">در حال تأیید ایمیل…</h1>
+<p data-i18n="pages.verify_email.please.wait.a.moment.a2879e3f" id="message">لطفاً چند لحظه صبر کنید.</p>
+<a class="btn" data-i18n="common.login.to.account.8181f948" href="/login" id="loginBtn" style="display:none">ورود به حساب</a>
+<a class="secondary" data-i18n="pages.verify_email.request.new.link.c50673c6" href="/register" id="resendBtn" style="display:none">درخواست لینک جدید</a>
+</main></div>
+<script>
+(function () {
+  var params = new URLSearchParams(location.search);
+  var token = params.get('token') || '';
+  var icon = document.getElementById('icon');
+  var title = document.getElementById('title');
+  var message = document.getElementById('message');
+  var login = document.getElementById('loginBtn');
+  var resend = document.getElementById('resendBtn');
+  var t = VeloraLocale.t;
+  function setState(type, heading, body) {
+    icon.className = 'icon ' + type;
+    icon.textContent = type === 'ok' ? '✓' : (type === 'err' ? '×' : '…');
+    title.textContent = heading;
+    message.textContent = body;
+  }
+  if (!token) {
+    setState('err', t('auth.verifyLinkInvalidTitle'), t('auth.verifyTokenMissing'));
+    resend.style.display = 'inline-flex';
+    return;
+  }
+  VeloraData.request('/api/v1/auth/verify-email?token=' + encodeURIComponent(token) + '&notificationLocale=' + encodeURIComponent(VeloraLocale.locale), { token: '', cache: 'no-store' })
+    .then(function () {
+      setState('ok', t('auth.emailVerifiedTitle'), t('auth.emailVerified'));
+      login.style.display = 'inline-flex';
+    })
+    .catch(function (error) {
+      setState('err', error.status ? t('auth.verificationFailedTitle') : t('auth.serverErrorTitle'),
+        error.status ? VeloraLocale.errorMessage(error, 'auth.verificationLinkExpired') : t('auth.tryAgainOrResend'));
+      resend.style.display = 'inline-flex';
+    });
+})();
+</script>
+<script src="/public/assets/velora-ui-sound.js?v=2026.08.13.1"></script>
+<script src="/public/assets/velora-dialog.js?v=2026.08.13.1"></script>
+</body>
+</html>

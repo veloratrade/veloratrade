@@ -1,0 +1,64 @@
+# VELORA production rules for cPanel / LiteSpeed (Apache-compatible)
+# Private runtime state and secrets must live outside public_html. This host-specific
+# path is intentionally not a credential and is required before PHP loads config.
+SetEnv VELORA_PRIVATE_ROOT /home/piknet/velora_private
+
+Options -Indexes
+DirectoryIndex disabled
+
+RewriteEngine On
+
+# Never expose source, generated storage, or operational files directly.
+RewriteRule ^(?:\.env|config\.php|router\.php|composer\.(?:json|lock)|phpunit\.xml)$ - [F,L,NC]
+RewriteRule ^(?:\.git|\.svn|\.hg)(?:/|$) - [F,L,NC]
+RewriteRule ^(?:api/(?:storage|vendor|tests?|\.env)|tools|localized)(?:/|$) - [F,L,NC]
+<FilesMatch "(^\.|\.(?:log|sql|sqlite|bak|ini|dist|sh|zip|7z|rar|tar|tgz)$|\.tar\.gz$)">
+  Require all denied
+</FilesMatch>
+
+# Block direct front-controller requests while allowing the internal rewrite.
+RewriteCond %{THE_REQUEST} "\s/+locale-router\.php(?:[?\s]|$)" [NC]
+RewriteRule ^locale-router\.php$ - [F,L]
+RewriteRule ^locale-router\.php$ - [L]
+
+# API and health routes stay locale-neutral and outside the HTML resolver.
+RewriteRule ^api(?:/|$) api/index.php [L,QSA]
+RewriteRule ^health/?$ api/index.php [L,QSA]
+
+# Public assets/catalog chunks and verified root static files bypass locale negotiation.
+RewriteRule ^public(?:/|$) - [L]
+RewriteRule ^google[0-9A-Za-z_-]+\.html$ - [L,NC]
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule \.(?:css|js|mjs|map|json|xml|txt|webmanifest|png|jpe?g|gif|webp|svg|ico|woff2?|ttf|otf|eot|pdf|mp4|webm|mp3|wav)$ - [L,NC]
+
+# Every page request is resolved to build-localized HTML before first paint.
+RewriteRule ^ locale-router.php [L,QSA]
+
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "DENY"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+  Header always set Cross-Origin-Opener-Policy "same-origin"
+  Header always set Strict-Transport-Security "max-age=31536000"
+  # Localized HTML receives an exact route policy from locale-router.php after
+  # HTML/manifest checksum verification.
+
+  <FilesMatch "\.(?:html?|php)$">
+    Header always set Cache-Control "private, max-age=0, must-revalidate"
+  </FilesMatch>
+  <FilesMatch "\.(?:css|js|mjs|woff2?|ttf|otf|png|jpe?g|webp|svg|ico)$">
+    Header always set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  <FilesMatch "\.json$">
+    Header always set Cache-Control "public, max-age=86400, stale-while-revalidate=604800"
+  </FilesMatch>
+</IfModule>
+
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/css application/javascript application/json application/xml image/svg+xml
+</IfModule>
+
+<IfModule mod_brotli.c>
+  AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/css application/javascript application/json application/xml image/svg+xml
+</IfModule>

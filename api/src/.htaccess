@@ -1,0 +1,4 @@
+# امنیت: دسترسی مستقیم به سورس‌کد بک‌اند ممنوع است.
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>

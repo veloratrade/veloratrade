@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+
+<html data-route-locale="fa" dir="rtl" lang="fa">
+<head>
+<meta charset="utf-8"/><script src="/public/assets/velora-locale-registry.js?v=2026.08.13.11"></script>
+<script src="/public/assets/velora-latin-digits.js?v=2026.08.14.17"></script><script src="/public/assets/velora-locale-bootstrap.js?v=2026.08.13.11"></script><link href="/public/assets/velora-localization.css?v=2026.08.13.11" rel="stylesheet"/><script src="/public/assets/velora-localization.js?v=2026.08.13.11"></script><script src="/public/assets/velora-data.js?v=2026.08.13.11"></script><script defer="" src="/public/assets/velora-dynamic-content.js?v=2026.08.13.11"></script>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
+<meta content="#060A14" name="theme-color"/>
+<title data-i18n="pages.profile.profile.velora.f252884a">پروفایل | VELORA</title>
+<link href="/favicon-32.png" rel="icon" sizes="32x32" type="image/png"/>
+<style>
+  :root{--bg:#060A14;--card:#0E1A33;--card2:#12203F;--border:rgba(255,255,255,0.07);--gold:#d4af37;--gold-l:#fce38a;--gold-d:#b88d1d;--txt:#EAF0FA;--muted:#8FA0C0;--faint:#5E6F92;--green:#4CD39A;--red:#FF6B6B;--blue:#3B82F6;--violet:#8B5CF6;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--bg);color:var(--txt);-webkit-font-smoothing:antialiased;min-height:100vh;}
+  .bgfx{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(900px 500px at 85% -10%,rgba(212,175,55,.07),transparent 60%),radial-gradient(800px 600px at -5% 110%,rgba(59,130,246,.07),transparent 55%);}
+  .shell{position:relative;z-index:1;display:flex;min-height:100vh;}
+  .sidebar{width:240px;flex-shrink:0;background:linear-gradient(180deg,rgba(10,17,34,.9),rgba(6,10,20,.95));border-left:1px solid var(--border);display:flex;flex-direction:column;padding:20px 14px;position:sticky;top:0;height:100vh;}
+  .sb-logo{display:flex;align-items:center;gap:10px;padding:4px 8px 18px;}
+  .sb-logo img{width:34px;height:34px;}
+  .sb-logo span{font-size:19px;font-weight:800;letter-spacing:5px;background:linear-gradient(120deg,var(--gold-l),var(--gold));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .sb-nav{display:flex;flex-direction:column;gap:3px;flex:1;}
+  .sb-item{display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:11px;color:var(--muted);font-size:13.5px;font-weight:600;text-decoration:none;transition:all .18s;border:1px solid transparent;}
+  .sb-item svg{width:18px;height:18px;flex-shrink:0;}
+  .sb-item:hover{color:var(--txt);background:rgba(255,255,255,.04);}
+  .sb-item.active{color:#fff;background:linear-gradient(135deg,rgba(212,175,55,.16),rgba(212,175,55,.05));border-color:rgba(212,175,55,.35);}
+  .sb-user{margin-top:14px;padding:12px 10px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:14px;display:flex;align-items:center;gap:10px;}
+  .sb-user .av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--gold-d),var(--gold));display:flex;align-items:center;justify-content:center;font-weight:800;color:#0b121e;font-size:15px;flex-shrink:0;}
+  .sb-user .nm{flex:1;min-width:0;}
+  .sb-user .nm b{display:block;font-size:12.5px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .sb-user .nm small{font-size:10.5px;color:var(--faint);}
+  .sb-user .logout{background:none;border:none;color:var(--faint);cursor:pointer;padding:4px;}
+
+  .main{flex:1;min-width:0;padding:24px 28px 80px;max-width:860px;}
+  .topbar .h1{font-size:23px;font-weight:800;color:#fff;}
+  .topbar .h1 .grad{background:linear-gradient(120deg,#fce38a,#d4af37 55%,#b88d1d);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .topbar .sub{font-size:12.5px;color:var(--muted);margin-top:3px;margin-bottom:22px;}
+  .panel{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--border);border-radius:18px;padding:22px 24px;margin-bottom:20px;}
+  .panel-head{display:flex;align-items:center;gap:9px;margin-bottom:18px;font-size:14.5px;font-weight:800;color:#fff;}
+  .panel-head svg{width:17px;height:17px;color:var(--gold);}
+
+  .profile-hero{display:flex;align-items:center;gap:18px;margin-bottom:4px;}
+  .p-av{width:74px;height:74px;border-radius:50%;background:linear-gradient(135deg,var(--gold-d),var(--gold));display:flex;align-items:center;justify-content:center;font-weight:800;color:#0b121e;font-size:30px;box-shadow:0 8px 24px rgba(212,175,55,.3);}
+  .p-name{font-size:19px;font-weight:800;color:#fff;}
+  .p-mail{font-size:13px;color:var(--muted);margin-top:3px;direction:ltr;text-align:right;}
+  .p-role{display:inline-block;margin-top:8px;font-size:11px;background:rgba(212,175,55,.15);color:var(--gold-l);padding:4px 12px;border-radius:20px;font-weight:700;}
+
+  .meta-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px;}
+  .meta{background:rgba(6,10,20,.5);border:1px solid var(--border);border-radius:13px;padding:13px 15px;}
+  .meta .lbl{font-size:10.5px;color:var(--faint);}
+  .meta .val{font-size:14px;font-weight:800;color:var(--txt);margin-top:4px;}
+
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .field label{display:block;font-size:12px;font-weight:700;color:#c7d2ea;margin-bottom:7px;}
+  .input{width:100%;background:rgba(6,10,20,.6);border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:var(--txt);font-size:13.5px;font-family:inherit;}
+  .input:focus{outline:none;border-color:rgba(212,175,55,.5);box-shadow:0 0 0 3px rgba(212,175,55,.1);}
+  .btn-gold{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#fce38a 0%,#d4af37 50%,#b88d1d 100%);color:#0b121e;border:none;border-radius:12px;padding:12px 24px;font-size:13.5px;font-weight:800;font-family:inherit;cursor:pointer;box-shadow:0 6px 18px rgba(212,175,55,.3);margin-top:14px;}
+  .btn-gold:disabled{opacity:.6;cursor:wait;}
+  .btn-spinner{display:inline-block;width:15px;height:15px;border-radius:50%;border:2px solid rgba(11,18,30,.25);border-top-color:#0b121e;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .error-box{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.4);color:#FCA5A5;font-size:13px;line-height:1.9;border-radius:12px;padding:11px 14px;display:none;margin-bottom:14px;}
+  .error-box.show{display:block;}
+  .ok-box{background:rgba(76,211,154,.08);border:1px solid rgba(76,211,154,.4);color:#4CD39A;font-size:13px;border-radius:12px;padding:11px 14px;display:none;margin-bottom:14px;}
+  .ok-box.show{display:block;}
+
+  .dev-item{display:flex;align-items:center;gap:13px;padding:13px 4px;border-bottom:1px solid rgba(255,255,255,.05);}
+  .dev-item:last-child{border-bottom:none;}
+  .dev-ic{width:40px;height:40px;border-radius:11px;background:rgba(255,255,255,.05);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0;}
+  .dev-item b{display:block;font-size:13px;color:var(--txt);}
+  .dev-item small{font-size:11px;color:var(--faint);}
+  .dev-item .cur{margin-left:auto;font-size:10.5px;color:var(--green);font-weight:700;display:flex;align-items:center;gap:5px;}
+  .dev-item .cur .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);}
+
+  .mobile-top{display:none;}
+  @media(max-width:980px){
+    .sidebar{display:none;}
+    .mobile-top{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;position:sticky;top:0;z-index:50;background:rgba(6,10,20,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);}
+    .mobile-top .l{display:flex;align-items:center;gap:9px;}
+    .mobile-top img{width:30px;height:30px;}
+    .mobile-top span{font-size:17px;font-weight:800;letter-spacing:4px;color:var(--gold);}
+    .mobile-top .av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--gold-d),var(--gold));display:flex;align-items:center;justify-content:center;font-weight:800;color:#0b121e;font-size:14px;}
+    .main{padding:16px 14px 90px;}
+    .form-grid{grid-template-columns:1fr;}
+    .meta-grid{grid-template-columns:1fr;}
+    .panel{padding:18px 16px;}
+  }
+  .bottom-nav{display:none;}
+  @media(max-width:980px){
+    .bottom-nav{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:60;background:rgba(8,13,28,.94);backdrop-filter:blur(14px);border-top:1px solid var(--border);padding:8px 6px calc(8px + env(safe-area-inset-bottom));justify-content:space-around;}
+    .bn-item{display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint);font-size:10px;font-weight:700;text-decoration:none;padding:6px 10px;border-radius:12px;flex:1;}
+    .bn-item svg{width:20px;height:20px;}
+    .bn-item.active{color:var(--gold-l);background:rgba(212,175,55,.1);}
+  }
+</style>
+<style id="profile-approved-variant-03">
+/* Approved profile mockup 03 — Account & Security */
+:root{--bg:#070707;--card:rgba(12,12,15,.45);--card2:rgba(27,25,22,.42);--border:rgba(255,255,255,.20);--gold:#c99c45;--gold-l:#f7e9c5;--gold-d:#a77a18;--txt:#f9f7f2;--muted:#adb2bc;--faint:#8790a0;--green:#65e2a6}
+body{background:radial-gradient(circle at 9% 28%,#3a352c55,transparent 33%),radial-gradient(circle at 82% 21%,#4e352555,transparent 31%),radial-gradient(circle at 60% 88%,#c28d1d66,transparent 35%),#070707}body:before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.48;background-image:radial-gradient(#fff 1px,transparent 1px),radial-gradient(#f5d46a 1px,transparent 1.3px);background-size:84px 84px,137px 137px;background-position:10px 8px,48px 60px}.bgfx{display:none}.shell{gap:18px;padding:22px;z-index:1}.sidebar,.panel,.topbar{background:linear-gradient(135deg,rgba(255,255,255,.105),rgba(8,8,10,.27) 55%,rgba(211,174,65,.10));border:1px solid rgba(255,255,255,.30);border-top-color:rgba(255,255,255,.62);box-shadow:0 28px 78px #000b,inset 0 1px rgba(255,255,255,.40),inset -16px -12px 42px rgba(214,174,67,.07);backdrop-filter:blur(42px) saturate(120%)}.sidebar{width:260px;height:calc(100vh - 44px);top:22px;padding:23px 17px;border-radius:18px;background:linear-gradient(135deg,rgba(255,255,255,.10),rgba(8,8,10,.38) 55%,rgba(211,174,65,.10))}.sb-logo{padding:2px 8px 35px}.sb-logo span{background:none;-webkit-text-fill-color:var(--gold-l);font-size:22px;letter-spacing:5px}.sb-item{padding:13px 14px;border-radius:11px;color:#b1bed3;font-size:13px}.sb-item.active{border-color:#e9c75e70;background:linear-gradient(90deg,#e9c75e0d,#e9c75e26);box-shadow:0 0 25px #e9c75e1b}.sb-user{background:#06112655;border-color:#fff2}.sb-user .av,.p-av,.mobile-top .av{background:linear-gradient(135deg,#f7e9c5,#c99c45);color:#181105}.main{max-width:1000px;padding:0;min-width:0}.topbar{min-height:62px;padding:13px 18px;margin-bottom:18px;border-radius:12px;position:relative;overflow:hidden;background:#050505;border-bottom-color:rgba(218,178,72,.48)}.topbar:after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent 52%,rgba(154,110,23,.18) 82%,rgba(213,174,67,.32) 100%)}.topbar>*{position:relative;z-index:1}.topbar .h1{font-size:16px}.topbar .h1 .grad{background:none;-webkit-text-fill-color:#fff}.topbar .sub{font-size:11px;margin:5px 0 0;color:var(--muted)}.panel{padding:18px;border-radius:16px;margin-bottom:16px}.panel-head{font-size:13px;color:#fff;margin-bottom:15px}.panel-head svg{color:var(--gold)}.profile-hero{padding:3px 2px 15px;border-bottom:1px solid rgba(255,255,255,.10)}.p-av{width:58px;height:58px;font-size:24px;box-shadow:0 0 24px rgba(213,174,67,.30)}.p-name{font-size:16px}.p-mail{font-size:11px;color:var(--muted)}.p-role{border:1px solid rgba(211,170,80,.47);background:rgba(211,170,80,.10);color:var(--gold-l);font-size:9px;padding:4px 8px}.meta-grid{grid-template-columns:repeat(3,1fr);gap:9px;margin-top:14px}.meta{background:rgba(5,6,8,.35);border-color:rgba(255,255,255,.15);border-radius:10px;padding:10px}.meta .lbl{font-size:9px}.meta .val{font-size:12px;color:var(--gold-l)}.form-grid{gap:10px}.field label{font-size:10px;color:#c7cfdd}.input{background:rgba(5,6,8,.46);border-color:rgba(255,255,255,.17);border-radius:9px;padding:11px 12px;font-size:12px}.input:focus{border-color:rgba(231,193,88,.70);box-shadow:0 0 0 3px rgba(213,174,67,.10)}.btn-gold{border:1px solid rgba(231,193,88,.85);background:transparent;color:#ffe9a2;border-radius:8px;padding:10px 15px;box-shadow:none;font-size:11px}.btn-gold:hover{background:rgba(213,174,67,.15)}.dev-item{padding:12px 2px;border-bottom-color:rgba(255,255,255,.09)}.dev-ic{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.16);width:38px;height:38px}.dev-item b{font-size:12px}.dev-item small,.hint{font-size:10px!important}.bottom-nav{background:rgba(8,8,10,.94)!important;border-top-color:rgba(255,255,255,.17)!important}.bn-item.active{color:var(--gold-l)!important;background:rgba(213,174,67,.12)!important}@media(max-width:980px){.shell{padding:12px;display:block}.sidebar{display:none}.main{padding:0 0 90px}.mobile-top{background:rgba(8,8,10,.70);border:1px solid rgba(255,255,255,.20);border-radius:13px;margin-bottom:12px}.mobile-top span{color:var(--gold-l)}.meta-grid{grid-template-columns:1fr}.panel{padding:16px}}
+</style>
+<style id="profile-avatar-approved-08">
+/* Approved avatar 08 — Precision Ring */
+.p-av,.sb-user .av,.mobile-top .av{position:relative;background:#111217!important;border:1px dashed #f2d27c!important;box-shadow:0 0 0 6px rgba(211,170,80,.10),0 0 28px rgba(211,170,80,.25)!important;color:#fff0bd!important}.p-av:before,.sb-user .av:before,.mobile-top .av:before{content:'';position:absolute;inset:8px;border:1px solid rgba(211,170,80,.35);border-radius:50%;pointer-events:none}.sb-user .av:before,.mobile-top .av:before{inset:5px}
+</style>
+<style id="shared-sidebar-profile">.shared-side-brand,.shared-side-nav{display:none}@media(min-width:981px){.sb-logo,.sb-nav,.sb-user{display:none!important}.sidebar{width:270px!important;padding:25px 17px!important;background:linear-gradient(180deg,#0e1a33,#060a14)!important;border-left:1px solid rgba(212,175,55,.35)!important}.shared-side-brand{display:block;font:bold 23px Arial;letter-spacing:5px;color:#fff0bd;padding:3px 8px 34px}.shared-side-brand b{color:#ffd36c;font-size:30px}.shared-side-nav{display:flex;flex-direction:column;gap:5px;flex:1}.shared-side-nav a{display:flex;align-items:center;gap:12px;padding:13px;color:#f4df9f;text-decoration:none;border-radius:10px;font-size:13px;font-weight:bold}.shared-side-nav a.active{color:#fff;border:1px solid #e9c75e88;background:#d3aa5025}.shared-side-nav .ico{width:19px;color:#ffd36c;font:19px Arial;text-shadow:0 0 7px #ffd36c88}.shared-side-user{margin-top:auto;border:1px solid #fff2;border-radius:12px;padding:12px;background:#08101d77;font-size:12px}.shared-side-user small{display:block;color:#adb6c5;margin-top:5px;font-size:10px}}</style>
+<style id="velora-unified-luxury-sidebar-css">
+/* ============================================================
+   VELORA UNIFIED LUXURY SIDEBAR (DESKTOP & MOBILE DRAWER)
+   Saturated Royal Gold Icons & Text on Rich Dark Navy Background
+   ============================================================ */
+.sidebar {
+  width: 260px !important;
+  flex-shrink: 0 !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.10), rgba(8, 8, 10, 0.72) 55%, rgba(211, 174, 65, 0.15)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.28) !important;
+  border-top-color: rgba(255, 255, 255, 0.62) !important;
+  border-left-color: rgba(212, 175, 55, 0.45) !important;
+  box-shadow: 0 28px 78px rgba(0, 0, 0, 0.85), inset 0 1px rgba(255, 255, 255, 0.35), inset -16px -12px 42px rgba(214, 174, 67, 0.08) !important;
+  backdrop-filter: blur(42px) saturate(130%) !important;
+  -webkit-backdrop-filter: blur(42px) saturate(130%) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 22px 16px !important;
+  position: sticky !important;
+  top: 0 !important;
+  height: 100vh !important;
+  z-index: 100 !important;
+  overflow-y: auto !important;
+}
+
+.sb-logo {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 4px 8px 24px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  margin-bottom: 14px !important;
+}
+
+.sb-logo img {
+  width: 36px !important;
+  height: 36px !important;
+  filter: drop-shadow(0 0 12px rgba(233, 196, 92, 0.45)) !important;
+}
+
+.sb-logo span {
+  font-size: 20px !important;
+  font-weight: 900 !important;
+  letter-spacing: 5px !important;
+  background: linear-gradient(120deg, #fce38a, #d4af37, #b88d1d) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+.sb-nav {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  flex: 1 !important;
+}
+
+.sb-nav a.sb-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 13px !important;
+  padding: 12px 15px !important;
+  border-radius: 12px !important;
+  color: #f1c453 !important;
+  text-decoration: none !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  border: 1px solid transparent !important;
+  transition: all 0.2s ease !important;
+  opacity: 1 !important;
+}
+
+.sb-nav a.sb-item .ico,
+.sb-nav a.sb-item svg,
+.sb-nav a.sb-item i {
+  display: grid !important;
+  place-items: center !important;
+  width: 20px !important;
+  height: 20px !important;
+  flex: 0 0 20px !important;
+  font-size: 18px !important;
+  font-style: normal !important;
+  color: #ffb703 !important;
+  text-shadow: 0 0 10px rgba(255, 183, 3, 0.9), 0 0 18px rgba(245, 158, 11, 0.75) !important;
+  filter: drop-shadow(0 0 6px rgba(255, 183, 3, 0.85)) !important;
+}
+
+.sb-nav a.sb-item:hover {
+  color: #ffffff !important;
+  background: rgba(255, 183, 3, 0.18) !important;
+  border-color: rgba(255, 183, 3, 0.45) !important;
+}
+
+.sb-nav a.sb-item.active {
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 183, 3, 0.8) !important;
+  background: linear-gradient(90deg, rgba(255, 183, 3, 0.25), rgba(245, 158, 11, 0.4)) !important;
+  box-shadow: 0 0 25px rgba(255, 183, 3, 0.35) !important;
+}
+
+.sb-nav a.sb-item.active .ico,
+.sb-nav a.sb-item.active svg,
+.sb-nav a.sb-item.active i {
+  color: #ffc837 !important;
+  text-shadow: 0 0 14px rgba(255, 200, 55, 1), 0 0 24px rgba(255, 183, 3, 0.95) !important;
+  filter: drop-shadow(0 0 8px rgba(255, 183, 3, 1)) !important;
+}
+
+.sb-user {
+  margin-top: auto !important;
+  padding: 12px 14px !important;
+  background: rgba(0, 0, 0, 0.45) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  color: #ffffff !important;
+}
+
+.sb-user .av {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #fce38a, #d4af37, #b88d1d) !important;
+  display: grid !important;
+  place-items: center !important;
+  color: #0b121e !important;
+  font-weight: 900 !important;
+  font-size: 15px !important;
+}
+
+.sb-user .nm {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+}
+
+.sb-user .nm b {
+  font-size: 13px !important;
+  color: #ffffff !important;
+}
+
+.sb-user .nm small {
+  font-size: 10.5px !important;
+  color: #8fa0c0 !important;
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+}
+
+.sidebar-overlay.open {
+  display: block;
+}
+
+/* ============================================================
+   MOBILE DRAWER MODE (@media max-width: 980px)
+   ============================================================ */
+@media (max-width: 980px) {
+  .sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    right: -320px !important;
+    width: 300px !important;
+    height: 100dvh !important;
+    z-index: 201 !important;
+    border-radius: 0 0 0 20px !important;
+    transition: right 0.28s ease, visibility 0.28s ease !important;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  
+  .sidebar.drawer-open {
+    right: 0 !important;
+    visibility: visible;
+    pointer-events: auto;
+  }
+  
+  .mobile-top {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 12px 16px !important;
+    background: rgba(14, 26, 51, 0.95) !important;
+    backdrop-filter: blur(12px) !important;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.35) !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 50 !important;
+    margin-bottom: 15px !important;
+  }
+  
+  .sidebar-drawer-toggle {
+    display: grid !important;
+    place-items: center !important;
+    width: 38px !important;
+    height: 38px !important;
+    border: 1px solid rgba(231, 193, 88, 0.6) !important;
+    border-radius: 10px !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #ffd36c !important;
+    font-size: 20px !important;
+    cursor: pointer !important;
+  }
+
+  .mobile-top .logo-sec {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+  }
+
+  .mobile-top .logo-sec img {
+    width: 30px !important;
+    height: 30px !important;
+  }
+
+  .mobile-top .logo-sec span {
+    font-size: 18px !important;
+    font-weight: 900 !important;
+    letter-spacing: 4px !important;
+    color: #fce38a !important;
+  }
+}
+</style>
+<script>
+function toggleMobileSidebar() {
+  var s = document.getElementById('veloraSidebar');
+  var o = document.getElementById('veloraSidebarOverlay');
+  if (!s || !o) return;
+  s.classList.toggle('drawer-open');
+  o.classList.toggle('open');
+}
+</script>
+<script data-velora-user-sync="1">
+(function(){
+  function syncVeloraUser() {
+    try {
+      var u = window.VeloraData ? VeloraData.getUser() : null;
+      if (!u || !u.fullName || u.email === 'ali.rezaei@velora.app') {
+        // No fake user injection: show neutral placeholders until the memory session is ready.
+        u = null;
+      }
+      var name = (u && u.fullName) ? u.fullName : VeloraLocale.t('common.user');
+      var email = (u && u.email) ? u.email : '';
+      var av = name.trim().charAt(0) || 'V';
+
+      var idsAv = ['userAv', 'mUserAv', 'pAv'];
+      for (var i=0; i<idsAv.length; i++) {
+        var el = document.getElementById(idsAv[i]);
+        if (el) el.textContent = av;
+      }
+
+      var elName = document.getElementById('userName');
+      if (elName) elName.textContent = name;
+
+      var elEmail = document.getElementById('userEmail');
+      if (elEmail) elEmail.textContent = email;
+
+      var elGreet = document.getElementById('greetName');
+      if (elGreet) elGreet.textContent = name.split(' ')[0] || VeloraLocale.t('common.trader');
+
+      var elPName = document.getElementById('pName');
+      if (elPName) elPName.textContent = name;
+
+      var elPMail = document.getElementById('pMail');
+      if (elPMail) elPMail.textContent = email;
+    } catch(e) {}
+  }
+  if (window.VeloraLocale && VeloraLocale.ready) {
+    VeloraLocale.ready.then(syncVeloraUser).catch(function () {});
+    document.addEventListener('velora:locale-change', syncVeloraUser);
+    window.addEventListener('velora:session', syncVeloraUser);
+  }
+})();
+</script>
+<style id="velora-modern-topbar-css">
+/* ============================================================
+   VELORA LUXURY TOP NAVIGATION & BACK-BAR (DESKTOP & MOBILE)
+   Frosted Glass · Saturated Royal Gold · Interactive Breadcrumbs
+   ============================================================ */
+.velora-top-nav-bar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 10px 16px !important;
+  min-height: 50px !important;
+  background: linear-gradient(135deg, rgba(14, 26, 51, 0.92), rgba(6, 10, 20, 0.98)) !important;
+  border: 1px solid rgba(212, 175, 55, 0.4) !important;
+  border-radius: 14px !important;
+  margin: 0 0 14px 0 !important;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.65), inset 0 1px rgba(255, 255, 255, 0.12) !important;
+  backdrop-filter: blur(20px) !important;
+  position: relative !important;
+  z-index: 50 !important;
+}
+
+.velora-nav-left {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+.velora-nav-right {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+.velora-btn-back {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  padding: 8px 15px !important;
+  background: linear-gradient(135deg, rgba(255, 183, 3, 0.22), rgba(212, 175, 55, 0.12)) !important;
+  border: 1px solid rgba(255, 183, 3, 0.65) !important;
+  border-radius: 10px !important;
+  color: #fce38a !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 4px 15px rgba(255, 183, 3, 0.2) !important;
+}
+
+.velora-btn-back:hover {
+  background: linear-gradient(135deg, rgba(255, 183, 3, 0.38), rgba(245, 158, 11, 0.28)) !important;
+  border-color: #ffb703 !important;
+  color: #ffffff !important;
+  transform: translateX(4px) !important;
+  box-shadow: 0 6px 20px rgba(255, 183, 3, 0.4) !important;
+}
+
+.velora-breadcrumb {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 9px !important;
+  font-size: 13.5px !important;
+  color: #8fa0c0 !important;
+  font-weight: 700 !important;
+}
+
+.velora-breadcrumb a {
+  color: #f1c453 !important;
+  text-decoration: none !important;
+  transition: color 0.2s !important;
+}
+
+.velora-breadcrumb a:hover {
+  color: #ffffff !important;
+  text-decoration: underline !important;
+}
+
+.velora-breadcrumb .sep {
+  color: #475569 !important;
+}
+
+.velora-breadcrumb .curr {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  padding: 4px 12px !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+.velora-status-pill {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: #4cd39a !important;
+  background: rgba(76, 211, 154, 0.12) !important;
+  border: 1px solid rgba(76, 211, 154, 0.38) !important;
+  padding: 5px 12px !important;
+  border-radius: 20px !important;
+}
+
+.velora-status-pill .dot {
+  width: 7px !important;
+  height: 7px !important;
+  border-radius: 50% !important;
+  background: #4cd39a !important;
+  box-shadow: 0 0 8px #4cd39a !important;
+}
+
+/* On mobile, stack and optimize spacing */
+@media (max-width: 980px) {
+  .velora-top-nav-bar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 10px 16px !important;
+  min-height: 50px !important;
+  background: linear-gradient(135deg, rgba(14, 26, 51, 0.92), rgba(6, 10, 20, 0.98)) !important;
+  border: 1px solid rgba(212, 175, 55, 0.4) !important;
+  border-radius: 14px !important;
+  margin: 0 0 14px 0 !important;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.65), inset 0 1px rgba(255, 255, 255, 0.12) !important;
+  backdrop-filter: blur(20px) !important;
+  position: relative !important;
+  z-index: 50 !important;
+}
+  .velora-breadcrumb .hide-mob {
+    display: none !important;
+  }
+  .velora-btn-back {
+    padding: 7px 12px !important;
+    font-size: 12px !important;
+  }
+}
+</style>
+<style id="velora-remove-bottom-nav">
+/* Completely hide old bottom navigation bar on all screen sizes */
+.bottom-nav, #bottomNav, nav.bottom-nav {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  height: 0 !important;
+  width: 0 !important;
+  overflow: hidden !important;
+}
+@media (max-width: 980px) {
+  .main, main.main {
+    padding-bottom: 24px !important;
+  }
+}
+</style>
+
+<style id="velora-sound-setting-css">
+.sound-pref{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:15px 16px;border:1px solid rgba(255,255,255,.11);border-radius:13px;background:linear-gradient(135deg,rgba(255,255,255,.055),rgba(233,196,92,.045));}.sound-pref-copy{display:flex;align-items:center;gap:11px}.sound-pref-ico{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;color:#f1c453;background:rgba(241,196,83,.1);border:1px solid rgba(241,196,83,.24)}.sound-pref-ico svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8}.sound-pref b{display:block;font-size:13px}.sound-pref small{display:block;color:var(--faint);font-size:11px;margin-top:2px}.sound-toggle{width:46px;height:25px;border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:3px;background:rgba(0,0,0,.28);cursor:pointer;transition:.2s}.sound-toggle i{display:block;width:17px;height:17px;border-radius:50%;background:#8e98a8;transition:.2s}.sound-toggle.on{background:rgba(241,196,83,.25);border-color:rgba(241,196,83,.58)}.sound-toggle.on i{transform:translateX(-20px);background:#ffe08a;box-shadow:0 0 10px rgba(241,196,83,.65)}
+</style>
+<link rel="stylesheet" href="/public/assets/velora-latin-digits.css?v=2026.08.14.17">
+<link rel="stylesheet" href="/public/assets/velora-sidebar-icons.css?v=2026.08.13.45"><script src="/public/assets/velora-sidebar-icons.js?v=2026.08.13.42"></script>
+</head>
+<body>
+<div class="bgfx"></div>
+<div class="shell">
+<aside class="sidebar" id="veloraSidebar">
+<div class="sb-logo"><img alt="V" src="/velora-logo.svg"/><span data-i18n="common.velora.2e043621">VELORA</span></div>
+<nav class="sb-nav">
+<a class="sb-item" href="/dashboard/index.html"><i class="ico">⌂</i><span data-i18n="common.dashboard.2aea7aaf">داشبورد</span></a>
+<a class="sb-item" href="/markets/index.html"><i class="ico">⌁</i><span data-i18n="common.markets.9f1cdf65">بازارها</span></a>
+<a class="sb-item" href="/intelligence/index.html"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"/></svg><span data-i18n="common.tradingIntelligence">Trading Intelligence</span></a>
+<a class="sb-item" href="/trades/index.html"><i class="ico">↕</i><span data-i18n="common.trades.c19408e7">ژورنال معاملات</span></a>
+<a class="sb-item" href="/wallet/index.html"><i class="ico">▣</i><span data-i18n="common.wallet.cd1a64bc">کیف پول</span></a>
+<a class="sb-item" href="/performance/index.html"><i class="ico">⌁</i><span data-i18n="common.performance.a68933d2">عملکرد</span></a>
+<a class="sb-item" href="/news/index.html"><i class="ico">▤</i><span data-i18n="common.news.bba91630">اخبار</span></a>
+<a class="sb-item active" href="/profile/index.html"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.1 2.1-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56v.1h-3v-.1A1.7 1.7 0 0 0 10.7 18.6a1.7 1.7 0 0 0-1.88.34l-.06.06-2.1-2.1.06-.06A1.7 1.7 0 0 0 7.06 15a1.7 1.7 0 0 0-1.56-1.03H5.4v-3h.1A1.7 1.7 0 0 0 7.06 9.94 1.7 1.7 0 0 0 6.72 8.06L6.66 8l2.1-2.1.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1.03-1.56v-.1h3v.1a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.1 2.1-.06.06a1.7 1.7 0 0 0-.34 1.88 1.7 1.7 0 0 0 1.56 1.03h.1v3h-.1A1.7 1.7 0 0 0 19.4 15Z"/></svg><span data-i18n="common.profile.8b081d3b">پروفایل</span></a>
+<a class="sb-item" href="/support/index.html"><i class="ico">◌</i><span data-i18n="common.support.152185b4">پشتیبانی</span></a>
+<a class="sb-item" data-velora-adminhide-target="1" href="/admin/index.html" id="adminLinkSide"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z"/></svg><span data-i18n="common.admin.41ae8044">مدیریت</span></a>
+</nav>
+<div class="sb-user" style="margin-top:auto !important;padding:14px !important;background:linear-gradient(135deg,rgba(14,26,51,0.9),rgba(6,10,20,0.95)) !important;border:1px solid rgba(212,175,55,0.35) !important;border-radius:16px !important;display:flex !important;align-items:center !important;gap:12px !important;box-shadow:0 8px 20px rgba(0,0,0,0.5) !important;">
+<div class="av-wrap" style="position:relative;flex-shrink:0;">
+<div class="av" id="userAv" style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#ffb703,#d4af37);border:2px solid #fff0bd;box-shadow:0 0 15px rgba(255,183,3,0.45);display:grid;place-items:center;color:#060a14;font-weight:900;font-size:17px;">V</div>
+<span style="position:absolute;bottom:0;right:0;width:11px;height:11px;background:#4CD39A;border:2px solid #060a14;border-radius:50%;box-shadow:0 0 6px #4CD39A;"></span>
+</div>
+<div class="nm" style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+<b data-i18n="common.user.cfadc9e3" id="userName" style="color:#ffffff;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">کاربر</b>
+<small id="userEmail" style="color:#8fa0c0;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></small>
+</div>
+<button class="logout" data-i18n-title="common.logout.27be6c53" id="logoutBtn" style="background:rgba(255,183,3,0.12);border:1px solid rgba(255,183,3,0.45);border-radius:10px;color:#ffb703;cursor:pointer;margin-right:auto;width:34px;height:34px;display:grid;place-items:center;transition:all 0.2s;flex-shrink:0;" title="خروج از حساب">
+<svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="16"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" x2="9" y1="12" y2="12"></line></svg>
+</button>
+</div>
+</aside>
+<div class="sidebar-overlay" id="veloraSidebarOverlay" onclick="toggleMobileSidebar()"></div>
+<main class="main">
+<div class="velora-top-nav-bar">
+<div class="velora-nav-left">
+<button aria-label="منو" class="sidebar-drawer-toggle" data-i18n-aria-label="common.menu.1f381a4e" onclick="toggleMobileSidebar()" type="button"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+</div>
+<div class="velora-nav-right">
+<a class="velora-btn-back" href="/trades/new/index.html" style="border-color:#4cd39a;color:#4cd39a;background:rgba(76,211,154,0.12);box-shadow:0 0 15px rgba(76,211,154,0.25);">
+<span data-i18n="common.new.trade.b499532d">＋ ثبت معامله</span>
+</a>
+</div>
+</div>
+<div class="panel">
+<div class="panel-head"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" viewbox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> <span data-i18n="pages.profile.account.info.399022fc">اطلاعات حساب</span></div>
+<div class="profile-hero">
+<div class="p-av" id="pAv">V</div>
+<div>
+<div class="p-name" id="pName">—</div>
+<div class="p-mail" id="pMail">—</div>
+<span class="p-role" id="pRole">—</span>
+</div>
+</div>
+<div class="meta-grid">
+<div class="meta"><div class="lbl" data-i18n="common.role.eb5456b4">نقش</div><div class="val" id="mRole">—</div></div>
+<div class="meta"><div class="lbl" data-i18n="pages.profile.timezone.06a6d9fe">منطقه زمانی</div><div class="val" id="mTz">UTC</div></div>
+<div class="meta"><div class="lbl" data-i18n="common.member.since.f0ceac0b">تاریخ عضویت</div><div class="val" id="mCreated">—</div></div>
+</div>
+</div>
+<div class="panel">
+<div class="panel-head"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" viewbox="0 0 24 24"><rect height="10" rx="3" width="18" x="3" y="11"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> <span data-i18n="common.change.password.ab337237">تغییر رمز عبور</span></div>
+<div class="error-box" id="pwErr"></div>
+<div class="ok-box" id="pwOk"></div>
+<div class="form-grid">
+<div class="field"><label data-i18n="pages.profile.current.password.5935e783">رمز فعلی</label><input class="input" id="curPw" placeholder="••••••••" type="password"/></div>
+<div class="field"><label data-i18n="common.new.password.f8211826">رمز جدید</label><input class="input" data-i18n-placeholder="common.minimum.8.characters.0a76ac5c" id="newPw" placeholder="حداقل 8 کاراکتر" type="password"/></div>
+</div>
+<button class="btn-gold" data-i18n="common.change.password.ab337237" id="changePwBtn">تغییر رمز عبور</button>
+</div>
+<div class="panel">
+<div class="panel-head"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" viewbox="0 0 24 24"><path d="M11 5 6 9v6l5 4V5Z"></path><path d="M15 9a4 4 0 0 1 0 6m2.5-8.5a7 7 0 0 1 0 11"></path></svg> <span><span data-i18n="pages.profile.p05.experience">تجربه رابط کاربری</span></span></div>
+<div class="sound-pref"><div class="sound-pref-copy"><div class="sound-pref-ico"><svg viewBox="0 0 24 24"><path d="M11 5 6 9v6l5 4V5Z"></path><path d="M15 9a4 4 0 0 1 0 6m2.5-8.5a7 7 0 0 1 0 11"></path></svg></div><div><b><span data-i18n="pages.profile.p05.sounds">صداهای رابط کاربری</span></b><small><span data-i18n="pages.profile.p05.sounds_detail">صدای ملایم فقط برای تأییدها و تعامل‌های مهم</span></small></div></div><button id="soundToggle" class="sound-toggle" type="button" role="switch" aria-checked="true" aria-label="صداهای رابط کاربری" data-i18n-aria-label="pages.profile.p05.sounds"><i></i></button></div>
+</div>
+<div class="panel">
+<div class="panel-head"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" viewbox="0 0 24 24"><rect height="14" rx="3" width="20" x="2" y="5"></rect><path d="M2 10h20"></path><path d="M6 14h.01M10 14h.01M14 14h.01"></path></svg> <span data-i18n="pages.profile.connected.devices.00dfa75d">دستگاه‌های متصل</span></div>
+<div id="devicesList">
+<div class="dev-item">
+<div class="dev-ic"><svg fill="none" height="19" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="19"><rect height="14" rx="3" width="20" x="2" y="4"></rect><path d="M8 21h8M12 17v4"></path></svg></div>
+<div><b data-i18n="pages.profile.current.device.edc04ca5">دستگاه فعلی</b><small data-i18n="pages.profile.your.browser.13d9a570" id="devAgent">مرورگر شما</small></div>
+<span class="cur"><span class="dot"></span> <span data-i18n="pages.profile.this.device.9da362b7">این دستگاه</span></span>
+</div>
+</div>
+<div class="hint" data-i18n="pages.profile.every.sign.in.from.a.new.device.898dc250" style="font-size:11px;color:var(--faint);margin-top:10px;">هر ورود از دستگاه جدید با ایمیل امنیتی به شما اطلاع داده می‌شود.</div>
+</div>
+</main>
+</div>
+<script data-velora-early="1">
+(function(){
+  document.addEventListener('DOMContentLoaded', function () {
+    if (!window.VeloraData) { window.location.replace('/login'); return; }
+    VeloraData.requireSession('/login').catch(function () { window.location.replace('/login'); });
+  });
+})();
+</script>
+<script data-velora-adminhide="1">
+(function(){
+  function hideAdmin() {
+    try {
+      var u = window.VeloraData ? VeloraData.getUser() : null;
+      var isAdmin = u && u.role === 'admin';
+      var nodes = document.querySelectorAll('[data-velora-adminhide-target="1"], #adminLinkSide, #adminLinkNav');
+      for (var i = 0; i < nodes.length; i++) nodes[i].style.display = isAdmin ? '' : 'none';
+    } catch(e) {}
+  }
+  // اول فوراً، بعد با DOMContentLoaded و چند بار دیگر (مطمئن)
+  hideAdmin();
+  document.addEventListener('DOMContentLoaded', hideAdmin);
+  window.addEventListener('velora:session', hideAdmin);
+  setTimeout(hideAdmin, 100);
+  setTimeout(hideAdmin, 500);
+  setTimeout(hideAdmin, 1500);
+})();
+</script>
+<script>
+(function () {
+  'use strict';
+  function $(id) { return document.getElementById(id); }
+  var t = VeloraLocale.t;
+  var user = null;
+  try { user = window.VeloraData ? VeloraData.getUser() : null; } catch (_) {}
+
+  async function loadUser() {
+    var data = await VeloraData.request('/api/v1/auth/me');
+    var value = data.user || user || {};
+    var name = value.fullName || t('common.user');
+    var first = name.charAt(0) || 'V';
+    ['userAv', 'mUserAv', 'pAv'].forEach(function (id) { if ($(id)) $(id).textContent = first; });
+    if ($('userName')) $('userName').textContent = name;
+    if ($('userEmail')) $('userEmail').textContent = value.email || '';
+    if ($('pName')) $('pName').textContent = name;
+    if ($('pMail')) $('pMail').textContent = value.email || '';
+    if ($('pRole')) $('pRole').textContent = t(value.role === 'admin' ? 'profile.role.admin' : 'profile.role.user');
+    if ($('mRole')) $('mRole').textContent = t(value.role === 'admin' ? 'profile.role.admin' : 'profile.role.user');
+    if ($('mTz')) $('mTz').textContent = value.timezone || 'UTC';
+    if ($('mCreated')) $('mCreated').textContent = VeloraLocale.date(value.createdAt);
+  }
+
+  $('changePwBtn').addEventListener('click', async function () {
+    var currentPassword = $('curPw').value;
+    var newPassword = $('newPw').value;
+    $('pwErr').classList.remove('show');
+    $('pwOk').classList.remove('show');
+    if (!currentPassword || !newPassword) {
+      $('pwErr').textContent = t('profile.passwordFieldsRequired');
+      $('pwErr').classList.add('show');
+      return;
+    }
+    if (newPassword.length < 8) {
+      $('pwErr').textContent = t('profile.passwordTooShort');
+      $('pwErr').classList.add('show');
+      return;
+    }
+    var button = $('changePwBtn');
+    button.disabled = true;
+    button.innerHTML = '<span class="btn-spinner"></span> ' + t('profile.changingPassword');
+    try {
+      await VeloraData.request('/api/v1/auth/change-password', {
+        method: 'POST', body: { currentPassword: currentPassword, newPassword: newPassword, notificationLocale: VeloraLocale.locale }
+      });
+      $('pwOk').textContent = t('profile.passwordChanged');
+      $('pwOk').classList.add('show');
+      if (window.VeloraSound) VeloraSound.play('success');
+      $('curPw').value = '';
+      $('newPw').value = '';
+      setTimeout(function () { VeloraData.logout().finally(function () { window.location.replace('/login'); }); }, 2500);
+    } catch (error) {
+      $('pwErr').textContent = VeloraLocale.errorMessage(error);
+      $('pwErr').classList.add('show');
+      button.disabled = false;
+      button.textContent = t('profile.changePassword');
+    }
+  });
+
+  var soundToggle = $('soundToggle');
+  function syncSoundToggle() { if (!soundToggle) return; var on = !window.VeloraSound || VeloraSound.enabled(); soundToggle.classList.toggle('on', on); soundToggle.setAttribute('aria-checked', String(on)); }
+  if (soundToggle) soundToggle.addEventListener('click', function () { if (window.VeloraSound) { VeloraSound.setEnabled(!VeloraSound.enabled()); VeloraSound.play('modal'); } syncSoundToggle(); });
+  syncSoundToggle();
+  try { $('devAgent').textContent = (navigator.userAgent || '').slice(0, 80); } catch (_) {}
+  function signOut() { VeloraData.logout().finally(function () { window.location.replace('/login'); }); }
+  if ($('logoutBtn')) $('logoutBtn').addEventListener('click', signOut);
+  if ($('mUserAv')) $('mUserAv').addEventListener('click', signOut);
+  loadUser().catch(function (error) {
+    if (error && error.status === 401) signOut();
+  });
+})();
+</script>
+<script src="/public/assets/velora-ui-sound.js?v=2026.08.13.1"></script>
+<script src="/public/assets/velora-dialog.js?v=2026.08.13.1"></script>
+</body>
+</html>

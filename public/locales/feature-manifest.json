@@ -1,0 +1,227 @@
+{
+  "version": "2026.08.13.11",
+  "basePath": "/public/locales/chunks",
+  "strategy": "usage-scoped",
+  "locales": {
+    "fa": {
+      "admin": {
+        "path": "fa/admin.json",
+        "messages": 27,
+        "bytes": 1473,
+        "sha256": "c7dc735d62b173897392ce78b206ccd0be0bd9696c8fce2ff10c05e76b06e4c9"
+      },
+      "auth": {
+        "path": "fa/auth.json",
+        "messages": 112,
+        "bytes": 10235,
+        "sha256": "ffe572cb1d3888ee7f1b59ec0b9f95f946374159f2b383ab767d475079a7bea4"
+      },
+      "blog": {
+        "path": "fa/blog.json",
+        "messages": 141,
+        "bytes": 26921,
+        "sha256": "7ad90902a44fb9f9fa0ab005c9d87584a2c33a09b1657707e86a33b0c618b9b7"
+      },
+      "checkout": {
+        "path": "fa/checkout.json",
+        "messages": 24,
+        "bytes": 2167,
+        "sha256": "32e03c3fe4056c365bb40027d0e27aefc47aa69418c59d63ce06b42c1e2564a3"
+      },
+      "common": {
+        "path": "fa/common.json",
+        "messages": 67,
+        "bytes": 3144,
+        "sha256": "54adcc365348bd5b1b589901fea4871fda6a557d40a5a48ce31c9460018689e6"
+      },
+      "dashboard": {
+        "path": "fa/dashboard.json",
+        "messages": 49,
+        "bytes": 4518,
+        "sha256": "9d591f0705dac8cf69fff658b6802d575309a78a70b5310fcd509a41054196c2"
+      },
+      "errors": {
+        "path": "fa/errors.json",
+        "messages": 60,
+        "bytes": 5584,
+        "sha256": "b784cf7ec586bcbb4ec0316deb1f4e943d2a0f0d4658a973058c366ff9198f9e"
+      },
+      "intelligence": {
+        "path": "fa/intelligence.json",
+        "messages": 28,
+        "bytes": 3736,
+        "sha256": "98aeb083c82fe471b9fd0da2b7310c669d2e3112fc52193bb9327c7197172c80"
+      },
+      "landing": {
+        "path": "fa/landing.json",
+        "messages": 347,
+        "bytes": 34928,
+        "sha256": "ea686ce62e1909e0fd9a8483ef4e4ae65fdc2439a46643acde5e09b295391e03"
+      },
+      "markets": {
+        "path": "fa/markets.json",
+        "messages": 11,
+        "bytes": 910,
+        "sha256": "7920ced50e318bbefcf9a2e84e352c7b6d881a1c6938c17da9958abc4a87aab0"
+      },
+      "news": {
+        "path": "fa/news.json",
+        "messages": 16,
+        "bytes": 1947,
+        "sha256": "1e1a2c00d12bd07ae911bd7005bed18b026385d1035d06a4a1b10294da192de9"
+      },
+      "performance": {
+        "path": "fa/performance.json",
+        "messages": 8,
+        "bytes": 706,
+        "sha256": "14c2178dba1e8d0accf7cc940ef7e31d869304b5777758b8826e776141ec5bb5"
+      },
+      "privacy": {
+        "path": "fa/privacy.json",
+        "messages": 93,
+        "bytes": 11469,
+        "sha256": "7ebde69e6d00e837201789b0928435b76eabde3ac9a2996dc0cf5191012ca647"
+      },
+      "profile": {
+        "path": "fa/profile.json",
+        "messages": 20,
+        "bytes": 1562,
+        "sha256": "2ccf5c4ca3da6b2407195bb74fd59f721460f5cd2149cc9ed2e5da9e5387ae71"
+      },
+      "support": {
+        "path": "fa/support.json",
+        "messages": 17,
+        "bytes": 2069,
+        "sha256": "acbae0cf5abfcb2955aee7ef8c549fbd8a6078ae304cbfebb302ff5e138ee76d"
+      },
+      "terms": {
+        "path": "fa/terms.json",
+        "messages": 52,
+        "bytes": 6220,
+        "sha256": "b3ece59e76d23037b0a92049a82899c3dd6f472928a095e65c1774ee3b68d168"
+      },
+      "trades": {
+        "path": "fa/trades.json",
+        "messages": 135,
+        "bytes": 10671,
+        "sha256": "9befb86d287281725d1c6cd9efd18fd26e81d50480ba8a09215bf1e6db8dd8fa"
+      },
+      "wallet": {
+        "path": "fa/wallet.json",
+        "messages": 9,
+        "bytes": 885,
+        "sha256": "f791d0a07f989fb16ee1908ec454968048a8c981565abd4899501005194a471e"
+      }
+    },
+    "en": {
+      "admin": {
+        "path": "en/admin.json",
+        "messages": 27,
+        "bytes": 1193,
+        "sha256": "6ea3a7fc5f843c54b0dd58edf6062285d92c0e05c8e85a00169ad45ea04aefde"
+      },
+      "auth": {
+        "path": "en/auth.json",
+        "messages": 112,
+        "bytes": 8202,
+        "sha256": "943d24c97ae1d80aa75d14fab9c7b40ccdfd200c47582d120ce7c7a26932cae4"
+      },
+      "blog": {
+        "path": "en/blog.json",
+        "messages": 141,
+        "bytes": 19345,
+        "sha256": "1247a59a6a1defe80337ea7dfff7146798d70b5a8b67a4b504b702856a9f29b3"
+      },
+      "checkout": {
+        "path": "en/checkout.json",
+        "messages": 24,
+        "bytes": 1693,
+        "sha256": "1ccf3ac00e11a16f6945caf08494d50efc0ae67af90a5552818b6354d758ff2d"
+      },
+      "common": {
+        "path": "en/common.json",
+        "messages": 67,
+        "bytes": 2602,
+        "sha256": "afaae3c83f4ae4368fa946da0ea3b627b5b07c914570fcef1ec93061ae1410e2"
+      },
+      "dashboard": {
+        "path": "en/dashboard.json",
+        "messages": 49,
+        "bytes": 3660,
+        "sha256": "9c927eac72984a95356cdd0728c50432ab2808b75ed2058d0ef650e50ab31d8d"
+      },
+      "errors": {
+        "path": "en/errors.json",
+        "messages": 60,
+        "bytes": 4296,
+        "sha256": "1086975f4f55f8428ceb60397c966dfb42e9c40842faf22db102c159efe5736c"
+      },
+      "intelligence": {
+        "path": "en/intelligence.json",
+        "messages": 28,
+        "bytes": 2945,
+        "sha256": "4e368008b292459874637670e86715b8577aa554852a3c56b73808d62bb85a6f"
+      },
+      "landing": {
+        "path": "en/landing.json",
+        "messages": 347,
+        "bytes": 27051,
+        "sha256": "61d74baff098d5164306b2254e1c8a080a7a3f1d37073f140aa118486934ffd5"
+      },
+      "markets": {
+        "path": "en/markets.json",
+        "messages": 11,
+        "bytes": 746,
+        "sha256": "68dcd169a11c32b540cb704964f7996e3c9fcbd65df337ffbaa0474a506b623c"
+      },
+      "news": {
+        "path": "en/news.json",
+        "messages": 16,
+        "bytes": 1521,
+        "sha256": "4d34b0aa1b8ebb74e7e4280a18ebfe13597e91c8bb360279fb5583f138fa4cd9"
+      },
+      "performance": {
+        "path": "en/performance.json",
+        "messages": 8,
+        "bytes": 617,
+        "sha256": "46e06cf698721a9a611b2e0fe2975d14603987e00a144113a07bf6097eb26a36"
+      },
+      "privacy": {
+        "path": "en/privacy.json",
+        "messages": 93,
+        "bytes": 8192,
+        "sha256": "767f56f15834154b780994d618dafd354179de1380c77551f787711743fe52ee"
+      },
+      "profile": {
+        "path": "en/profile.json",
+        "messages": 20,
+        "bytes": 1289,
+        "sha256": "64d9e5c3b2bb5be01c54254717642f87767f7947bb289d2369c015b5edb508a1"
+      },
+      "support": {
+        "path": "en/support.json",
+        "messages": 17,
+        "bytes": 1602,
+        "sha256": "dd642838680f909550ec3a83a813bca1831b3bed12bbcbbe2a1c0d9658611cea"
+      },
+      "terms": {
+        "path": "en/terms.json",
+        "messages": 52,
+        "bytes": 4493,
+        "sha256": "4981b75f3ca4912db2fc44a40598c77ae34128e69d01371bd71b7cb74149bea4"
+      },
+      "trades": {
+        "path": "en/trades.json",
+        "messages": 135,
+        "bytes": 8837,
+        "sha256": "0f120d54214cdf963d6fdc283e9c18abf9930ebcb065a9f0b426d236a65bfa97"
+      },
+      "wallet": {
+        "path": "en/wallet.json",
+        "messages": 9,
+        "bytes": 793,
+        "sha256": "bc6d2954e635ce525d874b907b3cfaf13f5ae3bbcb403bfdef44a08a9460c40c"
+      }
+    }
+  }
+}

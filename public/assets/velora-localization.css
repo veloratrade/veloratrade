@@ -1,0 +1,62 @@
+/* Locale infrastructure. Layout direction comes from html[dir], never a language branch. */
+/* Prevent source-language copy from flashing before the first catalog pass. Layout remains stable. */
+html.velora-locale-booting :where([data-i18n],[data-i18n-title],[data-i18n-placeholder],[data-i18n-aria-label],[data-i18n-alt],[data-i18n-value],[data-i18n-content],[data-format]){visibility:hidden!important}
+
+/*
+ * Locale control placement: runtime mounts inline in navigation/action areas whenever
+ * available. Minimal/auth/error pages use the bottom-corner dock so the header and copy
+ * are never covered. A page can provide [data-velora-locale-slot] as the first-priority slot.
+ */
+.velora-locale-switcher{z-index:30;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;padding:5px 8px;border:1px solid rgba(232,197,98,.42);border-radius:10px;background:rgba(6,10,20,.78);box-shadow:0 7px 22px rgba(0,0,0,.28);backdrop-filter:blur(16px);color:#fce38a;font:600 12px/1.2 system-ui,sans-serif;box-sizing:border-box;isolation:isolate;flex:0 0 auto}
+.velora-locale-switcher[data-placement="inline"]{position:relative;inset:auto;margin:0 4px}
+.velora-locale-switcher[data-placement="dock"]{position:fixed;inset-block-start:auto;inset-block-end:max(16px,env(safe-area-inset-bottom));inset-inline-end:max(16px,env(safe-area-inset-right));z-index:2147483000}
+.velora-locale-switcher label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.velora-locale-icon{display:block;width:15px;height:15px;flex:0 0 15px;background:center/15px 15px no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fce38a' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M3 12h18M12 3c2.3 2.5 3.5 5.5 3.5 9s-1.2 6.5-3.5 9M12 3C9.7 5.5 8.5 8.5 8.5 12s1.2 6.5 3.5 9'/%3E%3C/svg%3E")}
+.velora-locale-switcher select{min-width:72px;max-width:112px;border:0;outline:0;background:transparent;color:inherit;font:inherit;cursor:pointer;color-scheme:dark;padding:0 1px}
+.velora-locale-switcher select:focus-visible{outline:2px solid rgba(252,227,138,.82);outline-offset:5px;border-radius:4px}
+.velora-locale-switcher option{background:#08101d;color:#fce38a}
+/* The landing header keeps language visible beside the menu trigger, including on mobile. */
+#header .nav>.velora-locale-switcher{align-self:center}
+
+[dir=ltr] .shell{direction:ltr!important}
+[dir=rtl] .shell{direction:rtl!important}
+[dir=ltr] :where(.side,.sidebar){border-left-width:0!important;border-right:1px solid rgba(212,175,55,.35)!important}
+[dir=rtl] :where(.side,.sidebar){border-right-width:0!important}
+[dir=ltr] :where(.sb-item .badge,.sb-user .logout,.logout){margin-left:auto!important;margin-right:0!important}
+[dir=rtl] :where(.sb-item .badge,.sb-user .logout,.logout){margin-right:auto!important;margin-left:0!important}
+[dir=ltr] :where(.p-mail,.u-mail,.topbar,.panel-head,.field label){text-align:left}
+[dir=rtl] :where(.p-mail,.u-mail,.topbar,.panel-head,.field label){text-align:right}
+[dir=ltr] :where(.card-arrow,.foot-tagline .arrow,[data-directional-icon]){transform:scaleX(-1)}
+/* Financial values, identifiers and charts keep their intrinsic ordering in either UI direction. */
+:where([data-value-type="number"],[data-value-type="currency"],[data-value-type="percent"],[data-value-type="symbol"],[data-value-type="date"],.price,.pnl,.acct-num,.tabular-nums,.chart-box,[data-chart]){direction:ltr;unicode-bidi:isolate;font-variant-numeric:tabular-nums}
+
+@media(max-width:980px){
+  [dir=ltr] .sidebar{right:auto!important;left:-320px!important;border-right:1px solid rgba(212,175,55,.35)!important}
+  [dir=ltr] .sidebar.drawer-open{right:auto!important;left:0!important}
+  [dir=rtl] .sidebar{left:auto!important;right:-320px!important}
+  [dir=rtl] .sidebar.drawer-open{left:auto!important;right:0!important}
+  .velora-locale-switcher{min-height:34px;padding:4px 7px}
+}
+
+/* Collapse only the crowded landing header control before the main navigation breakpoint. */
+@media(max-width:1200px){
+  #header .nav>.velora-locale-switcher{width:38px;min-width:38px;height:36px;min-height:36px;padding:0;margin-inline:5px;overflow:hidden}
+  #header .nav>.velora-locale-switcher .velora-locale-icon{width:16px;height:16px;flex-basis:16px;background-size:16px 16px}
+  #header .nav>.velora-locale-switcher select{position:absolute;inset:0;width:100%;height:100%;min-width:0;max-width:none;opacity:0;cursor:pointer}
+}
+
+/* On narrow headers the globe remains visible and the native select covers it as a full tap target. */
+@media(max-width:540px){
+  .velora-locale-switcher[data-placement="inline"]{width:38px;min-width:38px;height:36px;min-height:36px;padding:0;margin-inline:2px;overflow:hidden}
+  .velora-locale-switcher[data-placement="inline"] .velora-locale-icon{width:16px;height:16px;flex-basis:16px;background-size:16px 16px}
+  .velora-locale-switcher[data-placement="inline"] select{position:absolute;inset:0;width:100%;height:100%;min-width:0;max-width:none;opacity:0;cursor:pointer}
+  .velora-locale-switcher[data-placement="dock"]{inset-block-end:max(10px,env(safe-area-inset-bottom));inset-inline-end:max(10px,env(safe-area-inset-right));padding:5px 7px}
+}
+/* The language picker becomes a deliberate menu row on compact landing pages.
+   It is moved there by velora-localization.js, preventing two competing icon buttons. */
+@media(max-width:1100px){
+  #header nav.links .velora-locale-switcher[data-mobile-menu-item]{display:flex;width:calc(100% - 36px);max-width:none;height:44px;min-height:44px;margin:12px 18px 6px;padding:0 13px;justify-content:flex-start;gap:10px;border-color:rgba(232,197,98,.3);border-radius:12px;background:linear-gradient(135deg,rgba(233,196,92,.12),rgba(255,255,255,.035));box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+  #header nav.links .velora-locale-switcher[data-mobile-menu-item] .velora-locale-icon{width:17px;height:17px;flex-basis:17px;background-size:17px}
+  #header nav.links .velora-locale-switcher[data-mobile-menu-item] select{position:static;opacity:1;width:auto;height:auto;min-width:96px;max-width:none;text-align:start;color:#fce38a;padding:0 2px}
+}
+@media(prefers-reduced-motion:reduce){.velora-locale-switcher{backdrop-filter:none}}

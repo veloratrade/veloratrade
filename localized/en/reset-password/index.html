@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+
+<html data-i18n-features="common,errors,auth" data-route-locale="en" data-velora-prelocalized="en" dir="ltr" lang="en">
+<head>
+<meta charset="utf-8"/><script src="/public/assets/velora-locale-registry.js?v=2026.08.13.11"></script><script src="/public/assets/velora-locale-bootstrap.js?v=2026.08.13.11"></script><link href="/public/assets/velora-localization.css?v=2026.08.13.11" rel="stylesheet"/><script src="/public/assets/velora-localization.js?v=2026.08.13.11"></script><script src="/public/assets/velora-data.js?v=2026.08.13.11"></script><script defer="" src="/public/assets/velora-dynamic-content.js?v=2026.08.13.11"></script>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
+<meta content="#060A14" name="theme-color"/>
+<title data-i18n="pages.reset_password.reset.password.velora.73c390ce">Reset Password | VELORA</title>
+<link href="/favicon-32.png" rel="icon" sizes="32x32" type="image/png"/>
+<style>
+:root{--bg:#04050a;--line:rgba(212,175,55,.34);--gold:#e9c45c;--gold2:#c9972e;--txt:#edeae0;--mut:#a39d8d;--ok:#4CD39A;--err:#F87171}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(620px 420px at 82% 18%,rgba(212,175,55,.12),transparent 62%),radial-gradient(720px 520px at 15% 8%,rgba(59,130,246,.13),transparent 62%),var(--bg);color:var(--txt);font-family:Tahoma,Arial,sans-serif}.shell{min-height:100vh;display:grid;place-items:center;padding:24px}.card{width:100%;max-width:440px;border:1px solid var(--line);border-radius:26px;background:linear-gradient(180deg,rgba(15,27,61,.94),rgba(8,13,28,.97));box-shadow:0 40px 90px rgba(0,0,0,.62);padding:34px 30px}.brand{display:flex;align-items:center;gap:12px;text-decoration:none;margin-bottom:24px}.brand img{width:42px;height:42px}.brand span{font-size:20px;font-weight:900;letter-spacing:4px;background:linear-gradient(120deg,#fce38a,var(--gold),var(--gold2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}h1{margin:0;font-size:24px;color:#fff}p{color:var(--mut);line-height:2;font-size:13.5px}.field{margin-top:16px}.field label{display:block;margin-bottom:8px;color:#c7d2ea;font-size:12px;font-weight:700}input{width:100%;border:1px solid rgba(255,255,255,.10);border-radius:14px;background:rgba(6,10,20,.62);color:#EAF0FA;padding:14px 16px;font-size:14px;outline:none}input:focus{border-color:rgba(212,175,55,.65);box-shadow:0 0 0 4px rgba(212,175,55,.12)}button{width:100%;margin-top:18px;border:0;border-radius:14px;padding:15px;background:linear-gradient(135deg,#fce38a 0%,#d4af37 50%,#b88d1d 100%);color:#0b121e;font-weight:900;font-size:14px;cursor:pointer}button:disabled{opacity:.72;cursor:wait}.msg{display:none;margin-top:14px;border-radius:12px;padding:11px 13px;font-size:13px;line-height:1.8}.msg.ok{display:block;border:1px solid rgba(76,211,154,.45);background:rgba(16,185,129,.08);color:var(--ok)}.msg.err{display:block;border:1px solid rgba(239,68,68,.45);background:rgba(239,68,68,.08);color:var(--err)}.switch{margin-top:18px;text-align:center;font-size:13px;color:var(--mut)}.switch a{color:var(--gold);font-weight:800;text-decoration:none}.hint{margin-top:7px;font-size:11px;color:var(--mut);line-height:1.8}</style>
+<meta content="en" name="content-language"/><link href="https://veloratrade.ir/en/reset-password/" rel="canonical"/><meta content="https://veloratrade.ir/en/reset-password/" property="og:url"/><link href="https://veloratrade.ir/fa/reset-password/" hreflang="fa" rel="alternate"/><link href="https://veloratrade.ir/en/reset-password/" hreflang="en" rel="alternate"/><link href="https://veloratrade.ir/en/reset-password/" hreflang="x-default" rel="alternate"/></head>
+<body>
+<div class="shell"><main class="card">
+<a class="brand" href="/"><img alt="VELORA" data-i18n-alt="common.velora.2e043621" src="/velora-logo.svg"/><span data-i18n="common.velora.2e043621">VELORA</span></a>
+<h1 data-i18n="pages.reset_password.reset.password.eecd5ebe">Reset Password</h1>
+<p data-i18n="pages.reset_password.enter.your.new.password.it.must.contain.6e604b70">Enter your new password. It must contain at least 8 characters, including one Latin letter and one number.</p>
+<form id="form" novalidate="">
+<div class="field"><label data-i18n="common.new.password.f8211826" for="password">New Password</label><input autocomplete="new-password" data-i18n-placeholder="common.minimum.8.characters.0a76ac5c" id="password" placeholder="Minimum 8 characters" required="" type="password"/><div class="hint" data-i18n="pages.reset_password.example.velora2026.f94f471c">Example: VELORA2026</div></div>
+<div class="field"><label data-i18n="pages.reset_password.repeat.new.password.d313e98a" for="confirm">Repeat New Password</label><input autocomplete="new-password" data-i18n-placeholder="pages.reset_password.confirm.password.9071dd6d" id="confirm" placeholder="Confirm password" required="" type="password"/></div>
+<button data-i18n="pages.reset_password.set.new.password.ad123390" id="btn" type="submit">Set New Password</button>
+<div class="msg" id="msg"></div>
+</form>
+<div class="switch"><a data-i18n="pages.reset_password.resend.recovery.link.9e292a56" href="/forgot-password">Resend recovery link</a> · <a data-i18n="common.login.e09e596b" href="/login">Login</a></div>
+</main></div>
+<script>
+(function () {
+  var params = new URLSearchParams(location.search);
+  var token = params.get('token') || '';
+  var form = document.getElementById('form');
+  var password = document.getElementById('password');
+  var confirmation = document.getElementById('confirm');
+  var button = document.getElementById('btn');
+  var message = document.getElementById('msg');
+  var t = VeloraLocale.t;
+  function show(type, text) { message.className = 'msg ' + type; message.textContent = text; }
+  if (!token) { show('err', t('auth.resetTokenMissing')); button.disabled = true; }
+  form.addEventListener('submit', async function (event) {
+    event.preventDefault();
+    var value = password.value;
+    if (value.length < 8 || !/[A-Za-z]/.test(value) || !/[0-9]/.test(value)) { show('err', t('auth.passwordInvalid')); return; }
+    if (value !== confirmation.value) { show('err', t('auth.passwordMismatch')); return; }
+    button.disabled = true;
+    button.textContent = t('auth.savingPassword');
+    try {
+      await VeloraData.request('/api/v1/auth/reset-password', { method: 'POST', token: '', body: { token: token, newPassword: value, notificationLocale: VeloraLocale.locale } });
+      show('ok', t('auth.resetComplete'));
+      form.reset();
+    } catch (error) {
+      show('err', VeloraLocale.errorMessage(error, 'auth.resetLinkInvalid'));
+    }
+    button.disabled = false;
+    button.textContent = t('auth.savePassword');
+  });
+})();
+</script>
+<script src="/public/assets/velora-ui-sound.js?v=2026.08.13.1"></script>
+<script src="/public/assets/velora-dialog.js?v=2026.08.13.1"></script>
+</body>
+</html>

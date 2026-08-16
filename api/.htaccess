@@ -1,0 +1,32 @@
+# VELORA API hardening
+# Public API requests should go through index.php. Sensitive files, dotfiles,
+# storage logs, installers and diagnostic helpers must never be served directly.
+
+RewriteEngine On
+
+# Block dotfiles such as .env, .htaccess, .gitignore and VCS metadata trees.
+<FilesMatch "^\.">
+  Require all denied
+</FilesMatch>
+RewriteRule ^(?:\.git|\.svn|\.hg)(?:/|$) - [F,L,NC]
+<FilesMatch "\.(?:log|sql|sqlite|bak|ini|dist|sh|zip|7z|rar|tar|tgz)$|\.tar\.gz$">
+  Require all denied
+</FilesMatch>
+
+# Block installer/diagnostic/test utilities from public web access
+<FilesMatch "^(diag|env-check|install|init-sqlite|mail-setup|mail-test|mail-test-simple|test-resend-verification|test-verify-email)\.php$">
+  Require all denied
+</FilesMatch>
+
+# Block raw logs/storage/database files
+RewriteRule ^storage/ - [F,L]
+RewriteRule ^database/ - [F,L]
+RewriteRule ^config/ - [F,L]
+RewriteRule ^src/ - [F,L]
+RewriteRule ^workers/ - [F,L]
+
+# Dev rewrite smoke-test route
+RewriteRule ^test-rewrite$ index.php [L]
+
+# Everything else goes through the API front controller
+RewriteRule ^ index.php [L]

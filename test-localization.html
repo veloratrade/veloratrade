@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VELORA — تست سیستم محلی‌سازی خودکار</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg: #060A14; --card: rgba(255,255,255,.06);
+            --gold: #f1c453; --gold2: #ffb703; --txt: #f4f7fb;
+            --muted: #9aa9c2; --green: #4cd39a; --red: #ff6b7a;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+            background: var(--bg); color: var(--txt);
+            line-height: 1.75; padding: 40px 20px;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        h1 { font-size: 32px; margin-bottom: 10px; color: var(--gold); }
+        h2 { font-size: 22px; margin: 30px 0 15px; color: #fff; }
+        .subtitle { color: var(--muted); margin-bottom: 30px; }
+        
+        .card {
+            background: var(--card); border: 1px solid rgba(255,255,255,.1);
+            border-radius: 16px; padding: 24px; margin-bottom: 20px;
+        }
+        
+        .test-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,.06);
+        }
+        .test-row:last-child { border-bottom: none; }
+        .test-label { color: var(--muted); font-size: 14px; }
+        .test-value { font-weight: 700; font-size: 16px; }
+        .test-value.fa { color: var(--gold); }
+        .test-value.en { color: var(--green); }
+        
+        .status { 
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 700;
+        }
+        .status.active { background: rgba(76,211,154,.15); color: var(--green); }
+        
+        .separator { 
+            height: 1px; background: linear-gradient(90deg, transparent, rgba(212,175,55,.3), transparent);
+            margin: 30px 0;
+        }
+        
+        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+        
+        .info-box {
+            background: rgba(59,130,246,.1); border: 1px solid rgba(59,130,246,.3);
+            border-radius: 12px; padding: 16px; margin: 20px 0;
+            font-size: 14px; color: #93c5fd;
+        }
+        
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: 1fr; }
+            h1 { font-size: 24px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>VELORA Automatic Localization Test</h1>
+        <p class="subtitle" data-i18n="test.subtitle">تست سیستم محلی‌سازی خودکار</p>
+        
+        <div class="info-box">
+            <strong data-i18n="test.auto_detect">تشخیص خودکار زبان:</strong>
+            <span data-i18n="test.auto_detect_desc">سیستم به‌صورت خودکار زبان مرورگر شما را تشخیص می‌دهد. اگر فارسی باشد، متن‌ها فارسی نمایش داده می‌شوند. در غیر این صورت، انگلیسی.</span>
+        </div>
+        
+        <!-- Info Card -->
+        <div class="card">
+            <h2 data-i18n="test.language_info">اطلاعات زبان</h2>
+            <div class="test-row">
+                <span class="test-label" data-i18n="test.detected_language">زبان تشخیص داده شده</span>
+                <span class="test-value" id="detectedLang">—</span>
+            </div>
+            <div class="test-row">
+                <span class="test-label" data-i18n="test.browser_language">زبان مرورگر</span>
+                <span class="test-value" id="browserLang">—</span>
+            </div>
+            <div class="test-row">
+                <span class="test-label" data-i18n="test.direction">جهت متن</span>
+                <span class="test-value" id="currentDir">—</span>
+            </div>
+            <div class="test-row">
+                <span class="test-label" data-i18n="test.status">وضعیت</span>
+                <span class="status active" id="status">فعال</span>
+            </div>
+        </div>
+        
+        <div class="separator"></div>
+        
+        <!-- Translation Tests -->
+        <h2 data-i18n="test.translation_tests">تست ترجمه‌ها</h2>
+        
+        <div class="grid">
+            <div class="card">
+                <h3 style="margin-bottom: 15px; font-size: 16px;" data-i18n="test.common">عمومی</h3>
+                <div class="test-row">
+                    <span class="test-label">common.save</span>
+                    <span class="test-value" data-i18n="common.save">—</span>
+                </div>
+                <div class="test-row">
+                    <span class="test-label">common.cancel</span>
+                    <span class="test-value" data-i18n="common.cancel">—</span>
+                </div>
+                <div class="test-row">
+                    <span class="test-label">common.delete</span>
+                    <span class="test-value" data-i18n="common.delete">—</span>
+                </div>
+                <div class="test-row">
+                    <span class="test-label">common.loading</span>
+                    <span class="test-value" data-i18n="common.loading">—</span>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3 style="margin-bottom: 15px; font-size: 16px;" data-i18n="test.dashboard">داشبورد</h3>
+                <div class="test-row">
+                    <span class="test-label">dashboard.title</span>
+                    <span class="test-value" data-i18n="dashboard.title">—</span>
+                </div>
+                <div class="test-row">
+                    <span class="test-label">dashboard.trades</span>
+                    <span class="test-value" data-i18n="dashboard.trades">—</span>
+                </div>
+                <div class="test-row">
+                    <span class="test-label">dashboard.win_rate</span>
+                    <span class="test-value" data-i18n="dashboard.win_rate">—</span>
+                </div>
+                <div class="test-row">
+                    <span class="test-label">dashboard.net_pnl</span>
+                    <span class="test-value" data-i18n="dashboard.net_pnl">—</span>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3 style="margin-bottom: 15px; font-size: 16px;" data-i18n="test.trades">معاملات</h3>
+                <div class="test-row">
+                    <span class="test-label">trades.symbol</span>
+                    <span class="test-value" data-i18n="trades.symbol">—</span>
+                </div>
+                <div class="test-row">
+                    <span class="test-label">trades.buy</span>
+                    <span class="test-value" data-i18n="trades.buy">—</span>
+                </div>
+                <div class="test-row">
+                    <span class="test-label">trades.sell</span>
+                    <span class="test-value" data-i18n="trades.sell">—</span>
+                </div>
+                <div class="test-row">
+                    <span class="test-label">trades.entry_price</span>
+                    <span class="test-value" data-i18n="trades.entry_price">—</span>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3 style="margin-bottom: 15px; font-size: 16px;" data-i18n="test.auth">احراز هویت</h3>
+                <div class="test-row">
+                    <span class="test-label">auth.login_title</span>
+                    <span class="test-value" data-i18n="auth.login_title">—</span>
+                </div>
+                <div class="test-row">
+                    <span class="test-label">auth.email</span>
+                    <span class="test-value" data-i18n="auth.email">—</span>
+                </div>
+                <div class="test-row">
+                    <span class="test-label">auth.password</span>
+                    <span class="test-value" data-i18n="auth.password">—</span>
+                </div>
+                <div class="test-row">
+                    <span class="test-label">auth.register_button</span>
+                    <span class="test-value" data-i18n="auth.register_button">—</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="separator"></div>
+        
+        <!-- Format Tests -->
+        <h2 data-i18n="test.format_tests">تست فرمت‌بندی</h2>
+        <div class="card">
+            <div class="test-row">
+                <span class="test-label">formatNumber(1234.56)</span>
+                <span class="test-value" id="formatNumber">—</span>
+            </div>
+            <div class="test-row">
+                <span class="test-label">formatCurrency(1234.56)</span>
+                <span class="test-value" id="formatCurrency">—</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Embedded Translations -->
+    <script>
+    window.VELORA_TRANSLATIONS = {
+        'fa': {
+            'test': {
+                'subtitle': 'تست سیستم محلی‌سازی خودکار',
+                'auto_detect': 'تشخیص خودکار زبان:',
+                'auto_detect_desc': 'سیستم به‌صورت خودکار زبان مرورگر شما را تشخیص می‌دهد. اگر فارسی باشد، متن‌ها فارسی نمایش داده می‌شوند. در غیر این صورت، انگلیسی.',
+                'language_info': 'اطلاعات زبان',
+                'detected_language': 'زبان تشخیص داده شده',
+                'browser_language': 'زبان مرورگر',
+                'direction': 'جهت متن',
+                'status': 'وضعیت',
+                'translation_tests': 'تست ترجمه‌ها',
+                'common': 'عمومی',
+                'dashboard': 'داشبورد',
+                'trades': 'معاملات',
+                'auth': 'احراز هویت',
+                'format_tests': 'تست فرمت‌بندی',
+            },
+            'common': {
+                'save': 'ذخیره',
+                'cancel': 'لغو',
+                'delete': 'حذف',
+                'loading': 'در حال بارگذاری...',
+            },
+            'dashboard': {
+                'title': 'داشبورد',
+                'trades': 'معاملات',
+                'win_rate': 'نرخ برد',
+                'net_pnl': 'سود خالص',
+            },
+            'trades': {
+                'symbol': 'نماد',
+                'buy': 'خرید',
+                'sell': 'فروش',
+                'entry_price': 'قیمت ورود',
+            },
+            'auth': {
+                'login_title': 'ورود به حساب',
+                'email': 'ایمیل',
+                'password': 'رمز عبور',
+                'register_button': 'ثبت‌نام',
+            },
+        },
+        'en': {
+            'test': {
+                'subtitle': 'Automatic Localization System Test',
+                'auto_detect': 'Automatic Language Detection:',
+                'auto_detect_desc': 'The system automatically detects your browser language. If it is Persian, texts are displayed in Persian. Otherwise, English.',
+                'language_info': 'Language Information',
+                'detected_language': 'Detected Language',
+                'browser_language': 'Browser Language',
+                'direction': 'Direction',
+                'status': 'Status',
+                'translation_tests': 'Translation Tests',
+                'common': 'Common',
+                'dashboard': 'Dashboard',
+                'trades': 'Trades',
+                'auth': 'Authentication',
+                'format_tests': 'Format Tests',
+            },
+            'common': {
+                'save': 'Save',
+                'cancel': 'Cancel',
+                'delete': 'Delete',
+                'loading': 'Loading...',
+            },
+            'dashboard': {
+                'title': 'Dashboard',
+                'trades': 'Trades',
+                'win_rate': 'Win Rate',
+                'net_pnl': 'Net P&L',
+            },
+            'trades': {
+                'symbol': 'Symbol',
+                'buy': 'Buy',
+                'sell': 'Sell',
+                'entry_price': 'Entry Price',
+            },
+            'auth': {
+                'login_title': 'Login to Account',
+                'email': 'Email',
+                'password': 'Password',
+                'register_button': 'Sign Up',
+            },
+        }
+    };
+    </script>
+    
+    <script>
+    // =========================================================================
+    // AUTOMATIC LOCALIZATION - No manual switcher
+    // =========================================================================
+    (function() {
+        'use strict';
+        
+        // Detect language from browser
+        var langs = navigator.languages || [navigator.language || ''];
+        var isPersian = langs.some(function(l) {
+            return String(l).toLowerCase().indexOf('fa') === 0;
+        });
+        
+        var language = isPersian ? 'fa' : 'en';
+        
+        // Set document attributes
+        document.documentElement.lang = language;
+        document.documentElement.dir = isPersian ? 'rtl' : 'ltr';
+        document.body.setAttribute('dir', isPersian ? 'rtl' : 'ltr');
+        
+        // Get translations
+        var translations = window.VELORA_TRANSLATIONS[language] || {};
+        
+        // Translate function
+        function t(key) {
+            var keys = key.split('.');
+            var value = translations;
+            for (var i = 0; i < keys.length; i++) {
+                if (value && typeof value === 'object') {
+                    value = value[keys[i]];
+                } else {
+                    return key;
+                }
+            }
+            return typeof value === 'string' ? value : key;
+        }
+        
+        // Translate all data-i18n elements
+        function translateDOM() {
+            document.querySelectorAll('[data-i18n]').forEach(function(el) {
+                var key = el.getAttribute('data-i18n');
+                if (key) {
+                    el.textContent = t(key);
+                }
+            });
+        }
+        
+        // Update info display
+        function updateInfo() {
+            document.getElementById('detectedLang').textContent = language === 'fa' ? '🇮🇷 فارسی' : '🇬🇧 English';
+            document.getElementById('detectedLang').className = 'test-value ' + language;
+            
+            document.getElementById('browserLang').textContent = langs[0] || 'unknown';
+            document.getElementById('browserLang').className = 'test-value ' + language;
+            
+            document.getElementById('currentDir').textContent = isPersian ? 'RTL' : 'LTR';
+            document.getElementById('currentDir').className = 'test-value ' + language;
+            
+            // Format tests
+            if (language === 'fa') {
+                document.getElementById('formatNumber').textContent = '۱٬۲۳۴٫۵۶';
+                document.getElementById('formatCurrency').textContent = '۱٬۲۳۴٫۵۶ $';
+            } else {
+                document.getElementById('formatNumber').textContent = '1,234.56';
+                document.getElementById('formatCurrency').textContent = '$1,234.56';
+            }
+        }
+        
+        // Run
+        translateDOM();
+        updateInfo();
+        
+        console.log('[VELORA] Language detected:', language);
+        console.log('[VELORA] Direction:', isPersian ? 'RTL' : 'LTR');
+    })();
+    </script>
+<script src="/public/assets/velora-ui-sound.js?v=2026.08.13.1"></script>
+<script src="/public/assets/velora-dialog.js?v=2026.08.13.1"></script>
+</body>
+</html>

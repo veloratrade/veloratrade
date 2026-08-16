@@ -1,0 +1,13 @@
+{
+  "version": "2026.08.13.11",
+  "defaultToken": "VELORA",
+  "localizedTokens": {
+    "fa": "ولورا"
+  },
+  "localizedMessages": {
+    "fa": [
+      "common.2026.velora.all.rights.reserved.6cdbc91f",
+      "common.velora.is.a.trade.journaling.performance.analytics.64749ca5"
+    ]
+  }
+}
