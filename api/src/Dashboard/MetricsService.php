@@ -69,16 +69,20 @@ final class MetricsService
     public function equityCurve(int $userId, int $days = 30): array
     {
         $days = max(7, min(365, $days));
+        // The cutoff is computed here and bound as a parameter so the query runs
+        // unchanged on MySQL and SQLite. DATE_SUB()/CURDATE() are MySQL-only and
+        // made this endpoint fail with a 500 on a SQLite deployment.
+        $cutoff = gmdate('Y-m-d', strtotime("-{$days} day"));
         $stmt = Database::connection()->prepare(
-            "SELECT DATE(close_time) AS day, SUM(profit_loss) AS day_pnl
+            'SELECT DATE(close_time) AS day, SUM(profit_loss) AS day_pnl
              FROM trades
              WHERE user_id = :user_id
                AND close_time IS NOT NULL
-               AND close_time >= DATE_SUB(CURDATE(), INTERVAL {$days} DAY)
+               AND close_time >= :cutoff
              GROUP BY DATE(close_time)
-             ORDER BY day ASC"
+             ORDER BY day ASC'
         );
-        $stmt->execute(['user_id' => $userId]);
+        $stmt->execute(['user_id' => $userId, 'cutoff' => $cutoff]);
 
         $cumulative = '0';
         $points = [];

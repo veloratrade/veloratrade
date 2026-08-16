@@ -959,16 +959,6 @@ function toggleMobileSidebar() {
 </div>
 <!-- نوبار موبایل -->
 <div aria-live="polite" class="velora-toast" id="veloraToast" role="status"></div>
-<!-- مودال خروج -->
-<div class="overlay" id="logoutOverlay">
-<div class="o-card">
-<h3 data-i18n="common.logout.27be6c53">خروج از حساب</h3>
-<p data-i18n="pages.dashboard.are.you.sure.you.want.to.logout.16e6ca9b">مطمئن هستید که می‌خواهید از حساب VELORA خارج شوید?</p>
-<div class="o-btns">
-<button class="o-btn confirm" data-i18n="pages.dashboard.yes.logout.e992eb94" id="confirmLogout">بله, خارج شو</button>
-<button class="o-btn cancel" data-i18n="common.cancel.9955c4b6" id="cancelLogout">انصراف</button>
-</div>
-</div>
 </div>
 <script>
 (function () {
@@ -1228,15 +1218,21 @@ function toggleMobileSidebar() {
   }
 
   // ---------- خروج ----------
-  var overlay = $('logoutOverlay');
-  function showLogout() { overlay.classList.add('show'); }
-  function hideLogout() { overlay.classList.remove('show'); }
-  if($('logoutBtn')) $('logoutBtn').addEventListener('click', showLogout);
-  if($('mUserAv')) $('mUserAv').addEventListener('click', showLogout);
-  if($('cancelLogout')) $('cancelLogout').addEventListener('click', hideLogout);
-  if(overlay) overlay.addEventListener('click', function(e) { if (e.target === overlay) hideLogout(); });
-  if($('confirmLogout')) $('confirmLogout').addEventListener('click', function() {
-    VeloraData.logout().finally(function () { window.location.replace('/login'); });
+  // velora-dialog.js owns #logoutBtn through a capture-phase document listener
+  // that calls stopImmediatePropagation(), so any handler bound here would never
+  // run. The mobile avatar has no such owner and still needs to start a logout,
+  // so it delegates to the same shared dialog.
+  if($('mUserAv')) $('mUserAv').addEventListener('click', function() {
+    if (!window.VeloraDialog) { return; }
+    var en = document.documentElement.lang === 'en';
+    window.VeloraDialog.confirm(
+      en ? 'Do you want to sign out of your VELORA account?' : 'آیا می‌خواهید از حساب VELORA خارج شوید؟',
+      { title: en ? 'Sign out' : 'خروج از حساب', confirm: en ? 'Sign out' : 'خروج' }
+    ).then(function (yes) {
+      if (!yes) { return; }
+      var done = window.VeloraData ? window.VeloraData.logout() : Promise.resolve();
+      done.finally(function () { window.location.replace('/login'); });
+    });
   });
 
   // ---------- بروزرسانی ----------
