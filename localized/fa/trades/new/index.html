@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+
+<html data-i18n-features="common,errors,trades" data-route-locale="fa" data-velora-prelocalized="fa" dir="rtl" lang="fa">
+<head>
+<meta charset="utf-8"/><script src="/public/assets/velora-locale-registry.js?v=2026.08.13.11"></script>
+<script src="/public/assets/velora-latin-digits.js?v=2026.08.14.17"></script><script src="/public/assets/velora-locale-bootstrap.js?v=2026.08.13.11"></script><link href="/public/assets/velora-localization.css?v=2026.08.13.11" rel="stylesheet"/><script src="/public/assets/velora-localization.js?v=2026.08.13.11"></script><script src="/public/assets/velora-data.js?v=2026.08.13.11"></script><script defer="" src="/public/assets/velora-dynamic-content.js?v=2026.08.13.11"></script>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
+<meta content="#060A14" name="theme-color"/>
+<title data-i18n="pages.trades.new.new.trade.velora.3f37d5ab">ثبت معامله | VELORA</title>
+<link href="/favicon-32.png" rel="icon" sizes="32x32" type="image/png"/>
+<style>
+  :root{--bg:#060A14;--card:#0E1A33;--card2:#12203F;--border:rgba(255,255,255,0.07);--gold:#d4af37;--gold-l:#fce38a;--gold-d:#b88d1d;--txt:#EAF0FA;--muted:#8FA0C0;--faint:#5E6F92;--green:#4CD39A;--red:#FF6B6B;--blue:#3B82F6;--violet:#8B5CF6;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:auto;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--bg);color:var(--txt);-webkit-font-smoothing:antialiased;min-height:100vh;}
+  .bgfx{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(900px 500px at 85% -10%,rgba(212,175,55,.07),transparent 60%),radial-gradient(800px 600px at -5% 110%,rgba(59,130,246,.07),transparent 55%);}
+  .shell{position:relative;z-index:1;display:flex;min-height:100vh;}
+
+  .sidebar{width:240px;flex-shrink:0;background:linear-gradient(180deg,rgba(10,17,34,.9),rgba(6,10,20,.95));border-left:1px solid var(--border);display:flex;flex-direction:column;padding:20px 14px;position:sticky;top:0;height:100vh;}
+  .sb-logo{display:flex;align-items:center;gap:10px;padding:4px 8px 18px;}
+  .sb-logo img{width:34px;height:34px;}
+  .sb-logo span{font-size:19px;font-weight:800;letter-spacing:5px;background:linear-gradient(120deg,var(--gold-l),var(--gold));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .sb-nav{display:flex;flex-direction:column;gap:3px;flex:1;}
+  .sb-item{display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:11px;color:var(--muted);font-size:13.5px;font-weight:600;text-decoration:none;transition:all .18s;border:1px solid transparent;}
+  .sb-item svg{width:18px;height:18px;flex-shrink:0;}
+  .sb-item:hover{color:var(--txt);background:rgba(255,255,255,.04);}
+  .sb-item.active{color:#fff;background:linear-gradient(135deg,rgba(212,175,55,.16),rgba(212,175,55,.05));border-color:rgba(212,175,55,.35);}
+  .sb-user{margin-top:14px;padding:12px 10px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:14px;display:flex;align-items:center;gap:10px;}
+  .sb-user .av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--gold-d),var(--gold));display:flex;align-items:center;justify-content:center;font-weight:800;color:#0b121e;font-size:15px;flex-shrink:0;}
+  .sb-user .nm{flex:1;min-width:0;}
+  .sb-user .nm b{display:block;font-size:12.5px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .sb-user .nm small{font-size:10.5px;color:var(--faint);}
+  .sb-user .logout{background:none;border:none;color:var(--faint);cursor:pointer;padding:4px;}
+
+  .main{flex:1;min-width:0;padding:24px 28px 80px;max-width:860px;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap;}
+  .topbar .h1{font-size:23px;font-weight:800;color:#fff;}
+  .topbar .h1 .grad{background:linear-gradient(120deg,#fce38a,#d4af37 55%,#b88d1d);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .topbar .sub{font-size:12.5px;color:var(--muted);margin-top:3px;}
+  .back{display:inline-flex;align-items:center;gap:6px;color:var(--muted);text-decoration:none;font-size:13px;font-weight:700;}
+  .back:hover{color:var(--txt);}
+
+  .panel{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--border);border-radius:18px;padding:22px 24px;margin-bottom:20px;}
+  .panel-head{display:flex;align-items:center;gap:9px;margin-bottom:18px;font-size:14.5px;font-weight:800;color:#fff;}
+  .panel-head svg{width:17px;height:17px;color:var(--gold);}
+
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .field label{display:block;font-size:12px;font-weight:700;color:#c7d2ea;margin-bottom:7px;}
+  .input{width:100%;background:rgba(6,10,20,.6);border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:var(--txt);font-size:13.5px;font-family:inherit;transition:border-color .2s;}
+  .input:focus{outline:none;border-color:rgba(212,175,55,.5);box-shadow:0 0 0 3px rgba(212,175,55,.1);}
+  .input::placeholder{color:var(--faint);}
+  select.input{appearance:none;cursor:pointer;}
+  .hint{font-size:11px;color:var(--faint);margin-top:5px;line-height:1.7;}
+
+  /* جهت */
+  .dir-toggle{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .dir-opt{border:1.5px solid var(--border);border-radius:14px;padding:14px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(255,255,255,.02);}
+  .dir-opt .d-lbl{font-size:14px;font-weight:800;color:var(--muted);}
+  .dir-opt .d-sub{font-size:10.5px;color:var(--faint);margin-top:3px;}
+  .dir-opt.buy.sel{border-color:rgba(76,211,154,.6);background:rgba(76,211,154,.08);}
+  .dir-opt.buy.sel .d-lbl{color:var(--green);}
+  .dir-opt.sell.sel{border-color:rgba(255,107,107,.6);background:rgba(255,107,107,.08);}
+  .dir-opt.sell.sel .d-lbl{color:var(--red);}
+
+  /* امتیاز احساسی */
+  .emot-row{display:flex;gap:8px;justify-content:space-between;}
+  .emot{border:1.5px solid var(--border);border-radius:14px;padding:10px 6px;text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:7px;flex:1;transition:all .2s;background:rgba(255,255,255,.02);}
+  .emot .emot-ico{filter:saturate(.9) drop-shadow(0 2px 5px rgba(0,0,0,.25));transition:transform .15s;}
+  .emot:hover .emot-ico{transform:translateY(-2px) scale(1.06);}
+  .emot:hover{transform:translateY(-2px);}
+  .emot.sel{border-color:rgba(212,175,55,.6);background:rgba(212,175,55,.1);box-shadow:0 4px 12px rgba(212,175,55,.15);}
+  .emot small{display:block;font-size:9.5px;color:var(--faint);margin-top:3px;font-weight:700;}
+
+  /* محاسبه‌گر PnL */
+  .pnl-box{margin-top:18px;border-radius:14px;padding:16px;background:rgba(6,10,20,.5);border:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+  .pnl-box .lbl{font-size:12px;color:var(--muted);}
+  .pnl-box .big{font-size:28px;font-weight:800;direction:ltr;font-variant-numeric:tabular-nums;}
+  .pnl-box .big.pos{color:var(--green);}.pnl-box .big.neg{color:var(--red);}
+  .pnl-meta{display:flex;gap:18px;font-size:11.5px;color:var(--faint);}
+  .pnl-meta b{color:var(--muted);}
+
+  .btn-gold{width:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#fce38a 0%,#d4af37 50%,#b88d1d 100%);color:#0b121e;border:none;border-radius:14px;padding:15px;font-size:14.5px;font-weight:800;font-family:inherit;cursor:pointer;box-shadow:0 10px 26px rgba(212,175,55,.3);transition:transform .15s;margin-top:4px;}
+  .btn-gold:hover{transform:translateY(-1px);}
+  .btn-gold:disabled{opacity:.6;cursor:wait;}
+  .btn-spinner{display:inline-block;width:16px;height:16px;border-radius:50%;border:2px solid rgba(11,18,30,.25);border-top-color:#0b121e;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .error-box{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.4);color:#FCA5A5;font-size:13px;line-height:1.9;border-radius:12px;padding:11px 14px;display:none;margin-bottom:16px;}
+  .error-box.show{display:block;}
+
+  .mobile-top{display:none;}
+  @media(max-width:980px){
+    .sidebar{display:none;}
+    .mobile-top{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;position:sticky;top:0;z-index:50;background:rgba(6,10,20,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);}
+    .mobile-top .l{display:flex;align-items:center;gap:9px;}
+    .mobile-top img{width:30px;height:30px;}
+    .mobile-top span{font-size:17px;font-weight:800;letter-spacing:4px;color:var(--gold);}
+    .mobile-top .av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--gold-d),var(--gold));display:flex;align-items:center;justify-content:center;font-weight:800;color:#0b121e;font-size:14px;}
+    .main{padding:16px 14px 90px;}
+    .form-grid{grid-template-columns:1fr;}
+    .panel{padding:18px 16px;}
+    .topbar .h1{font-size:19px;}
+  }
+  .bottom-nav{display:none;}
+  @media(max-width:980px){
+    .bottom-nav{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:60;background:rgba(8,13,28,.94);backdrop-filter:blur(14px);border-top:1px solid var(--border);padding:8px 6px calc(8px + env(safe-area-inset-bottom));justify-content:space-around;}
+    .bn-item{display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint);font-size:10px;font-weight:700;text-decoration:none;padding:6px 10px;border-radius:12px;flex:1;}
+    .bn-item svg{width:20px;height:20px;}
+    .bn-item.active{color:var(--gold-l);background:rgba(212,175,55,.1);}
+  }
+  .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:300;background:rgba(10,16,32,.95);border:1px solid rgba(76,211,154,.5);color:#4CD39A;padding:12px 22px;border-radius:12px;font-size:13px;font-weight:700;display:none;box-shadow:0 10px 30px rgba(0,0,0,.5);}
+  .toast.err{border-color:rgba(239,68,68,.5);color:#FCA5A5;}
+  .toast.show{display:block;}
+</style>
+<script src="/public/assets/symbol-icons.js?v=2026.08.13.36"></script>
+<script src="/public/assets/emotion-icons.js?v=2026.08.13.47"></script>
+<style id="velora-unified-luxury-sidebar-css">
+/* ============================================================
+   VELORA UNIFIED LUXURY SIDEBAR (DESKTOP & MOBILE DRAWER)
+   Saturated Royal Gold Icons & Text on Rich Dark Navy Background
+   ============================================================ */
+.sidebar {
+  width: 260px !important;
+  flex-shrink: 0 !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.10), rgba(8, 8, 10, 0.72) 55%, rgba(211, 174, 65, 0.15)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.28) !important;
+  border-top-color: rgba(255, 255, 255, 0.62) !important;
+  border-left-color: rgba(212, 175, 55, 0.45) !important;
+  box-shadow: 0 28px 78px rgba(0, 0, 0, 0.85), inset 0 1px rgba(255, 255, 255, 0.35), inset -16px -12px 42px rgba(214, 174, 67, 0.08) !important;
+  backdrop-filter: blur(42px) saturate(130%) !important;
+  -webkit-backdrop-filter: blur(42px) saturate(130%) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 22px 16px !important;
+  position: sticky !important;
+  top: 0 !important;
+  height: 100vh !important;
+  z-index: 100 !important;
+  overflow-y: auto !important;
+}
+
+.sb-logo {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 4px 8px 24px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  margin-bottom: 14px !important;
+}
+
+.sb-logo img {
+  width: 36px !important;
+  height: 36px !important;
+  filter: drop-shadow(0 0 12px rgba(233, 196, 92, 0.45)) !important;
+}
+
+.sb-logo span {
+  font-size: 20px !important;
+  font-weight: 900 !important;
+  letter-spacing: 5px !important;
+  background: linear-gradient(120deg, #fce38a, #d4af37, #b88d1d) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+.sb-nav {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  flex: 1 !important;
+}
+
+.sb-nav a.sb-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 13px !important;
+  padding: 12px 15px !important;
+  border-radius: 12px !important;
+  color: #f1c453 !important;
+  text-decoration: none !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  border: 1px solid transparent !important;
+  transition: all 0.2s ease !important;
+  opacity: 1 !important;
+}
+
+.sb-nav a.sb-item .ico,
+.sb-nav a.sb-item svg,
+.sb-nav a.sb-item i {
+  display: grid !important;
+  place-items: center !important;
+  width: 20px !important;
+  height: 20px !important;
+  flex: 0 0 20px !important;
+  font-size: 18px !important;
+  font-style: normal !important;
+  color: #ffb703 !important;
+  text-shadow: 0 0 10px rgba(255, 183, 3, 0.9), 0 0 18px rgba(245, 158, 11, 0.75) !important;
+  filter: drop-shadow(0 0 6px rgba(255, 183, 3, 0.85)) !important;
+}
+
+.sb-nav a.sb-item:hover {
+  color: #ffffff !important;
+  background: rgba(255, 183, 3, 0.18) !important;
+  border-color: rgba(255, 183, 3, 0.45) !important;
+}
+
+.sb-nav a.sb-item.active {
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 183, 3, 0.8) !important;
+  background: linear-gradient(90deg, rgba(255, 183, 3, 0.25), rgba(245, 158, 11, 0.4)) !important;
+  box-shadow: 0 0 25px rgba(255, 183, 3, 0.35) !important;
+}
+
+.sb-nav a.sb-item.active .ico,
+.sb-nav a.sb-item.active svg,
+.sb-nav a.sb-item.active i {
+  color: #ffc837 !important;
+  text-shadow: 0 0 14px rgba(255, 200, 55, 1), 0 0 24px rgba(255, 183, 3, 0.95) !important;
+  filter: drop-shadow(0 0 8px rgba(255, 183, 3, 1)) !important;
+}
+
+.sb-user {
+  margin-top: auto !important;
+  padding: 12px 14px !important;
+  background: rgba(0, 0, 0, 0.45) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  color: #ffffff !important;
+}
+
+.sb-user .av {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #fce38a, #d4af37, #b88d1d) !important;
+  display: grid !important;
+  place-items: center !important;
+  color: #0b121e !important;
+  font-weight: 900 !important;
+  font-size: 15px !important;
+}
+
+.sb-user .nm {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+}
+
+.sb-user .nm b {
+  font-size: 13px !important;
+  color: #ffffff !important;
+}
+
+.sb-user .nm small {
+  font-size: 10.5px !important;
+  color: #8fa0c0 !important;
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+}
+
+.sidebar-overlay.open {
+  display: block;
+}
+
+/* ============================================================
+   MOBILE DRAWER MODE (@media max-width: 980px)
+   ============================================================ */
+@media (max-width: 980px) {
+  .sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    right: -320px !important;
+    width: 300px !important;
+    height: 100dvh !important;
+    z-index: 201 !important;
+    border-radius: 0 0 0 20px !important;
+    transition: right 0.28s ease, visibility 0.28s ease !important;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  
+  .sidebar.drawer-open {
+    right: 0 !important;
+    visibility: visible;
+    pointer-events: auto;
+  }
+  
+  .mobile-top {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 12px 16px !important;
+    background: rgba(14, 26, 51, 0.95) !important;
+    backdrop-filter: blur(12px) !important;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.35) !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 50 !important;
+    margin-bottom: 15px !important;
+  }
+  
+  .sidebar-drawer-toggle {
+    display: grid !important;
+    place-items: center !important;
+    width: 38px !important;
+    height: 38px !important;
+    border: 1px solid rgba(231, 193, 88, 0.6) !important;
+    border-radius: 10px !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #ffd36c !important;
+    font-size: 20px !important;
+    cursor: pointer !important;
+  }
+
+  .mobile-top .logo-sec {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+  }
+
+  .mobile-top .logo-sec img {
+    width: 30px !important;
+    height: 30px !important;
+  }
+
+  .mobile-top .logo-sec span {
+    font-size: 18px !important;
+    font-weight: 900 !important;
+    letter-spacing: 4px !important;
+    color: #fce38a !important;
+  }
+}
+</style>
+<script>
+function toggleMobileSidebar() {
+  var s = document.getElementById('veloraSidebar');
+  var o = document.getElementById('veloraSidebarOverlay');
+  if (!s || !o) return;
+  s.classList.toggle('drawer-open');
+  o.classList.toggle('open');
+}
+</script>
+<script data-velora-user-sync="1">
+(function(){
+  function syncVeloraUser() {
+    try {
+      var u = window.VeloraData ? VeloraData.getUser() : null;
+      if (!u || !u.fullName || u.email === 'ali.rezaei@velora.app') {
+        // No fake user injection: show neutral placeholders until the memory session is ready.
+        u = null;
+      }
+      var name = (u && u.fullName) ? u.fullName : VeloraLocale.t('common.user');
+      var email = (u && u.email) ? u.email : '';
+      var av = name.trim().charAt(0) || 'V';
+
+      var idsAv = ['userAv', 'mUserAv', 'pAv'];
+      for (var i=0; i<idsAv.length; i++) {
+        var el = document.getElementById(idsAv[i]);
+        if (el) el.textContent = av;
+      }
+
+      var elName = document.getElementById('userName');
+      if (elName) elName.textContent = name;
+
+      var elEmail = document.getElementById('userEmail');
+      if (elEmail) elEmail.textContent = email;
+
+      var elGreet = document.getElementById('greetName');
+      if (elGreet) elGreet.textContent = name.split(' ')[0] || VeloraLocale.t('common.trader');
+
+      var elPName = document.getElementById('pName');
+      if (elPName) elPName.textContent = name;
+
+      var elPMail = document.getElementById('pMail');
+      if (elPMail) elPMail.textContent = email;
+    } catch(e) {}
+  }
+  if (window.VeloraLocale && VeloraLocale.ready) {
+    VeloraLocale.ready.then(syncVeloraUser).catch(function () {});
+    document.addEventListener('velora:locale-change', syncVeloraUser);
+    window.addEventListener('velora:session', syncVeloraUser);
+  }
+})();
+</script>
+<style id="velora-modern-topbar-css">
+/* ============================================================
+   VELORA LUXURY TOP NAVIGATION & BACK-BAR (DESKTOP & MOBILE)
+   Frosted Glass · Saturated Royal Gold · Interactive Breadcrumbs
+   ============================================================ */
+.velora-top-nav-bar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 10px 16px !important;
+  min-height: 50px !important;
+  background: linear-gradient(135deg, rgba(14, 26, 51, 0.92), rgba(6, 10, 20, 0.98)) !important;
+  border: 1px solid rgba(212, 175, 55, 0.4) !important;
+  border-radius: 14px !important;
+  margin: 0 0 14px 0 !important;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.65), inset 0 1px rgba(255, 255, 255, 0.12) !important;
+  backdrop-filter: blur(20px) !important;
+  position: relative !important;
+  z-index: 50 !important;
+}
+
+.velora-nav-left {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+.velora-nav-right {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+.velora-btn-back {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  padding: 8px 15px !important;
+  background: linear-gradient(135deg, rgba(255, 183, 3, 0.22), rgba(212, 175, 55, 0.12)) !important;
+  border: 1px solid rgba(255, 183, 3, 0.65) !important;
+  border-radius: 10px !important;
+  color: #fce38a !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 4px 15px rgba(255, 183, 3, 0.2) !important;
+}
+
+.velora-btn-back:hover {
+  background: linear-gradient(135deg, rgba(255, 183, 3, 0.38), rgba(245, 158, 11, 0.28)) !important;
+  border-color: #ffb703 !important;
+  color: #ffffff !important;
+  transform: translateX(4px) !important;
+  box-shadow: 0 6px 20px rgba(255, 183, 3, 0.4) !important;
+}
+
+.velora-breadcrumb {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 9px !important;
+  font-size: 13.5px !important;
+  color: #8fa0c0 !important;
+  font-weight: 700 !important;
+}
+
+.velora-breadcrumb a {
+  color: #f1c453 !important;
+  text-decoration: none !important;
+  transition: color 0.2s !important;
+}
+
+.velora-breadcrumb a:hover {
+  color: #ffffff !important;
+  text-decoration: underline !important;
+}
+
+.velora-breadcrumb .sep {
+  color: #475569 !important;
+}
+
+.velora-breadcrumb .curr {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  padding: 4px 12px !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+.velora-status-pill {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: #4cd39a !important;
+  background: rgba(76, 211, 154, 0.12) !important;
+  border: 1px solid rgba(76, 211, 154, 0.38) !important;
+  padding: 5px 12px !important;
+  border-radius: 20px !important;
+}
+
+.velora-status-pill .dot {
+  width: 7px !important;
+  height: 7px !important;
+  border-radius: 50% !important;
+  background: #4cd39a !important;
+  box-shadow: 0 0 8px #4cd39a !important;
+}
+
+/* On mobile, stack and optimize spacing */
+@media (max-width: 980px) {
+  .velora-top-nav-bar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 10px 16px !important;
+  min-height: 50px !important;
+  background: linear-gradient(135deg, rgba(14, 26, 51, 0.92), rgba(6, 10, 20, 0.98)) !important;
+  border: 1px solid rgba(212, 175, 55, 0.4) !important;
+  border-radius: 14px !important;
+  margin: 0 0 14px 0 !important;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.65), inset 0 1px rgba(255, 255, 255, 0.12) !important;
+  backdrop-filter: blur(20px) !important;
+  position: relative !important;
+  z-index: 50 !important;
+}
+  .velora-breadcrumb .hide-mob {
+    display: none !important;
+  }
+  .velora-btn-back {
+    padding: 7px 12px !important;
+    font-size: 12px !important;
+  }
+}
+</style>
+<style id="velora-remove-bottom-nav">
+/* Completely hide old bottom navigation bar on all screen sizes */
+.bottom-nav, #bottomNav, nav.bottom-nav {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  height: 0 !important;
+  width: 0 !important;
+  overflow: hidden !important;
+}
+@media (max-width: 980px) {
+  .main, main.main {
+    padding-bottom: 24px !important;
+  }
+}
+</style>
+<style id="velora-sym-dropdown-fix">
+/* ============================================================
+   VELORA SYMBOL SELECTOR & DROPDOWN (TRADES/NEW)
+   ============================================================ */
+.sym-select {
+  position: relative !important;
+}
+
+.sym-select-btn {
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  background: rgba(14, 26, 51, 0.7) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 12px !important;
+  padding: 12px 14px !important;
+  color: #eaf0fa !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.sym-select-btn:hover {
+  border-color: rgba(212, 175, 55, 0.5) !important;
+  background: rgba(212, 175, 55, 0.08) !important;
+}
+
+.sym-caret {
+  margin-right: auto !important;
+  color: #8fa0c0 !important;
+  transition: transform 0.2s ease !important;
+}
+
+.sym-select-btn.open .sym-caret {
+  transform: rotate(180deg) !important;
+}
+
+.sym-select {
+  position: relative !important;
+  z-index: 80 !important;
+  overflow: visible !important;
+}
+.field {
+  overflow: visible !important;
+}
+.form-grid {
+  overflow: visible !important;
+}
+.panel {
+  overflow: visible !important;
+}
+.sym-dropdown {
+  position: fixed !important;
+  background: #0f172a !important;
+  border: 1px solid rgba(212, 175, 55, 0.45) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9) !important;
+  z-index: 8000 !important;
+  max-height: min(58vh, 420px) !important;
+  display: none !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.sym-dropdown.show {
+  display: flex !important;
+}
+
+.sym-search-wrap {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 10px 12px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: rgba(0, 0, 0, 0.35) !important;
+}
+
+.sym-search-wrap svg {
+  color: #8fa0c0 !important;
+  flex-shrink: 0 !important;
+}
+
+.sym-search-wrap input {
+  width: 100% !important;
+  background: transparent !important;
+  border: none !important;
+  color: #ffffff !important;
+  font-size: 13px !important;
+  outline: none !important;
+}
+
+.sym-list {
+  display: block !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  max-height: min(52vh, 340px) !important;
+  overflow-y: scroll !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #d4af37 #0b1220 !important;
+}
+.sym-list::-webkit-scrollbar { width: 8px !important; }
+.sym-list::-webkit-scrollbar-thumb {
+  background: #d4af37 !important;
+  border-radius: 99px !important;
+}
+
+.sym-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 10px 14px !important;
+  cursor: pointer !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  transition: background 0.15s !important;
+}
+
+.sym-item:hover {
+  background: rgba(212, 175, 55, 0.15) !important;
+}
+
+.sym-item.sel {
+  background: rgba(212, 175, 55, 0.22) !important;
+  border-left: 3px solid #ffb703 !important;
+}
+
+.sym-item .sym-symbol {
+  font-weight: 800 !important;
+  font-size: 13.5px !important;
+  color: #fce38a !important;
+}
+
+.sym-item .sym-name {
+  margin-right: auto !important;
+  font-size: 11px !important;
+  color: #8fa0c0 !important;
+}
+
+.sym-empty {
+  padding: 18px !important;
+  text-align: center !important;
+  color: #8fa0c0 !important;
+  font-size: 13px !important;
+}
+</style>
+<link href="/public/assets/velora-smart-import.css?v=2026.08.13.20" rel="stylesheet"/>
+<link href="/public/assets/velora-latin-digits.css?v=2026.08.14.17" rel="stylesheet"/>
+<link href="/public/assets/velora-desk-pro.css?v=2026.08.13.47" rel="stylesheet"/>
+<link href="/public/assets/velora-sidebar-icons.css?v=2026.08.13.45" rel="stylesheet"/><script src="/public/assets/velora-sidebar-icons.js?v=2026.08.13.42"></script>
+<meta content="fa" name="content-language"/><link href="https://veloratrade.ir/fa/trades/new/" rel="canonical"/><meta content="https://veloratrade.ir/fa/trades/new/" property="og:url"/><link href="https://veloratrade.ir/fa/trades/new/" hreflang="fa" rel="alternate"/><link href="https://veloratrade.ir/en/trades/new/" hreflang="en" rel="alternate"/><link href="https://veloratrade.ir/en/trades/new/" hreflang="x-default" rel="alternate"/></head>
+<body>
+<div class="bgfx"></div>
+<div class="shell">
+<aside class="sidebar" id="veloraSidebar">
+<div class="sb-logo"><img alt="V" src="/velora-logo.svg"/><span data-i18n="common.velora.2e043621">VELORA</span></div>
+<nav class="sb-nav">
+<a class="sb-item" href="/dashboard/index.html"><i class="ico">⌂</i><span data-i18n="common.dashboard.2aea7aaf">داشبورد</span></a>
+<a class="sb-item" href="/markets/index.html"><i class="ico">⌁</i><span data-i18n="common.markets.9f1cdf65">بازارها</span></a>
+<a class="sb-item" href="/intelligence/index.html"><svg aria-hidden="true" class="ico" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"></path></svg><span data-i18n="common.tradingIntelligence">هوشمندی معاملات</span></a>
+<a class="sb-item active" href="/trades/index.html"><i class="ico">↕</i><span data-i18n="common.trades.c19408e7">ژورنال معاملات</span></a>
+<a class="sb-item" href="/wallet/index.html"><i class="ico">▣</i><span data-i18n="common.wallet.cd1a64bc">کیف پول</span></a>
+<a class="sb-item" href="/performance/index.html"><i class="ico">⌁</i><span data-i18n="common.performance.a68933d2">عملکرد</span></a>
+<a class="sb-item" href="/news/index.html"><i class="ico">▤</i><span data-i18n="common.news.bba91630">اخبار</span></a>
+<a class="sb-item" href="/profile/index.html"><svg aria-hidden="true" class="ico" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.1 2.1-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56v.1h-3v-.1A1.7 1.7 0 0 0 10.7 18.6a1.7 1.7 0 0 0-1.88.34l-.06.06-2.1-2.1.06-.06A1.7 1.7 0 0 0 7.06 15a1.7 1.7 0 0 0-1.56-1.03H5.4v-3h.1A1.7 1.7 0 0 0 7.06 9.94 1.7 1.7 0 0 0 6.72 8.06L6.66 8l2.1-2.1.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1.03-1.56v-.1h3v.1a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.1 2.1-.06.06a1.7 1.7 0 0 0-.34 1.88 1.7 1.7 0 0 0 1.56 1.03h.1v3h-.1A1.7 1.7 0 0 0 19.4 15Z"></path></svg><span data-i18n="common.profile.8b081d3b">پروفایل</span></a>
+<a class="sb-item" href="/support/index.html"><i class="ico">◌</i><span data-i18n="common.support.152185b4">پشتیبانی</span></a>
+<a class="sb-item" data-velora-adminhide-target="1" href="/admin/index.html" id="adminLinkSide"><svg aria-hidden="true" class="ico" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z"></path></svg><span data-i18n="common.admin.41ae8044">مدیریت</span></a>
+</nav>
+<div class="sb-user" style="margin-top:auto !important;padding:14px !important;background:linear-gradient(135deg,rgba(14,26,51,0.9),rgba(6,10,20,0.95)) !important;border:1px solid rgba(212,175,55,0.35) !important;border-radius:16px !important;display:flex !important;align-items:center !important;gap:12px !important;box-shadow:0 8px 20px rgba(0,0,0,0.5) !important;">
+<div class="av-wrap" style="position:relative;flex-shrink:0;">
+<div class="av" id="userAv" style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#ffb703,#d4af37);border:2px solid #fff0bd;box-shadow:0 0 15px rgba(255,183,3,0.45);display:grid;place-items:center;color:#060a14;font-weight:900;font-size:17px;">V</div>
+<span style="position:absolute;bottom:0;right:0;width:11px;height:11px;background:#4CD39A;border:2px solid #060a14;border-radius:50%;box-shadow:0 0 6px #4CD39A;"></span>
+</div>
+<div class="nm" style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+<b data-i18n="common.user.cfadc9e3" id="userName" style="color:#ffffff;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">کاربر</b>
+<small id="userEmail" style="color:#8fa0c0;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></small>
+</div>
+<button class="logout" data-i18n-title="common.logout.27be6c53" id="logoutBtn" style="background:rgba(255,183,3,0.12);border:1px solid rgba(255,183,3,0.45);border-radius:10px;color:#ffb703;cursor:pointer;margin-right:auto;width:34px;height:34px;display:grid;place-items:center;transition:all 0.2s;flex-shrink:0;" title="خروج از حساب">
+<svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="16"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" x2="9" y1="12" y2="12"></line></svg>
+</button>
+</div>
+</aside>
+<div class="sidebar-overlay" id="veloraSidebarOverlay" onclick="toggleMobileSidebar()"></div>
+<main class="main">
+<div class="velora-top-nav-bar">
+<div class="velora-nav-left">
+<button aria-label="منو" class="sidebar-drawer-toggle" data-i18n-aria-label="common.menu.1f381a4e" onclick="toggleMobileSidebar()" type="button"><svg aria-hidden="true" fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></button>
+</div>
+<div class="velora-nav-right">
+<a class="velora-btn-back" href="/trades/new/index.html" style="border-color:#4cd39a;color:#4cd39a;background:rgba(76,211,154,0.12);box-shadow:0 0 15px rgba(76,211,154,0.25);">
+<span data-i18n="common.new.trade.b499532d">＋ ثبت معامله</span>
+</a>
+</div>
+</div>
+<div class="panel">
+<div class="error-box" id="errBox"></div>
+<div class="form-grid">
+<div class="desk-sec"><span data-i18n="pages.trades.new.p05.symbol_setup">نماد و ستاپ</span></div>
+<div class="field">
+<label data-i18n="common.symbol.159cbe33">نماد</label>
+<div class="sym-select" id="symSelect">
+<button class="sym-select-btn" id="symBtn" type="button">
+<span id="symBtnIcon"></span>
+<span class="sym-btn-copy">
+<span data-i18n="pages.trades.new.select.symbol.c19b8d3d" id="symBtnText" style="color:var(--faint);">انتخاب نماد...</span>
+<span class="sym-btn-meta" id="symBtnMeta"></span>
+</span>
+<svg class="sym-caret" fill="none" height="14" stroke="currentColor" stroke-linecap="round" stroke-width="2.5" viewbox="0 0 24 24" width="14"><polyline points="6 9 12 15 18 9"></polyline></svg>
+</button>
+<div class="sym-dropdown" id="symDropdown">
+<div class="sym-search-wrap">
+<svg fill="none" height="15" stroke="currentColor" stroke-linecap="round" stroke-width="2" viewbox="0 0 24 24" width="15"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4-4"></path></svg>
+<input autocomplete="off" data-i18n-placeholder="pages.trades.new.search.symbol.btc.gold.xau.199a33aa" id="symSearch" placeholder="جستجوی نماد... (BTC, طلا, XAU)" type="text"/>
+</div>
+<div class="sym-list" id="symList"></div>
+<div class="sym-empty" data-i18n="pages.trades.new.no.symbol.found.59946e6a" id="symEmpty" style="display:none;">نمادی یافت نشد</div>
+</div>
+</div>
+<input id="symbol" type="hidden"/>
+<div class="hint" data-i18n="pages.trades.new.trading.symbol.search.or.type.06beee9a">نماد معاملاتی — با جستجو پیدا کنید یا تایپ کنید</div>
+</div>
+<div class="field">
+<label data-i18n="common.strategy.1b590fba">استراتژی</label>
+<input class="input" data-i18n-placeholder="pages.trades.new.pullback.breakout.296f1e6b" id="strategy" placeholder="پل‌بک, بریک‌اوت..."/>
+</div>
+<div class="desk-sec"><span data-i18n="pages.trades.new.p05.direction_section">جهت معامله</span></div>
+<div class="field" style="grid-column:1/-1;">
+<label data-i18n="pages.trades.new.trade.direction.2f8ac7b6">جهت معامله</label>
+<div class="dir-toggle">
+<div class="dir-opt buy sel" data-dir="buy" id="optBuy"><div class="d-lbl" data-i18n="pages.trades.new.buy.buy.7dab154d">▲ خرید (BUY)</div><div class="d-sub" data-i18n="pages.trades.new.long.expecting.growth.5bf30f85">پوزیشن لانگ — انتظار رشد</div></div>
+<div class="dir-opt sell" data-dir="sell" id="optSell"><div class="d-lbl" data-i18n="pages.trades.new.sell.sell.7e23a93b">▼ فروش (SELL)</div><div class="d-sub" data-i18n="pages.trades.new.short.expecting.decline.c09a8f55">پوزیشن شورت — انتظار افت</div></div>
+</div>
+</div>
+<div class="field"><label data-i18n="pages.trades.new.entry.price.8d5e74ab">قیمت ورود</label><input class="input" id="entry" placeholder="61000" required="" step="any" type="number"/></div>
+<div class="field"><label data-i18n="pages.trades.new.exit.price.7ded7c82">قیمت خروج</label><input class="input" id="exit" placeholder="64200" required="" step="any" type="number"/></div>
+<div class="field"><label data-i18n="pages.trades.new.volume.lot.6b042d07">حجم (لات)</label><input class="input" id="volume" placeholder="0.5" required="" step="any" type="number"/></div>
+<div class="field"><label data-i18n="pages.trades.new.contract.size.fbd9b24e">اندازه قرارداد</label><input class="input" id="contract" placeholder="1" step="any" type="number" value="1"/></div>
+<div class="field"><label data-i18n="pages.trades.new.commission.075f0257">کمیسیون</label><input class="input" id="commission" placeholder="0" step="any" type="number" value="0"/></div>
+<div class="field"><label data-i18n="pages.trades.new.swap.10e4a1fd">سوآپ</label><input class="input" id="swap" placeholder="0" step="any" type="number" value="0"/></div>
+<div class="field"><label data-i18n="pages.trades.new.stop.loss.sl.a16f5daa">حد ضرر (SL)</label><input class="input" data-i18n-placeholder="common.optional.4efaacbe" id="sl" placeholder="اختیاری" step="any" type="number"/></div>
+<div class="field"><label data-i18n="pages.trades.new.take.profit.tp.f3e73cce">حد سود (TP)</label><input class="input" data-i18n-placeholder="common.optional.4efaacbe" id="tp" placeholder="اختیاری" step="any" type="number"/></div>
+<div class="desk-sec"><span data-i18n="pages.trades.new.p05.timing_psychology">زمان و روان‌شناسی</span></div>
+<div class="field"><label data-i18n="pages.trades.new.open.time.f5d607ee">زمان باز</label><input class="input" id="openTime" required="" type="datetime-local"/>
+<div class="session-row"><span class="session-pill off" id="sessionPill"><span data-i18n="pages.trades.new.p05.session">سشن</span></span><span class="session-sub" id="sessionSub"></span></div>
+</div>
+<div class="field"><label data-i18n="pages.trades.new.close.time.3fc955ae">زمان بسته</label><input class="input" id="closeTime" required="" type="datetime-local"/></div>
+<div class="field" style="grid-column:1/-1;">
+<label data-i18n="pages.trades.new.emotional.score.3adcd56b">امتیاز احساسی</label>
+<div class="emot-row" id="emotRow">
+<div class="emot" data-e="1"><span class="emot-ico"></span><small data-i18n="pages.trades.new.very.bad.49845cb0">خیلی بد</small></div>
+<div class="emot" data-e="2"><span class="emot-ico"></span><small data-i18n="pages.trades.new.bad.49ec77c4">بد</small></div>
+<div class="emot" data-e="3"><span class="emot-ico"></span><small data-i18n="pages.trades.new.neutral.373d476e">خنثی</small></div>
+<div class="emot sel" data-e="4"><span class="emot-ico"></span><small data-i18n="pages.trades.new.good.107c8e66">خوب</small></div>
+<div class="emot" data-e="5"><span class="emot-ico"></span><small data-i18n="common.excellent.9c67b8eb">عالی</small></div>
+</div>
+</div>
+<div class="field" style="grid-column:1/-1;"><label data-i18n="pages.trades.new.notes.936ba8f8">یادداشت</label><input class="input" data-i18n-placeholder="pages.trades.new.analysis.entry.rationale.notes.f8de391f" id="notes" placeholder="تحلیل, دلیل ورود, نکات..."/></div>
+</div>
+<div class="pnl-box">
+<div><div class="lbl" data-i18n="pages.trades.new.estimated.p.l.d17fba70">سود/زیان تخمینی</div><div class="big" id="pnlPreview">+0.00</div><div class="pnl-meta"><span>R: <b id="rPreview">0.00</b></span></div></div>
+<div style="text-align:left;"><div class="lbl" data-i18n="pages.trades.new.details.27928bea">جزئیات</div><div style="font-size:12px;color:var(--muted);line-height:1.9;"><span data-i18n="common.login.e09e596b">ورود</span> <b id="mEntry">—</b> <span data-i18n="pages.trades.new.logout.e97aeff6">· خروج</span> <b id="mExit">—</b><br/><span data-i18n="pages.trades.new.volume.b81fbec4">حجم</span> <b id="mVol">—</b> <span data-i18n="pages.trades.new.commission.1254ba0b">· کمیسیون</span> <b id="mComm">—</b></div></div>
+</div>
+<button class="btn-gold" data-i18n="pages.trades.new.record.trade.in.journal.d60654ec" id="submitBtn" style="margin-top:18px;">ثبت معامله در ژورنال</button>
+</div>
+</main>
+</div>
+<div class="toast" id="toast"></div>
+<script data-velora-early="1">
+(function(){
+  document.addEventListener('DOMContentLoaded', function () {
+    if (!window.VeloraData) { window.location.replace('/login'); return; }
+    VeloraData.requireSession('/login').catch(function () { window.location.replace('/login'); });
+  });
+})();
+</script>
+<script data-velora-adminhide="1">
+(function(){
+  function hideAdmin() {
+    try {
+      var u = window.VeloraData ? VeloraData.getUser() : null;
+      var isAdmin = u && u.role === 'admin';
+      var nodes = document.querySelectorAll('[data-velora-adminhide-target="1"], #adminLinkSide, #adminLinkNav');
+      for (var i = 0; i < nodes.length; i++) nodes[i].style.display = isAdmin ? '' : 'none';
+    } catch(e) {}
+  }
+  // اول فوراً، بعد با DOMContentLoaded و چند بار دیگر (مطمئن)
+  hideAdmin();
+  document.addEventListener('DOMContentLoaded', hideAdmin);
+  window.addEventListener('velora:session', hideAdmin);
+  setTimeout(hideAdmin, 100);
+  setTimeout(hideAdmin, 500);
+  setTimeout(hideAdmin, 1500);
+})();
+</script>
+<script>
+(function () {
+  'use strict';
+  function start() {
+    var t = VeloraLocale.t;
+    var byId = function (id) { return document.getElementById(id); };
+    function logout() { VeloraData.logout().finally(function () { window.location.replace('/login'); }); }
+    if (byId('logoutBtn')) byId('logoutBtn').addEventListener('click', logout);
+    if (byId('mUserAv')) byId('mUserAv').addEventListener('click', logout);
+    function escapeHtml(value) {
+      return String(value == null ? '' : value).replace(/[&<>'"]/g, function (char) {
+        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char];
+      });
+    }
+    function showToast(message, isError) {
+      var toast = byId('toast');
+      toast.textContent = message;
+      toast.className = 'toast' + (isError ? ' err' : '');
+      toast.classList.add('show');
+      setTimeout(function () { toast.classList.remove('show'); }, 2500);
+    }
+    function showError(message) {
+      var box = byId('errBox');
+      box.textContent = message;
+      box.classList.add('show');
+      setTimeout(function () { box.classList.remove('show'); }, 4000);
+    }
+
+    var user = VeloraData.getUser();
+    if (user && user.fullName) {
+      if (byId('userAv')) byId('userAv').textContent = user.fullName.charAt(0);
+      if (byId('mUserAv')) byId('mUserAv').textContent = user.fullName.charAt(0);
+      if (byId('userName')) byId('userName').textContent = user.fullName;
+      if (byId('userEmail')) byId('userEmail').textContent = user.email || '';
+    }
+
+    var allSymbols = [];
+    if (window.VeloraSymbols && VeloraSymbols.load) {
+      VeloraSymbols.load().then(function () { renderSymbolList(allSymbols); }).catch(function () {});
+    }
+    var knownSymbols = [
+      'BTC/USDT','ETH/USDT','SOL/USDT','BNB/USDT','XRP/USDT','ADA/USDT','DOGE/USDT','LTC/USDT','DOT/USDT','AVAX/USDT','LINK/USDT','MATIC/USDT',
+      'EUR/USD','GBP/USD','USD/JPY','USD/CHF','AUD/USD','USD/CAD','NZD/USD','EUR/GBP','EUR/JPY','GBP/JPY','EUR/CHF','AUD/JPY',
+      'CAD/JPY','CHF/JPY','NZD/JPY','CAD/CHF','EUR/CAD','EUR/AUD','EUR/NZD','AUD/CAD','AUD/NZD','AUD/CHF',
+      'GBP/CHF','GBP/CAD','GBP/AUD','GBP/NZD','NZD/CAD','NZD/CHF',
+      'XAU/USD','XAG/USD','XPT/USD','XPD/USD','OIL','BRENT','COPPER','NG',
+      'NAS100','SPX500','US30','GER40','DAX40','DAX','FTSE100','UK100','N225','JP225','HSI','VIX'
+    ];
+    knownSymbols.forEach(function (symbol) { if (allSymbols.indexOf(symbol) === -1) allSymbols.push(symbol); });
+    renderSymbolList(allSymbols);
+    VeloraData.request('/api/v1/trades/symbols').then(function (data) {
+      (data.symbols || []).forEach(function (symbol) {
+        symbol = String(symbol || '').trim().toUpperCase();
+        if (symbol && allSymbols.indexOf(symbol) === -1) allSymbols.push(symbol);
+      });
+      renderSymbolList(allSymbols);
+    }).catch(function () { renderSymbolList(allSymbols); });
+
+    function codeOf(symbol) {
+      try {
+        if (window.VeloraSymbols && window.VeloraSymbols.displayCode) return window.VeloraSymbols.displayCode(symbol);
+      } catch (e) {}
+      return String(symbol || '').replace(/\//g, '').toUpperCase();
+    }
+    function classifySymbol(symbol) {
+      var u = String(symbol || '').toUpperCase().replace(/\//g, '');
+      if (/XAU|XAG|XPT|XPD/.test(u)) return 'metal';
+      if (/BTC|ETH|SOL|BNB|XRP|ADA|DOGE|LTC|DOT|AVAX|LINK|MATIC|USDT/.test(u)) return 'crypto';
+      if (/OIL|BRENT|WTI|NG|GAS|COPPER/.test(u)) return 'commodity';
+      if (/NAS|SPX|SP500|US30|GER|DAX|FTSE|UK100|N225|JP225|HSI|VIX/.test(u)) return 'index';
+      if (/^[A-Z]{6}$/.test(u)) return 'forex';
+      return 'other';
+    }
+    var GROUP_TITLE = {
+      starred: t('pages.trades.new.p05.group_starred'), recent: t('pages.trades.new.p05.group_recent'),
+      crypto: t('pages.trades.new.p05.group_crypto'), forex: t('pages.trades.new.p05.group_forex'),
+      metal: t('pages.trades.new.p05.group_metal'), commodity: t('pages.trades.new.p05.group_commodity'),
+      index: t('pages.trades.new.p05.group_index'), other: t('pages.trades.new.p05.group_other')
+    };
+    var GROUP_ORDER = ['starred', 'recent', 'metal', 'forex', 'crypto', 'commodity', 'index', 'other'];
+    var DEFAULT_STARS = ['XAU/USD', 'XAG/USD', 'EUR/USD', 'GBP/USD', 'USD/JPY', 'NAS100'];
+    function readRecents() {
+      try {
+        var raw = JSON.parse(localStorage.getItem('velora_recent_symbols') || '[]');
+        return Array.isArray(raw) ? raw.slice(0, 6) : [];
+      } catch (e) { return []; }
+    }
+    function pushRecent(symbol) {
+      var next = [symbol].concat(readRecents().filter(function (s) { return s !== symbol; })).slice(0, 6);
+      try { localStorage.setItem('velora_recent_symbols', JSON.stringify(next)); } catch (e) {}
+    }
+    function readStars() {
+      try {
+        var raw = localStorage.getItem('velora_starred_symbols');
+        if (raw == null) return DEFAULT_STARS.slice();
+        var parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : DEFAULT_STARS.slice();
+      } catch (e) { return DEFAULT_STARS.slice(); }
+    }
+    function writeStars(list) {
+      try { localStorage.setItem('velora_starred_symbols', JSON.stringify(list)); } catch (e) {}
+    }
+    function isStarred(symbol) {
+      return readStars().indexOf(symbol) !== -1;
+    }
+    function toggleStar(symbol) {
+      var list = readStars();
+      var i = list.indexOf(symbol);
+      if (i === -1) list.unshift(symbol);
+      else list.splice(i, 1);
+      writeStars(list);
+    }
+    function sessionFromOpen(value) {
+      if (!value) return { id: 'off', title: t('pages.trades.new.p05.session_unknown'), sub: t('pages.trades.new.p05.session_select_open') };
+      var d = new Date(value);
+      if (isNaN(d.getTime())) return { id: 'off', title: t('pages.trades.new.p05.session_unknown'), sub: '' };
+      var h = d.getUTCHours();
+      if (h >= 0 && h < 8) return { id: 'asia', title: t('pages.trades.new.p05.session_asia'), sub: t('pages.trades.new.p05.session_asia_sub') };
+      if (h >= 8 && h < 13) return { id: 'london', title: t('pages.trades.new.p05.session_london'), sub: t('pages.trades.new.p05.session_london_sub') };
+      if (h >= 13 && h < 17) return { id: 'overlap', title: t('pages.trades.new.p05.session_overlap'), sub: t('pages.trades.new.p05.session_overlap_sub') };
+      if (h >= 17 && h < 22) return { id: 'newyork', title: t('pages.trades.new.p05.session_newyork'), sub: t('pages.trades.new.p05.session_newyork_sub') };
+      return { id: 'off', title: t('pages.trades.new.p05.session_outside'), sub: 'UTC 22–00' };
+    }
+    function paintSession() {
+      var pill = byId('sessionPill');
+      var sub = byId('sessionSub');
+      if (!pill) return;
+      var info = sessionFromOpen(byId('openTime') && byId('openTime').value);
+      pill.className = 'session-pill ' + info.id;
+      pill.textContent = info.title;
+      if (sub) sub.textContent = info.sub;
+    }
+    function renderSymbolList(list) {
+      var box = byId('symList');
+      if (!box) return;
+      if (!list.length) { if (byId('symEmpty')) byId('symEmpty').style.display = 'block'; box.innerHTML = ''; return; }
+      if (byId('symEmpty')) byId('symEmpty').style.display = 'none';
+      var buckets = {};
+      GROUP_ORDER.forEach(function (k) { buckets[k] = []; });
+      var stars = readStars().filter(function (s) { return list.indexOf(s) !== -1; });
+      var recents = readRecents().filter(function (s) { return list.indexOf(s) !== -1 && stars.indexOf(s) === -1; });
+      stars.forEach(function (s) { buckets.starred.push(s); });
+      recents.forEach(function (s) { buckets.recent.push(s); });
+      list.forEach(function (symbol) {
+        if (stars.indexOf(symbol) !== -1 || recents.indexOf(symbol) !== -1) return;
+        buckets[classifySymbol(symbol)].push(symbol);
+      });
+      function row(symbol) {
+        var current = byId('symbol') && byId('symbol').value === symbol;
+        var name = '';
+        var ico = '';
+        try { name = window.VeloraSymbols.nameOf(symbol) || ''; } catch (e) { name = ''; }
+        try { ico = window.VeloraSymbols.icon(symbol, 34); } catch (e) { ico = ''; }
+        var starred = isStarred(symbol);
+        return '<div class="sym-item' + (current ? ' sel' : '') + '" data-symbol="' + escapeHtml(symbol) + '">'
+          + ico
+          + '<span class="sym-symbol" data-value-type="symbol" lang="en" dir="ltr">' + escapeHtml(codeOf(symbol)) + '</span>'
+          + (name ? '<span class="sym-name">' + escapeHtml(name) + '</span>' : '')
+          + '<button type="button" class="sym-star' + (starred ? ' on' : '') + '" data-star="' + escapeHtml(symbol) + '" aria-label="' + escapeHtml(t('pages.trades.new.p05.star')) + '">' + (starred ? '★' : '☆') + '</button>'
+          + '</div>';
+      }
+      var html = '';
+      GROUP_ORDER.forEach(function (key) {
+        if (!buckets[key].length) return;
+        html += '<div class="sym-group">' + GROUP_TITLE[key] + '</div>';
+        html += buckets[key].map(row).join('');
+      });
+      box.innerHTML = html;
+      box.querySelectorAll('.sym-item').forEach(function (element) {
+        element.addEventListener('click', function () { selectSymbol(element.getAttribute('data-symbol')); });
+      });
+      box.querySelectorAll('[data-star]').forEach(function (btn) {
+        btn.addEventListener('click', function (event) {
+          event.preventDefault();
+          event.stopPropagation();
+          toggleStar(btn.getAttribute('data-star'));
+          renderSymbolList(allSymbols);
+        });
+      });
+    }
+
+    function selectSymbol(symbol) {
+      byId('symbol').value = symbol;
+      byId('symBtnText').textContent = codeOf(symbol);
+      byId('symBtnText').setAttribute('lang', 'en');
+      byId('symBtnText').setAttribute('dir', 'ltr');
+      byId('symBtnText').style.color = 'var(--txt)';
+      byId('symBtnText').style.letterSpacing = '.04em';
+      var meta = byId('symBtnMeta');
+      if (meta) {
+        try { meta.textContent = window.VeloraSymbols.nameOf(symbol) || ''; } catch (e) { meta.textContent = ''; }
+      }
+      byId('symBtnIcon').innerHTML = window.VeloraSymbols.icon(symbol, 32);
+      pushRecent(symbol);
+      byId('symDropdown').classList.remove('show');
+      byId('symBtn').classList.remove('open');
+      calculate();
+      renderSymbolList(allSymbols);
+    }
+
+    var dropEl = byId('symDropdown');
+    byId('symSearch').addEventListener('input', function () {
+      var query = this.value.trim().toLowerCase();
+      if (!query) { renderSymbolList(allSymbols); return; }
+      renderSymbolList(allSymbols.filter(function (symbol) {
+        var blob = (
+          symbol + ' ' +
+          (window.VeloraSymbols.displayCode ? window.VeloraSymbols.displayCode(symbol) : '') + ' ' +
+          (window.VeloraSymbols.base(symbol) || '') + ' ' +
+          (window.VeloraSymbols.nameOf(symbol) || '')
+        ).toLowerCase();
+        return blob.indexOf(query) !== -1;
+      }));
+    });
+    document.addEventListener('click', function (event) {
+      if (!event.target.closest('#symSelect')) {
+        byId('symDropdown').classList.remove('show');
+        byId('symBtn').classList.remove('open');
+      }
+    });
+    byId('symSearch').addEventListener('keydown', function (event) {
+      if (event.key === 'Enter') {
+        var first = byId('symList').querySelector('.sym-item');
+        if (first) selectSymbol(first.getAttribute('data-symbol'));
+      }
+    });
+
+    var direction = 'buy';
+    document.querySelectorAll('.dir-opt').forEach(function (element) {
+      element.addEventListener('click', function () {
+        document.querySelectorAll('.dir-opt').forEach(function (option) { option.classList.remove('sel'); });
+        element.classList.add('sel');
+        direction = element.getAttribute('data-dir');
+        calculate();
+      });
+    });
+
+    var emotion = 4;
+    document.querySelectorAll('.emot').forEach(function (element) {
+      var slot = element.querySelector('.emot-ico');
+      try {
+        if (slot && window.VeloraEmotions) slot.innerHTML = VeloraEmotions.svg(element.getAttribute('data-e'), 30);
+      } catch (err) {}
+      element.addEventListener('click', function () {
+        document.querySelectorAll('.emot').forEach(function (option) { option.classList.remove('sel'); });
+        element.classList.add('sel');
+        emotion = Number(element.getAttribute('data-e'));
+      });
+    });
+
+    ['entry','exit','volume','contract','commission','swap','sl','tp'].forEach(function (field) {
+      byId(field).addEventListener('input', calculate);
+    });
+    if (byId('openTime')) {
+      byId('openTime').addEventListener('input', paintSession);
+      byId('openTime').addEventListener('change', paintSession);
+    }
+    
+    function latinizeTradeNums() {
+      ['pnlPreview','rPreview','mEntry','mExit','mVol','mComm'].forEach(function(id){
+        var el=document.getElementById(id); if(!el) return;
+        el.setAttribute('lang','en'); el.setAttribute('dir','ltr');
+        el.style.webkitLocale='en';
+        el.textContent=String(el.textContent||'').replace(/[\u06F0-\u06F9\u0660-\u0669]/g,function(c){
+          var n=c.charCodeAt(0); if(n>=0x06F0&&n<=0x06F9) return String(n-0x06F0);
+          if(n>=0x0660&&n<=0x0669) return String(n-0x0660); return c;
+        });
+      });
+    }
+    var _calc = calculate;
+    calculate = function(){ _calc(); latinizeTradeNums(); };
+
+    function calculate() {
+      var entry = parseFloat(byId('entry').value) || 0;
+      var exit = parseFloat(byId('exit').value) || 0;
+      var volume = parseFloat(byId('volume').value) || 0;
+      var contract = parseFloat(byId('contract').value) || 1;
+      var commission = parseFloat(byId('commission').value) || 0;
+      var swap = parseFloat(byId('swap').value) || 0;
+      var stopLoss = parseFloat(byId('sl').value) || 0;
+      if (entry && exit && volume) {
+        var difference = exit - entry;
+        if (direction === 'sell') difference = -difference;
+        var pnl = difference * volume * contract - commission - swap;
+        var preview = byId('pnlPreview');
+        preview.textContent = VeloraLocale.number(pnl, { minimumFractionDigits: 2, maximumFractionDigits: 2, signDisplay: 'always' });
+        preview.className = 'big ' + (pnl >= 0 ? 'pos' : 'neg');
+        var risk = Math.abs(entry - stopLoss);
+        var reward = Math.abs(exit - entry);
+        byId('rPreview').textContent = VeloraLocale.number(risk > 0 ? reward / risk : 0, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }
+      byId('mEntry').textContent = entry ? VeloraLocale.number(entry, { maximumFractionDigits: 8 }) : '—';
+      byId('mExit').textContent = exit ? VeloraLocale.number(exit, { maximumFractionDigits: 8 }) : '—';
+      byId('mVol').textContent = volume ? VeloraLocale.number(volume, { maximumFractionDigits: 4 }) : '—';
+      byId('mComm').textContent = VeloraLocale.number(commission, { maximumFractionDigits: 2 });
+    }
+
+    var now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    var defaultOpen = now.toISOString().slice(0, 16);
+    var defaultClose = new Date(Date.now() + 3600000 - new Date(Date.now() + 3600000).getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    setTimeout(function () {
+      if (!byId('openTime').value) byId('openTime').value = defaultOpen;
+      if (!byId('closeTime').value) byId('closeTime').value = defaultClose;
+    }, 200);
+
+    byId('submitBtn').addEventListener('click', async function () {
+      var symbol = byId('symbol').value.trim().toUpperCase();
+      var entry = byId('entry').value;
+      var exit = byId('exit').value;
+      var volume = byId('volume').value;
+      var openTime = byId('openTime').value;
+      var closeTime = byId('closeTime').value;
+      if (!symbol) { showError(t('trades.symbolRequired')); return; }
+      if (!entry || !exit || !volume) { showError(t('trades.coreFieldsRequired')); return; }
+      if (!openTime || !closeTime) { showError(t('trades.timesRequired')); return; }
+      var button = byId('submitBtn');
+      button.disabled = true;
+      button.innerHTML = '<span class="btn-spinner"></span> ' + escapeHtml(t('trades.saving'));
+      try {
+        await VeloraData.request('/api/v1/trades', {
+          method: 'POST',
+          body: {
+            symbol: symbol,
+            direction: direction,
+            entryPrice: entry,
+            exitPrice: exit,
+            volume: volume,
+            contractSize: byId('contract').value || 1,
+            commission: byId('commission').value || 0,
+            swap: byId('swap').value || 0,
+            stopLoss: byId('sl').value || null,
+            takeProfit: byId('tp').value || null,
+            openTime: new Date(openTime).toISOString(),
+            closeTime: new Date(closeTime).toISOString(),
+            strategyTag: byId('strategy').value.trim() || null,
+            emotionalScore: emotion,
+            notes: (function () {
+              var note = byId('notes').value.trim();
+              var sess = sessionFromOpen(openTime);
+              var sessionPrefix = t('pages.trades.new.p05.session_note_prefix');
+              if (sess && sess.id !== 'off' && note.indexOf(sessionPrefix) === -1) {
+                note = (note ? note + ' · ' : '') + sessionPrefix + ' ' + sess.title;
+              }
+              return note || null;
+            })()
+          }
+        });
+        if (window.VeloraSound) VeloraSound.play('success');
+        showToast(t('trades.created'));
+        setTimeout(function () { window.location.replace('/trades'); }, 900);
+      } catch (error) {
+        showError(VeloraLocale.errorMessage(error, 'trades.createFailed'));
+        button.disabled = false;
+        button.textContent = t('trades.save');
+      }
+    });
+
+  }
+  Promise.resolve(VeloraLocale.ready).then(start);
+})();
+</script>
+<script src="/public/assets/velora-ui-sound.js?v=2026.08.13.1"></script>
+<script src="/public/assets/velora-dialog.js?v=2026.08.13.1"></script>
+<script src="/public/assets/velora-sym-picker.js?v=2026.08.13.47"></script>
+<script src="/public/assets/velora-smart-import.js?v=2026.08.13.41"></script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+/* VELORA — numerals are always Latin, including live data. */
+html, body, input, textarea, select, button, td, th, span, b, strong, small {
+  -webkit-locale: "en";
+  font-feature-settings: "locl" 0, "tnum" 1;
+  font-variant-numeric: lining-nums tabular-nums lining-nums;
+}
+html[lang^="fa"] {
+  -webkit-locale: "en";
+}
+.v-latn-num,
+.vsi-num,
+[data-value-type],
+[data-format],
+.input,
+input[type="number"],
+input[type="datetime-local"],
+input[type="date"],
+input[type="time"],
+input[type="tel"],
+.kpi,
+.val,
+.big,
+.mono,
+.acct-bal,
+.chart-caption {
+  font-family: "Segoe UI", Roboto, Arial, ui-monospace, monospace !important;
+  font-feature-settings: "locl" 0, "tnum" 1 !important;
+  -webkit-locale: "en" !important;
+  unicode-bidi: isolate;
+  direction: ltr;
+}

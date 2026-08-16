@@ -1,0 +1,12 @@
+VELORA browser OCR language assets
+
+These runtime assets are pinned local copies from the following npm packages:
+- eng.traineddata.gz: @tesseract.js-data/eng version 1.0.0, file 4.0.0_best_int/eng.traineddata.gz
+- fas.traineddata.gz: @tesseract.js-data/fas version 1.0.0, file 4.0.0_best_int/fas.traineddata.gz
+
+Upstream project: https://github.com/naptha/tessdata
+License declared by each package: Apache-2.0
+
+SHA-384:
+- eng.traineddata.gz: 248f9fada180a1ce460462258aeab31d19cfd67272aee920e6080d481bff4cef983958fee937ba5d740ec7b89ad74c6a
+- fas.traineddata.gz: d201ef325fd833bd02fee5fdcfef443ca9da98710f62a5e7dbd9fa6f9cebba32f00fb99f27ed93f1683e02664d447640

@@ -1,0 +1,97 @@
+/* VELORA sidebar — glass + warmer gold, still restrained */
+aside.sidebar,
+.sidebar#veloraSidebar {
+  background:
+    linear-gradient(180deg, rgba(255, 236, 180, .08), transparent 24%),
+    linear-gradient(165deg, rgba(22, 28, 42, .82), rgba(8, 10, 16, .88) 52%, rgba(28, 22, 10, .78)) !important;
+  border: 1px solid rgba(212, 175, 55, 0.22) !important;
+  border-top-color: rgba(255, 236, 180, 0.28) !important;
+  border-left: 1px solid rgba(212, 175, 55, 0.38) !important;
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.55),
+    inset 0 1px rgba(255, 236, 180, 0.14),
+    inset -12px -10px 36px rgba(212, 175, 55, 0.05) !important;
+  backdrop-filter: blur(36px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(36px) saturate(140%) !important;
+}
+
+.sb-logo span {
+  background: linear-gradient(120deg, #fce38a, #d4af37 55%, #b88d1d) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  letter-spacing: .22em !important;
+}
+
+.sb-nav a.sb-item {
+  gap: 12px !important;
+  color: #d7c089 !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+}
+.sb-nav a.sb-item:hover {
+  color: #f6e7b2 !important;
+  background: rgba(212, 175, 55, 0.08) !important;
+  border-color: rgba(212, 175, 55, 0.16) !important;
+}
+.sb-nav a.sb-item.active {
+  color: #fff6d8 !important;
+  background: linear-gradient(90deg, rgba(212, 175, 55, 0.16), rgba(212, 175, 55, 0.05)) !important;
+  border-color: rgba(212, 175, 55, 0.36) !important;
+  box-shadow: inset -2px 0 0 #d4af37 !important;
+}
+
+.sb-nav a.sb-item .sb-mark,
+.sb-nav a.sb-item .ico.sb-mark,
+.sb-nav a.sb-item .ico,
+.sb-nav a.sb-item svg,
+.sb-nav a.sb-item i {
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+.sb-nav a.sb-item .sb-mark,
+.sb-nav a.sb-item .ico.sb-mark {
+  display: grid !important;
+  place-items: center !important;
+  width: 30px !important;
+  height: 30px !important;
+  flex: 0 0 30px !important;
+  border-radius: 10px !important;
+  color: #e6c86a !important;
+  background: linear-gradient(180deg, rgba(212, 175, 55, .16), rgba(212, 175, 55, .05)) !important;
+  border: 1px solid rgba(212, 175, 55, 0.28) !important;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.1) !important;
+  font-size: 0 !important;
+}
+.sb-nav a.sb-item .sb-mark svg,
+.sb-nav a.sb-item .ico.sb-mark svg {
+  width: 16px !important;
+  height: 16px !important;
+  display: block !important;
+  stroke: currentColor !important;
+  filter: none !important;
+}
+.sb-nav a.sb-item:hover .sb-mark {
+  color: #fce38a !important;
+  border-color: rgba(212, 175, 55, 0.42) !important;
+  background: linear-gradient(180deg, rgba(212, 175, 55, .24), rgba(212, 175, 55, .08)) !important;
+}
+.sb-nav a.sb-item.active .sb-mark {
+  color: #1a1403 !important;
+  border-color: rgba(232, 196, 90, 0.85) !important;
+  background: linear-gradient(180deg, #fce38a, #d4af37 60%, #b88d1d) !important;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.42) !important;
+}
+.sb-nav a.sb-item.active .sb-mark svg {
+  stroke: #1a1403 !important;
+  color: #1a1403 !important;
+}
+
+.sb-user {
+  background: rgba(10, 10, 14, 0.35) !important;
+  border: 1px solid rgba(212, 175, 55, 0.2) !important;
+  box-shadow: none !important;
+}

@@ -1,0 +1,659 @@
+{
+  "package": "VELORA v0.2 host test root-extract patch",
+  "extract_into": "existing project root",
+  "changed_application_files": [
+    "404.html",
+    "404/index.html",
+    "accounts/connect/index.html",
+    "admin/index.html",
+    "blog/forex-trading-journal/index.html",
+    "blog/index.html",
+    "blog/mt4-mt5-trading-journal/index.html",
+    "blog/risk-management-trading/index.html",
+    "blog/what-is-trading-journal/index.html",
+    "blog/why-traders-need-journal/index.html",
+    "dashboard/index.html",
+    "en/blog/forex-trading-journal/index.html",
+    "en/blog/index.html",
+    "en/blog/mt4-mt5-trading-journal/index.html",
+    "en/blog/risk-management-in-trading/index.html",
+    "en/blog/what-is-a-trading-journal/index.html",
+    "en/blog/why-traders-need-a-journal/index.html",
+    "en/index.html",
+    "forgot-password/index.html",
+    "index.html",
+    "intelligence/index.html",
+    "localized/.csp-release.json",
+    "localized/en/404.html",
+    "localized/en/404/index.html",
+    "localized/en/accounts/connect/index.html",
+    "localized/en/admin/index.html",
+    "localized/en/blog/forex-trading-journal/index.html",
+    "localized/en/blog/index.html",
+    "localized/en/blog/mt4-mt5-trading-journal/index.html",
+    "localized/en/blog/risk-management-in-trading/index.html",
+    "localized/en/blog/risk-management-trading/index.html",
+    "localized/en/blog/what-is-a-trading-journal/index.html",
+    "localized/en/blog/what-is-trading-journal/index.html",
+    "localized/en/blog/why-traders-need-a-journal/index.html",
+    "localized/en/blog/why-traders-need-journal/index.html",
+    "localized/en/checkout/index.html",
+    "localized/en/dashboard/index.html",
+    "localized/en/forgot-password/index.html",
+    "localized/en/index.html",
+    "localized/en/intelligence/index.html",
+    "localized/en/login/index.html",
+    "localized/en/markets/index.html",
+    "localized/en/news/index.html",
+    "localized/en/performance/index.html",
+    "localized/en/profile/index.html",
+    "localized/en/register/index.html",
+    "localized/en/reset-password/index.html",
+    "localized/en/support/index.html",
+    "localized/en/trades/index.html",
+    "localized/en/trades/new/index.html",
+    "localized/en/verify-email/index.html",
+    "localized/en/wallet/index.html",
+    "localized/fa/404.html",
+    "localized/fa/404/index.html",
+    "localized/fa/accounts/connect/index.html",
+    "localized/fa/admin/index.html",
+    "localized/fa/blog/forex-trading-journal/index.html",
+    "localized/fa/blog/index.html",
+    "localized/fa/blog/mt4-mt5-trading-journal/index.html",
+    "localized/fa/blog/risk-management-trading/index.html",
+    "localized/fa/blog/what-is-trading-journal/index.html",
+    "localized/fa/blog/why-traders-need-journal/index.html",
+    "localized/fa/checkout/index.html",
+    "localized/fa/dashboard/index.html",
+    "localized/fa/forgot-password/index.html",
+    "localized/fa/index.html",
+    "localized/fa/intelligence/index.html",
+    "localized/fa/login/index.html",
+    "localized/fa/markets/index.html",
+    "localized/fa/news/index.html",
+    "localized/fa/performance/index.html",
+    "localized/fa/profile/index.html",
+    "localized/fa/register/index.html",
+    "localized/fa/reset-password/index.html",
+    "localized/fa/support/index.html",
+    "localized/fa/trades/index.html",
+    "localized/fa/trades/new/index.html",
+    "localized/fa/verify-email/index.html",
+    "localized/fa/wallet/index.html",
+    "login/index.html",
+    "markets/index.html",
+    "news/index.html",
+    "performance/index.html",
+    "profile/index.html",
+    "public/locales/chunks/en/errors.json",
+    "public/locales/chunks/fa/errors.json",
+    "public/locales/csp-manifest.json",
+    "public/locales/en.json",
+    "public/locales/fa.json",
+    "public/locales/feature-manifest.json",
+    "register/index.html",
+    "reset-password/index.html",
+    "support/index.html",
+    "tools/localization/brand-policy.json",
+    "tools/localization/feature-map.json",
+    "tools/localization/routes.json",
+    "tools/localization/validate_localization.py",
+    "trades/index.html",
+    "trades/new/index.html",
+    "verify-email/index.html",
+    "wallet/index.html"
+  ],
+  "payload_files": [
+    {
+      "path": ".htaccess",
+      "sha256": "548a1b6c3677765e33a4575c53b9e1d81f90fca4260c0328f539558eecf42cf9",
+      "bytes": 2715
+    },
+    {
+      "path": "404/index.html",
+      "sha256": "59d6cc1a192d9e32e91ac2f2b217568a69e4f36c2ec9060bce57d8b13c5f8682",
+      "bytes": 2357
+    },
+    {
+      "path": "404.html",
+      "sha256": "59d6cc1a192d9e32e91ac2f2b217568a69e4f36c2ec9060bce57d8b13c5f8682",
+      "bytes": 2357
+    },
+    {
+      "path": "HOST_TEST_README.md",
+      "sha256": "5fc2c3c50946aecd8ccc051ebdb8c5d45c31dc7f2db957056ae17026ad037f63",
+      "bytes": 2050
+    },
+    {
+      "path": "accounts/connect/index.html",
+      "sha256": "eacbfc1d52acb2e093ef39dcbf7bd9063d845e9285f3616f9390985324295e70",
+      "bytes": 53038
+    },
+    {
+      "path": "admin/index.html",
+      "sha256": "1aca0d5a7c482a4ed38a408874928fc4b22ae4d62c2ef02bc0ef50ffc1430b35",
+      "bytes": 48593
+    },
+    {
+      "path": "api/.env.example",
+      "sha256": "be99fe6f8ba92b4751a45afe9527415113b49c5cc597212ff8c07460eb122267",
+      "bytes": 853
+    },
+    {
+      "path": "api/.htaccess",
+      "sha256": "934e54c81c057243b35f9f71541da663a4f883c5a2eb37187a4536fc14151d12",
+      "bytes": 1090
+    },
+    {
+      "path": "api/database/migrations/v0.2_metaapi_bridge.sql",
+      "sha256": "dd6531bdce14bb5640e50273cd8a5666cff3f9948d691a219c7e81250d303c9b",
+      "bytes": 33560
+    },
+    {
+      "path": "api/workers/preflight_v0_2.php",
+      "sha256": "2cbc13cc7b9865b72e698eee8491a972d8aecc7689aeb3bc18a50df18c78a4ab",
+      "bytes": 24446
+    },
+    {
+      "path": "blog/forex-trading-journal/index.html",
+      "sha256": "80aed5473c66243858427eece340e1ed20b600a5e75cb60796da4d730b087297",
+      "bytes": 18880
+    },
+    {
+      "path": "blog/index.html",
+      "sha256": "a93c200cc01919f5c0c517f74009dc258fae2b32c5cc791c598a3c044cdc49e7",
+      "bytes": 21069
+    },
+    {
+      "path": "blog/mt4-mt5-trading-journal/index.html",
+      "sha256": "9e848abca3581f7efb4cd2dffeb15763874c0a7cd70a1123812bc53c47df02af",
+      "bytes": 16985
+    },
+    {
+      "path": "blog/risk-management-trading/index.html",
+      "sha256": "a2cefa4ad1c9d59a1fb6e50cd46fe162a6a0d54e458a1e2460ddaa28f36546e0",
+      "bytes": 17864
+    },
+    {
+      "path": "blog/what-is-trading-journal/index.html",
+      "sha256": "9617f1385e49f1e1e172f46465e3ba203160c2ccc6e7ac1fe2b342d12512b0ba",
+      "bytes": 21771
+    },
+    {
+      "path": "blog/why-traders-need-journal/index.html",
+      "sha256": "f46e26b5c72bd307bcf794ecd7c8e6eead739e599fd761802deb4d3f9444d166",
+      "bytes": 18493
+    },
+    {
+      "path": "dashboard/index.html",
+      "sha256": "6d2c79b55d1796fc0eac5b525dc77474502ca3ca42b836152835ceb94a86e34c",
+      "bytes": 75986
+    },
+    {
+      "path": "en/blog/forex-trading-journal/index.html",
+      "sha256": "022c06204d5716ab4b35f27874e11452e1378974baef62a5d73472cd9439286d",
+      "bytes": 16957
+    },
+    {
+      "path": "en/blog/index.html",
+      "sha256": "72ffcc7e61c3704454a2cef0d520874e3d6d1f28be8d69156f4b71f66600386c",
+      "bytes": 19702
+    },
+    {
+      "path": "en/blog/mt4-mt5-trading-journal/index.html",
+      "sha256": "21679ed2b4697f6f236de88d871186d68f2d2917518c56cf1ff5a94794483dcc",
+      "bytes": 15815
+    },
+    {
+      "path": "en/blog/risk-management-in-trading/index.html",
+      "sha256": "d8a04e53548833c28527f18aaa87707ec1f1754fcafbe2fa01905d625fb1fb48",
+      "bytes": 18360
+    },
+    {
+      "path": "en/blog/what-is-a-trading-journal/index.html",
+      "sha256": "9c50c628609813e31dff04a4be0c8bbf7b16220f4b54b37b7ff530b5a98da981",
+      "bytes": 18501
+    },
+    {
+      "path": "en/blog/why-traders-need-a-journal/index.html",
+      "sha256": "0ed98ad4fea4c6aaebf76990f2429dd07bbe8479e2b78522ad3eeefa6a4e1c2e",
+      "bytes": 18248
+    },
+    {
+      "path": "en/index.html",
+      "sha256": "dd699f418f0ef52b4b92467d319f19db2fcf689a62c258ac7f66c7e6aeb7c6df",
+      "bytes": 1010998
+    },
+    {
+      "path": "forgot-password/index.html",
+      "sha256": "60f73a8710deadb6ddb28530a9814adb1c2501ca8ad6e3254f6cc11d49bf5796",
+      "bytes": 5609
+    },
+    {
+      "path": "index.html",
+      "sha256": "4d372b75296a147fbc7be724a797175699e7863462f7318c2d32dd3924e2d59c",
+      "bytes": 1017928
+    },
+    {
+      "path": "intelligence/index.html",
+      "sha256": "24667c80d97bc093ccaccd69bfe3c524da4fddd138c65997dd9f8d796e6632fb",
+      "bytes": 55045
+    },
+    {
+      "path": "localized/.csp-release.json",
+      "sha256": "5271597e4b4acac07a99299e99e293d32994d7829ff20038fda4b7e0e569e44f",
+      "bytes": 236
+    },
+    {
+      "path": "localized/en/404/index.html",
+      "sha256": "c90642b823bbfa189db13f86785329af7f8fb0324e9ebe9f3b15b076b637a572",
+      "bytes": 2738
+    },
+    {
+      "path": "localized/en/404.html",
+      "sha256": "9c49f5c5c528e806a3bf00d74b53a2e96e49ab591fe3694a2705028e8679710d",
+      "bytes": 2758
+    },
+    {
+      "path": "localized/en/accounts/connect/index.html",
+      "sha256": "715927add051361ca3fa365afd93ecda63664c02aeaa181408cb0fcd7b53cc40",
+      "bytes": 53092
+    },
+    {
+      "path": "localized/en/admin/index.html",
+      "sha256": "3ccb87c1df7d9795ce2966e0ad36223db73c2a939b0f723006842e8b2c415618",
+      "bytes": 48834
+    },
+    {
+      "path": "localized/en/blog/forex-trading-journal/index.html",
+      "sha256": "e3bf883a005a2dc5b28c93d75824f6d41a081d0bc5790a032ad73df911ee135b",
+      "bytes": 17362
+    },
+    {
+      "path": "localized/en/blog/index.html",
+      "sha256": "0c86d3d6595d296679dc2790567dfb76b21980b7ba234bc0a13733d4459af586",
+      "bytes": 20607
+    },
+    {
+      "path": "localized/en/blog/mt4-mt5-trading-journal/index.html",
+      "sha256": "78958ef8440dcea3dad2d858f15765abc403651eb28737fa967434efe246c02f",
+      "bytes": 16207
+    },
+    {
+      "path": "localized/en/blog/risk-management-in-trading/index.html",
+      "sha256": "9999357a9e14952fabeb9f89f33ae4169dcc29141f73bffbe77b734d26ae0bb5",
+      "bytes": 16813
+    },
+    {
+      "path": "localized/en/blog/risk-management-trading/index.html",
+      "sha256": "9999357a9e14952fabeb9f89f33ae4169dcc29141f73bffbe77b734d26ae0bb5",
+      "bytes": 16813
+    },
+    {
+      "path": "localized/en/blog/what-is-a-trading-journal/index.html",
+      "sha256": "c194a857884f9fa6cb510d173471b589dc71d138f778d9be5509b077ac9ad5ed",
+      "bytes": 19185
+    },
+    {
+      "path": "localized/en/blog/what-is-trading-journal/index.html",
+      "sha256": "c194a857884f9fa6cb510d173471b589dc71d138f778d9be5509b077ac9ad5ed",
+      "bytes": 19185
+    },
+    {
+      "path": "localized/en/blog/why-traders-need-a-journal/index.html",
+      "sha256": "10fa41f7d822401e88fa7c0a65ef7b1babae9a8014bd24740beab955a79a796a",
+      "bytes": 16961
+    },
+    {
+      "path": "localized/en/blog/why-traders-need-journal/index.html",
+      "sha256": "10fa41f7d822401e88fa7c0a65ef7b1babae9a8014bd24740beab955a79a796a",
+      "bytes": 16961
+    },
+    {
+      "path": "localized/en/checkout/index.html",
+      "sha256": "2bad0e153104fd20f7e92cdaa25b2fae48d906b4861fd8ba287cbd5d8ad1baf8",
+      "bytes": 9874
+    },
+    {
+      "path": "localized/en/dashboard/index.html",
+      "sha256": "eb528beaa1822ff077ad1f1d31de0cf9be2b7d89103ecdabbedae0d1438dfb63",
+      "bytes": 75838
+    },
+    {
+      "path": "localized/en/forgot-password/index.html",
+      "sha256": "e4fb4f02213606c0d5fd496582ba5eded599a7a98fea1fd2d3ea64f7b8de8942",
+      "bytes": 5976
+    },
+    {
+      "path": "localized/en/index.html",
+      "sha256": "28a5e2d2794b5af0b2630e3ca5589a174b00e53b2b4b785aadddbe14417f111e",
+      "bytes": 1012443
+    },
+    {
+      "path": "localized/en/intelligence/index.html",
+      "sha256": "3c1059fd71fe0481dc34229e6dc23c9de282d2f00ab2e7282e9b8fbeb47142db",
+      "bytes": 54758
+    },
+    {
+      "path": "localized/en/login/index.html",
+      "sha256": "cd507c9e3649074e7a8430801c97415f095d13995d0f55eae3ee7829a3eebf96",
+      "bytes": 42304
+    },
+    {
+      "path": "localized/en/markets/index.html",
+      "sha256": "f576a5c149f8216b7fa820bd05f103fd40602de4be1b882d24d9b9b1eebbf708",
+      "bytes": 27895
+    },
+    {
+      "path": "localized/en/news/index.html",
+      "sha256": "a71bfc1e1ef13a8c1fc0707fff5dab45d51de3b99ff057a56061e8dfb11bc23c",
+      "bytes": 27578
+    },
+    {
+      "path": "localized/en/performance/index.html",
+      "sha256": "2f8e2edae755b61398ec439749e4c7b8cdcb1056f8ec4314617f4d18dd89b89b",
+      "bytes": 27708
+    },
+    {
+      "path": "localized/en/profile/index.html",
+      "sha256": "b399f5879adceadc3b972435b42987c99a4596f3367581d5b659f4559b6601ff",
+      "bytes": 44276
+    },
+    {
+      "path": "localized/en/register/index.html",
+      "sha256": "901fbec17b20a21e9b6b309dccfba7be079edc5c022a6d7a5eb788c5d0c08e51",
+      "bytes": 54610
+    },
+    {
+      "path": "localized/en/reset-password/index.html",
+      "sha256": "845e15b4651acd53f37cb422e2dbbf84f387031b3ff091dbb6a51164d93eea30",
+      "bytes": 6911
+    },
+    {
+      "path": "localized/en/support/index.html",
+      "sha256": "be3ae524b2a2d30227b5ee9b66ae255d6ae1ea71a67fea22975dba4ef2dca542",
+      "bytes": 27658
+    },
+    {
+      "path": "localized/en/trades/index.html",
+      "sha256": "12b2af0f4531e5b8bfd02c9b50f961295df24c5d7676e56a54b789e8cb055bee",
+      "bytes": 34216
+    },
+    {
+      "path": "localized/en/trades/new/index.html",
+      "sha256": "8e7d41b5775d50ef5ff2c8d1287fd89589fddec5167da820495dd573e5d27986",
+      "bytes": 59430
+    },
+    {
+      "path": "localized/en/verify-email/index.html",
+      "sha256": "08b8917cfe64000fb6f894be67591893604beacab82e321c97c14b002b663bd7",
+      "bytes": 5786
+    },
+    {
+      "path": "localized/en/wallet/index.html",
+      "sha256": "3360785b9c4b743de276040431bccf8d130643d169590b53b73f6b7eaa03aba4",
+      "bytes": 27262
+    },
+    {
+      "path": "localized/fa/404/index.html",
+      "sha256": "4d5c0661762979b5fd9a230758409fa083a31b34475025368c0536a5058f9276",
+      "bytes": 2825
+    },
+    {
+      "path": "localized/fa/404.html",
+      "sha256": "5212d485fa9e2b932ac76c375853e2540c747aab2eda12e300dd2ed9f6ffa4cd",
+      "bytes": 2845
+    },
+    {
+      "path": "localized/fa/accounts/connect/index.html",
+      "sha256": "230a2aedf7d03118e2c2259f5fcad0aa39155f88dc9ec803c3cefd4174f6b20b",
+      "bytes": 53664
+    },
+    {
+      "path": "localized/fa/admin/index.html",
+      "sha256": "cf8503dfa5b98166dd77a8c43ca87519fafb0b0b52242ded45a6b52ae5274163",
+      "bytes": 49120
+    },
+    {
+      "path": "localized/fa/blog/forex-trading-journal/index.html",
+      "sha256": "be7c6e14e2920cd7ec262c91e1865c68cdfd9dc39f71e3a2ee06d8c95ded1ec8",
+      "bytes": 19260
+    },
+    {
+      "path": "localized/fa/blog/index.html",
+      "sha256": "999931b61b3bda10fc6af449b838fe58d45718aca4d154a046a86a4d6b0314d9",
+      "bytes": 21472
+    },
+    {
+      "path": "localized/fa/blog/mt4-mt5-trading-journal/index.html",
+      "sha256": "dbf298171608e5f86d82eae95f9b8bbf68a57ccb7184e36202dd6573413b0ee9",
+      "bytes": 17388
+    },
+    {
+      "path": "localized/fa/blog/risk-management-trading/index.html",
+      "sha256": "2b025f01417a038d4d016f8f3e70e47531d1507e09ddd63ec380cc399546612a",
+      "bytes": 18244
+    },
+    {
+      "path": "localized/fa/blog/what-is-trading-journal/index.html",
+      "sha256": "61a6b4421252edd99d2d8f3de09136601a6d465cbd655fe064fdb243793630ba",
+      "bytes": 22132
+    },
+    {
+      "path": "localized/fa/blog/why-traders-need-journal/index.html",
+      "sha256": "243d51be1d2029076eb53dda7f62b093cf295a2ed3e12f4ab1304d8e7cd39cdd",
+      "bytes": 18894
+    },
+    {
+      "path": "localized/fa/checkout/index.html",
+      "sha256": "1dbb2a1c7cd9cedc6f111cd27913a16e4f2a8ac2cb1e72e3af10450db85cacd4",
+      "bytes": 10346
+    },
+    {
+      "path": "localized/fa/dashboard/index.html",
+      "sha256": "a5c57b11c42b53ede1ffd6caba83e066906e5c1a1f2ee37a6942384d3ec8001b",
+      "bytes": 76541
+    },
+    {
+      "path": "localized/fa/forgot-password/index.html",
+      "sha256": "dddfb2a51125578895693d4eb0405833378426465611cd120904aae875ed1af4",
+      "bytes": 6140
+    },
+    {
+      "path": "localized/fa/index.html",
+      "sha256": "a95f106fad254f18a044c8a95b2ac82e17c25e40605014d9fe3ef9d397c82501",
+      "bytes": 1019877
+    },
+    {
+      "path": "localized/fa/intelligence/index.html",
+      "sha256": "f0fa90934725074e1b153d77fd1251c0268242ba50b07bd89738845d3d4b947a",
+      "bytes": 55644
+    },
+    {
+      "path": "localized/fa/login/index.html",
+      "sha256": "e50c9dd7c6e48ee46426481806901074a0f6bc8fa0363948875c4ef9fea012cf",
+      "bytes": 42611
+    },
+    {
+      "path": "localized/fa/markets/index.html",
+      "sha256": "06f8cb1d80bb25ebb298979b0de55f4dda4f459f57fa3596778e6230fec9a751",
+      "bytes": 28163
+    },
+    {
+      "path": "localized/fa/news/index.html",
+      "sha256": "6b8d410208a8c8a1f22df01f74f0c1bd2f8df89e819928eb4ed55a8955a9b539",
+      "bytes": 28106
+    },
+    {
+      "path": "localized/fa/performance/index.html",
+      "sha256": "183b46a09d64bfcc280948ee0389cf2f6d7fe213497d4b0ab11d5b2bc11c3c4e",
+      "bytes": 27914
+    },
+    {
+      "path": "localized/fa/profile/index.html",
+      "sha256": "47684a6ba1f12c1a512965f6ce5ee0b45af9987dbd6201d39e20398a13ebad6c",
+      "bytes": 44615
+    },
+    {
+      "path": "localized/fa/register/index.html",
+      "sha256": "085c514ffa37aa332ad8e0bdd349f38a30bd91e063cf8e490bae8b0bb4d73fd2",
+      "bytes": 55250
+    },
+    {
+      "path": "localized/fa/reset-password/index.html",
+      "sha256": "59ceaf3749996ac99ba04a119c4a469f3c93bfcff0228cb81cab67c9176df30d",
+      "bytes": 7050
+    },
+    {
+      "path": "localized/fa/support/index.html",
+      "sha256": "4cda76259027e81e4a7caac3539de51f8d111e3294c439847e744c7a43c94abc",
+      "bytes": 28224
+    },
+    {
+      "path": "localized/fa/trades/index.html",
+      "sha256": "fbc9df6c50225aa34ebf15e9c3377dbb357f499d668acc7ebac2b29882f4b44c",
+      "bytes": 34730
+    },
+    {
+      "path": "localized/fa/trades/new/index.html",
+      "sha256": "56e65177b77cbd73d83cdb7c17c2f2273ca5346f41847e2e3f624286b940a0ae",
+      "bytes": 59860
+    },
+    {
+      "path": "localized/fa/verify-email/index.html",
+      "sha256": "08d436ca9ca790a512a29e8f315a1a2b9bb99a2515472a8e26252c77c6bde8d6",
+      "bytes": 5851
+    },
+    {
+      "path": "localized/fa/wallet/index.html",
+      "sha256": "1cc7adc608895228668c2517ca55042e2eae9b9637a6ce641bcc052adf9d3984",
+      "bytes": 27467
+    },
+    {
+      "path": "login/index.html",
+      "sha256": "716c28e607600581e61644f070def58fc7d409178d50060f46a3de7f1c110fcc",
+      "bytes": 42134
+    },
+    {
+      "path": "markets/index.html",
+      "sha256": "2f72771b2440def7654d3393ed26c3617db4225b022e9f13617ee05178da42cd",
+      "bytes": 27624
+    },
+    {
+      "path": "news/index.html",
+      "sha256": "ab535255024042009b2bd9aae9e10df3acaf8827cd5ec2b65e44c6076d078b55",
+      "bytes": 27587
+    },
+    {
+      "path": "performance/index.html",
+      "sha256": "b261e1bfcf6dd195fa88d2e79be8ff918752d625622b270aaa7698740f1ffc09",
+      "bytes": 27345
+    },
+    {
+      "path": "profile/index.html",
+      "sha256": "92bea4acba562b17f9d68a99ce066a3dc94562f19026f4f0eecfda3efc8fa7f9",
+      "bytes": 44077
+    },
+    {
+      "path": "public/locales/chunks/en/errors.json",
+      "sha256": "1086975f4f55f8428ceb60397c966dfb42e9c40842faf22db102c159efe5736c",
+      "bytes": 4296
+    },
+    {
+      "path": "public/locales/chunks/fa/errors.json",
+      "sha256": "b784cf7ec586bcbb4ec0316deb1f4e943d2a0f0d4658a973058c366ff9198f9e",
+      "bytes": 5584
+    },
+    {
+      "path": "public/locales/csp-manifest.json",
+      "sha256": "dc0edb25a7ac02ea907b636c431e74b0f24f970ab5906aad69922e9d8bc7706b",
+      "bytes": 71582
+    },
+    {
+      "path": "public/locales/en.json",
+      "sha256": "b2c2e2f4ca4c0b173c35fd5c18f90730474f413d10d01969afd916131c5c3c03",
+      "bytes": 126710
+    },
+    {
+      "path": "public/locales/fa.json",
+      "sha256": "9b81eaf0d5a7f4ccaafe9e877ea4f92fb504590373546b6673363b27a18a9c5a",
+      "bytes": 162850
+    },
+    {
+      "path": "public/locales/feature-manifest.json",
+      "sha256": "a1e9c42b59ef2b57f4c95a353c6406d041c212122a3009e6969118656c0b5a46",
+      "bytes": 7163
+    },
+    {
+      "path": "register/index.html",
+      "sha256": "75c14f5c6a19de4327c6d191957ce774775724038e51d1fa6c499048c88f813e",
+      "bytes": 54763
+    },
+    {
+      "path": "reset-password/index.html",
+      "sha256": "ef2f9c1135a64a5144d64c10fbdc9b11a729783a4b131ced857b0836e1c30288",
+      "bytes": 6524
+    },
+    {
+      "path": "support/index.html",
+      "sha256": "f6d84caedf4bddd982d5040be1da696207e6f534b11f530cc452299fbf896ffb",
+      "bytes": 27690
+    },
+    {
+      "path": "tools/localization/brand-policy.json",
+      "sha256": "b163c1b281fdf42648f7dec5b72e8f4ffc47ed58278157d443a41fbf4219002a",
+      "bytes": 292
+    },
+    {
+      "path": "tools/localization/feature-map.json",
+      "sha256": "8ec775b12889694fcb35e4fb9fdcc5079c18f3346c0844cd7011dda7b16596f7",
+      "bytes": 790
+    },
+    {
+      "path": "tools/localization/routes.json",
+      "sha256": "06cb97497bb6fc57675c9b1ef7f526fe9d9b83ea13168b6d094999c898659c7e",
+      "bytes": 3782
+    },
+    {
+      "path": "tools/localization/validate_localization.py",
+      "sha256": "bd40946c9c86f8b8bcfbce0878bb4cf15c5935daedb346ec35afe268ee60aeb2",
+      "bytes": 21049
+    },
+    {
+      "path": "trades/index.html",
+      "sha256": "570c299941f5a39ac64917728cb0cc3df595edb3fca16ec19bae349f5698aa56",
+      "bytes": 34182
+    },
+    {
+      "path": "trades/new/index.html",
+      "sha256": "ab406c1de9751399a0fe902fe658cfdbe493411dc9a7f464206b4e08f729e496",
+      "bytes": 59310
+    },
+    {
+      "path": "verify-email/index.html",
+      "sha256": "285aacbecf39c400bf5fd096ea0a29db4e1d465f1dfde760ba3b04dc5f103381",
+      "bytes": 5333
+    },
+    {
+      "path": "wallet/index.html",
+      "sha256": "5f2ab4a31294979217da8401b3e6127158f2f8a1d2e029178d732d7a2d754694",
+      "bytes": 26934
+    }
+  ],
+  "migration": {
+    "path": "api/database/migrations/v0.2_metaapi_bridge.sql",
+    "sha256": "dd6531bdce14bb5640e50273cd8a5666cff3f9948d691a219c7e81250d303c9b",
+    "execution_order": 1
+  },
+  "not_included": [
+    ".env",
+    "database dumps",
+    "database backups",
+    "logs",
+    "user data",
+    "local_validation artifacts",
+    "secrets",
+    "API keys"
+  ]
+}

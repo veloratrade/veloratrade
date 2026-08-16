@@ -1,0 +1,29 @@
+{
+  "$schema": "./manifest.schema.json",
+  "version": "2026.08.13.11",
+  "defaultLocale": "fa",
+  "fallbackLocale": "en",
+  "storageKey": "velora.locale",
+  "locales": {
+    "fa": {
+      "intlLocale": "fa-IR",
+      "name": "Persian",
+      "nativeName": "فارسی",
+      "direction": "rtl",
+      "enabled": true,
+      "numberingSystem": "latn",
+      "script": "Arab"
+    },
+    "en": {
+      "intlLocale": "en-GB",
+      "name": "English",
+      "nativeName": "English",
+      "direction": "ltr",
+      "enabled": true,
+      "numberingSystem": "latn",
+      "script": "Latn"
+    }
+  },
+  "cookieKey": "velora_locale",
+  "featureCatalogBase": "/public/locales/chunks"
+}

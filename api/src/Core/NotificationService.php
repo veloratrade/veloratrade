@@ -1,0 +1,284 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Velora\Core;
+
+/**
+ * سرویس جامع ارسال اعلان‌ها و ایمیل‌های VELORA.
+ * طراحی‌شده به‌صورت کاملاً سبک، خوانا و سریع بدون هیچ‌گونه تصویر یا لوگوی خارجی در ایمیل‌ها (مناسب برای تمامی کلاینت‌ها).
+ */
+final class NotificationService
+{
+    private static function logNotification(?int $userId, string $email, string $type, string $subject, bool $sent): void
+    {
+        (new EmailNotificationRepository())->log(
+            $userId,
+            $email,
+            $type,
+            $subject,
+            $sent ? 'sent' : 'failed',
+            $sent ? null : (Mailer::$lastError !== null ? Mailer::$lastError : 'Unknown error')
+        );
+    }
+
+    /**
+     * استخراج نام تمیز کاربر؛ در صورتی که نام خالی باشد یا همان آدرس ایمیل باشد، عبارت «کاربر گرامی» برمی‌گردد.
+     */
+    private static function formatName(string $fullName, string $email): string
+    {
+        $name = trim($fullName);
+        if ($name === '' || mb_strtolower($name) === mb_strtolower(trim($email))) {
+            return 'کاربر گرامی';
+        }
+        return $name;
+    }
+
+    /**
+     * ۱. ایمیل تأیید ثبت‌نام
+     */
+    public static function sendVerificationEmail(string $email, string $fullName, string $verifyUrl, ?int $userId = null): bool
+    {
+        $nameSafe = htmlspecialchars(self::formatName($fullName, $email), ENT_QUOTES, 'UTF-8');
+        $emailSafe = htmlspecialchars($email, ENT_QUOTES, 'UTF-8');
+        $subject = 'VELORA TRADE | Verify Email (تأیید ایمیل)';
+
+        $html = EmailTemplate::render(
+            'تأیید ایمیل',
+            'ایمیل خود را تأیید کنید',
+            '<p style="margin:0 0 14px;color:#ffffff;font-size:16px;font-weight:bold;">سلام ' . $nameSafe . '،</p>' .
+            '<p style="margin:0 0 14px;color:#f3f4f6;">برای فعال‌سازی حساب کاربری متصل به ایمیل زیر و دسترسی به امکانات پلتفرم، روی دکمه تأیید کلیک کنید:</p>' .
+            '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0;background:#141f32;border:1px solid #d4af37;border-radius:10px;box-shadow:0 4px 15px rgba(212,175,55,0.15);">' .
+            '<tr><td align="center" style="padding:14px 20px;font-family:Tahoma,Arial,sans-serif;font-size:16px;font-weight:bold;color:#d4af37;letter-spacing:0.5px;direction:ltr;">✉️ ' . $emailSafe . '</td></tr>' .
+            '</table>' .
+            '<p style="margin:0 0 14px;color:#f3f4f6;">پس از تأیید، امکان ورود به حساب و استفاده از ژورنال معاملاتی برای شما فعال خواهد شد.</p>',
+            'تأیید ایمیل',
+            $verifyUrl,
+            'اعتبار این لینک ۲۴ ساعت است. اگر ایمیل را در پوشه Inbox ندیدید، لطفاً پوشه Spam (هرزنامه) را بررسی کنید. در صورت منقضی شدن لینک، می‌توانید از سایت درخواست ارسال مجدد دهید.',
+            'TRADE · ACCOUNT SECURITY'
+        );
+
+        $sent = Mailer::send($email, $subject, $html);
+        self::logNotification($userId, $email, 'VERIFICATION_EMAIL', $subject, $sent);
+        return $sent;
+    }
+
+    /**
+     * ۲. ایمیل خوش‌آمدگویی (حاوی باکس اختصاصی ایمیل کاربر)
+     */
+    public static function sendWelcomeEmail(string $email, string $fullName, string $dashboardUrl, ?int $userId = null): bool
+    {
+        $nameSafe = htmlspecialchars(self::formatName($fullName, $email), ENT_QUOTES, 'UTF-8');
+        $emailSafe = htmlspecialchars($email, ENT_QUOTES, 'UTF-8');
+        $subject = 'VELORA TRADE | Welcome (خوش‌آمدید)';
+
+        $html = EmailTemplate::render(
+            'حساب شما آماده است',
+            'به VELORA TRADE خوش آمدید',
+            '<p style="margin:0 0 14px;color:#ffffff;font-size:16px;font-weight:bold;">سلام ' . $nameSafe . '،</p>' .
+            '<p style="margin:0 0 14px;color:#f3f4f6;">حساب کاربری شما با ایمیل زیر با موفقیت فعال شد:</p>' .
+            '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0;background:#141f32;border:1px solid #d4af37;border-radius:10px;box-shadow:0 4px 15px rgba(212,175,55,0.18);">' .
+            '<tr><td align="center" style="padding:14px 20px;font-family:Tahoma,Arial,sans-serif;font-size:16px;font-weight:bold;color:#d4af37;letter-spacing:0.5px;direction:ltr;">✉️ ' . $emailSafe . '</td></tr>' .
+            '</table>' .
+            '<p style="margin:0 0 14px;color:#f3f4f6;">اکنون آماده ثبت معاملات، مدیریت ریسک و تحلیل حرفه‌ای عملکرد خود در پلتفرم VELORA TRADE هستید.</p>',
+            'ورود به داشبورد',
+            $dashboardUrl,
+            'شروع مسیر حرفه‌ای معامله‌گری شما از همین‌جا است.',
+            'TRADE · SMART ANALYTICS PLATFORM'
+        );
+
+        $sent = Mailer::send($email, $subject, $html);
+        self::logNotification($userId, $email, 'WELCOME_EMAIL', $subject, $sent);
+        return $sent;
+    }
+
+    /**
+     * ۳. ایمیل لینک بازیابی رمز عبور (Forgot Password)
+     */
+    public static function sendPasswordResetTokenEmail(string $email, string $fullName, string $resetUrl, ?int $userId = null): bool
+    {
+        $nameSafe = htmlspecialchars(self::formatName($fullName, $email), ENT_QUOTES, 'UTF-8');
+        $emailSafe = htmlspecialchars($email, ENT_QUOTES, 'UTF-8');
+        $subject = 'VELORA TRADE | Password reset';
+
+        $html = EmailTemplate::render(
+            'بازیابی رمز عبور',
+            'تغییر رمز عبور VELORA',
+            '<p style="margin:0 0 14px;color:#ffffff;font-size:16px;font-weight:bold;">سلام ' . $nameSafe . '،</p>' .
+            '<p style="margin:0 0 14px;color:#f3f4f6;">درخواست بازیابی رمز عبور برای حساب کاربری زیر دریافت شد:</p>' .
+            '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0;background:#141f32;border:1px solid #d4af37;border-radius:10px;box-shadow:0 4px 15px rgba(212,175,55,0.15);">' .
+            '<tr><td align="center" style="padding:14px 20px;font-family:Tahoma,Arial,sans-serif;font-size:16px;font-weight:bold;color:#d4af37;letter-spacing:0.5px;direction:ltr;">✉️ ' . $emailSafe . '</td></tr>' .
+            '</table>' .
+            '<p style="margin:0 0 14px;color:#f3f4f6;">برای انتخاب رمز عبور جدید و ورود به حساب، روی دکمه زیر کلیک کنید:</p>',
+            'تغییر رمز عبور',
+            $resetUrl,
+            'این لینک تا یک ساعت معتبر است. اگر این درخواست را شما ثبت نکرده‌اید، این ایمیل را نادیده بگیرید.',
+            'TRADE · ACCOUNT SECURITY'
+        );
+
+        $sent = Mailer::send($email, $subject, $html);
+        self::logNotification($userId, $email, 'PASSWORD_RESET_LINK', $subject, $sent);
+        return $sent;
+    }
+
+    /**
+     * ۴. ایمیل تغییر موفق رمز عبور (Password Changed Success)
+     */
+    public static function sendPasswordChangedEmail(string $email, string $fullName, ?int $userId = null): bool
+    {
+        $nameSafe = htmlspecialchars(self::formatName($fullName, $email), ENT_QUOTES, 'UTF-8');
+        $emailSafe = htmlspecialchars($email, ENT_QUOTES, 'UTF-8');
+        $subject = 'تغییر رمز عبور | VELORA TRADE';
+
+        $html = EmailTemplate::render(
+            'امنیت حساب',
+            'رمز عبور شما تغییر کرد',
+            '<p style="margin:0 0 14px;color:#ffffff;font-size:16px;font-weight:bold;">سلام ' . $nameSafe . '،</p>' .
+            '<p style="margin:0 0 14px;color:#f3f4f6;">رمز عبور حساب کاربری زیر با موفقیت تغییر یافت:</p>' .
+            '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0;background:#141f32;border:1px solid #10b981;border-radius:10px;box-shadow:0 4px 15px rgba(16,185,129,0.15);">' .
+            '<tr><td align="center" style="padding:14px 20px;font-family:Tahoma,Arial,sans-serif;font-size:16px;font-weight:bold;color:#10b981;letter-spacing:0.5px;direction:ltr;">✔ ' . $emailSafe . '</td></tr>' .
+            '</table>' .
+            '<p style="margin:0 0 14px;color:#f3f4f6;">اگر این تغییر توسط شما انجام نشده است، لطفاً فوراً با تیم پشتیبانی تماس بگیرید و رمز عبور خود را بازنشانی کنید.</p>',
+            null,
+            null,
+            'در جهت حفظ حداکثر امنیت حساب کاربری، تمامی نشست‌های فعال قبلی شما باطل شد.',
+            'TRADE · ACCOUNT SECURITY'
+        );
+
+        $sent = Mailer::send($email, $subject, $html);
+        self::logNotification($userId, $email, 'PASSWORD_CHANGED', $subject, $sent);
+        return $sent;
+    }
+
+    /**
+     * ۵. ایمیل هشدار ورود از دستگاه جدید (New Device Detected)
+     */
+    public static function sendNewDeviceDetectedEmail(
+        string $email,
+        string $fullName,
+        string $ip,
+        string $userAgent,
+        string $time,
+        ?int $userId = null
+    ): bool {
+        if ($userId !== null && !(new EmailPreferenceRepository())->canSend($userId, 'security')) {
+            return false;
+        }
+
+        $nameSafe = htmlspecialchars(self::formatName($fullName, $email), ENT_QUOTES, 'UTF-8');
+        $ipSafe = htmlspecialchars($ip !== '' ? $ip : '0.0.0.0', ENT_QUOTES, 'UTF-8');
+        $uaSafe = htmlspecialchars($userAgent !== '' ? $userAgent : 'دستگاه ناشناخته', ENT_QUOTES, 'UTF-8');
+        $timeSafe = htmlspecialchars($time, ENT_QUOTES, 'UTF-8');
+
+        $subject = 'هشدار ورود جدید | VELORA TRADE';
+        $profileUrl = rtrim((string) Config::get('frontend_url', 'https://veloratrade.ir'), '/') . '/profile';
+
+        $html = EmailTemplate::render(
+            'هشدار ورود جدید',
+            'ورود از دستگاه جدید',
+            '<p style="margin:0 0 14px;color:#ffffff;font-size:16px;font-weight:bold;">سلام ' . $nameSafe . '،</p>' .
+            '<p style="margin:0 0 14px;color:#f3f4f6;">یک ورود جدید به حساب کاربری شما در VELORA TRADE شناسایی شد:</p>' .
+            '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0;background:#141f32;border-radius:10px;border:1px solid #d4af37;box-shadow:0 4px 15px rgba(212,175,55,0.15);">' .
+            '<tr><td style="padding:16px 20px;color:#e2e8f0;font-size:14px;line-height:2.2;">' .
+            '<strong style="color:#d4af37;">آی‌پی (IP):</strong> <span style="color:#ffffff;font-weight:bold;direction:ltr;display:inline-block;">' . $ipSafe . '</span><br>' .
+            '<strong style="color:#d4af37;">دستگاه / مرورگر:</strong> <span style="color:#ffffff;">' . $uaSafe . '</span><br>' .
+            '<strong style="color:#d4af37;">زمان ورود:</strong> <span style="color:#ffffff;direction:ltr;display:inline-block;">' . $timeSafe . '</span>' .
+            '</td></tr></table>' .
+            '<p style="margin:0 0 14px;color:#f3f4f6;">اگر این ورود توسط شما انجام شده است، نیازی به هیچ اقدامی نیست.</p>',
+            'بررسی امنیت حساب',
+            $profileUrl,
+            'اگر شما وارد نشده‌اید، لطفاً فوراً رمز عبور خود را تغییر داده و نشست‌های فعال را لغو کنید.',
+            'TRADE · ACCOUNT SECURITY'
+        );
+
+        $sent = Mailer::send($email, $subject, $html);
+        self::logNotification($userId, $email, 'NEW_DEVICE_DETECTED', $subject, $sent);
+        return $sent;
+    }
+
+    /**
+     * ۶. ایمیل ثبت اولین معامله (First Trade Recorded)
+     */
+    public static function sendFirstTradeEmail(
+        string $email,
+        string $fullName,
+        string $symbol,
+        string $direction,
+        string $dashboardUrl,
+        ?int $userId = null
+    ): bool {
+        if ($userId !== null && !(new EmailPreferenceRepository())->canSend($userId, 'trades')) {
+            return false;
+        }
+
+        $nameSafe = htmlspecialchars(self::formatName($fullName, $email), ENT_QUOTES, 'UTF-8');
+        $symbolSafe = htmlspecialchars($symbol, ENT_QUOTES, 'UTF-8');
+        $dirLabel = strtolower($direction) === 'buy' ? 'خرید (BUY)' : 'فروش (SELL)';
+
+        $subject = 'اولین معامله | VELORA TRADE';
+
+        $html = EmailTemplate::render(
+            'ثبت اولین معامله',
+            'اولین معامله شما در VELORA ثبت شد',
+            '<p style="margin:0 0 14px;color:#ffffff;font-size:16px;font-weight:bold;">سلام ' . $nameSafe . '،</p>' .
+            '<p style="margin:0 0 14px;color:#f3f4f6;">تبریک می‌گوییم! اولین معامله شما با موفقیت در ژورنال معاملاتی VELORA ثبت شد:</p>' .
+            '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0;background:#141f32;border-radius:10px;border:1px solid #d4af37;box-shadow:0 4px 15px rgba(212,175,55,0.15);">' .
+            '<tr><td style="padding:16px 20px;color:#e2e8f0;font-size:14px;line-height:2.2;text-align:center;">' .
+            '<div style="font-size:18px;font-weight:bold;color:#d4af37;margin-bottom:8px;">📊 ' . $symbolSafe . ' &nbsp;•&nbsp; ' . $dirLabel . '</div>' .
+            '<div style="color:#ffffff;font-size:13px;">وضعیت: ثبت موفق در ژورنال معاملاتی</div>' .
+            '</td></tr></table>' .
+            '<p style="margin:0 0 14px;color:#f3f4f6;">ثبت دقیق و منظم معاملات، اولین قدم در تحلیل حرفه‌ای عملکرد، بهبود مستمر استراتژی‌ها و کاهش ریسک معاملاتی است.</p>',
+            'مشاهده تحلیل عملکرد',
+            $dashboardUrl,
+            'برای دریافت دقیق‌ترین شاخص‌ها و آمار معاملاتی، تمامی معاملات سودده و زیان‌ده خود را ثبت کنید.',
+            'TRADE · SMART ANALYTICS PLATFORM'
+        );
+
+        $sent = Mailer::send($email, $subject, $html);
+        self::logNotification($userId, $email, 'FIRST_TRADE_RECORDED', $subject, $sent);
+        return $sent;
+    }
+
+    /**
+     * ۷. ایمیل کسب دستاورد جدید (Achievement Unlocked)
+     */
+    public static function sendAchievementUnlockedEmail(
+        string $email,
+        string $fullName,
+        string $achievementTitle,
+        string $achievementDesc,
+        string $profileUrl,
+        ?int $userId = null
+    ): bool {
+        if ($userId !== null && !(new EmailPreferenceRepository())->canSend($userId, 'achievements')) {
+            return false;
+        }
+
+        $nameSafe = htmlspecialchars(self::formatName($fullName, $email), ENT_QUOTES, 'UTF-8');
+        $titleSafe = htmlspecialchars($achievementTitle, ENT_QUOTES, 'UTF-8');
+        $descSafe = htmlspecialchars($achievementDesc, ENT_QUOTES, 'UTF-8');
+
+        $subject = '🏆 دستاورد جدید | VELORA TRADE';
+
+        $html = EmailTemplate::render(
+            'دستاورد جدید',
+            'دستاورد جدید باز شد!',
+            '<p style="margin:0 0 14px;color:#ffffff;font-size:16px;font-weight:bold;">سلام ' . $nameSafe . '،</p>' .
+            '<p style="margin:0 0 14px;color:#f3f4f6;">شما یک دستاورد جدید در مسیر حرفه‌ای معامله‌گری خود در پلتفرم VELORA TRADE کسب کردید:</p>' .
+            '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0;background:#141f32;border-radius:10px;border:1px solid #d4af37;box-shadow:0 4px 15px rgba(212,175,55,0.18);">' .
+            '<tr><td style="padding:18px 20px;text-align:center;">' .
+            '<div style="font-size:18px;font-weight:bold;color:#d4af37;margin-bottom:8px;">🏆 ' . $titleSafe . '</div>' .
+            '<div style="color:#ffffff;font-size:14px;line-height:1.9;">' . $descSafe . '</div>' .
+            '</td></tr></table>' .
+            '<p style="margin:0 0 14px;color:#f3f4f6;">با ادامه ثبت معاملات و بهبود شاخص‌های معاملاتی، دستاوردهای بیشتری را در پنل کاربری خود آزاد کنید.</p>',
+            'مشاهده دستاوردها',
+            $profileUrl,
+            'دستاوردهای شما نشان‌دهنده میزان انضباط، استمرار و رشد مهارت معاملاتی شما در VELORA است.',
+            'TRADE · SMART ANALYTICS PLATFORM'
+        );
+
+        $sent = Mailer::send($email, $subject, $html);
+        self::logNotification($userId, $email, 'ACHIEVEMENT_UNLOCKED', $subject, $sent);
+        return $sent;
+    }
+}

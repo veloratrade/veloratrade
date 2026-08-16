@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+
+<html data-i18n-features="common,errors,blog" data-route-locale="en" data-velora-prelocalized="en" dir="ltr" lang="en">
+<head>
+<meta charset="utf-8"/><script src="/public/assets/velora-locale-registry.js?v=2026.08.13.11"></script><script src="/public/assets/velora-locale-bootstrap.js?v=2026.08.13.11"></script><link href="/public/assets/velora-localization.css?v=2026.08.13.11" rel="stylesheet"/><script src="/public/assets/velora-localization.js?v=2026.08.13.11"></script><script src="/public/assets/velora-data.js?v=2026.08.13.11"></script><script defer="" src="/public/assets/velora-dynamic-content.js?v=2026.08.13.11"></script>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title data-i18n="pages.blog.velora.blog.trading.journal.and.risk.management.68b13dc3">VELORA Blog | Trading Journal and Risk Management Education</title>
+<meta content="VELORA educational articles about trading journals, forex journaling, risk management, MT4/MT5 sync and trading performance analytics." data-i18n-content="pages.blog.velora.educational.articles.about.trading.journals.forex.e0c3bd3a" name="description"/>
+<link href="https://veloratrade.ir/en/blog/" rel="canonical"/>
+<link href="/favicon-32.png" rel="icon" sizes="32x32" type="image/png"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#060A14;--bg2:#0A1122;--card:rgba(255,255,255,.055);--line:rgba(241,196,83,.22);--gold:#f1c453;--gold2:#ffb703;--gold3:#d4af37;--txt:#f4f7fb;--muted:#9aa9c2;--faint:#5E6F92;--green:#4cd39a;--r:20px}
+html{scroll-behavior:smooth}
+body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--bg);color:var(--txt);line-height:1.75;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(1000px 600px at 75% 15%,rgba(255,183,3,.10),transparent 70%),radial-gradient(800px 500px at 20% 80%,rgba(59,130,246,.06),transparent 60%),linear-gradient(180deg,#060A14,#080d1c 58%,#060A14)}
+.wrap{position:relative;z-index:1;width:min(1120px,calc(100% - 36px));margin:auto}
+
+/* NAV */
+.nav{display:flex;align-items:center;justify-content:space-between;padding:22px 0;gap:16px}
+.brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--txt);font-weight:900;letter-spacing:4px}
+.brand img{width:38px;height:38px;filter:drop-shadow(0 0 14px rgba(255,183,3,.4))}
+
+/* GLASS BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:8px;border-radius:14px;padding:12px 22px;text-decoration:none;font-weight:800;font-size:14px;transition:all .25s ease;cursor:pointer;border:none;font-family:inherit;position:relative;overflow:hidden;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.btn-gold{background:linear-gradient(135deg,rgba(255,242,191,.15),rgba(255,183,3,.12),rgba(212,175,55,.08));border:1px solid rgba(255,183,3,.45);color:var(--gold);box-shadow:0 4px 20px rgba(255,183,3,.12),inset 0 1px rgba(255,255,255,.12)}
+.btn-gold:hover{background:linear-gradient(135deg,rgba(255,242,191,.22),rgba(255,183,3,.18),rgba(212,175,55,.14));border-color:rgba(255,183,3,.7);box-shadow:0 8px 32px rgba(255,183,3,.22),inset 0 1px rgba(255,255,255,.18);transform:translateY(-2px)}
+.btn-ghost{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);color:var(--txt);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.btn-ghost:hover{background:rgba(255,255,255,.08);border-color:rgba(255,183,3,.35);color:var(--gold)}
+.btn-sm{padding:8px 16px;font-size:12px;border-radius:10px}
+
+/* HERO */
+.hero{text-align:center;padding:60px 0 40px}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:rgba(241,196,83,.06);color:var(--gold);border-radius:999px;padding:7px 18px;font-weight:700;font-size:13px;margin-bottom:20px;letter-spacing:.3px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.eyebrow svg{width:16px;height:16px;flex-shrink:0}
+.hero h1{font-size:clamp(36px,5.5vw,60px);line-height:1.2;margin:16px 0;letter-spacing:-.03em}
+.hero h1 .gold{background:linear-gradient(120deg,#fff2bf,var(--gold2),#d4af37);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{color:var(--muted);font-size:18px;max-width:650px;margin:0 auto 32px;line-height:1.8}
+
+/* STATS */
+.stats{display:flex;justify-content:center;gap:48px;margin:40px 0 50px;flex-wrap:wrap}
+.stat{text-align:center;position:relative}
+.stat::after{content:'';position:absolute;left:-24px;top:50%;transform:translateY(-50%);width:1px;height:32px;background:rgba(255,255,255,.08)}
+.stat:first-child::after{display:none}
+.stat b{display:block;font-size:32px;font-weight:800;color:var(--gold);letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.stat span{font-size:13px;color:var(--muted)}
+
+/* GRID */
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin:40px 0 60px}
+
+/* CARD */
+.card{position:relative;display:block;text-decoration:none;color:var(--txt);border:1px solid rgba(255,255,255,.08);background:linear-gradient(145deg,rgba(255,255,255,.06),rgba(255,255,255,.02));border-radius:var(--r);padding:28px;transition:all .3s ease;overflow:hidden;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.card::before{content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:200px;height:120px;background:radial-gradient(closest-side,rgba(212,175,55,.1),transparent);pointer-events:none;opacity:0;transition:opacity .3s}
+.card:hover{transform:translateY(-4px);border-color:rgba(212,175,55,.35);box-shadow:0 20px 50px rgba(0,0,0,.25),0 0 30px rgba(212,175,55,.06)}
+.card:hover::before{opacity:1}
+.card-icon{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,rgba(212,175,55,.15),rgba(212,175,55,.04));border:1px solid rgba(212,175,55,.25);display:flex;align-items:center;justify-content:center;margin-bottom:16px;box-shadow:0 4px 12px rgba(212,175,55,.1)}
+.card-icon svg{width:22px;height:22px;color:var(--gold);filter:drop-shadow(0 0 6px rgba(255,183,3,.4))}
+.card-tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--gold);background:rgba(212,175,55,.1);border:1px solid rgba(212,175,55,.2);padding:4px 12px;border-radius:8px;margin-bottom:14px;letter-spacing:.3px}
+.card b{display:block;color:#fff;font-size:20px;margin-bottom:10px;line-height:1.4;font-weight:800}
+.card>p,.card>span:not(.card-tag):not(.card-meta){color:var(--muted);font-size:14px;line-height:1.8}
+.card-meta{display:flex;align-items:center;gap:16px;margin-top:18px;font-size:12px;color:var(--faint)}
+.card-meta .dot{width:3px;height:3px;border-radius:50%;background:var(--faint);flex-shrink:0}
+.card-arrow{position:absolute;bottom:28px;left:28px;width:32px;height:32px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;color:var(--gold);transition:all .25s;opacity:0;transform:translateX(-8px)}
+.card-arrow svg{width:16px;height:16px}
+.card:hover .card-arrow{opacity:1;transform:translateX(0)}
+.card-arrow-l{left:28px}
+.card-arrow-r{left:auto;right:28px;transform:translateX(8px)}
+.card:hover .card-arrow-r{transform:translateX(0)}
+
+/* FEATURED */
+.featured{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin:40px 0 50px}
+.featured .card{padding:32px;border-color:rgba(212,175,55,.2)}
+.featured .card b{font-size:24px}
+
+/* NEWSLETTER */
+.newsletter{text-align:center;padding:50px 0;margin:20px 0 60px;background:linear-gradient(180deg,rgba(212,175,55,.04),transparent);border:1px solid rgba(212,175,55,.12);border-radius:24px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.newsletter h3{font-size:24px;margin-bottom:8px}
+.newsletter p{color:var(--muted);margin-bottom:24px}
+.nl-form{display:flex;gap:10px;justify-content:center;max-width:440px;margin:0 auto}
+.nl-form input{flex:1;padding:13px 18px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:14px;color:var(--txt);font-size:14px;font-family:inherit;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:border-color .2s}
+.nl-form input:focus{outline:none;border-color:rgba(212,175,55,.5);box-shadow:0 0 0 3px rgba(212,175,55,.08)}
+.nl-form input::placeholder{color:var(--faint)}
+
+/* FOOTER */
+.footer{border-top:1px solid rgba(255,255,255,.06);padding:30px 0;text-align:center;color:var(--muted);font-size:13px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.footer a{color:var(--muted);text-decoration:none;transition:color .2s}
+.footer a:hover{color:var(--gold)}
+
+/* SECTION TITLE */
+.sec-label{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--gold);font-weight:700;margin-bottom:20px;letter-spacing:.5px}
+.sec-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(212,175,55,.2),transparent)}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .grid{grid-template-columns:1fr}
+  .featured{grid-template-columns:1fr}
+  .stats{gap:24px}
+  .stat b{font-size:24px}
+  .stat::after{display:none}
+  .card b{font-size:17px}
+  .hero h1{font-size:32px}
+  .nl-form{flex-direction:column}
+  .footer{flex-direction:column;text-align:center}
+  .card-arrow{display:none}
+}
+@media(prefers-reduced-motion:reduce){.card,.btn{transition:none}}
+</style>
+<link href="/public/assets/velora-premium-footer.css?v=20260813.1" rel="stylesheet"/>
+<meta content="en" name="content-language"/><meta content="https://veloratrade.ir/en/blog/" property="og:url"/><link href="https://veloratrade.ir/fa/blog/" hreflang="fa" rel="alternate"/><link href="https://veloratrade.ir/en/blog/" hreflang="en" rel="alternate"/><link href="https://veloratrade.ir/en/blog/" hreflang="x-default" rel="alternate"/></head>
+<body>
+<div class="wrap">
+<!-- NAV -->
+<header class="nav">
+<a class="brand" href="/"><img alt="VELORA" data-i18n-alt="common.velora.2e043621" src="/velora-logo.svg"/><span data-i18n="common.velora.2e043621">VELORA</span></a>
+<div style="display:flex;gap:10px;align-items:center">
+<a class="btn btn-ghost btn-sm" data-i18n="common.login.e09e596b" href="/login">Login</a>
+<a class="btn btn-gold btn-sm" data-i18n="common.start.free.7af5f589" href="/register">Start Free</a>
+</div>
+</header>
+<!-- HERO -->
+<section class="hero">
+<span class="eyebrow">
+<svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"></path><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"></path></svg>
+<span data-i18n="common.professional.trading.education.9ae5f789">Professional Trading Education</span>
+</span>
+<h1><span data-i18n="common.blog.4a829cc7">Blog</span> <span class="gold" data-i18n="common.velora.2e043621">VELORA</span></h1>
+<p class="lead" data-i18n="common.education.for.trading.journals.performance.analytics.risk.75b21185">Education for trading journals, performance analytics, risk management and MT4/MT5 trade review.</p>
+</section>
+<!-- STATS -->
+<div class="stats">
+<div class="stat"><b data-format="number" data-format-options='{"signDisplay":"always","maximumFractionDigits":0}' data-value="20">+20</b><span data-i18n="common.articles.99a75fcc">Articles</span></div>
+<div class="stat"><b data-format="number" data-format-options='{"signDisplay":"auto","maximumFractionDigits":0}' data-value="5">5</b><span data-i18n="common.categories.33be46a3">Categories</span></div>
+<div class="stat"><b data-format="percent" data-format-options='{"maximumFractionDigits":0}' data-value="1">100%</b><span data-i18n="common.free.3d88da0e">Free</span></div>
+</div>
+<!-- FEATURED -->
+<div class="sec-label">
+<svg fill="none" height="18" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="18"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+<span data-i18n="common.editor.s.picks.a78b2c29">Editor's Picks</span>
+</div>
+<div class="featured">
+<a class="card" href="/blog/what-is-trading-journal/">
+<div class="card-icon"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><rect height="9" rx="1.5" width="7" x="3" y="3"></rect><rect height="5" rx="1.5" width="7" x="14" y="3"></rect><rect height="9" rx="1.5" width="7" x="14" y="12"></rect><rect height="5" rx="1.5" width="7" x="3" y="16"></rect></svg></div>
+<div class="card-tag" data-i18n="common.featured.8dea656a">Featured</div>
+<b data-i18n="common.what.is.a.trading.journal.a.complete.a239bd98">What Is a Trading Journal? A Complete Guide for Forex and Crypto Traders</b>
+<span data-i18n="pages.blog.a.trading.journal.helps.traders.track.decisions.e11ee3a4">A trading journal helps traders track decisions, analyze performance, manage risk, and improve consistency. Learn what to record and how to use it.</span>
+<div class="card-meta"><span data-i18n="common.8.min.read.81675063">8 min read</span><span class="dot"></span><span data-i18n="common.beginner.to.advanced.99630cc4">Beginner to Advanced</span></div>
+<div class="card-arrow card-arrow-l"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewbox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"></path></svg></div>
+</a>
+<a class="card" href="/blog/risk-management-trading/">
+<div class="card-icon"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></div>
+<div class="card-tag" data-i18n="common.risk.management.4fd07387">Risk Management</div>
+<b data-i18n="common.risk.management.in.trading.how.to.control.6e98ea9b">Risk Management in Trading: How to Control Losses and Protect Capital</b>
+<span data-i18n="common.risk.management.means.controlling.position.size.stop.6056da66">Risk management means controlling position size, stop loss, drawdown, and risk-to-reward. Learn how journaling improves risk discipline.</span>
+<div class="card-meta"><span data-i18n="pages.blog.10.min.read.f7b8245f">10 min read</span><span class="dot"></span><span data-i18n="common.intermediate.to.advanced.2a149d9f">Intermediate to Advanced</span></div>
+<div class="card-arrow card-arrow-l"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewbox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"></path></svg></div>
+</a>
+</div>
+<!-- ALL ARTICLES -->
+<div class="sec-label">
+<svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="18"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path></svg>
+<span data-i18n="common.all.articles.5a07294c">All Articles</span>
+</div>
+<div class="grid">
+<a class="card" href="/blog/forex-trading-journal/">
+<div class="card-icon"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M3 3v18h18"></path><path d="M7 15l4-6 4 3 5-8"></path></svg></div>
+<div class="card-tag" data-i18n="common.forex.ed552007">Forex</div>
+<b data-i18n="common.forex.trading.journal.how.to.track.and.b2b2e253">Forex Trading Journal: How to Track and Review Your Forex Trades</b>
+<span data-i18n="common.learn.how.a.forex.trading.journal.helps.61666b3e">Learn how a forex trading journal helps you record trades, analyze currency pairs, review sessions, manage risk, and improve consistency.</span>
+<div class="card-meta"><span data-i18n="pages.blog.7.min.read.101a3700">7 min read</span><span class="dot"></span><span data-i18n="common.forex.ed552007">Forex</span></div>
+<div class="card-arrow card-arrow-l"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewbox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"></path></svg></div>
+</a>
+<a class="card" href="/blog/why-traders-need-journal/">
+<div class="card-icon"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4M12 8h.01"></path></svg></div>
+<div class="card-tag" data-i18n="common.psychology.5aff3cdc">Psychology</div>
+<b data-i18n="pages.blog.why.traders.need.a.journal.the.mistakes.2e7337df">Why Traders Need a Journal: The Mistakes You Cannot Fix Without Data</b>
+<span data-i18n="pages.blog.traders.repeat.mistakes.when.they.do.not.21bc5e3c">Traders repeat mistakes when they do not track them. Learn how a trading journal improves discipline, emotional control, and strategy review.</span>
+<div class="card-meta"><span data-i18n="pages.blog.6.min.read.0024cd2e">6 min read</span><span class="dot"></span><span data-i18n="common.beginner.fcb2f577">Beginner</span></div>
+<div class="card-arrow card-arrow-l"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewbox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"></path></svg></div>
+</a>
+<a class="card" href="/blog/mt4-mt5-trading-journal/">
+<div class="card-icon"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg></div>
+<div class="card-tag">MT4/MT5</div>
+<b data-i18n="pages.blog.mt4.and.mt5.trading.journal.how.to.50dbbf4c">MT4 and MT5 Trading Journal: How to Sync MetaTrader Trades for Analysis</b>
+<span data-i18n="common.learn.how.connecting.mt4.and.mt5.to.ed619909">Learn how connecting MT4 and MT5 to a trading journal helps automate trade tracking, reduce manual errors, and improve performance review.</span>
+<div class="card-meta"><span data-i18n="pages.blog.9.min.read.a3b8510d">9 min read</span><span class="dot"></span><span data-i18n="common.technical.28677e76">Technical</span></div>
+<div class="card-arrow card-arrow-l"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewbox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"></path></svg></div>
+</a>
+<a class="card" href="/blog/risk-management-trading/">
+<div class="card-icon"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M12 20V10M18 20V4M6 20v-4"></path></svg></div>
+<div class="card-tag" data-i18n="common.analytics.da272333">Analytics</div>
+<b data-i18n="common.trading.performance.analytics.key.metrics.every.trader.4d29cafb">Trading Performance Analytics: Key Metrics Every Trader Should Know</b>
+<span data-i18n="common.win.rate.profit.factor.drawdown.and.r.5ad71c8f">Win rate, profit factor, drawdown, and R-Multiple — the metrics every trader needs to understand for consistent improvement.</span>
+<div class="card-meta"><span data-i18n="common.8.min.read.81675063">8 min read</span><span class="dot"></span><span data-i18n="common.intermediate.48615c71">Intermediate</span></div>
+<div class="card-arrow card-arrow-l"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" viewbox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"></path></svg></div>
+</a>
+</div>
+<!-- NEWSLETTER -->
+<div class="newsletter">
+<h3 data-i18n="common.stay.updated.with.new.articles.86805643">Stay Updated with New Articles</h3>
+<p data-i18n="common.get.the.latest.velora.educational.articles.delivered.ffc7dade">Get the latest VELORA educational articles delivered to your inbox.</p>
+<form class="nl-form" onsubmit="event.preventDefault();this.innerHTML='&lt;span style=color:var(--green)&gt;ثبت شد!&lt;/span&gt;'">
+<input data-i18n-placeholder="pages.blog.your.email.address.3a71b5c8" placeholder="Your email address" required="" type="email"/>
+<button class="btn btn-gold" data-i18n="common.subscribe.8b94a86e" type="submit">Subscribe</button>
+</form>
+</div>
+<!-- FOOTER -->
+<footer class="footer">
+<span data-i18n="pages.blog.2026.velora.all.rights.reserved.888bbd54">© 2026 VELORA. All rights reserved.</span>
+<div style="display:flex;gap:20px">
+<a data-i18n="common.home.e5608ccf" href="/">Home</a>
+<a data-i18n="common.privacy.3f5d8744" href="/privacy">Privacy</a>
+<a data-i18n="common.terms.3a93abb8" href="/terms">Terms</a>
+</div>
+</footer>
+</div>
+<script src="/public/assets/velora-ui-sound.js?v=2026.08.13.1"></script>
+<script src="/public/assets/velora-dialog.js?v=2026.08.13.1"></script>
+<script src="/public/assets/velora-premium-footer.js?v=20260813.1"></script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://velora.trade/schemas/localization-catalog.schema.json",
+  "title": "Velora localization catalog",
+  "type": "object",
+  "required": [
+    "_meta",
+    "messages"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "_meta": {
+      "type": "object",
+      "required": [
+        "locale",
+        "version"
+      ],
+      "properties": {
+        "locale": {
+          "type": "string",
+          "pattern": "^[a-z]{2,3}(?:-[A-Z]{2})?$"
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "generatedAt": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "messages": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-zA-Z0-9_.-]+$"
+      },
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "feature": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "additionalProperties": false
+}

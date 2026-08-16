@@ -1,0 +1,6 @@
+# real data & secrets - must never be public
+api/storage/*.sqlite
+api/storage/*.sqlite-*
+api/storage/*.log
+*.env
+!api/.env.example

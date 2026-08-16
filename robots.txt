@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+
+Disallow: /api/
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /trades/
+Disallow: /accounts/
+Disallow: /profile/
+Disallow: /wallet/
+Disallow: /performance/
+Disallow: /intelligence/
+
+Sitemap: https://veloratrade.ir/sitemap.xml

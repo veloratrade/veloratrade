@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Velora locale manifest",
+  "type": "object",
+  "required": [
+    "version",
+    "defaultLocale",
+    "fallbackLocale",
+    "locales",
+    "cookieKey",
+    "featureCatalogBase"
+  ],
+  "properties": {
+    "version": {
+      "type": "string"
+    },
+    "defaultLocale": {
+      "type": "string"
+    },
+    "fallbackLocale": {
+      "type": "string"
+    },
+    "storageKey": {
+      "type": "string"
+    },
+    "locales": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "intlLocale",
+          "name",
+          "nativeName",
+          "direction",
+          "enabled",
+          "numberingSystem",
+          "script"
+        ],
+        "properties": {
+          "intlLocale": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "nativeName": {
+            "type": "string"
+          },
+          "direction": {
+            "enum": [
+              "rtl",
+              "ltr"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "numberingSystem": {
+            "type": "string",
+            "minLength": 1
+          },
+          "script": {
+            "type": "string",
+            "pattern": "^[A-Z][a-z]{3}$"
+          }
+        }
+      }
+    },
+    "cookieKey": {
+      "type": "string",
+      "minLength": 1
+    },
+    "featureCatalogBase": {
+      "type": "string",
+      "pattern": "^/"
+    }
+  }
+}

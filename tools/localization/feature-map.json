@@ -1,0 +1,32 @@
+{
+  "version": "2026.08.13.11",
+  "always": [
+    "common",
+    "errors"
+  ],
+  "serverOnly": [
+    "email"
+  ],
+  "sharedFeatureThreshold": 2,
+  "runtimeKeys": [
+    "common.language"
+  ],
+  "runtimeNamespaces": [
+    "status"
+  ],
+  "aliases": {
+    "accounts": "trades",
+    "achievements": "common",
+    "auth": "auth",
+    "forgot_password": "auth",
+    "landing": "landing",
+    "login": "auth",
+    "nav": "common",
+    "notFound": "common",
+    "register": "auth",
+    "reset_password": "auth",
+    "status": "common",
+    "verify_email": "auth"
+  },
+  "description": "Build-time usage-scoped catalog policy. Shared runtime/cross-feature keys go to common; each route group receives only keys its templates reference. Aliases add future page groups without runtime-core changes."
+}
