@@ -196,10 +196,34 @@ jobs:
           mkdir -p api/storage
           php api/init-sqlite.php 2>&1 | tail -5
           cp api/storage/velora.sqlite "$VELORA_PRIVATE_ROOT/data/velora.sqlite"
+          # init-sqlite.php predates the v0.2 bridge migration and creates
+          # trading_accounts without broker/platform/sync_status/... , so every
+          # dashboard endpoint 500s. Add the missing columns before seeding.
           php -r '
             $p = getenv("VELORA_PRIVATE_ROOT")."/data/velora.sqlite";
             $pdo = new PDO("sqlite:".$p);
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $have = array_column($pdo->query("PRAGMA table_info(trading_accounts)")->fetchAll(PDO::FETCH_ASSOC), "name");
+            $add = [
+              "broker" => "TEXT", "platform" => "TEXT", "server" => "TEXT",
+              "mt_login" => "TEXT", "account_type" => "TEXT",
+              "metaapi_account_id" => "TEXT", "sync_status" => "TEXT DEFAULT \"idle\"",
+              "last_synced_at" => "TEXT", "connected_at" => "TEXT",
+              "disconnected_at" => "TEXT", "auto_sync_enabled" => "INTEGER DEFAULT 0",
+              "last_incremental_at" => "TEXT", "connection_checked_at" => "TEXT",
+              "consecutive_errors" => "INTEGER DEFAULT 0", "last_error" => "TEXT",
+              "starting_balance" => "REAL DEFAULT 0", "current_balance" => "REAL DEFAULT 0",
+            ];
+            foreach ($add as $col => $type) {
+              if (!in_array($col, $have, true)) {
+                $pdo->exec("ALTER TABLE trading_accounts ADD COLUMN $col $type");
+              }
+            }
+            $tc = array_column($pdo->query("PRAGMA table_info(trades)")->fetchAll(PDO::FETCH_ASSOC), "name");
+            if (!in_array("external_deal_id", $tc, true)) {
+              $pdo->exec("ALTER TABLE trades ADD COLUMN external_deal_id TEXT");
+            }
+            echo "schema aligned with the repository classes\n";
             $hash = password_hash("CiTest1234!", PASSWORD_BCRYPT, ["cost" => 10]);
             $pdo->prepare(
               "INSERT OR REPLACE INTO users
