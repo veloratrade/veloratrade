@@ -40,21 +40,31 @@ jobs:
           fi
           echo "All PHP files parsed cleanly."
 
-      - name: Prepare test environment
+      - name: Prepare private runtime root
         run: |
-          mkdir -p api/storage
-          cat > /tmp/velora.env <<'ENVEOF'
+          # Config::privateRoot() demands an absolute dir OUTSIDE the document root.
+          PRIV="$HOME/velora-private"
+          mkdir -p "$PRIV/config" "$PRIV/data" "$PRIV/storage"
+          cat > "$PRIV/config/velora.env" <<ENVEOF
           APP_ENV=local
-          JWT_SECRET=ci-test-secret-key-that-is-long-enough-32
+          APP_DEBUG=true
+          JWT_SECRET=ci-only-secret-key-at-least-32-bytes-long-xx
+          APP_ENCRYPTION_KEY=$(head -c 32 /dev/urandom | base64 -w0)
           MAIL_DRIVER=log
           DB_DRIVER=sqlite
+          DB_DATABASE=$PRIV/data/velora.sqlite
+          FRONTEND_URL=http://127.0.0.1:8080
+          CORS_ALLOWED_ORIGINS=http://127.0.0.1:8080
+          BCRYPT_COST=10
           ENVEOF
-          echo "VELORA_ENV_FILE=/tmp/velora.env" >> $GITHUB_ENV
+          echo "VELORA_PRIVATE_ROOT=$PRIV" >> $GITHUB_ENV
+          echo "Private root ready at $PRIV"
 
       - name: Initialise database
         run: |
+          mkdir -p api/storage
           if [ -f api/init-sqlite.php ]; then
-            php api/init-sqlite.php || echo "::warning::init-sqlite.php returned non-zero"
+            php api/init-sqlite.php 2>&1 | tail -20 || echo "::warning::init-sqlite.php returned non-zero"
           fi
 
       - name: Boot API and check health
@@ -62,31 +72,34 @@ jobs:
           php -S 127.0.0.1:8080 -t . router.php > /tmp/server.log 2>&1 &
           for i in $(seq 1 20); do
             sleep 1
-            if curl -fsS --max-time 5 http://127.0.0.1:8080/api/v1/health > /tmp/health.json 2>/dev/null; then
+            code=$(curl -s -o /tmp/health.json -w '%{http_code}' --max-time 5 \
+                   http://127.0.0.1:8080/api/v1/health 2>/dev/null || echo 000)
+            if [ "$code" = "200" ]; then
               echo "Health OK:"; cat /tmp/health.json; exit 0
             fi
           done
-          echo "::error::API did not become healthy in 20s"
-          echo "----- server log -----"; cat /tmp/server.log
+          echo "::error::API did not become healthy in 20s (last http=$code)"
+          echo "----- response -----"; cat /tmp/health.json 2>/dev/null
+          echo "----- server log -----"; tail -40 /tmp/server.log
           exit 1
 
       - name: Login endpoint latency check
         run: |
           php -S 127.0.0.1:8081 -t . router.php > /tmp/server2.log 2>&1 &
           sleep 3
-          t=$(curl -s -o /tmp/login.json -w '%{time_total}' --max-time 30 \
+          t=$(curl -s -o /tmp/login.json -w '%{time_total}' --max-time 40 \
               -X POST http://127.0.0.1:8081/api/v1/auth/login \
               -H 'Content-Type: application/json' \
               -H 'Origin: http://127.0.0.1:8081' \
               -d '{"email":"nobody@invalid.test","password":"wrong"}' || echo 99)
           echo "login response time: ${t}s"
-          cat /tmp/login.json || true
-          slow=$(echo "$t > 3.0" | bc -l 2>/dev/null || echo 0)
-          if [ "$slow" = "1" ]; then
-            echo "::error::Login took ${t}s - the blocking-call regression is back"
+          head -c 300 /tmp/login.json || true; echo
+          if awk "BEGIN{exit !($t > 3.0)}"; then
+            echo "::error::Login took ${t}s - blocking call on the auth path"
+            tail -30 /tmp/server2.log
             exit 1
           fi
-          echo "Login latency acceptable."
+          echo "Login latency acceptable (${t}s)."
 
   python:
     name: Python tooling check
