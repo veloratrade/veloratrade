@@ -145,3 +145,88 @@ jobs:
         run: |
           python -m compileall -q tools *.py 2>&1 | tail -20
           echo "Python sources compiled."
+
+  dashboard:
+    name: Dashboard browser test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: sqlite3, pdo_sqlite, mbstring, openssl, curl
+          coverage: none
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Playwright
+        run: |
+          npm init -y > /dev/null 2>&1
+          npm install --no-save playwright > /dev/null 2>&1
+          npx playwright install --with-deps chromium > /dev/null 2>&1
+          echo "Playwright ready."
+
+      - name: Prepare private runtime root
+        run: |
+          PRIV="$HOME/velora-private"
+          mkdir -p "$PRIV/config" "$PRIV/data" "$PRIV/storage"
+          cat > "$PRIV/config/velora.env" <<ENVEOF
+          APP_ENV=local
+          APP_DEBUG=true
+          JWT_SECRET=ci-only-secret-key-at-least-32-bytes-long-xx
+          APP_ENCRYPTION_KEY=$(head -c 32 /dev/urandom | base64 -w0)
+          MAIL_DRIVER=log
+          DB_DRIVER=sqlite
+          DB_DATABASE=$PRIV/data/velora.sqlite
+          FRONTEND_URL=http://127.0.0.1:8080
+          CORS_ALLOWED_ORIGINS=http://127.0.0.1:8080
+          BCRYPT_COST=10
+          ENVEOF
+          echo "VELORA_PRIVATE_ROOT=$PRIV" >> $GITHUB_ENV
+
+      - name: Seed database with a known test user
+        run: |
+          mkdir -p api/storage
+          php api/init-sqlite.php 2>&1 | tail -5
+          cp api/storage/velora.sqlite "$VELORA_PRIVATE_ROOT/data/velora.sqlite"
+          php -r '
+            $p = getenv("VELORA_PRIVATE_ROOT")."/data/velora.sqlite";
+            $pdo = new PDO("sqlite:".$p);
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $hash = password_hash("CiTest1234!", PASSWORD_BCRYPT, ["cost" => 10]);
+            $pdo->prepare(
+              "INSERT OR REPLACE INTO users
+               (id,email,password_hash,full_name,role,timezone,status,email_verified_at,created_at,updated_at)
+               VALUES (900,?,?,?,?,?,?,datetime(\"now\"),datetime(\"now\"),datetime(\"now\"))"
+            )->execute(["ci@velora.test",$hash,"CI User","user","UTC","active"]);
+            echo "Test user ready.\n";
+          '
+
+      - name: Start application
+        run: |
+          php -S 127.0.0.1:8080 -t . router.php > /tmp/server.log 2>&1 &
+          for i in $(seq 1 20); do
+            sleep 1
+            if [ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://127.0.0.1:8080/health)" = "200" ]; then
+              echo "Application up."; exit 0
+            fi
+          done
+          echo "::error::Application did not start"; tail -30 /tmp/server.log; exit 1
+
+      - name: Run dashboard end-to-end test
+        env:
+          BASE_URL: http://127.0.0.1:8080
+          TEST_EMAIL: ci@velora.test
+          TEST_PASSWORD: CiTest1234!
+        run: node .github/scripts/dashboard_e2e.js
+
+      - name: Server log on failure
+        if: failure()
+        run: tail -60 /tmp/server.log
