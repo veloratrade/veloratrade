@@ -33,7 +33,7 @@ jobs:
     name: آپلود روی هاست
     needs: guard
     # از فورک‌ها اجرا نشود
-    if: github.repository == 'yadgarsict-del/veloratrade'
+    if: github.repository == 'veloratrade/veloratrade'
     runs-on: ubuntu-latest
     environment: production     # امکان الزام تأیید دستی
     steps:
