@@ -66,6 +66,24 @@ jobs:
           if [ -f api/init-sqlite.php ]; then
             php api/init-sqlite.php 2>&1 | tail -20 || echo "::warning::init-sqlite.php returned non-zero"
           fi
+          # init-sqlite.php hardcodes api/storage/velora.sqlite, but
+          # Database::connection() reads VELORA_PRIVATE_ROOT/data/velora.sqlite.
+          # Place the seeded database where the application actually looks.
+          if [ -f api/storage/velora.sqlite ]; then
+            cp api/storage/velora.sqlite "$VELORA_PRIVATE_ROOT/data/velora.sqlite"
+            echo "Seeded DB copied to the private data root."
+          fi
+          php -r '
+            $p = getenv("VELORA_PRIVATE_ROOT")."/data/velora.sqlite";
+            $pdo = new PDO("sqlite:".$p);
+            $t = $pdo->query("select name from sqlite_master where type=\"table\" order by name")
+                     ->fetchAll(PDO::FETCH_COLUMN);
+            echo "tables (".count($t)."): ".implode(", ", $t)."\n";
+            if (!in_array("rate_limits", $t, true)) {
+              fwrite(STDERR, "::error::rate_limits table missing - the login path will 500\n");
+              exit(1);
+            }
+          '
 
       - name: Boot API and check health
         run: |
@@ -87,19 +105,26 @@ jobs:
         run: |
           php -S 127.0.0.1:8081 -t . router.php > /tmp/server2.log 2>&1 &
           sleep 3
-          t=$(curl -s -o /tmp/login.json -w '%{time_total}' --max-time 40 \
-              -X POST http://127.0.0.1:8081/api/v1/auth/login \
+          read -r code t < <(curl -s -o /tmp/login.json -w '%{http_code} %{time_total}' \
+              --max-time 40 -X POST http://127.0.0.1:8081/api/v1/auth/login \
               -H 'Content-Type: application/json' \
               -H 'Origin: http://127.0.0.1:8081' \
-              -d '{"email":"nobody@invalid.test","password":"wrong"}' || echo 99)
-          echo "login response time: ${t}s"
-          head -c 300 /tmp/login.json || true; echo
+              -d '{"email":"nobody@invalid.test","password":"wrong"}' || echo "000 99")
+          echo "login: http=$code time=${t}s"
+          head -c 400 /tmp/login.json || true; echo
+
+          # A wrong password must be a clean 401, never a server error.
+          if [ "$code" = "500" ] || [ "$code" = "000" ]; then
+            echo "::error::Login returned http=$code - the auth path is broken"
+            tail -30 /tmp/server2.log
+            exit 1
+          fi
           if awk "BEGIN{exit !($t > 3.0)}"; then
             echo "::error::Login took ${t}s - blocking call on the auth path"
             tail -30 /tmp/server2.log
             exit 1
           fi
-          echo "Login latency acceptable (${t}s)."
+          echo "Login OK (http=$code, ${t}s)."
 
   python:
     name: Python tooling check
