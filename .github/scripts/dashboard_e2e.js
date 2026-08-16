@@ -18,6 +18,7 @@ const SLOW_MS = 3000;
 const failures = [];
 const consoleErrors = [];
 const failedRequests = [];
+let logoutStatus = null;
 
 function step(name, ok, detail) {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? '  -- ' + detail : ''}`);
@@ -83,10 +84,21 @@ function step(name, ok, detail) {
     await logoutBtn.first().click();
     const confirm = page.locator('#confirmLogout');
     if (await confirm.count()) {
-      await confirm.first().click().catch(() => {});
+      await Promise.all([
+        page.waitForResponse(
+          (r) => r.url().includes('/api/v1/auth/logout'),
+          { timeout: 15000 }
+        )
+          .then((r) => {
+            logoutStatus = r.status();
+            return r;
+          })
+          .catch(() => null),
+        confirm.first().click().catch(() => {}),
+      ]);
     }
     try {
-      await page.waitForURL(/login/, { timeout: 15000 });
+      await page.waitForURL(/\/login/, { timeout: 15000 });
       step('logout redirects to the login page', true, page.url());
     } catch {
       step('logout redirects to the login page', false, `still at ${page.url()}`);
@@ -94,6 +106,12 @@ function step(name, ok, detail) {
   } else {
     step('logout control exists', false, '#logoutBtn not found');
   }
+
+  step(
+    'logout API returned 200',
+    logoutStatus === 200,
+    `status=${logoutStatus} (403 SAME_ORIGIN_REQUIRED means the Origin header did not match frontend_url)`
+  );
 
   // ------------------------------- the reported bug: dashboard after logout
   await page.goto(`${BASE}/dashboard/`, { waitUntil: 'domcontentloaded' });
