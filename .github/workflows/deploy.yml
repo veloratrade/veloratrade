@@ -1,0 +1,81 @@
+# انتشار خودکار روی هاست
+#
+# مخزن خصوصی است. تنظیمات امنیتی زیر همچنان عمدی و لازم است:
+#   - فقط روی push به main اجرا می‌شود، نه روی pull_request
+#   - محدود به مخزن اصلی، تا از فورک‌ها اجرا نشود
+#   - وابسته به environment به نام production برای تأیید دستی
+#
+# پیش‌نیاز: سه Secret در Settings → Secrets and variables → Actions
+#   FTP_SERVER    مثلا ftp.veloratrade.ir
+#   FTP_USERNAME
+#   FTP_PASSWORD
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false   # آپلود نیمه‌کاره خطرناک است
+
+jobs:
+  guard:
+    name: بررسی سلامت قبل از انتشار
+    uses: ./.github/workflows/csp-guard.yml
+
+  deploy:
+    name: آپلود روی هاست
+    needs: guard
+    # از فورک‌ها اجرا نشود
+    if: github.repository == 'yadgarsict-del/veloratrade'
+    runs-on: ubuntu-latest
+    environment: production     # امکان الزام تأیید دستی
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: انتقال با FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server:   ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps        # اگر هاست پشتیبانی نکرد به ftp تغییر دهید
+          server-dir: ./        # اگر ریشه سایت public_html است اصلاح کنید
+          dangerous-clean-slate: false   # هرگز true نکنید
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/.github/**
+            **/node_modules/**
+            **/vendor/**
+            api/.env
+            api/storage/**
+            _database/**
+            **/*.sqlite
+            **/*.sqlite3
+            **/*.sql
+            **/*.log
+            **/*.md
+            **/*.zip
+            tools/**
+            extract-persian.py
+            .gitignore
+            .gitattributes
+
+      - name: خلاصه
+        run: |
+          echo "### انتشار انجام شد" >> $GITHUB_STEP_SUMMARY
+          echo "کامیت: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "دست‌نخورده روی هاست: \`api/.env\` و \`api/storage/\`" >> $GITHUB_STEP_SUMMARY
+
+  healthcheck:
+    name: تست سلامت سایت واقعی
+    needs: deploy
+    uses: ./.github/workflows/healthcheck.yml
