@@ -15,7 +15,7 @@ AS-IS VERIFIED BASELINE • READ-ONLY • APPROVAL REQUIRED BEFORE CHANGE
 | Scope | 630 files • 159 directories • approximately 29 MB |
 | Actual architecture | Static/generated HTML + Vanilla JS/CSS + PHP locale router + custom PHP/PDO API |
 | Change status | No application file was moved, renamed, deleted, refactored, or remediated. |
-| Document status | Structural source of truth for the audited baseline; all findings remain open. |
+| Document status | Structural source of truth for the audited baseline. **F-01 closed on 2026-08-17 (remediated on Production).** F-02…F-20 remain open. |
 
 CONFIDENTIALITY: .env values, database records, logs, credentials, and personal data are not disclosed. Sensitive evidence is limited to paths, permissions, hashes, and masked counts.
 
@@ -362,7 +362,7 @@ The current validator exits with code 1. An older LOCALIZATION_VALIDATION_OK sta
 
 | ID | Severity | Finding | Primary file/component |
 |---|---|---|---|
-| F-01 | HIGH | Secret and runtime artifacts have mode 0644 | api/.env; api/storage/velora.sqlite; api/storage/mail.log; api/error_log |
+| F-01 | HIGH | ✅ **CLOSED 2026-08-17 (Production)** — Secret and runtime artifacts had mode 0644 | api/.env; api/storage/velora.sqlite; api/storage/mail.log; api/error_log |
 | F-02 | HIGH | Data-bearing historical SQL exports remain under the web-root snapshot | _database/database_corrected.sql; api/database/database_corrected.sql; api/database/db_backup.sql |
 | F-03 | HIGH | Checkout bypasses locale routing and has no independent English route | index.html:1824; .htaccess; checkout/index.html; tools/localization/routes.json |
 | F-04 | HIGH | Five English outputs contain 161 visible Persian nodes | localized/en/accounts/connect (17); privacy (85); profile (3); terms (52); trades/new (4) |
@@ -393,7 +393,15 @@ The current validator exits with code 1. An older LOCALIZATION_VALIDATION_OK sta
 | Risk | Accidental export, copying outside Apache/LiteSpeed, backup errors, or another local user could expose credentials, logs, or runtime data. |
 | Recommendation | After approval and backup, keep runtime data outside source/public_html; use 0600 files and a 0700 storage directory; preserve Production .env and data. |
 | Verification test | Check stat output, archive listing, controlled HTTP denial, and API smoke tests. |
-| Status | OPEN — no remediation applied; approval required. |
+| Status | **CLOSED — 2026-08-17.** Remediation applied by the owner directly on the **Production host** (`veloratrade.ir`, docroot `public_html/`). Not staging, not a test environment. |
+| Remediation applied (Production) | `api/.env` relocated outside the Production docroot; the application now reads `/home/piknet/velora_private/config/velora.env`. `api/storage` set to `700`. `api/storage/velora.sqlite` set to `600`. |
+| Post-change verification (Production) | Verification and regression checks only — **no configuration was altered by these tests**. Site: `/`, `/fa/`, `/en/`, `/fa/login/`, `/en/login/`, `/fa/register/` → 200; unknown path → 404; `X-VELORA-Locale: fa` present. API: `/health` → `data.status == "ok"` (envelope contract B-8); `POST /auth/login` (unknown user) → 401 `INVALID_CREDENTIALS`; `POST /auth/register` (invalid input) → 422 `VALIDATION_FAILED`; `/dashboard`, `/trades`, `/profile`, `/wallet` → 302 → `/fa/login/`. Zero HTTP 500 observed. |
+| Database proof (Production) | Read **and write** paths confirmed. Login attempts 1–8 → 401; attempts 9 and 10 → **429 `TOO_MANY_REQUESTS`**. `RateLimiter::hit('login', 8, 300)` (`api/index.php:104`) performs `INSERT ... ON DUPLICATE KEY UPDATE` on table `rate_limits`, so the 429 proves MySQL was both written and read after the permission change. `POST /auth/forgot-password` → 200 `sent:true`, confirming file writes under `velora_private/logs` still succeed. |
+| HTTP denial re-confirmed (Production) | `/api/.env` → 404 • `/api/storage/` → 403 • `/api/storage/velora.sqlite` → 403 • `/api/storage/mail.log` → 403 • `/api/error_log` → 404 • `/.env` → 403. Response bodies scanned: no `SQLite format` header and no credential material returned. |
+| Regression result | **None.** Site and API remained fully healthy after the change. |
+| Durability | This remediation is host filesystem state and leaves no trace in the repository. Verified that `deploy.yml` copies neither `api/.env` nor `api/storage` (zero matches), so a future release cannot revert F-01. |
+| Evidence limitation | The `700`/`600` values are the owner's report. File modes cannot be read over HTTP; the corroborating evidence here is indirect (absence of errors plus full functionality). Direct `stat` verification requires host access, which OC-1 blocks from the agent sandbox. |
+| Residual note | `velora.sqlite` is a pre-migration leftover, not the live datastore: `DB_DRIVER=mysql`, and `Database.php:27` refuses any SQLite path not under `VELORA_PRIVATE_ROOT/data`. Chmod was applied defensively; archiving it remains optional and is **not** required to keep F-01 closed. |
 
 ### F-02 — HIGH — Data-bearing historical SQL exports remain under the web-root snapshot
 
