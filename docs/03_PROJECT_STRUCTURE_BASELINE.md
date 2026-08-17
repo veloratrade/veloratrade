@@ -155,6 +155,31 @@ API dynamic translation uses public cache-only lookup; the provider is invoked o
 
 The backend uses no external application framework. api/src/bootstrap.php provides custom autoloading and exception handling; Core/Router.php and Core/Request/Response.php define the HTTP contract. PHP 8.1+ is required by syntax and runtime functions.
 
+### Response Envelope Contract
+
+> **Amendment 2026-08-17 (B-8) — added after the baseline audit.** This contract
+> was implicit in the code and recorded in no document. A health probe asserted
+> against the wrong field and reported a false failure while staging was healthy.
+
+All API responses are wrapped in a fixed envelope:
+
+```json
+{ "status": "success" | "error",
+  "data":   { ... } | null,
+  "error":  null | { ... },
+  "timestamp": "ISO-8601" }
+```
+
+| Rule | Detail |
+|---|---|
+| Payload location | Always under `data` — never at the top level |
+| Top-level `status` | Transport-level outcome (`success` / `error`), **not** domain state |
+| Health example | `GET /health` → `{"status":"success","data":{"status":"ok","time":"…"}}` — liveness is `data.status`, not `status` |
+| Consumer rule | Any probe, client, or test must assert `status == "success"` **and** the specific field inside `data` |
+
+Verified live on staging 2026-08-17. Automated assertion lives in
+`.github/workflows/healthcheck-suite.yml` and follows this contract.
+
 ### Registered Routes, Handlers, and Access
 
 Every handler below was verified for class-file and method existence. Protected routes use AuthMiddleware; admin uses adminOnly; the public MetaApi webhook performs HMAC verification inside the service.

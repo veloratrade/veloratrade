@@ -1,0 +1,232 @@
+# VELORA — منطق مشترک Smoke Suite (تنها محل منطق بررسی سلامت)
+#
+# این فایل مستقیماً اجرا نمی‌شود؛ فقط از طریق workflow_call صدا زده
+# می‌شود. هدف: نبود شکاف بین محیط‌ها — هر بررسی یک‌بار اینجا نوشته
+# می‌شود و هر دو محیط دقیقاً همان را اجرا می‌کنند.
+#
+# فراخوان‌ها:
+#   healthcheck-staging.yml     → base_url=staging     write_probes=true
+#   healthcheck-production.yml  → base_url=production  write_probes=فقط با تأیید
+#
+# ── قرارداد probe نوشتاری ───────────────────────────────────────────
+# بررسی «Origin جعلی باید ۴۰۳ بگیرد» ذاتاً به یک درخواست تغییردهنده
+# نیاز دارد؛ گارد same-origin روی GET اعمال نمی‌شود. تبدیل آن به GET
+# یعنی تبدیل یک تست امنیتی به تست تزئینی. بنابراین probe نوشتاری حذف
+# نشده، بلکه پشت دو گارد قرار گرفته است:
+#   ۱) پرچم ورودی write_probes
+#   ۲) در محیط تولید: گارد صریح confirm_production_writes + Environment
+#
+# مرجع: docs/README.md §4 RB-3 و docs/STAGING_ENVIRONMENT.md §5
+
+name: Health Check Suite (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      base_url:
+        description: 'ریشه آدرس هدف — مثلاً https://staging.veloratrade.ir'
+        required: true
+        type: string
+      environment_name:
+        description: 'برچسب محیط برای گزارش — staging یا production'
+        required: true
+        type: string
+      write_probes:
+        description: 'اجرای probe های نوشتاری (تست گارد same-origin)'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    name: اجرای Smoke Suite
+    if: github.repository == 'veloratrade/veloratrade'
+    runs-on: ubuntu-latest
+    env:
+      BASE: ${{ inputs.base_url }}
+      ENVNAME: ${{ inputs.environment_name }}
+      WRITE_PROBES: ${{ inputs.write_probes }}
+    steps:
+      - name: اعلام دامنه هدف
+        run: |
+          echo "هدف : $BASE"
+          echo "محیط: $ENVNAME"
+          echo "probe نوشتاری: $WRITE_PROBES"
+
+      - name: بررسی‌های خواندنی (فقط GET)
+        run: |
+          python3 - <<'PY'
+          import os, sys, json, urllib.request, urllib.error, urllib.parse
+
+          BASE = os.environ['BASE'].rstrip('/')
+          ENVNAME = os.environ['ENVNAME']
+          UA = 'velora-healthcheck'
+          IS_STAGING = ENVNAME == 'staging'
+
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, *a, **k):
+                  return None
+
+          def get(path):
+              """فقط GET. مسیر percent-encode می‌شود تا کاراکتر غیر ASCII خطا ندهد."""
+              safe = urllib.parse.quote(path, safe='/?&=%-._~')
+              req = urllib.request.Request(BASE + safe, method='GET')
+              req.add_header('User-Agent', UA)
+              op = urllib.request.build_opener(NoRedirect)
+              try:
+                  r = op.open(req, timeout=30)
+                  return r.status, dict(r.headers), r.read(65536).decode('utf-8', 'replace')
+              except urllib.error.HTTPError as e:
+                  return e.code, dict(e.headers), e.read(65536).decode('utf-8', 'replace')
+              except Exception as e:
+                  return f'ERR {e}', {}, ''
+
+          results = []
+          def check(name, ok, detail):
+              results.append((name, bool(ok), detail))
+              print(('✅ ' if ok else '❌ ') + name + ' — ' + detail)
+
+          # ── قرارداد پاکت پاسخ API (B-8) ──────────────────────────
+          # پاسخ‌ها در پاکت {status, data, error, timestamp} برمی‌گردند و
+          # مقدار سلامت در data.status است، نه status سطح بالا.
+          st, hd, body = get('/health')
+          ok = st == 200
+          detail = f'status={st}'
+          try:
+              payload = json.loads(body)
+              inner = (payload.get('data') or {}).get('status')
+              ok = ok and payload.get('status') == 'success' and inner == 'ok'
+              detail += f'; data.status={inner!r}'
+          except Exception:
+              ok = False
+              ct = hd.get('Content-Type') or hd.get('content-type') or '—'
+              detail += f'; JSON نامعتبر؛ content-type={ct}; snippet={body[:160]!r}'
+          check('GET /health → 200 + data.status:ok', ok, detail)
+
+          st, _, _ = get('/fa/')
+          check('GET /fa/ → 200', st == 200, f'status={st}')
+
+          st, _, _ = get('/en/')
+          check('GET /en/ → 200', st == 200, f'status={st}')
+
+          st, hd, _ = get('/')
+          check('GET / → 200 + هدر X-VELORA-Locale',
+                st == 200 and any(k.lower() == 'x-velora-locale' for k in hd),
+                f'status={st}; locale={hd.get("X-VELORA-Locale") or hd.get("x-velora-locale")}')
+
+          # اثبات اتصال DB
+          st, hd, _ = get('/dashboard')
+          loc = hd.get('Location', '') or hd.get('location', '')
+          check('GET /dashboard بدون سشن → redirect به login',
+                st in (301, 302, 303, 307, 308) and 'login' in loc.lower(),
+                f'status={st}; Location={loc or "—"}')
+
+          st, hd, body = get('/api/.env')
+          leaked = any(t in body for t in ('APP_ENV', 'JWT_SECRET', 'DB_PASSWORD',
+                                           'APP_ENCRYPTION_KEY', 'MAIL_'))
+          check('GET /api/.env → 403/404 بدون نشت محتوا',
+                st in (403, 404) and not leaked,
+                f'status={st}; leak={"YES" if leaked else "no"}')
+
+          st, _, _ = get('/locale-router.php')
+          check('GET /locale-router.php مستقیم → 403/404', st in (403, 404), f'status={st}')
+
+          st, _, body = get('/robots.txt')
+          if IS_STAGING:
+              check('robots.txt → Disallow: /',
+                    st == 200 and 'disallow: /' in body.lower(), f'status={st}')
+          else:
+              check('robots.txt در دسترس است', st == 200, f'status={st}')
+
+          st, hd, _ = get('/fa/')
+          xr = (hd.get('X-Robots-Tag') or hd.get('x-robots-tag') or '')
+          if IS_STAGING:
+              check('هدر X-Robots-Tag: noindex روی HTML', 'noindex' in xr.lower(),
+                    f'X-Robots-Tag={xr or "—"}')
+          else:
+              # تولید باید ایندکس شود — noindex اینجا یک نقص است
+              check('تولید نباید noindex بدهد', 'noindex' not in xr.lower(),
+                    f'X-Robots-Tag={xr or "—"}')
+
+          csp = hd.get('Content-Security-Policy') or hd.get('content-security-policy') or ''
+          check('هدر CSP روی HTML', bool(csp), 'موجود' if csp else 'غایب')
+
+          st, _, _ = get('/sitemap.xml')
+          if IS_STAGING:
+              check('sitemap.xml نباید وجود داشته باشد (عمدی)', st in (403, 404), f'status={st}')
+          else:
+              check('sitemap.xml باید موجود باشد', st == 200, f'status={st}')
+
+          st, _, _ = get('/این-مسیر-وجود-ندارد-velora')
+          check('مسیر ناموجود → 404', st == 404, f'status={st}')
+
+          failed = [n for n, ok, _ in results if not ok]
+          summary = os.environ.get('GITHUB_STEP_SUMMARY')
+          if summary:
+              with open(summary, 'a') as f:
+                  f.write(f'### Smoke Suite — {ENVNAME}\n\n')
+                  f.write(f'هدف: `{BASE}` — بررسی‌های خواندنی\n\n')
+                  f.write('| بررسی | نتیجه | جزئیات |\n|---|:--:|---|\n')
+                  for n, ok, d in results:
+                      f.write(f'| {n} | {"✅" if ok else "❌"} | {d} |\n')
+                  f.write(f'\n**{len(results) - len(failed)}/{len(results)} سبز**\n')
+
+          if failed:
+              print(f'::error::{len(failed)} بررسی ناموفق: ' + '; '.join(failed))
+              sys.exit(1)
+          print(f'✅ هر {len(results)} بررسی خواندنی سبز است')
+          PY
+
+      # ── probe نوشتاری: تست گارد same-origin ────────────────────────
+      # فقط وقتی اجرا می‌شود که فراخوان صریحاً اجازه داده باشد.
+      - name: probe نوشتاری — Origin جعلی باید ۴۰۳ بگیرد
+        if: inputs.write_probes
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 25 \
+            -X POST "$BASE/api/v1/auth/logout" \
+            -H 'Content-Type: application/json' \
+            -H 'Origin: https://evil.example' \
+            -H 'Cookie: __Host-velora_refresh=dummytoken123' -d '{}')
+          echo "Origin جعلی → $code"
+          if [ "$code" != "403" ]; then
+            echo "::error::بررسی same-origin کار نمی‌کند (انتظار ۴۰۳، دریافت $code)"
+            exit 1
+          fi
+          echo "✅ گارد same-origin برقرار است"
+          echo "| probe نوشتاری: Origin جعلی → 403 | ✅ | $code |" >> $GITHUB_STEP_SUMMARY
+
+      - name: probe نوشتاری — خروج با Origin درست باید ۲۰۰ بدهد
+        if: inputs.write_probes
+        run: |
+          body=$(curl -s --max-time 25 \
+            -X POST "$BASE/api/v1/auth/logout" \
+            -H 'Content-Type: application/json' \
+            -H "Origin: $BASE" -d '{}')
+          echo "پاسخ: $body"
+          echo "$body" | grep -q '"loggedOut":true' || {
+            echo "::error::خروج پاسخ درست نداد"; exit 1; }
+          echo "$body" | grep -q 'sessionRevoked' && {
+            echo "::error::کد قدیمی روی سرور است — sessionRevoked هنوز در پاسخ هست"; exit 1; }
+          echo "✅ خروج سالم و کد به‌روز است"
+          echo "| probe نوشتاری: logout با Origin درست | ✅ | loggedOut:true |" >> $GITHUB_STEP_SUMMARY
+
+      # مقایسه منیفست یک بررسی خواندنی است، ولی به محتوای مخزن نیاز دارد.
+      # فقط برای تولید معنا دارد: استیجینگ عمداً از main مستقر می‌شود ولی
+      # ممکن است با آخرین کامیت هم‌نسخه نباشد.
+      - name: checkout برای مقایسه منیفست
+        if: inputs.environment_name == 'production'
+        uses: actions/checkout@v4
+
+      - name: منیفست روی هاست باید با مخزن یکی باشد
+        if: inputs.environment_name == 'production'
+        run: |
+          curl -s --max-time 25 -o /tmp/live.json "$BASE/public/locales/csp-manifest.json"
+          a=$(sha256sum /tmp/live.json | cut -d' ' -f1)
+          b=$(sha256sum public/locales/csp-manifest.json | cut -d' ' -f1)
+          echo "هاست : $a"
+          echo "مخزن : $b"
+          [ "$a" = "$b" ] || { echo "::error::منیفست هاست با مخزن فرق دارد — انتشار ناقص بوده"; exit 1; }
+          echo "✅ هاست و مخزن هم‌نسخه‌اند"
