@@ -5,7 +5,7 @@
 | Document Control | |
 |---|---|
 | شناسه سند | `VELORA-OPS-README` |
-| نسخه | 1.4.0 |
+| نسخه | 1.5.0 |
 | وضعیت | ACTIVE |
 | آخرین به‌روزرسانی | 2026-08-17 |
 | مالک | veloratrade (Project Owner) |
@@ -141,8 +141,10 @@ git diff docs-baseline-v1..main -- docs/
 ## 7. وضعیت جاری و کارهای باز (Living Section)
 
 **آخرین وضعیت (2026-08-17):**
-- **Staging عملیاتی — راستی‌آزمایی خودکار شد ✅** اجرای `healthcheck-staging.yml`
-  (run `32019977181`، کامیت `58ab606`): **۱۲ از ۱۲ بررسی RB-3 سبز**.
+- **Staging عملیاتی — راستی‌آزمایی خودکار شد ✅** آخرین اجرا پس از یکپارچه‌سازی
+  (run `32021663165`، کامیت `34b7509`): **۱۵ از ۱۵ سبز** — ۱۲ بررسی خواندنی + ۳ probe نوشتاری.
+  گارد same-origin واقعاً تست شد: `Origin: evil.example` → **403**؛ logout با Origin درست →
+  `{"status":"success","data":{"loggedOut":true}}` (مطابق قرارداد پاکت، B-8).
   شواهد کلیدی: `/health` → `data.status=ok` • `/dashboard` بدون سشن → `302 → /fa/login/`
   (اثبات اتصال DB) • `/api/.env` → `404` بدون نشت • `locale-router.php` → `403` •
   `X-Robots-Tag: noindex, nofollow` • CSP موجود • `sitemap.xml` → `404` (عمدی) •
