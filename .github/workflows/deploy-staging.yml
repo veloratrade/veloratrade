@@ -28,8 +28,13 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  guard:
+    name: بررسی CSP پیش از staging
+    uses: ./.github/workflows/csp-guard.yml
+
   deploy-staging:
     name: ساخت بسته و آپلود روی staging
+    needs: guard
     if: github.repository == 'veloratrade/veloratrade'
     runs-on: ubuntu-latest
     steps:

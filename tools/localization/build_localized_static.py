@@ -5,12 +5,32 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import shutil
+import stat
+import tempfile
 from pathlib import Path
 from typing import Any
 
 from bs4 import BeautifulSoup, Comment, NavigableString
+
+try:
+    from .build_csp_artifacts import (
+        CspArtifactError,
+        build_csp_artifacts,
+        check_csp_artifacts,
+        validate_release_id,
+        write_csp_artifacts,
+    )
+except ImportError:  # Direct script execution.
+    from build_csp_artifacts import (
+        CspArtifactError,
+        build_csp_artifacts,
+        check_csp_artifacts,
+        validate_release_id,
+        write_csp_artifacts,
+    )
 
 ROOT = Path(__file__).resolve().parents[2]
 LOCALES_DIR = ROOT / "public/locales"
@@ -251,9 +271,12 @@ def build_chunks(
     routes: list[dict[str, Any]],
     all_keys: set[str],
     catalogs: dict[str, dict[str, str]],
+    *,
+    chunks_dir: Path,
+    feature_manifest_path: Path,
 ) -> tuple[dict[str, Any], dict[str, set[str]]]:
-    if CHUNKS_DIR.exists():
-        shutil.rmtree(CHUNKS_DIR)
+    if chunks_dir.exists():
+        shutil.rmtree(chunks_dir)
     feature_plan = plan_feature_keys(routes, all_keys, config)
     feature_manifest: dict[str, Any] = {
         "version": manifest["version"],
@@ -265,7 +288,7 @@ def build_chunks(
         locale_meta: dict[str, Any] = {}
         for feature, keys in sorted(feature_plan.items()):
             feature_messages = {key: messages[key] for key in keys}
-            path = CHUNKS_DIR / locale / f"{feature}.json"
+            path = chunks_dir / locale / f"{feature}.json"
             path.parent.mkdir(parents=True, exist_ok=True)
             payload = {
                 "locale": locale,
@@ -282,16 +305,162 @@ def build_chunks(
                 "sha256": hashlib.sha256(rendered.encode("utf-8")).hexdigest(),
             }
         feature_manifest["locales"][locale] = locale_meta
-    (LOCALES_DIR / "feature-manifest.json").write_text(
-        json.dumps(feature_manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    feature_manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    feature_manifest_path.write_text(
+        json.dumps(feature_manifest, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
     )
     return feature_manifest, feature_plan
 
 
-def build() -> tuple[int, int, int]:
+_GENERATED_TARGETS = (
+    Path("public/locales/chunks"),
+    Path("public/locales/feature-manifest.json"),
+    Path("public/locales/csp-manifest.json"),
+    Path("localized"),
+)
+
+
+class AtomicPromotionError(RuntimeError):
+    """Raised when a controlled promotion failure cannot be rolled back exactly."""
+
+
+def _replace_path(source: Path, destination: Path) -> None:
+    os.replace(source, destination)
+
+
+def _remove_path(path: Path) -> None:
+    if path.is_symlink() or path.is_file():
+        path.unlink(missing_ok=True)
+    elif path.is_dir():
+        shutil.rmtree(path)
+
+
+def _path_inventory_digest(path: Path) -> str:
+    digest = hashlib.sha256()
+    if not path.exists() and not path.is_symlink():
+        digest.update(b"missing\0")
+        return digest.hexdigest()
+
+    entries = [path]
+    if path.is_dir() and not path.is_symlink():
+        entries.extend(sorted(path.rglob("*"), key=lambda item: item.as_posix()))
+    for entry in entries:
+        relative = "." if entry == path else entry.relative_to(path).as_posix()
+        metadata = entry.lstat()
+        digest.update(relative.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(str(stat.S_IMODE(metadata.st_mode)).encode("ascii"))
+        digest.update(b"\0")
+        if entry.is_symlink():
+            digest.update(b"symlink\0")
+            digest.update(os.readlink(entry).encode("utf-8"))
+        elif entry.is_dir():
+            digest.update(b"directory\0")
+        elif entry.is_file():
+            digest.update(b"file\0")
+            digest.update(hashlib.sha256(entry.read_bytes()).digest())
+        else:
+            digest.update(b"other\0")
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
+def generated_state_digest(repository_root: Path) -> str:
+    digest = hashlib.sha256()
+    for relative in _GENERATED_TARGETS:
+        digest.update(relative.as_posix().encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(_path_inventory_digest(repository_root / relative).encode("ascii"))
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
+def _require_csp_check(result, label: str) -> None:
+    if result.ok:
+        return
+    raise CspArtifactError(f"{label} failed: {'; '.join(result.mismatches)}")
+
+
+def promote_staged_release(
+    repository_root: Path,
+    stage_root: Path,
+    *,
+    release_id: str,
+) -> None:
+    """Promote a complete staged release with same-process backup and rollback."""
+
+    for relative in _GENERATED_TARGETS:
+        staged = stage_root / relative
+        if not staged.exists() and not staged.is_symlink():
+            raise AtomicPromotionError(f"missing staged target: {relative}")
+
+    original_digest = generated_state_digest(repository_root)
+    backup_root = stage_root.parent / "backup"
+    backed_up: list[Path] = []
+    promoted: list[Path] = []
+    try:
+        for relative in _GENERATED_TARGETS:
+            live = repository_root / relative
+            if not live.exists() and not live.is_symlink():
+                continue
+            backup = backup_root / relative
+            backup.parent.mkdir(parents=True, exist_ok=True)
+            _replace_path(live, backup)
+            backed_up.append(relative)
+
+        for relative in _GENERATED_TARGETS:
+            staged = stage_root / relative
+            live = repository_root / relative
+            live.parent.mkdir(parents=True, exist_ok=True)
+            _replace_path(staged, live)
+            promoted.append(relative)
+
+        _require_csp_check(
+            check_csp_artifacts(repository_root, release_id=release_id),
+            "post-promotion CSP check",
+        )
+    except BaseException as exc:
+        rollback_errors: list[str] = []
+        for relative in reversed(promoted):
+            try:
+                _remove_path(repository_root / relative)
+            except OSError as rollback_exc:
+                rollback_errors.append(f"remove {relative}: {rollback_exc}")
+        for relative in reversed(backed_up):
+            live = repository_root / relative
+            backup = backup_root / relative
+            try:
+                _remove_path(live)
+                live.parent.mkdir(parents=True, exist_ok=True)
+                _replace_path(backup, live)
+            except OSError as rollback_exc:
+                rollback_errors.append(f"restore {relative}: {rollback_exc}")
+
+        restored_digest = generated_state_digest(repository_root)
+        if restored_digest != original_digest:
+            rollback_errors.append(
+                f"generated state digest mismatch: {restored_digest} != {original_digest}"
+            )
+        if rollback_errors:
+            raise AtomicPromotionError(
+                f"promotion failed ({exc}); rollback failed: "
+                + "; ".join(rollback_errors)
+            ) from exc
+        raise
+
+
+def build(release_id: str) -> tuple[int, int, int, int]:
+    # Validate release metadata before build_chunks() or OUTPUT_DIR can mutate.
+    release_identifier = validate_release_id(release_id)
     manifest = load_json(LOCALES_DIR / "manifest.json")
     config = load_json(ROOT / "tools/localization/feature-map.json")
     routes = load_json(ROOT / "tools/localization/routes.json")["routes"]
+    for route in routes:
+        template = ROOT / route["template"]
+        if not template.is_file():
+            raise FileNotFoundError(f"missing template: {route['template']}")
+
     catalogs: dict[str, dict[str, str]] = {}
     locale_meta: dict[str, dict[str, Any]] = {}
     for locale, entry in manifest["locales"].items():
@@ -303,61 +472,128 @@ def build() -> tuple[int, int, int]:
     if len({frozenset(keys) for keys in keysets.values()}) != 1:
         raise RuntimeError("enabled locale catalogs must have identical keys")
     all_keys = next(iter(keysets.values()))
-    feature_manifest, feature_plan = build_chunks(manifest, config, routes, all_keys, catalogs)
 
-    if OUTPUT_DIR.exists():
-        shutil.rmtree(OUTPUT_DIR)
-    rendered_count = 0
-    template_count = 0
-    for route in routes:
-        template = ROOT / route["template"]
-        if not template.is_file():
-            raise FileNotFoundError(f"missing template: {route['template']}")
-        source = template.read_text(encoding="utf-8")
-        features = collect_page_features(route["template"], feature_plan, config)
-        missing_features = [
-            feature for feature in features
-            if any(feature not in feature_manifest["locales"][locale] for locale in catalogs)
-        ]
-        if missing_features:
-            raise RuntimeError(f"template {route['template']} requires missing chunks: {missing_features}")
-        template_count += 1
-        preferred_outputs = {
-            locale: route.get("localeOutputs", {}).get(locale, route["outputs"])[0]
-            for locale in catalogs
-        }
-        alternate_urls = {
-            locale: localized_public_url(locale, preferred_output)
-            for locale, preferred_output in preferred_outputs.items()
-        }
-        for locale, messages in catalogs.items():
-            locale_outputs = list(route["outputs"]) + list(route.get("localeOutputs", {}).get(locale, []))
-            for output_relative in dict.fromkeys(locale_outputs):
-                output = OUTPUT_DIR / locale / output_relative
-                output.parent.mkdir(parents=True, exist_ok=True)
-                output.write_text(
-                    render_html(
-                        source,
-                        locale,
-                        locale_meta[locale]["direction"],
-                        locale_meta[locale].get("numberingSystem", "latn"),
-                        messages,
-                        features,
-                        alternate_urls[locale],
-                        alternate_urls,
-                        manifest["fallbackLocale"],
-                    ),
-                    encoding="utf-8",
+    with tempfile.TemporaryDirectory(
+        prefix=".velora-localization-transaction-", dir=ROOT
+    ) as transaction_directory:
+        transaction_root = Path(transaction_directory)
+        stage_root = transaction_root / "stage"
+        stage_localized = stage_root / "localized"
+        stage_locales = stage_root / "public/locales"
+        stage_chunks = stage_locales / "chunks"
+        stage_feature_manifest = stage_locales / "feature-manifest.json"
+
+        feature_manifest, feature_plan = build_chunks(
+            manifest,
+            config,
+            routes,
+            all_keys,
+            catalogs,
+            chunks_dir=stage_chunks,
+            feature_manifest_path=stage_feature_manifest,
+        )
+
+        rendered_count = 0
+        template_count = 0
+        for route in routes:
+            template = ROOT / route["template"]
+            source = template.read_text(encoding="utf-8")
+            features = collect_page_features(route["template"], feature_plan, config)
+            missing_features = [
+                feature
+                for feature in features
+                if any(
+                    feature not in feature_manifest["locales"][locale]
+                    for locale in catalogs
                 )
-                rendered_count += 1
-    return template_count, rendered_count, sum(len(x) for x in feature_manifest["locales"].values())
+            ]
+            if missing_features:
+                raise RuntimeError(
+                    f"template {route['template']} requires missing chunks: "
+                    f"{missing_features}"
+                )
+            template_count += 1
+            preferred_outputs = {
+                locale: route.get("localeOutputs", {}).get(
+                    locale, route["outputs"]
+                )[0]
+                for locale in catalogs
+            }
+            alternate_urls = {
+                locale: localized_public_url(locale, preferred_output)
+                for locale, preferred_output in preferred_outputs.items()
+            }
+            for locale, messages in catalogs.items():
+                locale_outputs = list(route["outputs"]) + list(
+                    route.get("localeOutputs", {}).get(locale, [])
+                )
+                for output_relative in dict.fromkeys(locale_outputs):
+                    output = stage_localized / locale / output_relative
+                    output.parent.mkdir(parents=True, exist_ok=True)
+                    output.write_text(
+                        render_html(
+                            source,
+                            locale,
+                            locale_meta[locale]["direction"],
+                            locale_meta[locale].get("numberingSystem", "latn"),
+                            messages,
+                            features,
+                            alternate_urls[locale],
+                            alternate_urls,
+                            manifest["fallbackLocale"],
+                        ),
+                        encoding="utf-8",
+                    )
+                    rendered_count += 1
+
+        csp_artifacts = build_csp_artifacts(
+            ROOT,
+            release_id=release_identifier,
+            localized_root=stage_localized,
+        )
+        write_csp_artifacts(csp_artifacts, stage_root)
+        _require_csp_check(
+            check_csp_artifacts(
+                ROOT,
+                release_id=release_identifier,
+                localized_root=stage_localized,
+                artifact_root=stage_root,
+            ),
+            "staged CSP check",
+        )
+        promote_staged_release(
+            ROOT,
+            stage_root,
+            release_id=release_identifier,
+        )
+
+        result = (
+            template_count,
+            rendered_count,
+            sum(len(x) for x in feature_manifest["locales"].values()),
+            int(csp_artifacts.manifest["routeCount"]),
+        )
+
+    return result
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.parse_args()
-    templates, html_files, chunks = build()
-    print(f"LOCALIZED_BUILD_OK templates={templates} html={html_files} feature_chunks={chunks}")
+    parser.add_argument(
+        "--release-id",
+        required=True,
+        help="Explicit CSP release identifier; never generated from the clock.",
+    )
+    args = parser.parse_args()
+    try:
+        release_id = validate_release_id(args.release_id)
+    except CspArtifactError as exc:
+        parser.error(str(exc))
+    templates, html_files, chunks, csp_routes = build(release_id)
+    print(
+        f"LOCALIZED_BUILD_OK templates={templates} html={html_files} "
+        f"feature_chunks={chunks} csp_routes={csp_routes} releaseId={release_id}"
+    )
 
 
 if __name__ == "__main__":
