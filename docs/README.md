@@ -5,7 +5,7 @@
 | Document Control | |
 |---|---|
 | شناسه سند | `VELORA-OPS-README` |
-| نسخه | 1.9.0 |
+| نسخه | 1.10.0 |
 | وضعیت | ACTIVE |
 | آخرین به‌روزرسانی | 2026-08-17 |
 | مالک | veloratrade (Project Owner) |
@@ -56,6 +56,7 @@
 | Env file | `{PR}/config/velora.env` (0600) | `{PRS}/config/velora.env` (0600) |
 | Database | تولید — 🔴 ممنوعِ لمس | مستقل؛ `schema.sql` وارد شده |
 | `APP_ENV` | `production` | `staging` |
+| CDN / DNS | 🔴 **پشت Cloudflare** — IP واقعی مخفی است | مستقیم به origin (`185.164.72.148`) |
 | Deploy | `deploy.yml` — **عملاً غیرفعال** (Secrets تولید ست نشده؛ عمدی) | `deploy-staging.yml` — فعال، فقط دستی |
 | Indexing | مجاز | ممنوع (`robots` + `X-Robots-Tag`) |
 | وضعیت فعلی | UNTOUCHED ✅ | **OPERATIONAL ✅** (همه تست‌ها PASS — 2026-08-17) |
@@ -79,14 +80,22 @@
 > کشف دوبارهٔ اطلاعاتی شود که قبلاً به‌دست آمده بود. **قبل از هر کار FTP
 > این جدول خوانده شود.**
 
-| مؤلفه | مقدار | منبع |
+| مؤلفه | Production | Staging |
 |---|---|---|
-| میزبان | `185.164.72.148` | Secret `STAGING_FTP_SERVER` (همان IP که DNS استیجینگ برمی‌گرداند) |
-| نام کاربری | `piknet` — **اکانت کلی cPanel** | Secret `STAGING_FTP_USERNAME` |
-| رمز | — | Secret `STAGING_FTP_PASSWORD` (هرگز در چت/سند/لاگ) |
-| پروتکل | `ftp` ساده + `set ftp:ssl-allow no` | OC-2 — FTPS روی این هاست reset می‌شود |
-| ابزار | `lftp` با `mirror -R --continue` و حلقه retry | OC-2 |
-| **نقطه ورود پس از لاگین** | **`/home/piknet/` (home اکانت)** | ⬇ اثبات پایین |
+| میزبان FTP | `185.164.72.148` — **همان سرور** | `185.164.72.148` |
+| ⚠️ نام دامنه برای FTP | **`veloratrade.ir` استفاده نشود** — پشت Cloudflare است (`2606:4700:…`) و به هاست نمی‌رسد | `staging.veloratrade.ir` مستقیم به همان IP اشاره دارد |
+| نام کاربری | `piknet` — **اکانت کلی cPanel** | `piknet` — **همان اکانت** |
+| رمز | همان رمز `piknet` | همان رمز `piknet` |
+| Secret فعلی در GitHub | 🔴 **هیچ** (`FTP_SERVER`/`FTP_USERNAME`/`FTP_PASSWORD` تعریف نشده‌اند) | ✅ `STAGING_FTP_SERVER` / `_USERNAME` / `_PASSWORD` |
+| نقطه ورود پس از لاگین | **`/home/piknet/`** | **`/home/piknet/`** — یکسان |
+| مقصد mirror | **`public_html/`** | `public_html/staging.veloratrade.ir/` |
+| پروتکل | `ftp` ساده + `set ftp:ssl-allow no` (OC-2) | همان |
+| ابزار | `lftp` + `mirror -R --continue` + retry×12 (OC-2) | همان |
+
+> 🔴 **هر دو محیط روی یک اکانت و یک سرورند.** تنها تفاوت واقعی، **مقصد mirror** است.
+> یعنی Secretهای استیجینگ از نظر فنی برای تولید هم کار می‌کنند — و همین خطر است:
+> یک اشتباه تایپی در مسیر مقصد، بستهٔ استیجینگ را روی docroot تولید می‌نشاند.
+> این ریشهٔ OC-10 و OC-11 است و دلیل وجود B-10.
 
 #### اثبات نقطهٔ ورود (تا دوباره آزمایش نشود)
 
