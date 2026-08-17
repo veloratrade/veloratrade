@@ -116,7 +116,7 @@ jobs:
           set mirror:parallel-transfer-count 1
           mirror -R --continue --only-newer --no-perms --no-symlinks \
                  --exclude-glob .git* \
-                 staging-build/ ./
+                 staging-build/ public_html/staging.veloratrade.ir/
           bye
           LFTP
             echo "قطع شد — ادامه از همان نقطه پس از 10 ثانیه..."
@@ -127,6 +127,7 @@ jobs:
           lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" <<'LFTP'
           set ftp:ssl-allow no
           set net:timeout 30
+          cd public_html/staging.veloratrade.ir
           cls -l .htaccess locale-router.php robots.txt api/index.php
           cls -l localized/.csp-release.json public/locales/manifest.json
           bye
