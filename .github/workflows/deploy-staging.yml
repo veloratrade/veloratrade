@@ -1,0 +1,115 @@
+# انتشار دستی روی محیط STAGING — کاملاً جدا از Production
+#
+# تفاوت‌های عمدی با deploy.yml:
+#   - فقط workflow_dispatch (هیچ push ای تریگر نمی‌کند)
+#   - Secrets مستقل staging (نه FTP_* تولید)
+#   - بسته staging در همین job ساخته می‌شود: .htaccess با PRIVATE_ROOT
+#     استیجینگ + X-Robots-Tag، robots.txt مسدودکننده، حذف فایل‌های
+#     Production-only (sitemap، فایل تأیید Search Console، دامپ‌ها، ابزارها)
+#
+# پیش‌نیاز: سه Secret در Settings → Secrets and variables → Actions
+#   STAGING_FTP_SERVER     مثلا 185.164.72.148
+#   STAGING_FTP_USERNAME   اکانت FTP محدود به docroot استیجینگ
+#   STAGING_FTP_PASSWORD
+#
+# توجه: velora_private_staging (env/data/logs) خارج از docroot است و
+# با اکانت FTP محدود قابل آپلود نیست — طبق دستورالعمل، دستی ساخته می‌شود.
+
+name: Deploy Staging
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy-staging:
+    name: ساخت بسته و آپلود روی staging
+    if: github.repository == 'veloratrade/veloratrade'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ساخت docroot استیجینگ
+        run: |
+          set -euo pipefail
+          DEST=staging-build
+          mkdir -p "$DEST"
+
+          # --- ریشه: front controller و استاتیک‌های لازم ---
+          cp locale-router.php 404.html "$DEST/"
+          mkdir -p "$DEST/404" && cp 404/index.html "$DEST/404/"
+          cp favicon.ico favicon-16.png favicon-32.png favicon-48.png \
+             icon-192.png icon-512.png apple-icon.png manifest.json velora-logo.svg "$DEST/"
+          mkdir -p "$DEST/checkout" && cp checkout/index.html "$DEST/checkout/"
+
+          # --- خروجی‌های لوکال‌سازی (شامل فایل مخفی .csp-release.json) ---
+          cp -a localized "$DEST/localized"
+
+          # --- public منهای فایل‌های تشخیصی ---
+          cp -a public "$DEST/public"
+          rm -f  "$DEST/public/logout-diagnostic-v2.html"
+          rm -rf "$DEST/public/samples"
+
+          # --- api: فقط runtime (بدون دامپ SQL، storage، ابزار تست/نصب) ---
+          mkdir -p "$DEST/api/public" "$DEST/api/config"
+          cp api/.htaccess api/index.php "$DEST/api/"
+          cp api/public/index.php "$DEST/api/public/"
+          cp api/config/config.php "$DEST/api/config/"
+          [ -f api/config/.htaccess ] && cp api/config/.htaccess "$DEST/api/config/" || true
+          cp -a api/src     "$DEST/api/src"
+          cp -a api/locales "$DEST/api/locales"
+          cp -a api/workers "$DEST/api/workers"
+
+          # --- .htaccess استیجینگ: دقیقاً ۲ تغییر مصوب ---
+          sed 's|^SetEnv VELORA_PRIVATE_ROOT /home/piknet/velora_private$|SetEnv VELORA_PRIVATE_ROOT /home/piknet/velora_private_staging|' \
+            .htaccess > "$DEST/.htaccess"
+          python3 - << 'PY'
+          p = "staging-build/.htaccess"
+          s = open(p).read()
+          marker = 'Header always set X-Content-Type-Options "nosniff"'
+          assert marker in s, ".htaccess marker not found"
+          s = s.replace(marker, 'Header always set X-Robots-Tag "noindex, nofollow"\n  ' + marker, 1)
+          open(p, "w").write(s)
+          PY
+
+          # --- SEO استیجینگ: ایندکس ممنوع، بدون sitemap و فایل تأیید ---
+          printf 'User-agent: *\nDisallow: /\n' > "$DEST/robots.txt"
+
+          # --- گاردهای ایمنی: هیچ فایل ممنوعه‌ای در بسته نباشد ---
+          test "$(find "$DEST" -name '*.sql' | wc -l)" = 0
+          test "$(find "$DEST" -name '*.env*' | wc -l)" = 0
+          test "$(find "$DEST" -name '*.sqlite*' -o -name '*.log' -o -name 'error_log' | wc -l)" = 0
+          test "$(find "$DEST" -name 'sitemap.xml' -o -name 'google*.html' | wc -l)" = 0
+          test -f "$DEST/localized/.csp-release.json"
+          grep -q "velora_private_staging" "$DEST/.htaccess"
+          grep -q "X-Robots-Tag" "$DEST/.htaccess"
+          echo "بسته سالم است: $(find "$DEST" -type f | wc -l) فایل"
+
+      - name: انتقال با FTP به staging
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server:   ${{ secrets.STAGING_FTP_SERVER }}
+          username: ${{ secrets.STAGING_FTP_USERNAME }}
+          password: ${{ secrets.STAGING_FTP_PASSWORD }}
+          protocol: ftps          # cPanel: FTP & explicit FTPS روی پورت 21
+          port: 21
+          local-dir: staging-build/
+          server-dir: ./          # اکانت FTP محدود به docroot استیجینگ است
+          dangerous-clean-slate: false
+          exclude: |
+            **/.git*
+            **/.git*/**
+
+      - name: خلاصه
+        run: |
+          echo "### انتشار STAGING انجام شد" >> $GITHUB_STEP_SUMMARY
+          echo "کامیت: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "یادآوری: velora_private_staging (env/data/logs) دستی مدیریت می‌شود." >> $GITHUB_STEP_SUMMARY
+          echo "تست: https://staging.veloratrade.ir/health" >> $GITHUB_STEP_SUMMARY
