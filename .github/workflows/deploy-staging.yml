@@ -97,8 +97,9 @@ jobs:
           server:   ${{ secrets.STAGING_FTP_SERVER }}
           username: ${{ secrets.STAGING_FTP_USERNAME }}
           password: ${{ secrets.STAGING_FTP_PASSWORD }}
-          protocol: ftps          # cPanel: FTP & explicit FTPS روی پورت 21
+          protocol: ftp           # FTPS این هاست کانال داده passive را reset می‌کند (ECONNRESET)
           port: 21
+          timeout: 120000
           local-dir: staging-build/
           server-dir: ./          # اکانت FTP محدود به docroot استیجینگ است
           dangerous-clean-slate: false
