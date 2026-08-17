@@ -1,0 +1,152 @@
+# لایه ۳ (استیجینگ) — راستی‌آزمایی RB-3 روی محیط Staging
+#
+# چرا این فایل جدا از healthcheck.yml است:
+#   healthcheck.yml مقدار ثابت BASE = https://veloratrade.ir دارد و
+#   Production را تست می‌کند — و دو مرحله‌اش روی /api/v1/auth/logout
+#   درخواست POST می‌زند. آن workflow برای اثبات سلامت Staging مناسب
+#   نیست و اجرایش لمس Production است (NP-1). ثبت‌شده به‌عنوان OC-7.
+#
+# قواعد عمدی این workflow:
+#   - فقط GET/HEAD — هیچ POST، PUT، DELETE یا درخواست تغییردهنده‌ای
+#   - فقط workflow_dispatch — بدون schedule، بدون تریگر روی push
+#   - فقط دامنه staging.veloratrade.ir — Production هرگز لمس نمی‌شود
+#   - بدون credential؛ همه بررسی‌ها ناشناس (بدون کوکی/توکن) هستند
+#   - از runner گیت‌هاب اجرا می‌شود، چون فایروال هاست IPهای خارج از
+#     ایران را silent-drop می‌کند (OC-1) و سندباکس چت به آن نمی‌رسد
+#
+# مرجع: docs/README.md §4 RB-3 و docs/STAGING_ENVIRONMENT.md §5
+
+name: Health Check (Staging)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: healthcheck-staging
+  cancel-in-progress: false
+
+jobs:
+  probe-staging:
+    name: اجرای Smoke Suite روی استیجینگ
+    if: github.repository == 'veloratrade/veloratrade'
+    runs-on: ubuntu-latest
+    env:
+      BASE: https://staging.veloratrade.ir
+    steps:
+      - name: اجرای بررسی‌ها (فقط GET)
+        run: |
+          python3 - <<'PY'
+          import os, sys, json, urllib.request, urllib.error
+
+          BASE = os.environ['BASE'].rstrip('/')
+          UA = 'velora-healthcheck-staging'
+
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, *a, **k):
+                  return None
+
+          def get(path):
+              """فقط GET. برمی‌گرداند: (status, headers, body)"""
+              req = urllib.request.Request(BASE + path, method='GET')
+              req.add_header('User-Agent', UA)
+              op = urllib.request.build_opener(NoRedirect)
+              try:
+                  r = op.open(req, timeout=30)
+                  return r.status, dict(r.headers), r.read(65536).decode('utf-8', 'replace')
+              except urllib.error.HTTPError as e:
+                  return e.code, dict(e.headers), e.read(65536).decode('utf-8', 'replace')
+              except Exception as e:
+                  return f'ERR {e}', {}, ''
+
+          results = []
+          def check(name, ok, detail):
+              results.append((name, bool(ok), detail))
+              print(('✅ ' if ok else '❌ ') + name + ' — ' + detail)
+
+          # ── RB-3 / STAGING_ENVIRONMENT §5 ──────────────────────────
+
+          st, hd, body = get('/health')
+          ok = st == 200
+          try:
+              ok = ok and json.loads(body).get('status') == 'ok'
+          except Exception:
+              ok = False
+          check('GET /health → 200 + status:ok', ok, f'status={st}')
+
+          st, hd, _ = get('/fa/')
+          check('GET /fa/ → 200', st == 200, f'status={st}')
+
+          st, hd, _ = get('/en/')
+          check('GET /en/ → 200', st == 200, f'status={st}')
+
+          st, hd, _ = get('/')
+          check('GET / → 200 + هدر X-VELORA-Locale', st == 200 and
+                any(k.lower() == 'x-velora-locale' for k in hd),
+                f'status={st}; locale={hd.get("X-VELORA-Locale") or hd.get("x-velora-locale")}')
+
+          # اثبات اتصال DB: داشبورد بدون سشن باید به login هدایت شود
+          st, hd, _ = get('/dashboard')
+          loc = hd.get('Location', '') or hd.get('location', '')
+          check('GET /dashboard بدون سشن → redirect به login',
+                st in (301, 302, 303, 307, 308) and 'login' in loc.lower(),
+                f'status={st}; Location={loc or "—"}')
+
+          # نشت نکردن env — هرگز نباید محتوا برگردد
+          st, hd, body = get('/api/.env')
+          leaked = any(t in body for t in ('APP_ENV', 'JWT_SECRET', 'DB_PASSWORD',
+                                           'APP_ENCRYPTION_KEY', 'MAIL_'))
+          check('GET /api/.env → 403/404 بدون نشت محتوا',
+                st in (403, 404) and not leaked,
+                f'status={st}; leak={"YES" if leaked else "no"}')
+
+          st, hd, _ = get('/locale-router.php')
+          check('GET /locale-router.php مستقیم → 403/404', st in (403, 404), f'status={st}')
+
+          st, hd, body = get('/robots.txt')
+          check('robots.txt → Disallow: /',
+                st == 200 and 'disallow: /' in body.lower(),
+                f'status={st}')
+
+          # استیجینگ نباید ایندکس شود
+          st, hd, _ = get('/fa/')
+          xr = (hd.get('X-Robots-Tag') or hd.get('x-robots-tag') or '')
+          check('هدر X-Robots-Tag: noindex روی HTML', 'noindex' in xr.lower(),
+                f'X-Robots-Tag={xr or "—"}')
+
+          csp = (hd.get('Content-Security-Policy') or
+                 hd.get('content-security-policy') or '')
+          check('هدر CSP روی HTML', bool(csp), 'موجود' if csp else 'غایب')
+
+          # استیجینگ عمداً sitemap ندارد
+          st, _, _ = get('/sitemap.xml')
+          check('sitemap.xml نباید وجود داشته باشد (عمدی)', st in (403, 404), f'status={st}')
+
+          st, _, _ = get('/این-مسیر-وجود-ندارد-velora')
+          check('مسیر ناموجود → 404', st == 404, f'status={st}')
+
+          # ── خلاصه ────────────────────────────────────────────────
+          failed = [n for n, ok, _ in results if not ok]
+          summary = os.environ.get('GITHUB_STEP_SUMMARY')
+          if summary:
+              with open(summary, 'a') as f:
+                  f.write('### Smoke Suite استیجینگ (RB-3)\n\n')
+                  f.write(f'هدف: `{BASE}` — فقط GET، بدون POST\n\n')
+                  f.write('| بررسی | نتیجه | جزئیات |\n|---|:--:|---|\n')
+                  for n, ok, d in results:
+                      f.write(f'| {n} | {"✅" if ok else "❌"} | {d} |\n')
+                  f.write(f'\n**{len(results) - len(failed)}/{len(results)} سبز**\n')
+
+          if failed:
+              print(f'::error::{len(failed)} بررسی ناموفق: ' + '; '.join(failed))
+              sys.exit(1)
+          print(f'✅ هر {len(results)} بررسی استیجینگ سبز است')
+          PY
+
+      - name: یادآوری دامنه
+        if: always()
+        run: |
+          echo "این workflow فقط استیجینگ را تست می‌کند و هرگز Production را لمس نمی‌کند." \
+            >> $GITHUB_STEP_SUMMARY
