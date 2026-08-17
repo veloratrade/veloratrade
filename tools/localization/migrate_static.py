@@ -10,15 +10,31 @@ import argparse
 import hashlib
 import json
 import re
+import subprocess
+import sys
 from collections import Counter
 from pathlib import Path
+from typing import Iterable
 
 from bs4 import BeautifulSoup, Comment, NavigableString, Tag
 
-ROOT = Path(__file__).resolve().parents[2]
-VERSION = str(json.loads((ROOT / "public/locales/manifest.json").read_text("utf-8"))["version"])
-SKIP_DIRS = {"_next", ".git", "node_modules", "tools", "localized"}
-SKIP_FILES = {"googleacbef8d6416f1474.html"}
+try:
+    from tools.localization.route_contract import (
+        ROOT,
+        RouteContract,
+        RouteContractError,
+        RouteDefinition,
+        load_route_contract,
+    )
+except ModuleNotFoundError:  # Direct execution: python3 tools/localization/migrate_static.py
+    from route_contract import (  # type: ignore[no-redef]
+        ROOT,
+        RouteContract,
+        RouteContractError,
+        RouteDefinition,
+        load_route_contract,
+    )
+
 SKIP_PARENTS = {"script", "style", "noscript", "svg", "code", "pre", "template"}
 ATTRIBUTES = ("title", "placeholder", "aria-label", "alt")
 META_KEYS = {"description", "twitter:title", "twitter:description"}
@@ -219,21 +235,90 @@ def compact(value: str) -> str:
     return " ".join(value.split())
 
 
-def html_files() -> list[Path]:
-    return sorted(
-        path for path in ROOT.rglob("*.html")
-        if not set(path.relative_to(ROOT).parts) & SKIP_DIRS and path.name not in SKIP_FILES
-    )
+class MigrationSafetyError(RuntimeError):
+    """Raised when migration safety preconditions are not satisfied."""
 
 
-def scope_for(path: Path) -> str:
-    parts = list(path.relative_to(ROOT).with_suffix("").parts)
-    if parts and parts[0] == "en":
-        parts.pop(0)
-    if parts and parts[-1] == "index":
-        parts.pop()
-    value = ".".join(parts) or "landing"
+def _validate_targets(
+    files: Iterable[Path],
+    contract: RouteContract,
+) -> list[Path]:
+    allowed = {path.resolve() for path in contract.canonical_paths}
+    validated: list[Path] = []
+    for path in files:
+        resolved = path.resolve()
+        if resolved not in allowed:
+            raise MigrationSafetyError(
+                f"migration target is outside canonical route contract: {path}"
+            )
+        relative = resolved.relative_to(contract.root)
+        if relative.parts and relative.parts[0] == "en":
+            raise MigrationSafetyError(f"migration target inside en/** is forbidden: {relative}")
+        if relative.parts and relative.parts[0] == "localized":
+            raise MigrationSafetyError(
+                f"migration target inside localized/** is forbidden: {relative}"
+            )
+        validated.append(resolved)
+    if len(validated) != len(allowed):
+        raise MigrationSafetyError(
+            "migration target count differs from canonical template count: "
+            f"targets={len(validated)} canonical={len(allowed)}"
+        )
+    return sorted(validated, key=lambda path: path.relative_to(contract.root).as_posix())
+
+
+def canonical_template_files(contract: RouteContract) -> list[Path]:
+    """Return only canonical templates declared by the shared route contract."""
+    return _validate_targets(contract.canonical_paths, contract)
+
+
+def route_scope(route: RouteDefinition) -> str:
+    """Derive a deterministic key scope from the canonical route declaration."""
+    output = route.outputs[0]
+    if output == "index.html":
+        return "landing"
+    route_name = output[: -len("/index.html")] if output.endswith("/index.html") else output
+    route_name = route_name.rsplit(".", 1)[0]
+    value = route_name.replace("/", ".")
     return re.sub(r"[^a-zA-Z0-9.]+", "_", value).strip("._") or "page"
+
+
+def route_scopes(contract: RouteContract) -> dict[str, str]:
+    return {route.template: route_scope(route) for route in contract.routes}
+
+
+def _repository_is_dirty(root: Path) -> bool:
+    result = subprocess.run(
+        ["git", "-C", str(root), "status", "--porcelain", "--untracked-files=normal"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise MigrationSafetyError(
+            f"unable to read git working tree status: {result.stderr.strip()}"
+        )
+    return bool(result.stdout.strip())
+
+
+def _require_clean_working_tree(root: Path) -> None:
+    if _repository_is_dirty(root):
+        raise MigrationSafetyError("working tree is dirty; --apply is blocked")
+
+
+def _locale_settings(root: Path) -> tuple[str, str]:
+    path = root / "public/locales/manifest.json"
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise MigrationSafetyError(f"unable to load locale manifest: {exc}") from exc
+    version = payload.get("version")
+    default_locale = payload.get("defaultLocale")
+    if not isinstance(version, str) or not version:
+        raise MigrationSafetyError("locale manifest version is missing")
+    if not isinstance(default_locale, str) or not default_locale:
+        raise MigrationSafetyError("locale manifest defaultLocale is missing")
+    return version, default_locale
 
 
 def slug(value: str) -> str:
@@ -324,7 +409,11 @@ def remove_legacy(soup: BeautifulSoup) -> None:
             node.decompose()
 
 
-def inject_foundation(soup: BeautifulSoup, route_locale: str) -> None:
+def inject_foundation(
+    soup: BeautifulSoup,
+    route_locale: str,
+    version: str,
+) -> None:
     html = soup.html
     if html:
         html["data-route-locale"] = route_locale
@@ -335,7 +424,7 @@ def inject_foundation(soup: BeautifulSoup, route_locale: str) -> None:
             html.insert(0, head)
         else:
             soup.insert(0, head)
-    cache_buster = f"?v={VERSION}"
+    cache_buster = f"?v={version}"
     assets = [
         ("script", {"src": "/public/assets/velora-locale-registry.js" + cache_buster}),
         ("script", {"src": "/public/assets/velora-locale-bootstrap.js" + cache_buster}),
@@ -388,14 +477,15 @@ def migrate_file(
     counts: Counter,
     registry: dict[tuple[str, str], str],
     catalogs: dict[str, dict[str, str]],
+    *,
+    source_locale: str,
+    scope: str,
+    version: str,
 ) -> tuple[int, int]:
     source = path.read_text("utf-8", errors="ignore")
     soup = BeautifulSoup(source, "html.parser")
     remove_legacy(soup)
-    relative = path.relative_to(ROOT)
-    route_locale = "en" if relative.parts and relative.parts[0] == "en" else "fa"
-    inject_foundation(soup, route_locale)
-    scope = scope_for(path)
+    inject_foundation(soup, source_locale, version)
     text_count = attribute_count = 0
 
     # Snapshot first: wrapping a mixed text node creates a translated span that must not be revisited.
@@ -434,68 +524,147 @@ def migrate_file(
                 attribute_count += 1
 
     output = str(soup)
-    if soup.html and not output.lstrip().lower().startswith("<!doctype"):
-        output = "<!DOCTYPE html>\n" + output
+    if soup.html:
+        # BeautifulSoup preserves whitespace after the doctype and would add one
+        # blank line on every run. Normalize it so repeated apply runs are stable.
+        output = re.sub(r"^\s*<!doctype\s+html\s*>\s*", "", output, flags=re.IGNORECASE)
+        output = "<!DOCTYPE html>\n" + output.lstrip()
     path.write_text(output, "utf-8")
     return text_count, attribute_count
 
 
-def write_catalog(locale: str, messages: dict[str, str]) -> None:
+def write_catalog(
+    root: Path,
+    locale: str,
+    messages: dict[str, str],
+    version: str,
+) -> None:
     output = {
         "$schema": "./catalog.schema.json",
         "_meta": {
             "locale": locale,
-            "version": VERSION,
+            "version": version,
             "source": "tools/localization/migrate_static.py"
         },
         "messages": dict(sorted(messages.items()))
     }
-    target = ROOT / "public" / "locales" / f"{locale}.json"
+    target = root / "public" / "locales" / f"{locale}.json"
     target.write_text(json.dumps(output, ensure_ascii=False, indent=2) + "\n", "utf-8")
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--dry-run", action="store_true")
-    args = parser.parse_args()
-    files = html_files()
-    fa_to_en, en_to_fa = load_pairs()
-    counts = collect_pair_counts(files, fa_to_en, en_to_fa)
-    catalogs = {"fa": {}, "en": {}}
-    # Preserve already-generated keys on repeated runs. The migration is intentionally
-    # append-only unless a catalog is explicitly removed before regeneration.
-    for locale in ("fa", "en"):
-        existing_path = ROOT / "public" / "locales" / f"{locale}.json"
-        if existing_path.exists():
-            try:
-                existing = json.loads(existing_path.read_text("utf-8"))
-                catalogs[locale].update(existing.get("messages", existing))
-            except (json.JSONDecodeError, OSError):
-                pass
-    for key, (fa, en) in RUNTIME_MESSAGES.items():
-        catalogs["fa"][key] = fa
-        catalogs["en"][key] = en
-    registry: dict[tuple[str, str], str] = {}
-    totals = Counter()
+def _parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Migrate only canonical route templates to localization keys."
+    )
+    parser.add_argument(
+        "--root",
+        default=str(ROOT),
+        help="Repository root (default: inferred from route_contract.py).",
+    )
+    parser.add_argument(
+        "--apply",
+        action="store_true",
+        help="Apply migration changes. Without this flag the command is read-only.",
+    )
+    return parser.parse_args(argv)
 
-    if args.dry_run:
-        print(json.dumps({"files": len(files), "translatablePairs": len(counts), "occurrences": sum(counts.values())}, indent=2))
-        return
 
-    for path in files:
-        text_count, attribute_count = migrate_file(path, fa_to_en, en_to_fa, counts, registry, catalogs)
-        totals["text"] += text_count
-        totals["attributes"] += attribute_count
-    for locale in ("fa", "en"):
-        write_catalog(locale, catalogs[locale])
-    print(json.dumps({
-        "files": len(files),
-        "textNodes": totals["text"],
-        "attributes": totals["attributes"],
-        "catalogKeys": len(catalogs["en"]),
-        "reusedPairs": sum(1 for count in counts.values() if count > 1)
-    }, ensure_ascii=False, indent=2))
+def _scope_payload(files: list[Path], root: Path, *, apply: bool) -> dict[str, object]:
+    targets = [path.relative_to(root).as_posix() for path in files]
+    return {
+        "mode": "apply" if apply else "dry-run",
+        "readOnly": not apply,
+        "canonicalTemplates": len(files),
+        "targets": targets,
+        "collisions": 0,
+        "outsideContract": 0,
+        "enTargets": sum(path == "en" or path.startswith("en/") for path in targets),
+        "localizedTargets": sum(
+            path == "localized" or path.startswith("localized/") for path in targets
+        ),
+    }
+
+
+def main(argv: Iterable[str] | None = None) -> int:
+    args = _parse_args(argv)
+    root = Path(args.root).resolve()
+    try:
+        contract = load_route_contract(root)
+        files = canonical_template_files(contract)
+        scopes = route_scopes(contract)
+        version, source_locale = _locale_settings(root)
+        if source_locale not in contract.locales:
+            raise MigrationSafetyError(
+                f"default locale is not enabled by route contract: {source_locale}"
+            )
+
+        scope_report = _scope_payload(files, root, apply=args.apply)
+        print(f"MIGRATION_SCOPE_OK canonical_templates={len(files)}")
+        print(json.dumps(scope_report, ensure_ascii=False, indent=2))
+
+        if args.apply:
+            _require_clean_working_tree(root)
+
+        fa_to_en, en_to_fa = load_pairs()
+        counts = collect_pair_counts(files, fa_to_en, en_to_fa)
+        if not args.apply:
+            print(json.dumps({
+                "mode": "dry-run",
+                "readOnly": True,
+                "canonicalTemplates": len(files),
+                "translatablePairs": len(counts),
+                "occurrences": sum(counts.values()),
+            }, ensure_ascii=False, indent=2))
+            return 0
+
+        catalogs = {"fa": {}, "en": {}}
+        # Preserve already-generated keys on repeated runs. The migration is intentionally
+        # append-only unless a catalog is explicitly removed before regeneration.
+        for locale in ("fa", "en"):
+            existing_path = root / "public" / "locales" / f"{locale}.json"
+            if existing_path.exists():
+                try:
+                    existing = json.loads(existing_path.read_text("utf-8"))
+                    catalogs[locale].update(existing.get("messages", existing))
+                except (json.JSONDecodeError, OSError):
+                    pass
+        for key, (fa, en) in RUNTIME_MESSAGES.items():
+            catalogs["fa"][key] = fa
+            catalogs["en"][key] = en
+
+        registry: dict[tuple[str, str], str] = {}
+        totals = Counter()
+        for path in files:
+            relative = path.relative_to(root).as_posix()
+            text_count, attribute_count = migrate_file(
+                path,
+                fa_to_en,
+                en_to_fa,
+                counts,
+                registry,
+                catalogs,
+                source_locale=source_locale,
+                scope=scopes[relative],
+                version=version,
+            )
+            totals["text"] += text_count
+            totals["attributes"] += attribute_count
+        for locale in ("fa", "en"):
+            write_catalog(root, locale, catalogs[locale], version)
+        print(json.dumps({
+            "mode": "apply",
+            "readOnly": False,
+            "canonicalTemplates": len(files),
+            "textNodes": totals["text"],
+            "attributes": totals["attributes"],
+            "catalogKeys": len(catalogs["en"]),
+            "reusedPairs": sum(1 for count in counts.values() if count > 1),
+        }, ensure_ascii=False, indent=2))
+        return 0
+    except (MigrationSafetyError, RouteContractError, OSError, UnicodeError) as exc:
+        print(f"MIGRATION_SAFETY_FAILED {exc}", file=sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

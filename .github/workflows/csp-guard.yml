@@ -25,69 +25,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: بررسی سازگاری منیفست و صفحات
-        run: |
-          python3 - <<'PY'
-          import json, hashlib, sys, pathlib
+      - name: تنظیم Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-          root = pathlib.Path('.')
-          man_p = root / 'public/locales/csp-manifest.json'
-          rel_p = root / 'localized/.csp-release.json'
-          errors = []
+      - name: نصب parser قطعی CSP
+        run: python3 -m pip install --disable-pip-version-check beautifulsoup4==4.15.0
 
-          if not man_p.exists():
-              print('::error::csp-manifest.json یافت نشد'); sys.exit(1)
-          if not rel_p.exists():
-              print('::error::.csp-release.json یافت نشد'); sys.exit(1)
-
-          raw = man_p.read_bytes()
-          man = json.loads(raw)
-          rel = json.loads(rel_p.read_text())
-
-          actual = hashlib.sha256(raw).hexdigest()
-          if rel.get('cspManifestSha256') != actual:
-              errors.append(
-                  "cspManifestSha256 نمی‌خواند\n"
-                  f"  انتظار: {rel.get('cspManifestSha256')}\n"
-                  f"  واقعی : {actual}")
-
-          for key in ('policyVersion', 'releaseId', 'releaseHtmlSha256', 'routeCount'):
-              if man.get(key) != rel.get(key):
-                  errors.append(f"ناسازگاری {key}: منیفست={man.get(key)} انتشار={rel.get(key)}")
-
-          routes = man.get('routes', {})
-          if man.get('routeCount') != len(routes):
-              errors.append(f"routeCount={man.get('routeCount')} ولی تعداد واقعی={len(routes)}")
-
-          mismatch, missing = [], []
-          for rel_path, entry in routes.items():
-              f = root / 'localized' / rel_path
-              if not f.exists():
-                  missing.append(rel_path); continue
-              if hashlib.sha256(f.read_bytes()).hexdigest() != entry.get('htmlSha256'):
-                  mismatch.append(rel_path)
-
-          on_disk = {str(p.relative_to(root / 'localized'))
-                     for p in (root / 'localized').rglob('*.html')}
-          untracked = sorted(on_disk - set(routes))
-
-          if missing:
-              errors.append("در منیفست هست ولی فایلش نیست:\n  " + "\n  ".join(missing))
-          if mismatch:
-              errors.append("هش نمی‌خواند (منیفست بازتولید نشده):\n  " + "\n  ".join(mismatch))
-          if untracked:
-              errors.append("صفحه بدون رکورد در منیفست:\n  " + "\n  ".join(untracked))
-
-          if errors:
-              print('::error::نگهبان CSP شکست خورد — این تغییر سایت را ۵۰۳ می‌کند')
-              for e in errors:
-                  print('\n' + e)
-              print('\nراه حل: منیفست را بازتولید و دوباره کامیت کنید.')
-              sys.exit(1)
-
-          print(f'✅ هر {len(routes)} صفحه با منیفست می‌خواند')
-          print(f'   releaseId {man.get("releaseId")} | policyVersion {man.get("policyVersion")}')
-          PY
+      - name: بررسی deterministic سازگاری CSP
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: python3 tools/localization/build_csp_artifacts.py --check
 
   secret-scan:
     name: جلوگیری از نشت اطلاعات حساس
