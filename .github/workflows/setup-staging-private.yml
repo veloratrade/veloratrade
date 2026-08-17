@@ -1,0 +1,55 @@
+# راه‌اندازی یک‌باره PRIVATE_ROOT استیجینگ — خارج از docroot
+# محتوای velora.env از Secret خوانده می‌شود و هرگز در لاگ چاپ نمی‌شود.
+# فقط velora_private_staging را می‌سازد/به‌روز می‌کند؛ به Production دست نمی‌زند.
+
+name: Setup Staging Private Root
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  setup-private:
+    if: github.repository == 'veloratrade/veloratrade'
+    runs-on: ubuntu-latest
+    steps:
+      - name: ساخت ساختار private و آپلود env
+        env:
+          FTP_SERVER:   ${{ secrets.STAGING_FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.STAGING_FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.STAGING_FTP_PASSWORD }}
+          VELORA_ENV:   ${{ secrets.STAGING_VELORA_ENV }}
+        run: |
+          set -uo pipefail
+          sudo apt-get install -y -q lftp > /dev/null
+
+          mkdir -p private/config private/data private/logs
+          printf '%s' "$VELORA_ENV" > private/config/velora.env
+          touch private/data/.gitkeep private/logs/.gitkeep
+
+          attempt=0
+          until [ $attempt -ge 10 ]; do
+            attempt=$((attempt+1))
+            echo "===== تلاش $attempt ====="
+            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" <<'LFTP' && break
+          set ftp:ssl-allow no
+          set net:max-retries 2
+          set net:timeout 30
+          set ftp:passive-mode on
+          mirror -R --continue --no-perms --no-symlinks private/ velora_private_staging/
+          chmod 600 velora_private_staging/config/velora.env
+          chmod 700 velora_private_staging/config velora_private_staging/data velora_private_staging/logs
+          bye
+          LFTP
+            sleep 8
+          done
+
+          echo "===== راستی‌آزمایی (فقط متادیتا) ====="
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" <<'LFTP'
+          set ftp:ssl-allow no
+          set net:timeout 30
+          cls -l velora_private_staging/ velora_private_staging/config/
+          bye
+          LFTP
