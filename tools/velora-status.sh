@@ -203,6 +203,24 @@ hr
 echo "گام بعد: docs/README.md را کامل بخوان (§3 ماتریس FTP • §6 درس‌ها • §7 کار نیمه‌تمام)"
 hr
 
+# ── ۷. توکن جلسه (اثبات اجرا) ────────────────────────────────────────────────
+# این کد از داده‌های زندهٔ همین لحظه ساخته می‌شود و حدس‌زدنی نیست.
+# agent موظف است آن را در اولین پیام خود به مالک نقل کند (§8، گام صفر).
+_sess=$(printf '%s|%s|%s|%s' \
+          "$(git rev-parse --short HEAD 2>/dev/null)" \
+          "$(date -u '+%Y-%m-%dT%H')" \
+          "$(git ls-files 2>/dev/null | wc -l | tr -d ' ')" \
+          "$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')" \
+        | sha256sum | cut -c1-8)
+echo
+hr
+echo "۷. توکن اثبات اجرا (SESSION PROOF)"
+hr
+echo "  VELORA-RUN-$_sess"
+echo
+echo "  ⚠️ این کد را در اولین پیام به مالک بنویس."
+echo "     بدون آن، هیچ گزارشی از تو معتبر نیست (BR-6)."
+hr
 exit 0
 fi
 
