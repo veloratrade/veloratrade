@@ -5,7 +5,7 @@
 | Document Control | |
 |---|---|
 | شناسه سند | `VELORA-OPS-README` |
-| نسخه | 1.1.0 |
+| نسخه | 1.2.0 |
 | وضعیت | ACTIVE |
 | آخرین به‌روزرسانی | 2026-08-17 |
 | مالک | veloratrade (Project Owner) |
@@ -73,6 +73,12 @@ Secrets:  خودکار خوانده می‌شوند — نیازی به credenti
 ```
 
 ### RB-3: راستی‌آزمایی پس از استقرار (Smoke Suite)
+```
+اجرای خودکار: GitHub → Actions → "Health Check (Staging)" → Run workflow
+⚠️ از "Health Check" (بدون پسوند Staging) استفاده نشود — آن Production را تست می‌کند (OC-7).
+⚠️ اجرای این تست‌ها از سندباکس چت ممکن نیست (OC-1/OC-6).
+```
+
 | تست | نتیجه موردانتظار |
 |---|---|
 | `GET /health` | 200 + JSON `status:ok` |
@@ -114,14 +120,17 @@ git diff docs-baseline-v1..main -- docs/
 | OC-3 | کد، هر `APP_ENV ≠ dev` را production-grade می‌داند و fail-closed است | فرمت‌های RB-2 دقیقاً رعایت شود |
 | OC-4 | `localized/.csp-release.json` فایل مخفی حیاتی است | در کپی/بسته‌بندی با glob ساده جا نماند |
 | OC-5 | Migration `v0.2` با گرامر MySQL 8 ناسازگار است | یافته F-13 — قبل از اجرا dialect بررسی شود |
-| OC-6 | Runner گیت‌هاب به هاست دسترسی دارد؛ سندباکس چت ندارد | تست HTTP از چت ممکن است، انتقال فایل خیر |
+| OC-6 | Runner گیت‌هاب به هاست دسترسی دارد؛ سندباکس چت ندارد | انتقال فایل فقط از Actions. **اصلاح ۲۰۲۶-۰۸-۱۷:** تست HTTP از چت هم برای `staging.veloratrade.ir` ممکن **نیست** (نتیجه: timeout/`000`) — این خرابی استیجینگ نیست، همان silent-drop بند OC-1 است. تست استیجینگ فقط از Actions |
+| OC-7 | `healthcheck.yml` با وجود نامش، **استیجینگ را تست نمی‌کند**: مقدار ثابت `BASE = https://veloratrade.ir` دارد (یعنی Production) و دو مرحله‌اش روی `/api/v1/auth/logout` درخواست **POST** می‌زند؛ ضمناً `schedule` روزانه (۰۳:۰۰ UTC) دارد که همان POSTها را خودکار روی Production تکرار می‌کند | برای RB-3 از `healthcheck-staging.yml` استفاده شود (فقط GET، فقط `workflow_dispatch`، فقط دامنه استیجینگ). اجرای `healthcheck.yml` = لمس Production و مشمول NP-1 |
 
 ## 7. وضعیت جاری و کارهای باز (Living Section)
 
 **آخرین وضعیت (2026-08-17):**
-- Staging مستقر و عملیاتی؛ کل Smoke Suite سبز؛ DB متصل.
+- Staging مستقر؛ آخرین Smoke Suite سبز **به‌صورت دستی توسط مالک** تأیید شده بود؛ DB متصل.
+  ⚠️ تا پیش از این جلسه هیچ گیت خودکاری برای RB-3 روی استیجینگ وجود نداشت (OC-7). وضعیت سلامت استیجینگ **از زمان آخرین تست دستی راستی‌آزمایی نشده** — برای تأیید مجدد، `healthcheck-staging.yml` اجرا شود.
 - Production دست‌نخورده؛ pipeline تولید عمداً بدون Secrets.
 - اسناد پایه ثبت و tag شده (`docs-baseline-v1`).
+- **جدید:** `.github/workflows/healthcheck-staging.yml` افزوده شد — اجرای خودکار RB-3 روی استیجینگ، فقط GET، فقط دستی. هنوز **اجرا نشده** (منتظر تصمیم مالک).
 
 **Backlog (به ترتیب اولویت):**
 | # | مورد | اولویت | وضعیت |
@@ -132,6 +141,7 @@ git diff docs-baseline-v1..main -- docs/
 | B-4 | فعال‌سازی کنترل‌شده deploy تولید: Secrets تولید + **Required Reviewers** روی environment `production` | — | ⏳ تصمیم مالک |
 | B-5 | چرخش credentials پس از پایان دوره کاری جاری (FTP piknet، FTP staging، PAT) | 🔴 | ⏳ سمت مالک |
 | B-6 | **Roadmap:** نسخه فعلی `Roadmap.pdf` صرفاً جهت حفاظت در `docs/pdf/Roadmap.pdf` آرشیو شده (SHA-256: `0a0df01b3fede02233902074b1b22ca4b444741d12701e1a91303278e962b9d3`) — **وضعیت: LOCKED / DO NOT USE**. نیازمند ویرایش توسط مالک است؛ تا اعلام صریح مالک: از محتوای آن در هیچ سند/تصمیمی استفاده نشود، `docs/02_ROADMAP.md` ساخته نشود، و وارد هیچ بسته deployment نشود | — | ⏳ منتظر ویرایش مالک |
+| B-7 | **اصلاح `healthcheck.yml`:** یا به `healthcheck-production.yml` تغییر نام یابد تا دامنه‌اش شفاف شود، یا مراحل POST روی `/api/v1/auth/logout` بازبینی شوند، یا `schedule` روزانه‌اش (که خودکار روی Production POST می‌زند) حذف/تأیید شود — تصمیم مالک لازم است (OC-7) | P1 | ⏳ منتظر تصمیم مالک |
 
 > **قاعده نگهداری:** هر جلسه‌ای که یکی از موارد بالا را تغییر داد، موظف است همین بخش را در همان جلسه به‌روزرسانی و commit کند.
 
