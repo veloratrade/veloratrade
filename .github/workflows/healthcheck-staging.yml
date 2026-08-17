@@ -78,8 +78,12 @@ jobs:
           detail = f'status={st}'
           try:
               payload = json.loads(body)
-              ok = ok and payload.get('status') == 'ok'
-              detail += f'; body={json.dumps(payload, ensure_ascii=False)[:200]}'
+              # پاسخ API در پاکت استاندارد است:
+              # {"status":"success","data":{"status":"ok",...},"error":null}
+              # پس مقدار سلامت در data.status است، نه status سطح بالا.
+              inner = (payload.get('data') or {}).get('status')
+              ok = ok and payload.get('status') == 'success' and inner == 'ok'
+              detail += f'; data.status={inner!r}'
           except Exception:
               ok = False
               ct = hd.get('Content-Type') or hd.get('content-type') or '—'
