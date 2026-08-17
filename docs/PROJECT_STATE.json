@@ -1,0 +1,197 @@
+{
+  "_meta": {
+    "schema": "velora-project-state/1",
+    "generated_at": "2026-08-17T12:53:08+00:00",
+    "generated_from_commit": "dd4ad2afc90526c125636a8d07276027c8f00f38",
+    "generator": "tools/velora-status.sh --json",
+    "regenerate": "bash tools/velora-status.sh --json > docs/PROJECT_STATE.json",
+    "authority": "SNAPSHOT ONLY — منبع حقیقت نیست. مرجع: docs/README.md و P1/P2",
+    "staleness_warning": "اگر generated_from_commit با HEAD فعلی فرق دارد، این فایل کهنه است — بازتولید کن",
+    "contains_secrets": false
+  },
+  "repository": {
+    "name": "veloratrade/veloratrade",
+    "private": true,
+    "branch": "main",
+    "head": "dd4ad2a",
+    "head_date": "2026-08-17 12:35:22 +0000",
+    "head_subject": "docs: add START HERE briefing block at the top (v2.0.0)",
+    "working_tree_clean": false,
+    "tracked_files": 657,
+    "readme_version": "2.1.0"
+  },
+  "environments": {
+    "production": {
+      "url": "https://veloratrade.ir",
+      "docroot": "public_html/",
+      "private_root": "/home/piknet/velora_private/",
+      "behind_cloudflare": true,
+      "ftp_host_note": "از veloratrade.ir برای FTP استفاده نشود — پشت CDN است",
+      "deploy_workflow": "deploy.yml",
+      "status": "UNTOUCHED",
+      "live_probe_status": 200
+    },
+    "staging": {
+      "url": "https://staging.veloratrade.ir",
+      "docroot": "public_html/staging.veloratrade.ir/",
+      "private_root": "/home/piknet/velora_private_staging/",
+      "behind_cloudflare": false,
+      "deploy_workflow": "deploy-staging.yml",
+      "status": "OPERATIONAL",
+      "live_probe_status": 0,
+      "probe_note": "0 = OC-1 firewall از سندباکس، نه خرابی"
+    },
+    "shared": {
+      "ftp_host": "185.164.72.148",
+      "ftp_account": "piknet",
+      "ftp_login_point": "/home/piknet/",
+      "login_point_proof": "setup-staging-private.yml خواهرِ public_html می‌نویسد",
+      "protocol": "ftp + ssl-allow no",
+      "tool": "lftp mirror --continue retry x12",
+      "single_account_risk": "هر دو محیط یک اکانت — تنها تفاوت، مسیر مقصد (OC-10/OC-11)"
+    }
+  },
+  "secrets": {
+    "note": "فقط نام — مقدار هرگز خوانده نمی‌شود و API هم برنمی‌گرداند",
+    "names": [
+      "STAGING_FTP_PASSWORD",
+      "STAGING_FTP_SERVER",
+      "STAGING_FTP_USERNAME",
+      "STAGING_VELORA_ENV"
+    ],
+    "production_ftp_configured": false
+  },
+  "workflows": {
+    "ci.yml": {
+      "state": "active",
+      "total_runs": 54,
+      "last_run": {
+        "at": "2026-08-17T12:35:25Z",
+        "event": "push",
+        "conclusion": "success"
+      }
+    },
+    "csp-guard.yml": {
+      "state": "active",
+      "total_runs": 43,
+      "last_run": {
+        "at": "2026-08-17T12:35:25Z",
+        "event": "push",
+        "conclusion": "success"
+      }
+    },
+    "deploy-staging.yml": {
+      "state": "active",
+      "total_runs": 5,
+      "last_run": {
+        "at": "2026-08-17T01:04:10Z",
+        "event": "workflow_dispatch",
+        "conclusion": "success"
+      }
+    },
+    "deploy.yml": {
+      "state": "active",
+      "total_runs": 27,
+      "last_run": {
+        "at": "2026-08-17T10:52:46Z",
+        "event": "push",
+        "conclusion": "failure"
+      }
+    },
+    "healthcheck-production.yml": {
+      "state": "active",
+      "total_runs": 0,
+      "last_run": null
+    },
+    "healthcheck-staging.yml": {
+      "state": "active",
+      "total_runs": 4,
+      "last_run": {
+        "at": "2026-08-17T10:45:27Z",
+        "event": "workflow_dispatch",
+        "conclusion": "success"
+      }
+    },
+    "healthcheck-suite.yml": {
+      "state": "active",
+      "total_runs": 0,
+      "last_run": null
+    },
+    "setup-staging-private.yml": {
+      "state": "active",
+      "total_runs": 3,
+      "last_run": {
+        "at": "2026-08-17T01:27:17Z",
+        "event": "workflow_dispatch",
+        "conclusion": "success"
+      }
+    }
+  },
+  "protection": {
+    "environment": "production",
+    "protection_rules": [
+      "branch_policy"
+    ],
+    "can_admins_bypass": true,
+    "branch_policies": [
+      "main"
+    ]
+  },
+  "invariants": [
+    "NP-1 هیچ تغییر Production بدون تأیید صریح مالک",
+    "NP-2 هیچ Secret واقعی در مخزن/سند/لاگ/چت",
+    "NP-6 Deployment فقط از نسخه ردیابی‌پذیر و از طریق workflow",
+    "C-2 مقصد mirror hardcode — هرگز ورودی dispatch",
+    "BR-2 نتیجهٔ ابزار را پیش از گزارش راستی‌آزمایی کن",
+    "BR-5 فرض دسترسی نکن — آزمایش کن"
+  ],
+  "traps": [
+    "OC-1 کد 000 از سندباکس ≠ خرابی سرویس (فایروال IP خارج از ایران)",
+    "BR-2 تست قرمز ≠ خرابی محیط — دو بار نقص خودِ تست بود",
+    "OC-8 Required Reviewers مسدود توسط پلن، نه کمبود دسترسی",
+    "OC-12 منیفست‌های ریشه مرجع بستهٔ انتشار نیستند"
+  ],
+  "backlog": [
+    {
+      "id": "B-1",
+      "status": "⏳ منتظر تأیید مالک"
+    },
+    {
+      "id": "B-2",
+      "status": "⏳"
+    },
+    {
+      "id": "B-3",
+      "status": "⏳"
+    },
+    {
+      "id": "B-4",
+      "status": "⏳ تصمیم مالک"
+    },
+    {
+      "id": "B-5",
+      "status": "⏳ سمت مالک"
+    },
+    {
+      "id": "B-6",
+      "status": "⏳ منتظر ویرایش مالک"
+    },
+    {
+      "id": "B-7",
+      "status": "✅ **انجام شد ۲۰۲۶-۰۸-۱۷** — rename + حذف schedule + گارد نوشتاری"
+    },
+    {
+      "id": "B-8",
+      "status": "✅ **انجام شد ۲۰۲۶-۰۸-۱۷** — در Baseline §4 ثبت شد و تست‌ها با آن هم‌راستا شدند"
+    },
+    {
+      "id": "B-9",
+      "status": "⏳ بندهای ②④ باز"
+    },
+    {
+      "id": "B-10",
+      "status": "🔵 **رد شد — تصمیم مالک ۲۰۲۶-۰۸-۱۷:** هر دو محیط عمداً از یک اکانت `piknet` استفاده می‌کنند"
+    }
+  ],
+  "next_step": "docs/README.md را کامل بخوان — §3 ماتریس FTP، §6 درس‌ها، §7 کار نیمه‌تمام"
+}
