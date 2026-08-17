@@ -187,7 +187,7 @@ docs/**
 - [ ] Full-tree deploys only — the 2026-08-16 logout failure was caused by a
       partial upload that omitted `api/`, leaving stale server code for weeks
 - [ ] After deploy, host manifest hash equals repo manifest hash
-      (automated in `healthcheck.yml`)
+      (automated in `healthcheck-production.yml`)
 
 ---
 
@@ -263,7 +263,7 @@ No move is proposed here. Relocating them requires its own approval.
 | `01_SECURITY_CHECKLIST` | Owns §1 exposure probes; this document owns path-contract enforcement |
 | `02_ROADMAP` | Phase changes that add directories require a baseline amendment first |
 | `.github/workflows/csp-guard.yml` | Automates §3 and §5 |
-| `.github/workflows/healthcheck.yml` | Automates §1 probes and §4 post-deploy verification |
+| `.github/workflows/healthcheck-production.yml` | Automates §1 probes and §4 post-deploy verification |
 
 ---
 

@@ -5,7 +5,7 @@
 | Document Control | |
 |---|---|
 | شناسه سند | `VELORA-OPS-README` |
-| نسخه | 1.3.0 |
+| نسخه | 1.4.0 |
 | وضعیت | ACTIVE |
 | آخرین به‌روزرسانی | 2026-08-17 |
 | مالک | veloratrade (Project Owner) |
@@ -73,11 +73,24 @@ Secrets:  خودکار خوانده می‌شوند — نیازی به credenti
 ```
 
 ### RB-3: راستی‌آزمایی پس از استقرار (Smoke Suite)
+
+**ساختار (از ۲۰۲۶-۰۸-۱۷):** منطق بررسی فقط در یک فایل زندگی می‌کند تا بین محیط‌ها شکاف نیفتد.
+
 ```
-اجرای خودکار: GitHub → Actions → "Health Check (Staging)" → Run workflow
-⚠️ از "Health Check" (بدون پسوند Staging) استفاده نشود — آن Production را تست می‌کند (OC-7).
-⚠️ اجرای این تست‌ها از سندباکس چت ممکن نیست (OC-1/OC-6).
+healthcheck-suite.yml        ← تنها محل منطق مشترک (workflow_call، مستقیم اجرا نمی‌شود)
+   ├── healthcheck-staging.yml      wrapper نازک → staging  + write_probes=true
+   └── healthcheck-production.yml   wrapper نازک → production + گارد تأیید
 ```
+
+| محیط | نحوه اجرا | probe نوشتاری |
+|---|---|---|
+| Staging | Actions → «Health Check (Staging)» → Run workflow | ✅ فعال — محیط امن، DB مستقل |
+| Production | Actions → «Health Check (Production)» → Run workflow | ⛔ فقط با نوشتن دقیق `WRITE-TO-PRODUCTION` در ورودی `confirm_production_writes` |
+
+- **قاعده نام‌گذاری:** نام فایل workflow باید دامنه‌اش را اعلام کند (درس OC-7).
+- **افزودن بررسی جدید:** فقط در `healthcheck-suite.yml`. تفاوت‌های محیطی با شرط `IS_STAGING` مدل می‌شوند (مثلاً استیجینگ باید `noindex` بدهد و تولید نباید).
+- **probe نوشتاری چرا حذف نشد:** تست گارد same-origin ذاتاً به درخواست تغییردهنده نیاز دارد؛ با GET تبدیل به تست تزئینی می‌شود.
+- ⚠️ اجرای این تست‌ها از سندباکس چت ممکن نیست (OC-1/OC-6).
 
 | تست | نتیجه موردانتظار |
 |---|---|
@@ -121,7 +134,9 @@ git diff docs-baseline-v1..main -- docs/
 | OC-4 | `localized/.csp-release.json` فایل مخفی حیاتی است | در کپی/بسته‌بندی با glob ساده جا نماند |
 | OC-5 | Migration `v0.2` با گرامر MySQL 8 ناسازگار است | یافته F-13 — قبل از اجرا dialect بررسی شود |
 | OC-6 | Runner گیت‌هاب به هاست دسترسی دارد؛ سندباکس چت ندارد | انتقال فایل فقط از Actions. **اصلاح ۲۰۲۶-۰۸-۱۷:** تست HTTP از چت هم برای `staging.veloratrade.ir` ممکن **نیست** (نتیجه: timeout/`000`) — این خرابی استیجینگ نیست، همان silent-drop بند OC-1 است. تست استیجینگ فقط از Actions |
-| OC-7 | `healthcheck.yml` با وجود نامش، **استیجینگ را تست نمی‌کند**: مقدار ثابت `BASE = https://veloratrade.ir` دارد (یعنی Production) و دو مرحله‌اش روی `/api/v1/auth/logout` درخواست **POST** می‌زند؛ ضمناً `schedule` روزانه (۰۳:۰۰ UTC) دارد که همان POSTها را خودکار روی Production تکرار می‌کند | برای RB-3 از `healthcheck-staging.yml` استفاده شود (فقط GET، فقط `workflow_dispatch`، فقط دامنه استیجینگ). اجرای `healthcheck.yml` = لمس Production و مشمول NP-1 |
+| OC-7 | نام `healthcheck.yml` دامنه‌اش را پنهان می‌کرد: در واقع **تولید** را تست می‌کرد، `schedule` روزانه داشت و شبانه روی `/api/v1/auth/logout` تولید **POST** می‌زد. یک جلسه آن را به‌اشتباه ابزار تست استیجینگ فرض کرد | **رفع شد ۲۰۲۶-۰۸-۱۷:** به `healthcheck-production.yml` تغییر نام یافت، `schedule` حذف شد، و probe نوشتاری پشت گارد `confirm_production_writes` رفت. قاعده: **نام فایل باید دامنه‌اش را اعلام کند** |
+| OC-8 | Environment «production» در گیت‌هاب وجود دارد ولی `protection_rules` آن **صفر** است؛ کامنت `deploy.yml` («وابسته به environment برای تأیید دستی») توصیف واقعیت نبود. گره‌زدن یک job به Environment بدون rule، هیچ محافظتی ایجاد نمی‌کند و فقط ظاهر امن می‌سازد | تا زمان تنظیم Required Reviewers توسط مالک، محافظت باید **داخل کد** باشد (گارد صریح)، نه متکی به تنظیمات UI. بررسی با: `GET /repos/{owner}/{repo}/environments/production` |
+| OC-9 | `deploy.yml` روی **هر push به main** اجرا می‌شود (نه فقط دستی). تنها چیزی که مانع رسیدن فایل به تولید می‌شود، نبودِ Secret های `FTP_*` است — خطای امن، ولی گارد نیست. ۲۳ اجرا، همه با شکست `Input required and not supplied: server` | اگر B-4 اجرا و Secret ها اضافه شوند، هر push مستقیماً روی تولید می‌نشیند. پیش از آن باید تریگر `push` بازبینی و Required Reviewers فعال شود — ثبت‌شده در B-9 |
 
 ## 7. وضعیت جاری و کارهای باز (Living Section)
 
@@ -134,11 +149,18 @@ git diff docs-baseline-v1..main -- docs/
   مسیر ناموجود → `404`.
 - Production دست‌نخورده؛ pipeline تولید عمداً بدون Secrets. هیچ درخواستی در این جلسه به Production ارسال نشد.
 - اسناد پایه ثبت و tag شده (`docs-baseline-v1`).
-- **جدید:** `.github/workflows/healthcheck-staging.yml` — گیت خودکار RB-3، فقط GET، فقط `workflow_dispatch`.
-  دو نقص در اولین اجراهای واقعی کشف و رفع شد (`a39b902`, `58ab606`):
+- **معماری Smoke Suite یکپارچه شد:** منطق مشترک در `healthcheck-suite.yml` و دو wrapper نازک
+  (`healthcheck-staging.yml`، `healthcheck-production.yml`). هدف: نبود شکاف بین محیط‌ها —
+  افزودن یک بررسی در یک‌جا، هر دو محیط را پوشش می‌دهد.
+- `healthcheck.yml` → `healthcheck-production.yml` تغییر نام یافت؛ ارجاع `deploy.yml` و دو ارجاع
+  در سند ۰۴ همزمان اصلاح شدند. `schedule` شبانه حذف شد (OC-7).
+- دو نقص در اولین اجراهای واقعی کشف و رفع شد (`a39b902`, `58ab606`):
   ① مسیر آزمایشی غیر ASCII قبل از ارسال خطای encoding می‌داد و قرارداد ۴۰۴ عملاً تست نمی‌شد؛
   ② شرط `/health` به‌جای `data.status` روی فیلد سطح بالا بررسی می‌شد.
   **درس:** هر دو قرمزِ اولیه نقص تست بودند نه نقص استیجینگ — یک گیت تست‌نشده خودش منبع سیگنال کاذب است.
+- 🔴 **یافته باز (OC-8/OC-9، ثبت در B-9):** Environment `production` صفر protection rule دارد و
+  `deploy.yml` روی هر push به main اجرا می‌شود. تنها مانع فعلی رسیدن فایل به تولید، **نبودِ Secret**
+  است نه یک گارد. تا تنظیم Required Reviewers توسط مالک، ادعای «تأیید دستی تولید» معتبر نیست.
 
 **Backlog (به ترتیب اولویت):**
 | # | مورد | اولویت | وضعیت |
@@ -149,8 +171,9 @@ git diff docs-baseline-v1..main -- docs/
 | B-4 | فعال‌سازی کنترل‌شده deploy تولید: Secrets تولید + **Required Reviewers** روی environment `production` | — | ⏳ تصمیم مالک |
 | B-5 | چرخش credentials پس از پایان دوره کاری جاری (FTP piknet، FTP staging، PAT) | 🔴 | ⏳ سمت مالک |
 | B-6 | **Roadmap:** نسخه فعلی `Roadmap.pdf` صرفاً جهت حفاظت در `docs/pdf/Roadmap.pdf` آرشیو شده (SHA-256: `0a0df01b3fede02233902074b1b22ca4b444741d12701e1a91303278e962b9d3`) — **وضعیت: LOCKED / DO NOT USE**. نیازمند ویرایش توسط مالک است؛ تا اعلام صریح مالک: از محتوای آن در هیچ سند/تصمیمی استفاده نشود، `docs/02_ROADMAP.md` ساخته نشود، و وارد هیچ بسته deployment نشود | — | ⏳ منتظر ویرایش مالک |
-| B-8 | **قرارداد پاکت پاسخ API مستند نیست:** `/health` پاسخ را در پاکت `{status, data, error, timestamp}` برمی‌گرداند و مقدار سلامت در `data.status` است. این قرارداد در هیچ سندی ثبت نشده و باعث یک تست غلط شد؛ ارزش افزودن به P1 (Baseline §4) را دارد | P2 | ⏳ |
-| B-7 | **اصلاح `healthcheck.yml`:** یا به `healthcheck-production.yml` تغییر نام یابد تا دامنه‌اش شفاف شود، یا مراحل POST روی `/api/v1/auth/logout` بازبینی شوند، یا `schedule` روزانه‌اش (که خودکار روی Production POST می‌زند) حذف/تأیید شود — تصمیم مالک لازم است (OC-7) | P1 | ⏳ منتظر تصمیم مالک |
+| B-7 | اصلاح `healthcheck.yml` | P1 | ✅ **انجام شد ۲۰۲۶-۰۸-۱۷** — rename + حذف schedule + گارد نوشتاری |
+| B-8 | قرارداد پاکت پاسخ API مستند نبود | P2 | ✅ **انجام شد ۲۰۲۶-۰۸-۱۷** — در Baseline §4 ثبت شد و تست‌ها با آن هم‌راستا شدند |
+| B-9 | **گارد واقعی تولید:** ① تنظیم **Required Reviewers** روی Environment `production` (فقط از Settings → Environments؛ از API با PAT ممکن نیست) ② تصمیم درباره تریگر `push` در `deploy.yml` (OC-9) ③ اصلاح کامنت گمراه‌کننده `deploy.yml` | 🔴 P0 | ⏳ سمت مالک |
 
 > **قاعده نگهداری:** هر جلسه‌ای که یکی از موارد بالا را تغییر داد، موظف است همین بخش را در همان جلسه به‌روزرسانی و commit کند.
 

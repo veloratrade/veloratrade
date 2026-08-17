@@ -1,0 +1,78 @@
+# VELORA — Smoke Suite تولید (wrapper نازک)
+#
+# نام قبلی این فایل `healthcheck.yml` بود؛ آن ابهام باعث شد یک جلسه
+# آن را به‌اشتباه ابزار تست استیجینگ بداند. نام فایل حالا دامنه‌اش را
+# صریح اعلام می‌کند (OC-7).
+#
+# ── تغییرات عمدی نسبت به نسخه قبلی ──────────────────────────────────
+#   ✗ schedule حذف شد. اجرای شبانه‌ی خودکارِ درخواست‌های نوشتاری روی
+#     API احراز هویت تولید، بدون ثبت در هیچ سندی انجام می‌شد و با NP-1
+#     در تعارض بود. اگر مانیتورینگ دائم لازم است، جای درستش یک uptime
+#     monitor بیرونی با GET است، نه یک job که POST می‌زند.
+#   ✓ workflow_call حفظ شد — deploy.yml پس از انتشار آن را صدا می‌زند.
+#   ✓ environment: production → مشمول هر protection rule ای که روی آن
+#     Environment تعریف شده باشد.
+#   ✓ گارد سخت داخل کد: probe نوشتاری فقط با تأیید صریح.
+#
+# ── چرا گارد داخل کد، وقتی Environment هست؟ ─────────────────────────
+# در بازرسی ۲۰۲۶-۰۸-۱۷ مشخص شد Environment «production» وجود دارد ولی
+# protection_rules آن **صفر** است — یعنی گره‌زدن به آن به‌تنهایی هیچ
+# محافظتی ایجاد نمی‌کند و فقط ظاهر امن می‌سازد. گارد زیر مستقل از
+# تنظیمات UI عمل می‌کند: تا وقتی مالک عبارت تأیید را وارد نکند، هیچ
+# درخواست نوشتاری ارسال نمی‌شود.
+#
+# مرجع: docs/README.md §4 RB-3، NP-1، OC-7
+
+name: Health Check (Production)
+
+on:
+  workflow_call:
+  workflow_dispatch:
+    inputs:
+      confirm_production_writes:
+        description: 'برای اجرای probe نوشتاری روی تولید، دقیقاً بنویسید: WRITE-TO-PRODUCTION (خالی = فقط بررسی خواندنی)'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: healthcheck-production
+  cancel-in-progress: false
+
+jobs:
+  # گارد: تصمیم می‌گیرد probe نوشتاری مجاز است یا نه.
+  # environment اینجا اعمال می‌شود تا در صورت وجود Required Reviewers،
+  # کل زنجیره پیش از هر درخواستی متوقف بماند.
+  gate:
+    name: گارد تأیید تولید
+    if: github.repository == 'veloratrade/veloratrade'
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      write_probes: ${{ steps.decide.outputs.write_probes }}
+    steps:
+      - id: decide
+        run: |
+          CONFIRM='${{ inputs.confirm_production_writes }}'
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] \
+             && [ "$CONFIRM" = "WRITE-TO-PRODUCTION" ]; then
+            echo "write_probes=true" >> $GITHUB_OUTPUT
+            echo "⚠️ probe نوشتاری روی تولید **مجاز** شد (تأیید صریح دریافت شد)."
+            echo "⚠️ probe نوشتاری روی تولید مجاز شد." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "write_probes=false" >> $GITHUB_OUTPUT
+            echo "✅ فقط بررسی خواندنی — هیچ درخواست نوشتاری ارسال نمی‌شود."
+            echo "✅ حالت خواندنی: هیچ POST روی تولید ارسال نشد." >> $GITHUB_STEP_SUMMARY
+          fi
+
+  smoke:
+    name: RB-3 روی تولید
+    needs: gate
+    uses: ./.github/workflows/healthcheck-suite.yml
+    with:
+      base_url: https://veloratrade.ir
+      environment_name: production
+      write_probes: ${{ needs.gate.outputs.write_probes == 'true' }}
