@@ -91,21 +91,46 @@ jobs:
           grep -q "X-Robots-Tag" "$DEST/.htaccess"
           echo "بسته سالم است: $(find "$DEST" -type f | wc -l) فایل"
 
-      - name: انتقال با FTP به staging
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server:   ${{ secrets.STAGING_FTP_SERVER }}
-          username: ${{ secrets.STAGING_FTP_USERNAME }}
-          password: ${{ secrets.STAGING_FTP_PASSWORD }}
-          protocol: ftp           # FTPS این هاست کانال داده passive را reset می‌کند (ECONNRESET)
-          port: 21
-          timeout: 120000
-          local-dir: staging-build/
-          server-dir: ./          # اکانت FTP محدود به docroot استیجینگ است
-          dangerous-clean-slate: false
-          exclude: |
-            **/.git*
-            **/.git*/**
+      - name: انتقال با lftp به staging (مقاوم در برابر قطعی هاست)
+        env:
+          FTP_SERVER:   ${{ secrets.STAGING_FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.STAGING_FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.STAGING_FTP_PASSWORD }}
+        run: |
+          set -uo pipefail
+          sudo apt-get install -y -q lftp > /dev/null
+
+          # هاست اتصال‌ها را وسط کار reset می‌کند؛ mirror با تکرار بیرونی
+          # ادامه می‌دهد (فقط فایل‌های باقی‌مانده منتقل می‌شوند: --only-newer + size check)
+          attempt=0
+          until [ $attempt -ge 12 ]; do
+            attempt=$((attempt+1))
+            echo "===== تلاش $attempt ====="
+            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" <<'LFTP' && break
+          set ftp:ssl-allow no
+          set net:max-retries 2
+          set net:reconnect-interval-base 5
+          set net:reconnect-interval-max 20
+          set net:timeout 30
+          set ftp:passive-mode on
+          set mirror:parallel-transfer-count 1
+          mirror -R --continue --only-newer --no-perms --no-symlinks \
+                 --exclude-glob .git* \
+                 staging-build/ ./
+          bye
+          LFTP
+            echo "قطع شد — ادامه از همان نقطه پس از 10 ثانیه..."
+            sleep 10
+          done
+
+          echo "===== راستی‌آزمایی نهایی: فایل‌های کلیدی روی سرور ====="
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" <<'LFTP'
+          set ftp:ssl-allow no
+          set net:timeout 30
+          cls -l .htaccess locale-router.php robots.txt api/index.php
+          cls -l localized/.csp-release.json public/locales/manifest.json
+          bye
+          LFTP
 
       - name: خلاصه
         run: |
