@@ -146,14 +146,47 @@ echo "  ⚠️ کد 000 از سندباکس شاهد خرابی نیست — ت�
 
 # ── ۵. موانع و کارهای باز ─────────────────────────────────────────────────────
 echo; hr; echo "۵. موانع و کارهای باز (از docs/README.md)"; hr
-grep -E '^\| B-[0-9]+ \|' docs/README.md 2>/dev/null | while IFS='|' read -r _ id rest; do
-  st=$(echo "$rest" | awk -F'|' '{print $NF}' | sed 's/^ *//;s/ *$//' | cut -c1-46)
-  printf '  %-6s %s\n' "$(echo "$id"|tr -d ' ')" "$st"
-done
-echo
-echo "  موانع فعال‌سازی تولید:"
-sed -n '/#### چهار مانع/,/#### تحلیل عدد/p' docs/README.md 2>/dev/null \
-  | grep -E '^\| [۱۲۳۴]' | sed 's/|/ /g' | cut -c1-72 | sed 's/^/    /'
+# ردیف مارک‌داون با | تمام می‌شود ⇒ آخرین سلول خالی است، وضعیت = یکی مانده به آخر.
+# برش در python3 انجام می‌شود چون awk بایت می‌شمارد و فارسی/ایموجی را می‌شکند.
+python3 - <<'PY' 2>/dev/null || echo "  (docs/README.md خوانده نشد)"
+import re, sys
+
+def cells(line):
+    p = [c.strip() for c in line.rstrip('\n').split('|')]
+    while p and p[-1] == '':
+        p.pop()
+    return p
+
+def clean(s, n):
+    s = s.replace('**', '').replace('`', '')
+    s = re.sub(r'\s+', ' ', s).strip()
+    return s if len(s) <= n else s[:n - 1] + '…'
+
+try:
+    lines = open('docs/README.md', encoding='utf-8').readlines()
+except OSError:
+    sys.exit(1)
+
+for ln in lines:
+    if re.match(r'^\| B-\d+ \|', ln):
+        p = cells(ln)
+        if len(p) >= 3:
+            print('  %-6s %s' % (p[1], clean(p[-1], 62)))
+
+print()
+print('  موانع فعال‌سازی تولید:')
+inblk = False
+for ln in lines:
+    if ln.startswith('#### چهار مانع'):
+        inblk = True
+        continue
+    if inblk and ln.startswith('#### تحلیل عدد'):
+        break
+    if inblk and re.match(r'^\| [۱۲۳۴] \|', ln):
+        p = cells(ln)
+        if len(p) >= 4:
+            print('    %-2s %-22s %s' % (p[1], clean(p[2], 22), clean(p[-1], 40)))
+PY
 
 # ── ۶. قواعد ──────────────────────────────────────────────────────────────────
 echo; hr; echo "۶. قواعد غیرقابل‌نقض"; hr
@@ -169,6 +202,7 @@ echo
 hr
 echo "گام بعد: docs/README.md را کامل بخوان (§3 ماتریس FTP • §6 درس‌ها • §7 کار نیمه‌تمام)"
 hr
+
 exit 0
 fi
 
@@ -294,8 +328,12 @@ bl=[]
 try:
     for line in open('docs/README.md'):
         if line.startswith('| B-'):
-            p=[x.strip() for x in line.split('|')]
-            if len(p)>4: bl.append({"id":p[1],"status":p[4][:90]})
+            # ردیف با | تمام می‌شود ⇒ آخرین عنصر خالی است؛ وضعیت = یکی مانده به آخر
+            p=[x.strip() for x in line.rstrip('\n').split('|')]
+            while p and p[-1]=='': p.pop()
+            if len(p)>=3:
+                bl.append({"id":p[1],
+                           "status":p[-1].replace('**','')[:90]})
 except Exception: pass
 out['backlog']=bl
 out['next_step']="docs/README.md را کامل بخوان — §3 ماتریس FTP، §6 درس‌ها، §7 کار نیمه‌تمام"
