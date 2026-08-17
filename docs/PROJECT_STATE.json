@@ -1,8 +1,8 @@
 {
   "_meta": {
     "schema": "velora-project-state/1",
-    "generated_at": "2026-08-17T12:53:08+00:00",
-    "generated_from_commit": "dd4ad2afc90526c125636a8d07276027c8f00f38",
+    "generated_at": "2026-08-17T13:28:52+00:00",
+    "generated_from_commit": "62c81b0b7440bb9ec9fba060d21784d6f3dcfae6",
     "generator": "tools/velora-status.sh --json",
     "regenerate": "bash tools/velora-status.sh --json > docs/PROJECT_STATE.json",
     "authority": "SNAPSHOT ONLY — منبع حقیقت نیست. مرجع: docs/README.md و P1/P2",
@@ -13,11 +13,11 @@
     "name": "veloratrade/veloratrade",
     "private": true,
     "branch": "main",
-    "head": "dd4ad2a",
-    "head_date": "2026-08-17 12:35:22 +0000",
-    "head_subject": "docs: add START HERE briefing block at the top (v2.0.0)",
+    "head": "62c81b0",
+    "head_date": "2026-08-17 13:28:52 +0000",
+    "head_subject": "docs: require session proof token at step zero",
     "working_tree_clean": false,
-    "tracked_files": 657,
+    "tracked_files": 659,
     "readme_version": "2.1.0"
   },
   "environments": {
@@ -64,18 +64,18 @@
   "workflows": {
     "ci.yml": {
       "state": "active",
-      "total_runs": 54,
+      "total_runs": 55,
       "last_run": {
-        "at": "2026-08-17T12:35:25Z",
+        "at": "2026-08-17T12:58:21Z",
         "event": "push",
         "conclusion": "success"
       }
     },
     "csp-guard.yml": {
       "state": "active",
-      "total_runs": 43,
+      "total_runs": 44,
       "last_run": {
-        "at": "2026-08-17T12:35:25Z",
+        "at": "2026-08-17T12:58:21Z",
         "event": "push",
         "conclusion": "success"
       }
@@ -178,11 +178,11 @@
     },
     {
       "id": "B-7",
-      "status": "✅ **انجام شد ۲۰۲۶-۰۸-۱۷** — rename + حذف schedule + گارد نوشتاری"
+      "status": "✅ انجام شد ۲۰۲۶-۰۸-۱۷ — rename + حذف schedule + گارد نوشتاری"
     },
     {
       "id": "B-8",
-      "status": "✅ **انجام شد ۲۰۲۶-۰۸-۱۷** — در Baseline §4 ثبت شد و تست‌ها با آن هم‌راستا شدند"
+      "status": "✅ انجام شد ۲۰۲۶-۰۸-۱۷ — در Baseline §4 ثبت شد و تست‌ها با آن هم‌راستا شدند"
     },
     {
       "id": "B-9",
@@ -190,7 +190,7 @@
     },
     {
       "id": "B-10",
-      "status": "🔵 **رد شد — تصمیم مالک ۲۰۲۶-۰۸-۱۷:** هر دو محیط عمداً از یک اکانت `piknet` استفاده می‌کنند"
+      "status": "🔵 رد شد — تصمیم مالک ۲۰۲۶-۰۸-۱۷: هر دو محیط عمداً از یک اکانت `piknet` استفاده می‌کنند. ری"
     }
   ],
   "next_step": "docs/README.md را کامل بخوان — §3 ماتریس FTP، §6 درس‌ها، §7 کار نیمه‌تمام"
