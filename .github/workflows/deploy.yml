@@ -1,25 +1,36 @@
-# انتشار خودکار روی هاست
+# انتشار روی Production — دستی، allow-list، با بکاپ و گارد
 #
-# مخزن خصوصی است. تنظیمات امنیتی زیر همچنان عمدی و لازم است:
-#   - فقط روی push به main اجرا می‌شود، نه روی pull_request
-#   - محدود به مخزن اصلی، تا از فورک‌ها اجرا نشود
-#   - وابسته به environment به نام production برای تأیید دستی
+# ── تغییرات ۲۰۲۶-۰۸-۱۷ (بازنویسی کامل) ─────────────────────────────
+#   ✓ allow-list به‌جای deny-list (Structure.pdf §6 — بستهٔ allowlisted)
+#   ✓ مقصد hardcode: public_html/  (C-2 — غیرقابل‌مذاکره)
+#   ✓ lftp + ftp ساده + --continue + retry×12  (OC-2)
+#   ✓ بکاپ کامل docroot پیش از هر نوشتن  (RB-6 / R-3)
+#   ✓ ۱۱ گارد پیش از آپلود
+#   ✓ گارد تأیید مالک: CONFIRM-PRODUCTION-DEPLOY
+#   ✗ تریگر push حذف شده (OC-9)
+#   ✗ FTP-Deploy-Action و protocol ftps کنار گذاشته شدند (OC-2)
 #
-# پیش‌نیاز: سه Secret در Settings → Secrets and variables → Actions
-#   FTP_SERVER    مثلا ftp.veloratrade.ir
-#   FTP_USERNAME
-#   FTP_PASSWORD
+# ── سیاست تک‌اکانتی (تصمیم مالک) ───────────────────────────────────
+# استیجینگ و تولید از یک اکانت FTP (piknet) استفاده می‌کنند. هیچ مانع
+# فنی بین دو محیط نیست؛ تنها کنترل مؤثر، تأیید انسانی مالک است.
+# به همین دلیل مقصد mirror در همین فایل hardcode شده و هرگز نباید به
+# ورودی dispatch یا متغیر تبدیل شود.
+#
+# پیش‌نیاز Secrets (هنوز تعریف نشده‌اند — عمدی):
+#   FTP_SERVER / FTP_USERNAME / FTP_PASSWORD
+#
+# مرجع: docs/README.md §3 (ماتریس FTP، سیاست تک‌اکانتی)، §4 RB-6، §7
 
-name: Deploy
+name: Deploy Production
 
 on:
-  # ── تریگر push عمداً حذف شد (۲۰۲۶-۰۸-۱۷) ──────────────────────────
-  # پیش از این، هر push به main این workflow را صدا می‌زد. تنها چیزی که
-  # مانع رسیدن فایل‌ها به تولید می‌شد، نبودِ Secret های FTP_* بود —
-  # یعنی یک خطای امن، نه یک گارد طراحی‌شده. با افزوده‌شدن آن Secret ها
-  # (B-4)، همان رفتار بی‌درنگ تبدیل به انتشار خودکار روی تولید می‌شد.
-  # ثبت‌شده در OC-9. انتشار تولید از این پس فقط عمدی و دستی است.
   workflow_dispatch:
+    inputs:
+      confirm_production_deploy:
+        description: 'برای انتشار روی سایت زنده دقیقاً بنویسید: CONFIRM-PRODUCTION-DEPLOY'
+        required: true
+        default: ''
+        type: string
 
 permissions:
   contents: read
@@ -28,56 +39,190 @@ concurrency:
   group: deploy-production
   cancel-in-progress: false   # آپلود نیمه‌کاره خطرناک است
 
+env:
+  # ⚠️ C-2 — مقصد hardcode. هرگز پارامتری نشود.
+  PROD_DOCROOT: public_html/
+
 jobs:
+  # ── ۱. گارد تأیید ──────────────────────────────────────────────
+  gate:
+    name: گارد تأیید مالک
+    if: github.repository == 'veloratrade/veloratrade'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: بررسی عبارت تأیید
+        run: |
+          if [ "${{ inputs.confirm_production_deploy }}" != "CONFIRM-PRODUCTION-DEPLOY" ]; then
+            echo "::error::عبارت تأیید نادرست است — انتشار متوقف شد. هیچ اتصالی برقرار نشد."
+            exit 1
+          fi
+          echo "✅ تأیید مالک دریافت شد."
+          echo "مقصد: \`${{ env.PROD_DOCROOT }}\` (hardcode)" >> $GITHUB_STEP_SUMMARY
+
+  # ── ۲. گارد CSP (بدون تغییر) ───────────────────────────────────
   guard:
     name: بررسی سلامت قبل از انتشار
+    needs: gate
     uses: ./.github/workflows/csp-guard.yml
 
+  # ── ۳. ساخت بسته + بکاپ + انتقال ───────────────────────────────
   deploy:
     name: آپلود روی هاست
     needs: guard
-    # از فورک‌ها اجرا نشود
-    if: github.repository == 'veloratrade/veloratrade'
     runs-on: ubuntu-latest
-    environment: production     # امکان الزام تأیید دستی
+    environment: production
     steps:
       - uses: actions/checkout@v4
 
-      - name: انتقال با FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      - name: ساخت بستهٔ تولید (allow-list)
+        run: |
+          set -euo pipefail
+          DEST=production-build
+          mkdir -p "$DEST"
+
+          # --- ریشه ---
+          cp locale-router.php 404.html "$DEST/"
+          mkdir -p "$DEST/404" && cp 404/index.html "$DEST/404/"
+          cp favicon.ico favicon-16.png favicon-32.png favicon-48.png \
+             icon-192.png icon-512.png apple-icon.png manifest.json velora-logo.svg "$DEST/"
+          mkdir -p "$DEST/checkout" && cp checkout/index.html "$DEST/checkout/"
+
+          # --- .htaccess تولید: بدون تغییر (برخلاف استیجینگ) ---
+          cp .htaccess "$DEST/.htaccess"
+
+          # --- SEO تولید: ایندکس مجاز + sitemap + تأیید Search Console ---
+          cp robots.txt "$DEST/robots.txt"
+          cp sitemap.xml "$DEST/sitemap.xml"
+          for g in google*.html; do [ -f "$g" ] && cp "$g" "$DEST/"; done
+
+          # --- خروجی لوکال‌سازی (شامل .csp-release.json مخفی — OC-4) ---
+          cp -a localized "$DEST/localized"
+
+          # --- public منهای تشخیصی‌ها ---
+          cp -a public "$DEST/public"
+          rm -f  "$DEST/public/logout-diagnostic-v2.html"
+          rm -rf "$DEST/public/samples"
+
+          # --- api: فقط runtime ---
+          mkdir -p "$DEST/api/public" "$DEST/api/config"
+          cp api/.htaccess api/index.php "$DEST/api/"
+          cp api/public/index.php "$DEST/api/public/"
+          cp api/config/config.php "$DEST/api/config/"
+          [ -f api/config/.htaccess ] && cp api/config/.htaccess "$DEST/api/config/" || true
+          cp -a api/src     "$DEST/api/src"
+          cp -a api/locales "$DEST/api/locales"
+          cp -a api/workers "$DEST/api/workers"
+
+          # --- حذف ۱۴ فایل دستهٔ «۱۷۹» (اسناد/بکاپ) ---
+          find "$DEST" -name 'README-*.txt' -delete
+          find "$DEST" -name '*backup*'     -delete
+          find "$DEST" -name 'NOTICE.txt'   -delete
+
+          echo "بسته ساخته شد: $(find "$DEST" -type f | wc -l) فایل"
+
+      - name: گاردهای پیش از آپلود (۱۱ بررسی)
+        run: |
+          set -euo pipefail
+          DEST=production-build
+          fail=0
+          chk(){ if [ "$2" = 0 ]; then echo "  ✅ $1"; else echo "::error::$1"; fail=1; fi; }
+
+          chk "بدون فایل SQL"            "$(find $DEST -name '*.sql' | wc -l)"
+          chk "بدون فایل env"            "$(find $DEST -name '*.env*' | wc -l)"
+          chk "بدون sqlite/log/error_log" "$(find $DEST \( -name '*.sqlite*' -o -name '*.log' -o -name 'error_log' \) | wc -l)"
+          chk "بدون اسکریپت نصب/تشخیص"   "$(find $DEST \( -name 'install.php' -o -name 'diag.php' -o -name 'env-check.php' -o -name 'init-sqlite.php' \) | wc -l)"
+          chk "بدون اسکریپت تست/ایمیل"   "$(find $DEST \( -name 'mail-*.php' -o -name 'test-*.php' \) | wc -l)"
+          chk "بدون PDF (B-6 Roadmap)"   "$(find $DEST -name '*.pdf' | wc -l)"
+          chk "بدون docs/tools/_next"    "$(find $DEST \( -path '*/docs/*' -o -path '*/tools/*' -o -path '*/_next/*' \) | wc -l)"
+          chk "بدون فایل backup"         "$(find $DEST -name '*backup*' | wc -l)"
+
+          # بررسی‌های وجودی (باید موجود باشند)
+          [ -f "$DEST/localized/.csp-release.json" ] && echo "  ✅ .csp-release.json موجود (OC-4)" || { echo "::error::.csp-release.json غایب"; fail=1; }
+          [ -f "$DEST/sitemap.xml" ] && echo "  ✅ sitemap.xml موجود" || { echo "::error::sitemap.xml غایب"; fail=1; }
+
+          # تولید نباید noindex بدهد و باید به velora_private (نه staging) اشاره کند
+          if grep -q 'velora_private_staging' "$DEST/.htaccess"; then
+            echo "::error::.htaccess به مسیر استیجینگ اشاره می‌کند!"; fail=1
+          else echo "  ✅ .htaccess به velora_private تولید اشاره دارد"; fi
+          if grep -q 'X-Robots-Tag' "$DEST/.htaccess"; then
+            echo "::error::تولید نباید X-Robots-Tag noindex داشته باشد!"; fail=1
+          fi
+
+          n=$(find $DEST -type f | wc -l)
+          echo "تعداد فایل بسته: $n"
+          echo "| بسته تولید | $n فایل | همه گاردها سبز |" >> $GITHUB_STEP_SUMMARY
+          [ "$fail" = 0 ] || { echo "انتشار متوقف شد."; exit 1; }
+
+      - name: بکاپ docroot فعلی پیش از هر نوشتن (RB-6)
+        env:
+          FTP_SERVER:   ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        run: |
+          set -uo pipefail
+          sudo apt-get install -y -q lftp > /dev/null
+          mkdir -p backup/docroot
+          # دانلود وضعیت فعلی تولید (فقط خواندن — هیچ نوشتنی)
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" <<LFTP || true
+          set ftp:ssl-allow no
+          set net:max-retries 2
+          set net:timeout 30
+          set ftp:passive-mode on
+          mirror --continue --no-perms --parallel=1 ${{ env.PROD_DOCROOT }} backup/docroot/
+          bye
+          LFTP
+          n=$(find backup/docroot -type f | wc -l)
+          echo "بکاپ: $n فایل"
+          if [ "$n" = 0 ]; then
+            echo "::error::بکاپ خالی است — انتشار متوقف شد تا مسیر بازگشت تضمین شود."
+            exit 1
+          fi
+          tar -czf "pre-deploy-${{ github.sha }}.tar.gz" -C backup/docroot .
+          echo "| بکاپ پیش از انتشار | $n فایل | artifact پیوست شد |" >> $GITHUB_STEP_SUMMARY
+
+      - name: نگهداری بکاپ به‌عنوان artifact
+        uses: actions/upload-artifact@v4
         with:
-          server:   ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps        # اگر هاست پشتیبانی نکرد به ftp تغییر دهید
-          server-dir: ./        # اگر ریشه سایت public_html است اصلاح کنید
-          dangerous-clean-slate: false   # هرگز true نکنید
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/.github/**
-            **/node_modules/**
-            **/vendor/**
-            api/.env
-            api/storage/**
-            _database/**
-            **/*.sqlite
-            **/*.sqlite3
-            **/*.sql
-            **/*.log
-            **/*.md
-            **/*.zip
-            tools/**
-            extract-persian.py
-            .gitignore
-            .gitattributes
+          name: pre-deploy-backup-${{ github.sha }}
+          path: pre-deploy-*.tar.gz
+          retention-days: 90
+
+      - name: انتقال با lftp (مقاوم در برابر قطعی هاست — OC-2)
+        env:
+          FTP_SERVER:   ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        run: |
+          set -uo pipefail
+          attempt=0
+          until [ $attempt -ge 12 ]; do
+            attempt=$((attempt+1))
+            echo "===== تلاش $attempt ====="
+            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" <<LFTP && break
+          set ftp:ssl-allow no
+          set net:max-retries 2
+          set net:reconnect-interval-base 5
+          set net:reconnect-interval-max 20
+          set net:timeout 30
+          set ftp:passive-mode on
+          set mirror:parallel-transfer-count 1
+          mirror -R --continue --only-newer --no-perms --no-symlinks \
+                 --exclude-glob .git* \
+                 production-build/ ${{ env.PROD_DOCROOT }}
+          bye
+          LFTP
+            echo "قطع شد — ادامه از همان نقطه پس از 10 ثانیه..."
+            sleep 10
+          done
 
       - name: خلاصه
         run: |
-          echo "### انتشار انجام شد" >> $GITHUB_STEP_SUMMARY
+          echo "### انتشار Production انجام شد" >> $GITHUB_STEP_SUMMARY
           echo "کامیت: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "دست‌نخورده روی هاست: \`api/.env\` و \`api/storage/\`" >> $GITHUB_STEP_SUMMARY
+          echo "مقصد: \`${{ env.PROD_DOCROOT }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "دست‌نخورده روی هاست: \`api/.env\`، \`api/storage/\`، \`velora_private/\`" >> $GITHUB_STEP_SUMMARY
+          echo "بازگشت: artifact \`pre-deploy-backup-${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
 
   healthcheck:
     name: تست سلامت سایت واقعی
