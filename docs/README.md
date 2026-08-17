@@ -5,7 +5,7 @@
 | Document Control | |
 |---|---|
 | شناسه سند | `VELORA-OPS-README` |
-| نسخه | 1.2.0 |
+| نسخه | 1.3.0 |
 | وضعیت | ACTIVE |
 | آخرین به‌روزرسانی | 2026-08-17 |
 | مالک | veloratrade (Project Owner) |
@@ -126,11 +126,19 @@ git diff docs-baseline-v1..main -- docs/
 ## 7. وضعیت جاری و کارهای باز (Living Section)
 
 **آخرین وضعیت (2026-08-17):**
-- Staging مستقر؛ آخرین Smoke Suite سبز **به‌صورت دستی توسط مالک** تأیید شده بود؛ DB متصل.
-  ⚠️ تا پیش از این جلسه هیچ گیت خودکاری برای RB-3 روی استیجینگ وجود نداشت (OC-7). وضعیت سلامت استیجینگ **از زمان آخرین تست دستی راستی‌آزمایی نشده** — برای تأیید مجدد، `healthcheck-staging.yml` اجرا شود.
-- Production دست‌نخورده؛ pipeline تولید عمداً بدون Secrets.
+- **Staging عملیاتی — راستی‌آزمایی خودکار شد ✅** اجرای `healthcheck-staging.yml`
+  (run `32019977181`، کامیت `58ab606`): **۱۲ از ۱۲ بررسی RB-3 سبز**.
+  شواهد کلیدی: `/health` → `data.status=ok` • `/dashboard` بدون سشن → `302 → /fa/login/`
+  (اثبات اتصال DB) • `/api/.env` → `404` بدون نشت • `locale-router.php` → `403` •
+  `X-Robots-Tag: noindex, nofollow` • CSP موجود • `sitemap.xml` → `404` (عمدی) •
+  مسیر ناموجود → `404`.
+- Production دست‌نخورده؛ pipeline تولید عمداً بدون Secrets. هیچ درخواستی در این جلسه به Production ارسال نشد.
 - اسناد پایه ثبت و tag شده (`docs-baseline-v1`).
-- **جدید:** `.github/workflows/healthcheck-staging.yml` افزوده شد — اجرای خودکار RB-3 روی استیجینگ، فقط GET، فقط دستی. هنوز **اجرا نشده** (منتظر تصمیم مالک).
+- **جدید:** `.github/workflows/healthcheck-staging.yml` — گیت خودکار RB-3، فقط GET، فقط `workflow_dispatch`.
+  دو نقص در اولین اجراهای واقعی کشف و رفع شد (`a39b902`, `58ab606`):
+  ① مسیر آزمایشی غیر ASCII قبل از ارسال خطای encoding می‌داد و قرارداد ۴۰۴ عملاً تست نمی‌شد؛
+  ② شرط `/health` به‌جای `data.status` روی فیلد سطح بالا بررسی می‌شد.
+  **درس:** هر دو قرمزِ اولیه نقص تست بودند نه نقص استیجینگ — یک گیت تست‌نشده خودش منبع سیگنال کاذب است.
 
 **Backlog (به ترتیب اولویت):**
 | # | مورد | اولویت | وضعیت |
@@ -141,6 +149,7 @@ git diff docs-baseline-v1..main -- docs/
 | B-4 | فعال‌سازی کنترل‌شده deploy تولید: Secrets تولید + **Required Reviewers** روی environment `production` | — | ⏳ تصمیم مالک |
 | B-5 | چرخش credentials پس از پایان دوره کاری جاری (FTP piknet، FTP staging، PAT) | 🔴 | ⏳ سمت مالک |
 | B-6 | **Roadmap:** نسخه فعلی `Roadmap.pdf` صرفاً جهت حفاظت در `docs/pdf/Roadmap.pdf` آرشیو شده (SHA-256: `0a0df01b3fede02233902074b1b22ca4b444741d12701e1a91303278e962b9d3`) — **وضعیت: LOCKED / DO NOT USE**. نیازمند ویرایش توسط مالک است؛ تا اعلام صریح مالک: از محتوای آن در هیچ سند/تصمیمی استفاده نشود، `docs/02_ROADMAP.md` ساخته نشود، و وارد هیچ بسته deployment نشود | — | ⏳ منتظر ویرایش مالک |
+| B-8 | **قرارداد پاکت پاسخ API مستند نیست:** `/health` پاسخ را در پاکت `{status, data, error, timestamp}` برمی‌گرداند و مقدار سلامت در `data.status` است. این قرارداد در هیچ سندی ثبت نشده و باعث یک تست غلط شد؛ ارزش افزودن به P1 (Baseline §4) را دارد | P2 | ⏳ |
 | B-7 | **اصلاح `healthcheck.yml`:** یا به `healthcheck-production.yml` تغییر نام یابد تا دامنه‌اش شفاف شود، یا مراحل POST روی `/api/v1/auth/logout` بازبینی شوند، یا `schedule` روزانه‌اش (که خودکار روی Production POST می‌زند) حذف/تأیید شود — تصمیم مالک لازم است (OC-7) | P1 | ⏳ منتظر تصمیم مالک |
 
 > **قاعده نگهداری:** هر جلسه‌ای که یکی از موارد بالا را تغییر داد، موظف است همین بخش را در همان جلسه به‌روزرسانی و commit کند.
