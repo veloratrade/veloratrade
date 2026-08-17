@@ -31,6 +31,11 @@ on:
         required: true
         default: ''
         type: string
+      dry_run:
+        description: 'اجرای آزمایشی — فقط فهرست می‌کند، هیچ فایلی نوشته نمی‌شود'
+        required: false
+        default: true
+        type: boolean
 
 permissions:
   contents: read
@@ -60,10 +65,20 @@ jobs:
           echo "✅ تأیید مالک دریافت شد."
           echo "مقصد: \`${{ env.PROD_DOCROOT }}\` (hardcode)" >> $GITHUB_STEP_SUMMARY
 
-  # ── ۲. گارد CSP (بدون تغییر) ───────────────────────────────────
+  # ── ۲. گیت استیجینگ: تولید فقط وقتی استیجینگ سبز است ───────────
+  staging_gate:
+    name: راستی‌آزمایی استیجینگ (پیش‌شرط تولید)
+    needs: gate
+    uses: ./.github/workflows/healthcheck-suite.yml
+    with:
+      base_url: https://staging.veloratrade.ir
+      environment_name: staging
+      write_probes: false
+
+  # ── ۳. گارد CSP ────────────────────────────────────────────────
   guard:
     name: بررسی سلامت قبل از انتشار
-    needs: gate
+    needs: staging_gate
     uses: ./.github/workflows/csp-guard.yml
 
   # ── ۳. ساخت بسته + بکاپ + انتقال ───────────────────────────────
@@ -188,7 +203,30 @@ jobs:
           path: pre-deploy-*.tar.gz
           retention-days: 90
 
+      - name: اجرای آزمایشی — فقط فهرست، بدون نوشتن
+        if: inputs.dry_run
+        env:
+          FTP_SERVER:   ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        run: |
+          set -uo pipefail
+          echo "🔍 DRY-RUN — هیچ بایتی روی تولید نوشته نمی‌شود"
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" <<LFTP | tee /tmp/dry.txt
+          set ftp:ssl-allow no
+          set net:timeout 30
+          set ftp:passive-mode on
+          mirror -R --dry-run --continue --only-newer --no-perms --no-symlinks \
+                 --exclude-glob .git* \
+                 production-build/ ${{ env.PROD_DOCROOT }}
+          bye
+          LFTP
+          echo "### 🔍 نتیجه DRY-RUN" >> $GITHUB_STEP_SUMMARY
+          echo "عملیاتی که *قرار بود* انجام شود: $(grep -c . /tmp/dry.txt) خط" >> $GITHUB_STEP_SUMMARY
+          echo "**هیچ فایلی روی تولید نوشته نشد.**" >> $GITHUB_STEP_SUMMARY
+
       - name: انتقال با lftp (مقاوم در برابر قطعی هاست — OC-2)
+        if: ${{ !inputs.dry_run }}
         env:
           FTP_SERVER:   ${{ secrets.FTP_SERVER }}
           FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
@@ -217,6 +255,7 @@ jobs:
           done
 
       - name: خلاصه
+        if: ${{ !inputs.dry_run }}
         run: |
           echo "### انتشار Production انجام شد" >> $GITHUB_STEP_SUMMARY
           echo "کامیت: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
@@ -227,4 +266,5 @@ jobs:
   healthcheck:
     name: تست سلامت سایت واقعی
     needs: deploy
+    if: ${{ !inputs.dry_run }}
     uses: ./.github/workflows/healthcheck-production.yml
