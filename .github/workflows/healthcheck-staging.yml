@@ -39,7 +39,7 @@ jobs:
       - name: اجرای بررسی‌ها (فقط GET)
         run: |
           python3 - <<'PY'
-          import os, sys, json, urllib.request, urllib.error
+          import os, sys, json, urllib.request, urllib.error, urllib.parse
 
           BASE = os.environ['BASE'].rstrip('/')
           UA = 'velora-healthcheck-staging'
@@ -49,8 +49,13 @@ jobs:
                   return None
 
           def get(path):
-              """فقط GET. برمی‌گرداند: (status, headers, body)"""
-              req = urllib.request.Request(BASE + path, method='GET')
+              """فقط GET. برمی‌گرداند: (status, headers, body)
+
+              مسیر با percent-encoding ارسال می‌شود تا کاراکترهای غیر ASCII
+              (مثلاً مسیر آزمایشی فارسی) خطای رمزگذاری ندهند.
+              """
+              safe = urllib.parse.quote(path, safe='/?&=%-._~')
+              req = urllib.request.Request(BASE + safe, method='GET')
               req.add_header('User-Agent', UA)
               op = urllib.request.build_opener(NoRedirect)
               try:
@@ -70,11 +75,16 @@ jobs:
 
           st, hd, body = get('/health')
           ok = st == 200
+          detail = f'status={st}'
           try:
-              ok = ok and json.loads(body).get('status') == 'ok'
+              payload = json.loads(body)
+              ok = ok and payload.get('status') == 'ok'
+              detail += f'; body={json.dumps(payload, ensure_ascii=False)[:200]}'
           except Exception:
               ok = False
-          check('GET /health → 200 + status:ok', ok, f'status={st}')
+              ct = hd.get('Content-Type') or hd.get('content-type') or '—'
+              detail += f'; JSON نامعتبر؛ content-type={ct}; snippet={body[:160]!r}'
+          check('GET /health → 200 + status:ok', ok, detail)
 
           st, hd, _ = get('/fa/')
           check('GET /fa/ → 200', st == 200, f'status={st}')
