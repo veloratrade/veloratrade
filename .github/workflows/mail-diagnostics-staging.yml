@@ -1,0 +1,122 @@
+name: Mail Diagnostics (Staging)
+
+# VELORA — تشخیص علت نرسیدن ایمیل (فقط‌خواندنی)
+#
+# زنجیرهٔ شکسته: اپ → Exim هاست ✅ اما Exim → اینباکس گیرنده ❌
+# این workflow از مسیر IMAP به جعبهٔ no-reply@veloratrade.ir متصل می‌شود و
+# پیام‌های Bounce (Mail Delivery System) را می‌خواند — همان‌جا که دلیل دقیق رد
+# شدن (کد SMTP / SPF / PTR / RBL / spam) نوشته شده است.
+#
+# قواعد:
+#   • فقط‌خواندنی — هیچ ایمیلی ارسال/حذف نمی‌شود (BODY.PEEK)
+#   • credential از velora.env روی هاست خوانده می‌شود (FTP استیجینگ موجود) — هیچ
+#     سکرت جدیدی لازم نیست و رمز هرگز در لاگ چاپ نمی‌شود (add-mask)
+#   • از بدنهٔ bounce ها فقط خطوط تشخیصی چاپ می‌شود؛ خطوط حاوی توکن فیلتر می‌شوند
+#   • آدرس گیرنده‌ها نیمه‌ماسک می‌شوند (دامنه برای تشخیص لازم است)
+#   • فقط workflow_dispatch + RUN
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'برای اجرا عبارت RUN را وارد کنید'
+        required: true
+        default: ''
+
+permissions: {}
+
+concurrency:
+  group: mail-diagnostics-staging
+  cancel-in-progress: false
+
+jobs:
+  diag:
+    name: خواندن bounceها از صندوق no-reply
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      FTP_SERVER:   ${{ secrets.STAGING_FTP_SERVER }}
+      FTP_USERNAME: ${{ secrets.STAGING_FTP_USERNAME }}
+      FTP_PASSWORD: ${{ secrets.STAGING_FTP_PASSWORD }}
+      INPUT_CONFIRM: ${{ github.event.inputs.confirm }}
+    steps:
+      - name: دریافت velora.env استیجینگ (بدون نمایش) و استخراج credential ایمیل
+        run: |
+          set -uo pipefail
+          [ "$INPUT_CONFIRM" = "RUN" ] || { echo "::error::ورودی confirm باید RUN باشد"; exit 1; }
+          sudo apt-get install -y -q lftp > /dev/null
+          attempt=0
+          until [ $attempt -ge 10 ]; do
+            attempt=$((attempt+1))
+            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+              -e "set ftp:ssl-allow no; set net:max-retries 2; set net:timeout 30; \
+                  get velora_private_staging/config/velora.env -o /tmp/velora.env; bye" && break
+            sleep 5
+          done
+          [ -s /tmp/velora.env ] || { echo "::error::velora.env دریافت نشد"; exit 1; }
+          grep -E '^MAIL_(HOST|USER|PASS)=' /tmp/velora.env > /tmp/mail.env
+          while IFS='=' read -r k v; do
+            [ -n "$v" ] && echo "::add-mask::$v"
+            echo "$k=$v" >> "$GITHUB_ENV"
+          done < /tmp/mail.env
+          shred -u /tmp/velora.env /tmp/mail.env 2>/dev/null || rm -f /tmp/velora.env /tmp/mail.env
+          echo "credential‌ها mask شدند (فقط نام: $MAIL_USER → $(echo "$MAIL_USER" | sed 's/.\{2\}/&/' | cut -c1-3)…)"
+
+      - name: بازرسی IMAP: فهرست فولدرها + آمار + خطوط تشخیصی bounce
+        env:
+          IMAP_HOST: ${{ env.MAIL_HOST }}
+          IMAP_USER: ${{ env.MAIL_USER }}
+          IMAP_PASS: ${{ env.MAIL_PASS }}
+        run: |
+          python3 <<'PY'
+          import imaplib, re, os, sys
+          host, user, pw = os.environ['IMAP_HOST'], os.environ['IMAP_USER'], os.environ['IMAP_PASS']
+          DIAG = re.compile(r'(Diagnostic-Code|Status: [245]\.|Action:|Remote-MTA|rejected|defer|timeout|spam|block|list|PTR|rDNS|SPF|DKIM|DMARC|unrouteable|frozen|quota|retr(y|ies)|[245][0-9]{2} )', re.I)
+
+          def maskline(s, n=180):
+              s = re.sub(r'([A-Za-z0-9._%+-]{2})[A-Za-z0-9._%+-]*@', r'\1…@', s)
+              return s[:n]
+
+          try:
+              M = imaplib.IMAP4_SSL(host, 993, timeout=30)
+              print('اتصال IMAPS: OK')
+              typ, _ = M.login(user, pw)
+              print('لاگین:', typ)
+          except Exception as e:
+              print('::error::اتصال/لاگین IMAP شکست:', type(e).__name__, str(e)[:120]); sys.exit(1)
+
+          typ, boxes = M.list()
+          folders = [re.search(r'"?([^" ]+)"?$', b.decode('utf-8','replace').split(' "/" ')[-1] if ' "/" ' in b.decode('utf-8','replace') else b.decode('utf-8','replace')).group(1) for b in (boxes or [])]
+          print('فولدرها:', folders)
+
+          dsn_found = 0
+          for folder in ['INBOX', 'INBOX.Junk', 'Junk', 'INBOX.spam', 'Spam']:
+              try:
+                  typ, data = M.select(f'"{folder}"', readonly=True)
+              except Exception:
+                  continue
+              if typ != 'OK':
+                  continue
+              total = int((data[0] or b'0'))
+              typ, ids = M.search(None, 'SINCE', '15-Aug-2026')
+              recent = (ids[0].split() if ids and ids[0] else [])[-12:]
+              print(f'\n── {folder}: {total} پیام | از ۱۵ اوت: {len(ids[0].split()) if ids and ids[0] else 0}')
+              for mid in recent:
+                  typ, h = M.fetch(mid, '(BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)])')
+                  hdr = h[0][1].decode('utf-8','replace') if h and h[0] else ''
+                  onel = ' | '.join(x.strip()[:70] for x in hdr.splitlines() if x.strip())
+                  print('  ✉', maskline(onel))
+                  if re.search(r'(Mail Delivery|Delivery Status|Undeliver|failure|returning message|delay)', hdr, re.I):
+                      dsn_found += 1
+                      typ, b = M.fetch(mid, '(BODY.PEEK[])')
+                      raw = b[0][1].decode('utf-8','replace') if b and b[0] else ''
+                      print('    ┌─ خطوط تشخیصی:')
+                      for line in raw.splitlines():
+                          if '#token=' in line:   continue
+                          if DIAG.search(line):   print('    │', maskline(line.strip()))
+              M.close()
+          M.logout()
+          print(f'\nنتیجه: {dsn_found} پیام Bounce/خطا پیدا شد')
+          if dsn_found == 0:
+              print('⚠️ هیچ bounce ای نیست — یا صندوق خالی است یا پیام‌ها در صف Exim گیر کرده‌اند (Track Delivery در cPanel را ببینید)')
+          PY
