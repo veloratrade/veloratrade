@@ -36,9 +36,9 @@
       },
       "dashboard": {
         "path": "fa/dashboard.json",
-        "messages": 49,
-        "bytes": 4518,
-        "sha256": "9d591f0705dac8cf69fff658b6802d575309a78a70b5310fcd509a41054196c2"
+        "messages": 47,
+        "bytes": 4306,
+        "sha256": "03918651abf1d5961aa5b9aab8a58ac10f297fd97637aacb3b372455294df19a"
       },
       "errors": {
         "path": "fa/errors.json",
@@ -146,9 +146,9 @@
       },
       "dashboard": {
         "path": "en/dashboard.json",
-        "messages": 49,
-        "bytes": 3660,
-        "sha256": "9c927eac72984a95356cdd0728c50432ab2808b75ed2058d0ef650e50ab31d8d"
+        "messages": 47,
+        "bytes": 3502,
+        "sha256": "4ff4d3b58899d9639e69df1762614f49b996165c2a817b2d5816cf2744e88282"
       },
       "errors": {
         "path": "en/errors.json",
