@@ -160,8 +160,7 @@ jobs:
               except Exception as e:
                   print('imap poll:', type(e).__name__)
               print(f'… انتظار رسیدن خود-حلقه ({i+1}/15)')
-          print()
-          print('═══ نتیجهٔ خود-حلقه:', '✅ رسید → تحویل داخلی سالم؛ مشکل = مسیر خروجی خارجی (پورت ۲۵/smarthost/PTR)'
-                                   if arrived else '❌ نرسید → صف Exim کلاً قفل است (حتی تحویل داخلی)')
+          verdict = 'ARRIVED' if arrived else 'NOT-ARRIVED'
+          print(f'═══ نتیجهٔ خود-حلقه: {verdict}')
           PY
           PY
