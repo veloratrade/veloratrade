@@ -62,7 +62,7 @@ jobs:
           shred -u /tmp/velora.env /tmp/mail.env 2>/dev/null || rm -f /tmp/velora.env /tmp/mail.env
           echo "credential‌ها mask شدند (فقط نام: $MAIL_USER → $(echo "$MAIL_USER" | sed 's/.\{2\}/&/' | cut -c1-3)…)"
 
-      - name: بازرسی IMAP: فهرست فولدرها + آمار + خطوط تشخیصی bounce
+      - name: 'بازرسی IMAP — فهرست فولدرها + آمار + خطوط تشخیصی bounce'
         env:
           IMAP_HOST: ${{ env.MAIL_HOST }}
           IMAP_USER: ${{ env.MAIL_USER }}
