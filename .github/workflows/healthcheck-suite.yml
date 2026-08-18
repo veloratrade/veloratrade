@@ -229,7 +229,10 @@ jobs:
           echo "هدر ابطال: $setc"
 
           # مقدار باید خالی باشد (کوکی پاک شود، نه بازنویسی با توکن تازه).
-          echo "$setc" | grep -Eqi '__Host-velora_refresh=(;|[[:space:]]*$)' || {
+          # PHP هنگام setcookie با مقدار '' عمداً رشته‌ٔ ثابت «deleted» را می‌نویسد،
+          # پس هر دو شکل معتبرند. «deleted» به‌تنهایی توکن نیست و نشست نمی‌سازد.
+          # الگو لنگر پایانی دارد تا مقادیر واقعی مثل deletedABC123 همچنان رد شوند.
+          echo "$setc" | grep -Eqi '__Host-velora_refresh=(deleted)?(;|[[:space:]]*$)' || {
             echo "::error::کوکی refresh با مقدار غیرخالی برگشت — ابطال انجام نشده است"; exit 1; }
 
           # انقضا باید در گذشته باشد (Max-Age<=0 یا expires گذشته).
