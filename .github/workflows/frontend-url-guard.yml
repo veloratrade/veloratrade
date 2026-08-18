@@ -31,10 +31,10 @@ name: FRONTEND_URL Staging Verification
 on:
   workflow_dispatch:
 
-# No scopes whatsoever. Read-only verification needs none beyond checkout,
-# which actions/checkout performs with the default read token; setting an
-# empty map removes every write capability.
-permissions: {}
+# Minimum scope required to clone this PRIVATE repository with
+# actions/checkout. Read-only: no write capability of any kind.
+permissions:
+  contents: read
 
 concurrency:
   group: frontend-url-guard
