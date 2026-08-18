@@ -40,6 +40,14 @@ final class AuthController
             $request->headers['user-agent'] ?? null,
         );
 
+        // Registration never issues a session: the account stays unverified
+        // until the emailed token is redeemed. Passing this response to
+        // respondWithSession() would throw (no refresh credential) and surface
+        // as HTTP 500, so the verification contract is returned as-is.
+        if (!empty($result['verificationRequired'])) {
+            Response::json($result, 201);
+        }
+
         $this->respondWithSession($result, 201);
     }
 
