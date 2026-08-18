@@ -41,21 +41,21 @@ final class NotificationService
     {
         $nameSafe = htmlspecialchars(self::formatName($fullName, $email), ENT_QUOTES, 'UTF-8');
         $emailSafe = htmlspecialchars($email, ENT_QUOTES, 'UTF-8');
-        $subject = 'VELORA TRADE | Verify Email (تأیید ایمیل)';
+        $subject = 'تأیید ایمیل حساب کاربری | VELORA';
 
         $html = EmailTemplate::render(
-            'تأیید ایمیل',
-            'ایمیل خود را تأیید کنید',
+            'تأیید حساب کاربری',
+            'فعال‌سازی حساب کاربری VELORA',
             '<p style="margin:0 0 14px;color:#ffffff;font-size:16px;font-weight:bold;">سلام ' . $nameSafe . '،</p>' .
-            '<p style="margin:0 0 14px;color:#f3f4f6;">برای فعال‌سازی حساب کاربری متصل به ایمیل زیر و دسترسی به امکانات پلتفرم، روی دکمه تأیید کلیک کنید:</p>' .
+            '<p style="margin:0 0 14px;color:#f3f4f6;">برای فعال‌سازی حساب کاربری متصل به ایمیل زیر و شروع فعالیت در پلتفرم، روی دکمه تأیید کلیک کنید:</p>' .
             '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0;background:#141f32;border:1px solid #d4af37;border-radius:10px;box-shadow:0 4px 15px rgba(212,175,55,0.15);">' .
             '<tr><td align="center" style="padding:14px 20px;font-family:Tahoma,Arial,sans-serif;font-size:16px;font-weight:bold;color:#d4af37;letter-spacing:0.5px;direction:ltr;">✉️ ' . $emailSafe . '</td></tr>' .
             '</table>' .
-            '<p style="margin:0 0 14px;color:#f3f4f6;">پس از تأیید، امکان ورود به حساب و استفاده از ژورنال معاملاتی برای شما فعال خواهد شد.</p>',
-            'تأیید ایمیل',
+            '<p style="margin:0 0 14px;color:#f3f4f6;">پس از تأیید، امکان ورود به حساب و استفاده کامل از امکانات ژورنال معاملاتی برای شما فعال خواهد شد.</p>',
+            'تأیید و فعال‌سازی حساب',
             $verifyUrl,
-            'اعتبار این لینک ۲۴ ساعت است. اگر ایمیل را در پوشه Inbox ندیدید، لطفاً پوشه Spam (هرزنامه) را بررسی کنید. در صورت منقضی شدن لینک، می‌توانید از سایت درخواست ارسال مجدد دهید.',
-            'TRADE · ACCOUNT SECURITY'
+            'اعتبار این لینک ۲۴ ساعت است. در صورت منقضی شدن لینک، می‌توانید از صفحه ورود مجدداً درخواست ارسال لینک دهید.',
+            'ACCOUNT SECURITY'
         );
 
         $sent = Mailer::send($email, $subject, $html);
