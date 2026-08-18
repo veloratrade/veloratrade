@@ -60,7 +60,7 @@ jobs:
             echo "$k=$v" >> "$GITHUB_ENV"
           done < /tmp/mail.env
           shred -u /tmp/velora.env /tmp/mail.env 2>/dev/null || rm -f /tmp/velora.env /tmp/mail.env
-          echo "credential‌ها mask شدند (فقط نام: $MAIL_USER → $(echo "$MAIL_USER" | sed 's/.\{2\}/&/' | cut -c1-3)…)"
+          echo "credential‌ها mask و برای گام بعد آماده شدند (بدون چاپ مقدار)"
 
       - name: 'بازرسی IMAP — فهرست فولدرها + آمار + خطوط تشخیصی bounce'
         env:
