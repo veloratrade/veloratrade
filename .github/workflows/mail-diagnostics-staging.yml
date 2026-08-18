@@ -261,7 +261,7 @@ jobs:
           print(f'::add-mask::{plusaddr}')
 
           sent_for = None
-          for cand in (plusaddr, user):
+          for cand in (user, plusaddr):
               st, body = http('POST', f'{BASE}/api/v1/auth/register',
                   {'email': cand, 'password': jpw, 'fullName': 'E2E Local', 'timezone': 'UTC'}, {'Origin': BASE})
               print('register →', st, 'برای', maskline(cand))
@@ -318,5 +318,4 @@ jobs:
               print('🏁 نتیجه: پیام «خالی» نیست — قالب سالم رندر و تحویل محلی شد')
           else:
               print('🏁 نتیجه: بدنه خالی است — باگ قالب/انکودینگ تأیید شد')
-          PY
           PY
