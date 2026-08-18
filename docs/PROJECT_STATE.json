@@ -1,8 +1,8 @@
 {
   "_meta": {
     "schema": "velora-project-state/1",
-    "generated_at": "2026-08-18T21:57:57+00:00",
-    "generated_from_commit": "c48b906553dfd268870c78f9768122986072da7c",
+    "generated_at": "2026-08-18T23:11:41+00:00",
+    "generated_from_commit": "3cc28b6519baa7436538641cecbf7f9c46c659e3",
     "generator": "tools/velora-status.sh --json",
     "regenerate": "bash tools/velora-status.sh --json > docs/PROJECT_STATE.json",
     "authority": "SNAPSHOT ONLY — منبع حقیقت نیست. مرجع: docs/README.md و P1/P2",
@@ -13,9 +13,9 @@
     "name": "veloratrade/veloratrade",
     "private": true,
     "branch": "main",
-    "head": "c48b906",
-    "head_date": "2026-08-18 21:57:57 +0000",
-    "head_subject": "feat(email): add official gold brand logo and inbox preheader to email template",
+    "head": "3cc28b6",
+    "head_date": "2026-08-18 23:11:41 +0000",
+    "head_subject": "fix(email): remove spam-trigger keywords and hidden text from verification template",
     "working_tree_clean": false,
     "tracked_files": 672,
     "readme_version": "2.1.0"
@@ -69,27 +69,27 @@
   "workflows": {
     "ci.yml": {
       "state": "active",
-      "total_runs": 83,
+      "total_runs": 85,
       "last_run": {
-        "at": "2026-08-18T21:30:58Z",
+        "at": "2026-08-18T22:45:44Z",
         "event": "push",
         "conclusion": "success"
       }
     },
     "csp-guard.yml": {
       "state": "active",
-      "total_runs": 72,
+      "total_runs": 74,
       "last_run": {
-        "at": "2026-08-18T21:30:58Z",
+        "at": "2026-08-18T22:45:44Z",
         "event": "push",
         "conclusion": "success"
       }
     },
     "deploy-staging.yml": {
       "state": "active",
-      "total_runs": 8,
+      "total_runs": 9,
       "last_run": {
-        "at": "2026-08-18T21:32:21Z",
+        "at": "2026-08-18T21:58:19Z",
         "event": "workflow_dispatch",
         "conclusion": "success"
       }
@@ -119,9 +119,9 @@
     },
     "healthcheck-staging.yml": {
       "state": "active",
-      "total_runs": 11,
+      "total_runs": 12,
       "last_run": {
-        "at": "2026-08-18T21:48:57Z",
+        "at": "2026-08-18T22:37:05Z",
         "event": "workflow_dispatch",
         "conclusion": "success"
       }
@@ -133,18 +133,18 @@
     },
     "mail-diagnostics-staging.yml": {
       "state": "active",
-      "total_runs": 12,
+      "total_runs": 14,
       "last_run": {
-        "at": "2026-08-18T20:41:41Z",
+        "at": "2026-08-18T22:45:46Z",
         "event": "workflow_dispatch",
-        "conclusion": "failure"
+        "conclusion": "success"
       }
     },
     "register-e2e-staging.yml": {
       "state": "active",
-      "total_runs": 2,
+      "total_runs": 3,
       "last_run": {
-        "at": "2026-08-18T19:16:22Z",
+        "at": "2026-08-18T22:59:20Z",
         "event": "workflow_dispatch",
         "conclusion": "failure"
       }
