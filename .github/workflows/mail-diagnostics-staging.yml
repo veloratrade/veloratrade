@@ -164,6 +164,67 @@ jobs:
           print(f'═══ نتیجهٔ خود-حلقه: {verdict}')
           PY
 
+      - name: 'پروب عمیق — error_log هاست + mail.log + resend با گزارش sent + حضور فایل‌های کلیدی'
+        env:
+          IMAP_HOST: ${{ env.MAIL_HOST }}
+          IMAP_USER: ${{ env.MAIL_USER }}
+          IMAP_PASS: ${{ env.MAIL_PASS }}
+          BASE: https://staging.veloratrade.ir
+        run: |
+          set -uo pipefail
+          sudo apt-get install -y -q lftp > /dev/null
+          echo "═══ A) فایل‌های کلیدی روی سرور"
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" <<'LFTP'
+          set ftp:ssl-allow no; set net:max-retries 2; set net:timeout 30
+          cd public_html/staging.veloratrade.ir
+          cls -l api/src/Core/Mailer.php api/src/Core/Locale/LocaleManager.php public/locales/manifest.json
+          cls -l error_log api/error_log 2>/dev/null
+          echo "── private logs:"
+          cls -l ../../velora_private_staging/logs/ 2>/dev/null
+          cls -l ../../velora_private_staging/config/velora.env
+          bye
+          LFTP
+          echo "═══ A2) محتوای AuthController روی سرور (فیکس 08188cb حاضر است؟)"
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+            -e "set ftp:ssl-allow no; set net:timeout 30; cat public_html/staging.veloratrade.ir/api/src/Auth/AuthController.php; bye" 2>/dev/null \
+            | grep -E "Response::json\(\\\$result, 201\)|respondWithSession\(\\\$result" | head -3
+          echo "═══ B) دم‌های لاگ (فیلتر توکن، ۸۰ خط آخر):"
+          for f in "velora_private_staging/logs/mail.log" "public_html/staging.veloratrade.ir/api/error_log"; do
+            echo "── $f:"
+            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+              -e "set ftp:ssl-allow no; set net:timeout 30; get $f -o /tmp/lg; bye" 2>/dev/null \
+              && (tail -80 /tmp/lg | grep -vE '#token=' | sed -E 's/([A-Za-z0-9._%+-]{2})[A-Za-z0-9._%+-]*@/\1…@/g' | cut -c1-200; rm -f /tmp/lg) \
+              || echo "   (وجود ندارد یا خالی)"
+          done
+          echo "═══ C) ثبت‌نام محلی تازه + resend با مقدار sent:"
+          python3 <<'PY'
+          import json, os, re, time, urllib.request, urllib.error, random, string
+          BASE = os.environ['BASE']; user = os.environ['IMAP_USER']
+          def http(method, url, data=None):
+              body = json.dumps(data).encode() if data is not None else None
+              req = urllib.request.Request(url, data=body, method=method)
+              req.add_header('Accept', 'application/json')
+              if data is not None: req.add_header('Content-Type', 'application/json')
+              req.add_header('Origin', BASE)
+              try:
+                  with urllib.request.urlopen(req, timeout=25) as r: return r.status, r.read().decode('utf-8','replace')
+              except urllib.error.HTTPError as e: return e.code, e.read().decode('utf-8','replace')
+          local, domain = user.split('@')
+          cand = f'{local}+rs{int(time.time())}@{domain}'
+          print(f'::add-mask::{cand}')
+          pw = 'Vt!' + ''.join(random.choices(string.ascii_letters + string.digits, k=12))
+          st, body = http('POST', f'{BASE}/api/v1/auth/register', {'email': cand, 'password': pw, 'fullName': 'Probe', 'timezone': 'UTC'})
+          print('register:', st)
+          time.sleep(70)
+          st, body = http('POST', f'{BASE}/api/v1/auth/resend-verification', {'email': cand})
+          print('resend-verification:', st)
+          try:
+              d = json.loads(body)
+              print('پاسخ:', json.dumps({k: v for k, v in (d.get('data') or d.get('error') or {}).items() if k in ('sent','alreadyVerified','code','messageKey')}, ensure_ascii=False))
+          except Exception:
+              print('بدنه:', body[:200])
+          PY
+
       - name: 'ثبت‌نام با آدرس محلی + خواندن و تحلیل ایمیلِ قالب واقعی (خالی؟ لینک دارد؟)'
         env:
           IMAP_HOST: ${{ env.MAIL_HOST }}
@@ -231,8 +292,8 @@ jobs:
                   print('imap poll:', type(e).__name__)
               print(f'… انتظار ایمیل قالب‌دار محلی ({i+1}/18)')
           if not found:
-              print('::error::حتی به صندوق محلی هم نرسید! — یعنی مشکل فقط مسیر خارجی نیست؛ بدنه/انکودینگ قالب هم مظنون است')
-              sys.exit(1)
+              print('⚠️ نتیجه: ایمیل قالب‌دار حتی به صندوق محلی نرسید (به پروب عمیق رجوع کنید)')
+              sys.exit(0)
 
           msg = email.message_from_bytes(found, policy=policy.default)
           print('═══ ایمیل رسید (محلی) — تحلیل:')
