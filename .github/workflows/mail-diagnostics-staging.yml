@@ -249,7 +249,7 @@ jobs:
               public static function env(string $k, $d = null) { $v = getenv($k); return $v === false ? $d : $v; }
               public static function get(string $k, $d = null) { $v = getenv(strtoupper($k)); return $v === false ? $d : $v; }
           }
-PHPCFG
+          PHPCFG
           cat > /tmp/harness.php <<'PHPRUN'
           <?php
           declare(strict_types=1);
@@ -278,7 +278,7 @@ PHPCFG
           $ok = Velora\Core\Mailer::send($to, 'VELORA TRADE | Verify Email (تأیید ایمیل)', $html);
           echo 'send=' . var_export($ok, true) . ' | lastError=' . var_export(Velora\Core\Mailer::$lastError, true) . ' | bodyLen=' . strlen($html) . "\n";
           echo 'marker=' . $marker . "\n";
-PHPRUN
+          PHPRUN
           php /tmp/harness.php
           echo "── پایش رسیدن PHP-CLONE:"
           MARKER="PHPCLONE-$TS"
@@ -292,8 +292,8 @@ PHPRUN
           typ, ids = M.search(None, 'TEXT', f'"{sys.argv[1]}"')
           M.close(); M.logout()
           print('FOUND' if (typ == 'OK' and ids and ids[0].split()) else 'NOT-YET')
-PY
-)
+          PY
+          )
             echo "  [$i] $HIT"
             [ "$HIT" = "FOUND" ] && break
           done
