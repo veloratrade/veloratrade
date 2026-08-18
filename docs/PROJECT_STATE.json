@@ -1,8 +1,8 @@
 {
   "_meta": {
     "schema": "velora-project-state/1",
-    "generated_at": "2026-08-17T13:28:52+00:00",
-    "generated_from_commit": "62c81b0b7440bb9ec9fba060d21784d6f3dcfae6",
+    "generated_at": "2026-08-18T19:05:06+00:00",
+    "generated_from_commit": "08188cb2dba0bd9ddda68fda31b4767f34d01f4c",
     "generator": "tools/velora-status.sh --json",
     "regenerate": "bash tools/velora-status.sh --json > docs/PROJECT_STATE.json",
     "authority": "SNAPSHOT ONLY — منبع حقیقت نیست. مرجع: docs/README.md و P1/P2",
@@ -13,11 +13,11 @@
     "name": "veloratrade/veloratrade",
     "private": true,
     "branch": "main",
-    "head": "62c81b0",
-    "head_date": "2026-08-17 13:28:52 +0000",
-    "head_subject": "docs: require session proof token at step zero",
+    "head": "08188cb",
+    "head_date": "2026-08-18 18:48:28 +0000",
+    "head_subject": "fix(api): register returned 500 — respondWithSession requires refreshToken absent from verification-required response",
     "working_tree_clean": false,
-    "tracked_files": 659,
+    "tracked_files": 670,
     "readme_version": "2.1.0"
   },
   "environments": {
@@ -54,48 +54,62 @@
   "secrets": {
     "note": "فقط نام — مقدار هرگز خوانده نمی‌شود و API هم برنمی‌گرداند",
     "names": [
+      "FTP_PASSWORD",
+      "FTP_SERVER",
+      "FTP_USERNAME",
       "STAGING_FTP_PASSWORD",
       "STAGING_FTP_SERVER",
       "STAGING_FTP_USERNAME",
+      "STAGING_TEST_EMAIL",
+      "STAGING_TEST_PASSWORD",
       "STAGING_VELORA_ENV"
     ],
-    "production_ftp_configured": false
+    "production_ftp_configured": true
   },
   "workflows": {
     "ci.yml": {
       "state": "active",
-      "total_runs": 55,
+      "total_runs": 67,
       "last_run": {
-        "at": "2026-08-17T12:58:21Z",
+        "at": "2026-08-18T18:48:32Z",
         "event": "push",
         "conclusion": "success"
       }
     },
     "csp-guard.yml": {
       "state": "active",
-      "total_runs": 44,
+      "total_runs": 56,
       "last_run": {
-        "at": "2026-08-17T12:58:21Z",
+        "at": "2026-08-18T18:48:32Z",
         "event": "push",
         "conclusion": "success"
       }
     },
     "deploy-staging.yml": {
       "state": "active",
-      "total_runs": 5,
+      "total_runs": 7,
       "last_run": {
-        "at": "2026-08-17T01:04:10Z",
+        "at": "2026-08-18T18:50:09Z",
         "event": "workflow_dispatch",
         "conclusion": "success"
       }
     },
     "deploy.yml": {
       "state": "active",
-      "total_runs": 27,
+      "total_runs": 29,
       "last_run": {
-        "at": "2026-08-17T10:52:46Z",
-        "event": "push",
-        "conclusion": "failure"
+        "at": "2026-08-17T20:18:56Z",
+        "event": "workflow_dispatch",
+        "conclusion": "success"
+      }
+    },
+    "frontend-url-guard.yml": {
+      "state": "active",
+      "total_runs": 2,
+      "last_run": {
+        "at": "2026-08-18T01:25:25Z",
+        "event": "workflow_dispatch",
+        "conclusion": "success"
       }
     },
     "healthcheck-production.yml": {
@@ -105,9 +119,9 @@
     },
     "healthcheck-staging.yml": {
       "state": "active",
-      "total_runs": 4,
+      "total_runs": 10,
       "last_run": {
-        "at": "2026-08-17T10:45:27Z",
+        "at": "2026-08-18T19:02:47Z",
         "event": "workflow_dispatch",
         "conclusion": "success"
       }
@@ -119,9 +133,18 @@
     },
     "setup-staging-private.yml": {
       "state": "active",
+      "total_runs": 4,
+      "last_run": {
+        "at": "2026-08-18T18:49:04Z",
+        "event": "workflow_dispatch",
+        "conclusion": "success"
+      }
+    },
+    "user-journey.yml": {
+      "state": "active",
       "total_runs": 3,
       "last_run": {
-        "at": "2026-08-17T01:27:17Z",
+        "at": "2026-08-18T16:16:07Z",
         "event": "workflow_dispatch",
         "conclusion": "success"
       }
@@ -191,6 +214,10 @@
     {
       "id": "B-10",
       "status": "🔵 رد شد — تصمیم مالک ۲۰۲۶-۰۸-۱۷: هر دو محیط عمداً از یک اکانت `piknet` استفاده می‌کنند. ری"
+    },
+    {
+      "id": "B-11",
+      "status": "⏳ پیشنهاد ۲۰۲۶-۰۸-۱۸"
     }
   ],
   "next_step": "docs/README.md را کامل بخوان — §3 ماتریس FTP، §6 درس‌ها، §7 کار نیمه‌تمام"
