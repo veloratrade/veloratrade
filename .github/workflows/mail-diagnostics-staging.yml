@@ -40,6 +40,9 @@ jobs:
       FTP_PASSWORD: ${{ secrets.STAGING_FTP_PASSWORD }}
       INPUT_CONFIRM: ${{ github.event.inputs.confirm }}
     steps:
+      - name: checkout (برای اجرای کد واقعی اپ در PHP-CLONE)
+        uses: actions/checkout@v4
+
       - name: دریافت velora.env استیجینگ (بدون نمایش) و استخراج credential ایمیل
         run: |
           set -uo pipefail
@@ -224,6 +227,77 @@ jobs:
           except Exception:
               print('بدنه:', body[:200])
           PY
+
+      - name: 'PHP-CLONE — اجرای دقیق Mailer/EmailTemplate واقعی اپ از روی runner و پایش رسیدن'
+        env:
+          IMAP_HOST: ${{ env.MAIL_HOST }}
+          IMAP_USER: ${{ env.MAIL_USER }}
+          IMAP_PASS: ${{ env.MAIL_PASS }}
+        run: |
+          set -uo pipefail
+          php -v 2>/dev/null | head -1 || sudo apt-get install -y -q php-cli > /dev/null
+          mkdir -p /tmp/shade/Velora/Core
+          cp api/src/Core/Mailer.php /tmp/shade/Velora/Core/Mailer.php
+          cp api/src/Core/EmailTemplate.php /tmp/shade/Velora/Core/EmailTemplate.php
+          cp api/src/Core/Locale/LocaleManager.php /tmp/shade/Velora/Core/LocaleManager.php
+          ls api/src/Core/Locale/ | head -5
+          TS=$(date +%s); echo "TS=$TS" >> "$GITHUB_ENV"; echo "::add-mask::$TS"
+          cat > /tmp/shade/Velora/Core/Config.php <<'PHPCFG'
+          <?php
+          namespace Velora\Core;
+          final class Config {
+              public static function env(string $k, $d = null) { $v = getenv($k); return $v === false ? $d : $v; }
+              public static function get(string $k, $d = null) { $v = getenv(strtoupper($k)); return $v === false ? $d : $v; }
+          }
+PHPCFG
+          cat > /tmp/harness.php <<'PHPRUN'
+          <?php
+          declare(strict_types=1);
+          spl_autoload_register(function ($c) {
+              if (str_starts_with($c, 'Velora\\Core\\')) {
+                  $rel = str_replace('\\', '/', substr($c, strlen('Velora\\Core\\')));
+                  // LocaleManager واقعی نیاز به ساختار پوشه‌ای خودش دارد؛ از ریپو می‌خوانیم
+                  $cand1 = getcwd() . '/api/src/Core/' . $rel . '.php';
+                  $cand2 = '/tmp/shade/Velora/Core/' . $rel . '.php';
+                  if ($c === 'Velora\\Core\\Config') { require '/tmp/shade/Velora/Core/Config.php'; return; }
+                  if (is_file($cand1)) { require $cand1; return; }
+                  if (is_file($cand2)) { require $cand2; return; }
+              }
+          });
+          foreach (['MAIL_DRIVER','MAIL_HOST','MAIL_PORT','MAIL_USER','MAIL_PASS','MAIL_FROM','MAIL_FROM_NAME'] as $k) {
+              $envMap = ['MAIL_DRIVER'=>'smtp','MAIL_HOST'=>getenv('IMAP_HOST'),'MAIL_PORT'=>'587','MAIL_USER'=>getenv('IMAP_USER'),'MAIL_PASS'=>getenv('IMAP_PASS'),'MAIL_FROM'=>getenv('IMAP_USER'),'MAIL_FROM_NAME'=>'VELORA TRADE'];
+              putenv($k . '=' . $envMap[$k]);
+          }
+          $marker = 'PHPCLONE-' . getenv('TS');
+          $to = getenv('IMAP_USER');
+          $html = Velora\Core\EmailTemplate::render(
+              'تأیید ایمیل', 'ایمیل خود را تأیید کنید',
+              '<p style="color:#fff">سلام ' . $marker . '</p>',
+              'تأیید ایمیل', 'https://staging.veloratrade.ir/verify-email#token=' . str_repeat('a', 64),
+              'اعتبار این لینک ۲۴ ساعت است.', 'TRADE · ACCOUNT SECURITY', 'fa');
+          $ok = Velora\Core\Mailer::send($to, 'VELORA TRADE | Verify Email (تأیید ایمیل)', $html);
+          echo 'send=' . var_export($ok, true) . ' | lastError=' . var_export(Velora\Core\Mailer::$lastError, true) . ' | bodyLen=' . strlen($html) . "\n";
+          echo 'marker=' . $marker . "\n";
+PHPRUN
+          php /tmp/harness.php
+          echo "── پایش رسیدن PHP-CLONE:"
+          MARKER="PHPCLONE-$TS"
+          for i in $(seq 1 15); do
+            sleep 10
+            HIT=$(python3 - "$MARKER" <<'PY'
+          import imaplib, os, sys
+          M = imaplib.IMAP4_SSL(os.environ['IMAP_HOST'], 993, timeout=25)
+          M.login(os.environ['IMAP_USER'], os.environ['IMAP_PASS'])
+          M.select('INBOX', readonly=True)
+          typ, ids = M.search(None, 'TEXT', f'"{sys.argv[1]}"')
+          M.close(); M.logout()
+          print('FOUND' if (typ == 'OK' and ids and ids[0].split()) else 'NOT-YET')
+PY
+)
+            echo "  [$i] $HIT"
+            [ "$HIT" = "FOUND" ] && break
+          done
+          echo "🏁 نتیجه PHP-CLONE: $HIT"
 
       - name: 'تست M1/M2 — کلون دقیق هدرهای اپ در برابر نسخهٔ با Date/Message-ID'
         env:
