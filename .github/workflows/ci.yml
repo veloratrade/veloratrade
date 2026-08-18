@@ -162,25 +162,31 @@ jobs:
             exit 1
           fi
 
+          # Response::json() wraps every payload as
+          # {status, data, error, timestamp}, so the contract lives under .data.
           # The account must stay unverified: no session may be issued here.
           if ! python3 -c "
           import json,sys
           d=json.load(open('/tmp/register.json'))
-          sys.exit(0 if d.get('verificationRequired') is True else 1)
+          b=d.get('data')
+          b=b if isinstance(b,dict) else {}
+          sys.exit(0 if b.get('verificationRequired') is True else 1)
           "; then
-            echo "::error::register did not return verificationRequired=true"
+            echo "::error::register did not return data.verificationRequired=true"
             exit 1
           fi
           if python3 -c "
           import json,sys
           d=json.load(open('/tmp/register.json'))
-          sys.exit(0 if 'tokens' in d or 'refreshToken' in json.dumps(d) else 1)
+          b=d.get('data')
+          b=b if isinstance(b,dict) else {}
+          sys.exit(0 if ('tokens' in b or 'refreshToken' in b or 'accessToken' in b) else 1)
           "; then
             echo "::error::register issued a session; it must only require verification"
             exit 1
           fi
 
-          echo "Registration OK (http=201, verificationRequired=true, no session)."
+          echo "Registration OK (http=201, data.verificationRequired=true, no session)."
 
   python:
     name: Python tooling check
