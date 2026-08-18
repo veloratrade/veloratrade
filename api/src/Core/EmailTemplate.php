@@ -7,8 +7,8 @@ namespace Velora\Core;
 use Velora\Core\Locale\LocaleManager;
 
 /**
- * Shared, direction-aware HTML shell for out-of-band email copy.
- * All rendered labels come from the same manifest/catalogs used by the browser.
+ * قالب استاندارد و ریسپانسیو ایمیل‌های پلتفرم VELORA
+ * منطبق بر استانداردهای کلاینت‌های مدرن (Gmail, Outlook, Apple Mail) و قوانین آنتی‌اسپم.
  */
 final class EmailTemplate
 {
@@ -57,7 +57,6 @@ HTML;
         }
 
         $platform = self::escape($t('email.common.footerPlatform'));
-        $about = self::escape($t('email.common.about'));
         $terms = self::escape($t('email.common.terms'));
         $privacy = self::escape($t('email.common.privacy'));
         $contact = self::escape($t('email.common.contact'));
@@ -66,6 +65,16 @@ HTML;
         $langSafe = self::escape($locale);
 
         return <<<HTML
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="{$langSafe}" dir="{$direction}">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="format-detection" content="telephone=no" />
+<meta name="color-scheme" content="light dark" />
+<title>{$titleSafe}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#eef1f6;font-family:Tahoma,Arial,sans-serif;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
 <table lang="{$langSafe}" dir="{$direction}" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#eef1f6;padding:32px 10px;font-family:Tahoma,Arial,sans-serif;">
 <tr><td align="center">
 <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:600px;background:#0e1626;border:1px solid #26334d;border-radius:14px;overflow:hidden;box-shadow:0 12px 32px rgba(10,16,29,0.22);">
@@ -84,12 +93,14 @@ HTML;
 <div style="font-family:Arial,Tahoma,sans-serif;font-size:12px;font-weight:bold;color:#e2e8f0;">{$copyright}</div>
 <div style="margin-top:5px;font-size:11px;letter-spacing:.5px;color:#9eabc0;">{$platform}</div>
 <div style="margin-top:14px;font-family:Arial,Tahoma,sans-serif;font-size:12px;direction:ltr;"><a href="https://veloratrade.ir" style="color:#d4af37;text-decoration:none;font-weight:bold;">veloratrade.ir</a><span style="color:#4a5568;"> &nbsp;|&nbsp; </span><a href="mailto:support@veloratrade.ir" style="color:#d4af37;text-decoration:none;">support@veloratrade.ir</a></div>
-<div style="margin-top:12px;font-size:11px;line-height:1.9;"><a href="https://veloratrade.ir/about" style="color:#cbd5e1;text-decoration:none;">{$about}</a><span style="color:#4a5568;"> &nbsp;•&nbsp; </span><a href="https://veloratrade.ir/terms" style="color:#cbd5e1;text-decoration:none;">{$terms}</a><span style="color:#4a5568;"> &nbsp;•&nbsp; </span><a href="https://veloratrade.ir/privacy" style="color:#cbd5e1;text-decoration:none;">{$privacy}</a><span style="color:#4a5568;"> &nbsp;•&nbsp; </span><a href="https://veloratrade.ir/contact" style="color:#cbd5e1;text-decoration:none;">{$contact}</a></div>
+<div style="margin-top:12px;font-size:11px;line-height:1.9;"><a href="https://veloratrade.ir/support" style="color:#cbd5e1;text-decoration:none;">{$contact}</a><span style="color:#4a5568;"> &nbsp;•&nbsp; </span><a href="https://veloratrade.ir/terms" style="color:#cbd5e1;text-decoration:none;">{$terms}</a><span style="color:#4a5568;"> &nbsp;•&nbsp; </span><a href="https://veloratrade.ir/privacy" style="color:#cbd5e1;text-decoration:none;">{$privacy}</a></div>
 <div style="margin-top:13px;font-size:10px;color:#718096;">{$rights}</div>
 </td></tr>
 </table>
 </td></tr>
 </table>
+</body>
+</html>
 HTML;
     }
 

@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace Velora\Core;
 
 /**
- * سرویس ارسال ایمیل — پیشرفته با پشتیبانی کامل از SMTP و کدگذاری ایمن RFC 2047
+ * سرویس ارسال ایمیل — منطبق بر استانداردهای RFC 5322, RFC 2046, RFC 2047
+ * با پشتیبانی از چندبخشی خودکار (multipart/alternative)، هدرهای الزامی، و SMTP ایمن.
  *
  * سه حالت (تنظیم در .env با MAIL_DRIVER):
  *  1. MAIL_DRIVER=log   → لینک در فایل خصوصی logs/mail.log ثبت می‌شود (برای تست/عیب‌یابی)
- *  2. MAIL_DRIVER=mail  → mail() استاندارد PHP (پیش‌فرض)
- *  3. MAIL_DRIVER=smtp  → ارسال واقعی از طریق SMTP (Gmail, Zoho, Exim, ...)
+ *  2. MAIL_DRIVER=mail  → mail() استاندارد PHP (با multipart/alternative)
+ *  3. MAIL_DRIVER=smtp  → ارسال واقعی از طریق SMTP با TLS و احراز هویت
  *
  * تنظیمات SMTP در .env:
  *   MAIL_HOST=mail.veloratrade.ir
@@ -22,11 +23,10 @@ namespace Velora\Core;
  */
 final class Mailer
 {
-
     /** آخرین خطای ارسال (برای ثبت در email_notifications.error_message) */
     public static ?string $lastError = null;
 
-    public static function send(string $to, string $subject, string $htmlBody): bool
+    public static function send(string $to, string $subject, string $htmlBody, ?string $plainBody = null): bool
     {
         self::$lastError = null;
         $driver = Config::env('MAIL_DRIVER', 'mail');
@@ -35,63 +35,168 @@ final class Mailer
             case 'log':
                 return self::logEmail($to, $subject, $htmlBody);
             case 'smtp':
-                return self::sendSmtp($to, $subject, $htmlBody);
+                return self::sendSmtp($to, $subject, $htmlBody, [], $plainBody);
             case 'mail':
             default:
-                return self::sendMail($to, $subject, $htmlBody);
+                return self::sendMail($to, $subject, $htmlBody, $plainBody);
         }
     }
 
     /** ارسال HTML با تصویرهای embed شده (CID)؛ مناسب Gmail و Outlook. */
-    public static function sendWithInlineImages(string $to, string $subject, string $htmlBody, array $images): bool
-    {
+    public static function sendWithInlineImages(
+        string $to,
+        string $subject,
+        string $htmlBody,
+        array $images,
+        ?string $plainBody = null
+    ): bool {
         self::$lastError = null;
         $driver = Config::env('MAIL_DRIVER', 'mail');
         if ($driver === 'smtp') {
-            return self::sendSmtp($to, $subject, $htmlBody, $images);
+            return self::sendSmtp($to, $subject, $htmlBody, $images, $plainBody);
         }
-        return self::send($to, $subject, $htmlBody);
+        return self::send($to, $subject, $htmlBody, $plainBody);
     }
 
     /**
-     * کدگذاری استاندارد و ایمن RFC 2047 بدون خطوط اضافی (\r\n)
-     * جلوگیری از Drop شدن ایمیل‌ها توسط فیلتر اسپم Exim/cPanel
+     * استخراج خودکار نسخه متنی خام (Plain Text) از HTML جهت جلوگیری از جریمه اسپم (MIME_HTML_ONLY)
+     */
+    public static function htmlToPlain(string $html): string
+    {
+        // حذف بلوک‌های غیرقابل نمایش (head, style, script)
+        $text = preg_replace('/<head\b[^>]*>.*?<\/head>/is', '', $html);
+        $text = preg_replace('/<style\b[^>]*>.*?<\/style>/is', '', $text ?? '');
+        $text = preg_replace('/<script\b[^>]*>.*?<\/script>/is', '', $text ?? '');
+
+        // تبدیل لینک‌ها به فرمت: متن (آدرس)
+        $text = preg_replace_callback('/<a\s+[^>]*href=["\']([^"\']+)["\'][^>]*>(.*?)<\/a>/is', function ($matches) {
+            $url = trim($matches[1]);
+            $label = trim(strip_tags($matches[2]));
+            if ($label === '' || $label === $url) {
+                return $url;
+            }
+            return $label . ' (' . $url . ')';
+        }, $text ?? '');
+
+        // تبدیل تگ‌های ساختاری به خطوط جدید
+        $text = preg_replace('/<br\s*\/?>/i', "\n", $text ?? '');
+        $text = preg_replace('/<\/(p|div|tr|h[1-6]|table)>/i', "\n\n", $text ?? '');
+        $text = preg_replace('/<td[^>]*>/i', ' ', $text ?? '');
+
+        // حذف کلیه تگ‌های HTML باقیمانده
+        $text = strip_tags($text ?? '');
+
+        // تبدیل Entityهای HTML به کاراکترهای واقعی
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        // مرتب‌سازی فاصله‌ها و خطوط خالی متوالی
+        $text = preg_replace('/[ \t]+/', ' ', $text);
+        $text = preg_replace("/\n\s*\n\s*\n+/", "\n\n", $text ?? '');
+
+        return trim($text ?? '');
+    }
+
+    /**
+     * کدگذاری استاندارد هدرهای RFC 2047 با رعایت سقف طول ۷۵ کاراکتر برای هر قطعه
      */
     private static function encodeHeader(string $text): string
     {
-        if (!preg_match('/[^\x20-\x7E]/', $text)) {
-            return $text;
+        $trimmed = trim($text);
+        if (!preg_match('/[^\x20-\x7E]/', $trimmed)) {
+            return $trimmed;
         }
-        return '=?UTF-8?B?' . base64_encode(trim($text)) . '?=';
+        if (function_exists('mb_encode_mimeheader')) {
+            return mb_encode_mimeheader($trimmed, 'UTF-8', 'B', "\r\n");
+        }
+        return '=?UTF-8?B?' . base64_encode($trimmed) . '?=';
     }
 
-    /** ارسال با mail() استاندارد PHP به همراه تنظیم پارامتر Envelope Sender (-f) */
-    private static function sendMail(string $to, string $subject, string $htmlBody): bool
+    /**
+     * تولید شناسه یکتای جهانی پیام (RFC 5322 Message-ID) جهت عبور از فیلترهای MISSING_MID
+     */
+    private static function generateMessageId(string $from): string
+    {
+        $parts = explode('@', $from, 2);
+        $domain = isset($parts[1]) && trim($parts[1]) !== '' ? trim($parts[1]) : 'veloratrade.ir';
+        try {
+            $entropy = bin2hex(random_bytes(16));
+        } catch (\Throwable) {
+            $entropy = md5(uniqid((string) mt_rand(), true));
+        }
+        return '<' . $entropy . '.' . time() . '@' . $domain . '>';
+    }
+
+    /**
+     * تولید تاریخ استاندارد ارسال پیام (RFC 5322 Date) جهت عبور از فیلترهای MISSING_DATE
+     */
+    private static function generateDate(): string
+    {
+        return gmdate('D, d M Y H:i:s +0000');
+    }
+
+    /**
+     * یکسان‌سازی انتهای خطوط به CRLF استاندارد اینترنت (\r\n)
+     */
+    private static function normalizeCrLf(string $text): string
+    {
+        $text = str_replace(["\r\n", "\r"], "\n", $text);
+        return str_replace("\n", "\r\n", $text);
+    }
+
+    /** ارسال با mail() استاندارد PHP به همراه ساختار چندبخشی (multipart/alternative) و هدرهای استاندارد */
+    private static function sendMail(string $to, string $subject, string $htmlBody, ?string $plainBody = null): bool
     {
         $from = Config::env('MAIL_FROM', 'no-reply@veloratrade.ir');
         $fromName = Config::env('MAIL_FROM_NAME', 'VELORA TRADE');
 
         $encodedSubject = self::encodeHeader($subject);
         $encodedFromName = self::encodeHeader($fromName);
+        $messageId = self::generateMessageId($from);
+        $date = self::generateDate();
+        $plainText = $plainBody ?? self::htmlToPlain($htmlBody);
+
+        $altBoundary = '=_Velora_Alt_' . bin2hex(random_bytes(12));
 
         $headers = [
-            'MIME-Version: 1.0',
-            'Content-type: text/html; charset=UTF-8',
+            'Date: ' . $date,
             'From: ' . $encodedFromName . ' <' . $from . '>',
-            'Reply-To: ' . $from,
+            'Reply-To: <' . $from . '>',
+            'Message-ID: ' . $messageId,
+            'MIME-Version: 1.0',
+            'X-Mailer: VELORA Mailer/2.0',
+            'Auto-Submitted: auto-generated',
+            'Content-Type: multipart/alternative; boundary="' . $altBoundary . '"',
         ];
 
-        // پارامتر پنجم (-f) برای عبور از فیلترهای SPF و DKIM سرورهای مقصد ضروری است
-        $ok = @mail($to, $encodedSubject, $htmlBody, implode("\r\n", $headers), "-f{$from}");
+        $encodedPlain = self::normalizeCrLf(quoted_printable_encode(self::normalizeCrLf($plainText)));
+        $encodedHtml = self::normalizeCrLf(quoted_printable_encode(self::normalizeCrLf($htmlBody)));
+
+        $body = "--$altBoundary\r\n"
+              . "Content-Type: text/plain; charset=UTF-8\r\n"
+              . "Content-Transfer-Encoding: quoted-printable\r\n\r\n"
+              . $encodedPlain . "\r\n\r\n"
+              . "--$altBoundary\r\n"
+              . "Content-Type: text/html; charset=UTF-8\r\n"
+              . "Content-Transfer-Encoding: quoted-printable\r\n\r\n"
+              . $encodedHtml . "\r\n\r\n"
+              . "--$altBoundary--";
+
+        // پارامتر پنجم (-f) برای عبور از فیلترهای SPF سرورهای مقصد ضروری است
+        $ok = @mail($to, $encodedSubject, $body, implode("\r\n", $headers), "-f{$from}");
         if (!$ok) {
             self::$lastError = 'mail() returned false';
         }
         return $ok;
     }
 
-    /** ارسال با SMTP — بدون وابستگی به کتابخانه خارجی با پشتیبانی از هدرهای UTF-8 استاندارد */
-    private static function sendSmtp(string $to, string $subject, string $htmlBody, array $inlineImages = []): bool
-    {
+    /** ارسال با SMTP — کاملاً سازگار با استانداردهای RFC، STARTTLS، هدرهای استاندارد و multipart/alternative */
+    private static function sendSmtp(
+        string $to,
+        string $subject,
+        string $htmlBody,
+        array $inlineImages = [],
+        ?string $plainBody = null
+    ): bool {
         $host = Config::env('MAIL_HOST', '');
         $port = (int) Config::env('MAIL_PORT', '587');
         $user = Config::env('MAIL_USER', '');
@@ -113,13 +218,13 @@ final class Mailer
                 'allow_self_signed' => false,
                 'SNI_enabled' => true,
             ],
-            'socket' => ['timeout' => 2.0]
+            'socket' => ['timeout' => 5.0]
         ]);
         $sock = @stream_socket_client(
             $socketHost . ':' . $port,
             $errno,
             $errstr,
-            2.0,
+            5.0,
             STREAM_CLIENT_CONNECT,
             $context
         );
@@ -128,25 +233,26 @@ final class Mailer
             self::$lastError = 'SMTP connection failed: ' . $errstr;
             return false;
         }
-        stream_set_timeout($sock, 2);
+        stream_set_timeout($sock, 5);
 
         if (!str_starts_with(self::smtpRead($sock), '220')) {
             fclose($sock);
             self::$lastError = 'SMTP banner invalid (expected 220)';
             return false;
         }
-        if (!str_starts_with(self::smtpCommand($sock, 'EHLO ' . ($_SERVER['HTTP_HOST'] ?? 'localhost')), '250')) {
+
+        $ehloHost = !empty($_SERVER['HTTP_HOST']) ? (string) $_SERVER['HTTP_HOST'] : 'localhost';
+        if (!str_starts_with(self::smtpCommand($sock, 'EHLO ' . $ehloHost), '250')) {
             fclose($sock);
             self::$lastError = 'SMTP EHLO rejected';
             return false;
         }
 
-        // Port 465 is implicit TLS. Every other SMTP port must successfully
-        // upgrade with STARTTLS before credentials are transmitted.
+        // ارتقای امنیتی STARTTLS برای تمامی پورت‌های غیر 465
         if ($port !== 465) {
             if (!str_starts_with(self::smtpCommand($sock, 'STARTTLS'), '220') ||
                 !stream_socket_enable_crypto($sock, true, STREAM_CRYPTO_METHOD_TLS_CLIENT) ||
-                !str_starts_with(self::smtpCommand($sock, 'EHLO ' . ($_SERVER['HTTP_HOST'] ?? 'localhost')), '250')) {
+                !str_starts_with(self::smtpCommand($sock, 'EHLO ' . $ehloHost), '250')) {
                 fclose($sock);
                 self::$lastError = 'SMTP STARTTLS failed';
                 return false;
@@ -171,16 +277,38 @@ final class Mailer
 
         $encodedSubject = self::encodeHeader($subject);
         $encodedFromName = self::encodeHeader($fromName);
+        $messageId = self::generateMessageId($from);
+        $date = self::generateDate();
+        $plainText = $plainBody ?? self::htmlToPlain($htmlBody);
 
-        $headers = "From: $encodedFromName <$from>\r\nTo: <$to>\r\nSubject: $encodedSubject\r\nMIME-Version: 1.0\r\n";
+        $headers = "Date: $date\r\n"
+                 . "From: $encodedFromName <$from>\r\n"
+                 . "To: <$to>\r\n"
+                 . "Subject: $encodedSubject\r\n"
+                 . "Message-ID: $messageId\r\n"
+                 . "Reply-To: <$from>\r\n"
+                 . "MIME-Version: 1.0\r\n"
+                 . "X-Mailer: VELORA Mailer/2.0\r\n"
+                 . "Auto-Submitted: auto-generated\r\n";
+
         $encodedHtml = self::smtpDataEncode($htmlBody);
+        $encodedPlain = self::smtpDataEncode($plainText);
+
+        $altBoundary = '=_Velora_Alt_' . bin2hex(random_bytes(12));
 
         if ($inlineImages === []) {
-            $message = $headers . "Content-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n" . $encodedHtml . "\r\n.\r\n";
+            $message = $headers . "Content-Type: multipart/alternative; boundary=\"$altBoundary\"\r\n\r\n";
+            $message .= "--$altBoundary\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n$encodedPlain\r\n\r\n";
+            $message .= "--$altBoundary\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n$encodedHtml\r\n\r\n";
+            $message .= "--$altBoundary--\r\n.\r\n";
         } else {
-            $boundary = '=_Velora_' . bin2hex(random_bytes(12));
-            $message = $headers . "Content-Type: multipart/related; boundary=\"$boundary\"\r\n\r\n";
-            $message .= "--$boundary\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n$encodedHtml\r\n";
+            $relBoundary = '=_Velora_Rel_' . bin2hex(random_bytes(12));
+            $message = $headers . "Content-Type: multipart/related; boundary=\"$relBoundary\"\r\n\r\n";
+            $message .= "--$relBoundary\r\nContent-Type: multipart/alternative; boundary=\"$altBoundary\"\r\n\r\n";
+            $message .= "--$altBoundary\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n$encodedPlain\r\n\r\n";
+            $message .= "--$altBoundary\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\n$encodedHtml\r\n\r\n";
+            $message .= "--$altBoundary--\r\n\r\n";
+
             foreach ($inlineImages as $cid => $path) {
                 $binary = @file_get_contents($path);
                 if ($binary === false) {
@@ -189,10 +317,11 @@ final class Mailer
                 $mime = str_ends_with(strtolower((string) $path), '.jpg') || str_ends_with(strtolower((string) $path), '.jpeg') ? 'image/jpeg' : 'image/png';
                 $name = basename((string) $path);
                 $encoded = chunk_split(base64_encode($binary));
-                $message .= "--$boundary\r\nContent-Type: $mime; name=\"$name\"\r\nContent-Transfer-Encoding: base64\r\nContent-ID: <$cid>\r\nContent-Disposition: inline; filename=\"$name\"\r\n\r\n$encoded\r\n";
+                $message .= "--$relBoundary\r\nContent-Type: $mime; name=\"$name\"\r\nContent-Transfer-Encoding: base64\r\nContent-ID: <$cid>\r\nContent-Disposition: inline; filename=\"$name\"\r\n\r\n$encoded\r\n";
             }
-            $message .= "--$boundary--\r\n.\r\n";
+            $message .= "--$relBoundary--\r\n.\r\n";
         }
+
         fwrite($sock, $message);
         $sent = str_starts_with(self::smtpRead($sock), '250');
         self::smtpCommand($sock, 'QUIT');
@@ -203,14 +332,16 @@ final class Mailer
         return $sent;
     }
 
-    /** MIME quoted-printable + dot-stuffing برای محدودیت خط SMTP. */
-    private static function smtpDataEncode(string $html): string
+    /** MIME quoted-printable + dot-stuffing برای محدودیت خط SMTP */
+    private static function smtpDataEncode(string $text): string
     {
-        $encoded = quoted_printable_encode($html);
-        return (string) preg_replace('/(?m)^\./', '..', $encoded);
+        $normalized = self::normalizeCrLf($text);
+        $encoded = quoted_printable_encode($normalized);
+        $normalizedEncoded = self::normalizeCrLf($encoded);
+        return (string) preg_replace('/(?m)^\./', '..', $normalizedEncoded);
     }
 
-    /** یک پاسخ SMTP را کامل می‌خواند، از جمله پاسخ‌های چندخطی. */
+    /** یک پاسخ SMTP را کامل می‌خواند، از جمله پاسخ‌های چندخطی */
     private static function smtpRead($sock): string
     {
         $last = '';
