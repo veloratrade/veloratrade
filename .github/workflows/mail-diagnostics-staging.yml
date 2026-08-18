@@ -119,4 +119,49 @@ jobs:
           print(f'\nنتیجه: {dsn_found} پیام Bounce/خطا پیدا شد')
           if dsn_found == 0:
               print('⚠️ هیچ bounce ای نیست — یا صندوق خالی است یا پیام‌ها در صف Exim گیر کرده‌اند (Track Delivery در cPanel را ببینید)')
+
+      - name: 'تست خود-حلقه — ارسال به همان صندوق و بررسی رسیدن (تمایز صف‌داخلی/مسیرخارجی)'
+        env:
+          IMAP_HOST: ${{ env.MAIL_HOST }}
+          IMAP_USER: ${{ env.MAIL_USER }}
+          IMAP_PASS: ${{ env.MAIL_PASS }}
+        run: |
+          python3 <<'PY'
+          import imaplib, smtplib, os, time, re, ssl
+          host, user, pw = os.environ['IMAP_HOST'], os.environ['IMAP_USER'], os.environ['IMAP_PASS']
+          mark = f'VELORA-DIAG-{int(time.time())}'
+          print(f'::add-mask::{mark}')
+          sent = None
+          for port, mode in [(587, 'starttls'), (465, 'ssl')]:
+              try:
+                  if mode == 'ssl':
+                      s = smtplib.SMTP_SSL(host, port, timeout=30, context=ssl.create_default_context())
+                  else:
+                      s = smtplib.SMTP(host, port, timeout=30); s.starttls(context=ssl.create_default_context())
+                  s.login(user, pw)
+                  s.sendmail(user, [user],
+                      f'From: {user}\r\nTo: {user}\r\nSubject: {mark}\r\n\r\nself-loop diagnostic\r\n'.encode())
+                  s.quit()
+                  sent = (port, mode); print(f'ارسال خود-حلقه: پذیرفته شد از طریق {port}/{mode}')
+                  break
+              except Exception as e:
+                  print(f'ارسال از {port}/{mode} شکست:', type(e).__name__, str(e)[:120])
+          if not sent:
+              print('::error::حتی اتصال SMTP از بیرون هم شکست خورد — پورت‌های submission هم بسته‌اند؟'); sys.exit(1)
+          arrived = False
+          for i in range(15):
+              time.sleep(10)
+              try:
+                  M = imaplib.IMAP4_SSL(host, 993, timeout=25); M.login(user, pw); M.select('INBOX', readonly=True)
+                  typ, ids = M.search(None, 'SUBJECT', f'"{mark}"')
+                  M.close(); M.logout()
+                  if typ == 'OK' and ids and ids[0].split():
+                      arrived = True; break
+              except Exception as e:
+                  print('imap poll:', type(e).__name__)
+              print(f'… انتظار رسیدن خود-حلقه ({i+1}/15)')
+          print()
+          print('═══ نتیجهٔ خود-حلقه:', '✅ رسید → تحویل داخلی سالم؛ مشکل = مسیر خروجی خارجی (پورت ۲۵/smarthost/PTR)'
+                                   if arrived else '❌ نرسید → صف Exim کلاً قفل است (حتی تحویل داخلی)')
+          PY
           PY
