@@ -225,7 +225,56 @@ jobs:
               print('بدنه:', body[:200])
           PY
 
-      - name: 'ثبت‌نام با آدرس محلی + خواندن و تحلیل ایمیلِ قالب واقعی (خالی؟ لینک دارد؟)'
+      - name: 'تست M1/M2 — کلون دقیق هدرهای اپ در برابر نسخهٔ با Date/Message-ID'
+        env:
+          IMAP_HOST: ${{ env.MAIL_HOST }}
+          IMAP_USER: ${{ env.MAIL_USER }}
+          IMAP_PASS: ${{ env.MAIL_PASS }}
+        run: |
+          python3 <<'PY'
+          import imaplib, smtplib, ssl, os, time, base64
+          host, user, pw = os.environ['IMAP_HOST'], os.environ['IMAP_USER'], os.environ['IMAP_PASS']
+          ts = int(time.time())
+          def b64(s): return '=?UTF-8?B?' + base64.b64encode(s.encode()).decode() + '?='
+          html = '<html><body dir="rtl"><h1>تست قالب</h1><p>سلام، این یک بدنهٔ آزمایشی فارسی است.</p></body></html>'
+          m1 = (f'From: {b64("VELORA TRADE")} <{user}>\r\nTo: <{user}>\r\n'
+                f'Subject: {b64("VELORA TRADE | Verify Email (تأیید ایمیل)")}\r\nMIME-Version: 1.0\r\n'
+                f'X-Diag: M1-{ts}\r\nContent-Type: text/html; charset=UTF-8\r\n'
+                f'Content-Transfer-Encoding: quoted-printable\r\n\r\n{html}\r\n').encode('utf-8')
+          m2 = (f'From: {b64("VELORA TRADE")} <{user}>\r\nTo: <{user}>\r\n'
+                f'Subject: {b64("VELORA TRADE | Verify Email (تأیید ایمیل)")}\r\nMIME-Version: 1.0\r\n'
+                f'Date: {time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.gmtime())}\r\n'
+                f'Message-ID: <diag-{ts}@veloratrade.ir>\r\n'
+                f'X-Diag: M2-{ts}\r\nContent-Type: text/html; charset=UTF-8\r\n'
+                f'Content-Transfer-Encoding: quoted-printable\r\n\r\n{html}\r\n').encode('utf-8')
+          try:
+              s = smtplib.SMTP(host, 587, timeout=30); s.starttls(context=ssl.create_default_context())
+              s.login(user, pw)
+              for tag, msg in [('M1', m1), ('M2', m2)]:
+                  s.sendmail(user, [user], msg)
+                  print(f'{tag}: پذیرفته شد (250)')
+              s.quit()
+          except Exception as e:
+              print('::error::SMTP شکست:', type(e).__name__, str(e)[:120]); sys.exit(1)
+          got = set()
+          for i in range(12):
+              time.sleep(10)
+              M = imaplib.IMAP4_SSL(host, 993, timeout=25); M.login(user, pw); M.select('INBOX', readonly=True)
+              for tag in ('M1', 'M2'):
+                  typ, ids = M.search(None, 'HEADER', 'X-Diag', f'"{tag}-{ts}"')
+                  if typ == 'OK' and ids and ids[0].split(): got.add(tag)
+              M.close(); M.logout()
+              if len(got) == 2: break
+          print('═══════════════════════════')
+          print('M1 (کلون دقیق اپ: بدون Date/Message-ID):', '✅ رسید' if 'M1' in got else '❌ نرسید — حذف خاموش!')
+          print('M2 (همان + Date + Message-ID):        ', '✅ رسید' if 'M2' in got else '❌ نرسید')
+          if 'M1' not in got and 'M2' in got:
+              print('🏁 ریشه: نبودِ هدرهای Date/Message-ID → فیلترِ حذف‌کننده. ریخت اصلی آمادهٔ پچ اپ است')
+          elif 'M1' not in got and 'M2' not in got:
+              print('🏁 هیچ‌کدام نرسیدند: فیلتر روی خودِ محتوا/قالب است، نه هدرهای ازدست‌رفته')
+          else:
+              print('🏁 هر دو رسیدند: محتوا و هدر هر دو بی‌گناه — عامل در خودِ سشن اپ (محلی/localhost) است')
+          PY
         env:
           IMAP_HOST: ${{ env.MAIL_HOST }}
           IMAP_USER: ${{ env.MAIL_USER }}
