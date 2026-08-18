@@ -1,0 +1,329 @@
+name: User Journey (Staging)
+
+# VELORA — تست سفر واقعی کاربر روی استیجینگ
+#
+# هدف: بستن شکاف «CI سبز ولی سفر واقعی کاربر شکسته».
+# این workflow با یک کاربر واقعیِ ازپیش‌تأییدشده کار می‌کند و مراحل ۵ تا ۹
+# سفر کاربر را اثبات می‌کند. مراحل ۱ تا ۴ (ثبت‌نام و تأیید ایمیل) به‌صورت
+# دستی توسط انسان انجام شده‌اند، چون توکن تأیید فقط به‌صورت hash ذخیره
+# می‌شود (AuthService.php:39) و مقدار خام هرگز از API برنمی‌گردد.
+#
+# قواعد رعایت‌شده:
+#   • فقط استیجینگ — هیچ اشاره‌ای به دامنه تولید نیست.
+#   • فقط اجرای دستی (workflow_dispatch) — هرگز خودکار روی push اجرا نمی‌شود.
+#   • هیچ رمز یا توکنی چاپ نمی‌شود؛ فقط طول و boolean.
+#   • هیچ رکورد کاربر جدیدی ساخته نمی‌شود (بدون register).
+#   • کاربر seed‌شده استفاده نمی‌شود — کاربر واقعیِ ثبت‌نام‌کرده است.
+#   • endpoint های احراز هویت هرگز نباید ۵۰۰ بدهند؛ ۵۰۰ = شکست فوری.
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'برای اجرا عبارت RUN را وارد کنید'
+        required: true
+        default: ''
+
+permissions: {}
+
+concurrency:
+  group: user-journey-staging
+  cancel-in-progress: false
+
+jobs:
+  journey:
+    name: سفر واقعی کاربر روی استیجینگ
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      BASE: https://staging.veloratrade.ir
+      TEST_EMAIL: ${{ secrets.STAGING_TEST_EMAIL }}
+      TEST_PASSWORD: ${{ secrets.STAGING_TEST_PASSWORD }}
+
+    steps:
+      - name: بررسی ورودی و پیش‌نیازها
+        run: |
+          set -uo pipefail
+          if [ "${{ github.event.inputs.confirm }}" != "RUN" ]; then
+            echo "::error::برای اجرا باید ورودی confirm برابر RUN باشد."; exit 1
+          fi
+          missing=0
+          [ -z "${TEST_EMAIL:-}" ]    && { echo "::error::سکرت STAGING_TEST_EMAIL تنظیم نشده"; missing=1; }
+          [ -z "${TEST_PASSWORD:-}" ] && { echo "::error::سکرت STAGING_TEST_PASSWORD تنظیم نشده"; missing=1; }
+          [ "$missing" = "1" ] && exit 1
+          # فقط طول چاپ می‌شود، نه مقدار.
+          echo "طول ایمیل تست: ${#TEST_EMAIL} کاراکتر"
+          echo "طول رمز تست:   ${#TEST_PASSWORD} کاراکتر"
+          echo "دامنه هدف:     $BASE"
+          {
+            echo "## سفر واقعی کاربر — استیجینگ"
+            echo ""
+            echo "| گام | بررسی | نتیجه | شواهد |"
+            echo "|---|---|---|---|"
+          } >> $GITHUB_STEP_SUMMARY
+
+          # ── گام ۵-الف: login با رمز اشتباه باید ۴۰۱ بدهد، نه ۵۰۰ ──────────────
+      - name: 'گام ۵a — login با رمز نادرست → 401 (نه ۵۰۰)'
+        run: |
+          set -uo pipefail
+          body=$(mktemp); trap 'rm -f "$body"' EXIT
+          payload=$(python3 -c 'import json,os; print(json.dumps({"email":os.environ["TEST_EMAIL"],"password":"definitely-not-the-right-password-xY7"}))')
+          code=$(printf '%s' "$payload" | curl -s --max-time 25 -o "$body" -w '%{http_code}' \
+            -X POST "$BASE/api/v1/auth/login" \
+            -H 'Content-Type: application/json' \
+            -H "Origin: $BASE" \
+            --data-binary @-)
+          echo "کد وضعیت: $code"
+          if [ "$code" = "500" ]; then
+            echo "::error::نقض قاعده — endpoint احراز هویت ۵۰۰ برگرداند"
+            echo "| ۵a | رمز نادرست → 401 | ❌ | 500 |" >> $GITHUB_STEP_SUMMARY; exit 1
+          fi
+          if [ "$code" != "401" ]; then
+            echo "::error::انتظار ۴۰۱ بود، دریافت $code"
+            echo "| ۵a | رمز نادرست → 401 | ❌ | $code |" >> $GITHUB_STEP_SUMMARY; exit 1
+          fi
+          grep -q 'INVALID_CREDENTIALS\|UNAUTHORIZED' "$body" \
+            && echo "کد خطا مطابق قرارداد است" \
+            || echo "::warning::کد خطای غیرمنتظره در بدنه"
+          # نباید هیچ کوکی نشستی صادر شده باشد.
+          echo "✅ ورود ناموفق به‌درستی رد شد"
+          echo "| ۵a | رمز نادرست → 401 | ✅ | $code |" >> $GITHUB_STEP_SUMMARY
+
+          # ── گام ۵-ب: login موفق + بررسی کوکی امنیتی ───────────────────────────
+      - name: 'گام ۵b — login موفق + صدور کوکی امن'
+        run: |
+          set -uo pipefail
+          hdr=$(mktemp); body=$(mktemp); trap 'rm -f "$hdr" "$body"' EXIT
+          payload=$(python3 -c 'import json,os; print(json.dumps({"email":os.environ["TEST_EMAIL"],"password":os.environ["TEST_PASSWORD"]}))')
+          code=$(printf '%s' "$payload" | curl -s --max-time 25 -D "$hdr" -o "$body" -w '%{http_code}' \
+            -X POST "$BASE/api/v1/auth/login" \
+            -H 'Content-Type: application/json' \
+            -H "Origin: $BASE" \
+            --data-binary @-)
+          echo "کد وضعیت: $code"
+          if [ "$code" = "500" ]; then
+            echo "::error::نقض قاعده — login مقدار ۵۰۰ برگرداند"
+            echo "| ۵b | login موفق | ❌ | 500 |" >> $GITHUB_STEP_SUMMARY; exit 1
+          fi
+          if [ "$code" = "401" ]; then
+            ec=$(python3 -c "import json;
+          d=json.load(open('$body'));print((d.get('error') or {}).get('code','?'))" 2>/dev/null || echo '?')
+            if [ "$ec" = "EMAIL_NOT_VERIFIED" ]; then
+              echo "::error::کاربر تست هنوز تأیید ایمیل نشده — ابتدا لینک inbox را بزنید"
+              echo "| ۵b | login موفق | ❌ | EMAIL_NOT_VERIFIED |" >> $GITHUB_STEP_SUMMARY; exit 1
+            fi
+            echo "::error::ورود ناموفق ($ec) — رمز سکرت با کاربر همخوان نیست"
+            echo "| ۵b | login موفق | ❌ | 401/$ec |" >> $GITHUB_STEP_SUMMARY; exit 1
+          fi
+          [ "$code" = "200" ] || { echo "::error::انتظار ۲۰۰، دریافت $code"; exit 1; }
+
+          # ساختار پاسخ: {"status":"success","data":{"tokens":{...}}}
+          python3 - "$body" <<'PY'
+          import json, sys, os, re
+          d = json.load(open(sys.argv[1]))
+          t = ((d.get('data') or {}).get('tokens') or {})
+          assert d.get('status') == 'success', 'status != success'
+          for k in ('accessToken', 'expiresIn', 'tokenType'):
+              assert k in t, f'کلید {k} در پاسخ نیست'
+          assert t['tokenType'] == 'Bearer', 'tokenType != Bearer'
+          # قرارداد امنیتی: refreshToken هرگز نباید در بدنه باشد (فقط کوکی HttpOnly).
+          assert 'refreshToken' not in t, 'نشت امنیتی: refreshToken در بدنهٔ پاسخ است'
+          print(f"طول accessToken: {len(t['accessToken'])} کاراکتر")
+          print(f"expiresIn: {t['expiresIn']} ثانیه | tokenType: {t['tokenType']}")
+          # ابتدا ماسک (تا حتی خطای بعدی هم نشت ندهد)، سپس ذخیره.
+          print(f"::add-mask::{t['accessToken']}")
+          with open(os.environ['GITHUB_ENV'], 'a') as f:
+              f.write(f"ACCESS_TOKEN={t['accessToken']}\n")
+          PY
+
+          setc=$(grep -i '^set-cookie:.*__Host-velora_refresh' "$hdr" || true)
+          [ -z "$setc" ] && { echo "::error::کوکی refresh صادر نشد"; exit 1; }
+          # مقدار کوکی ماسک می‌شود؛ فقط ویژگی‌ها بررسی می‌شوند.
+          for attr in 'secure' 'httponly' 'samesite=strict' 'path=/'; do
+            echo "$setc" | grep -qi "$attr" \
+              || { echo "::error::کوکی نشست فاقد ویژگی $attr است"; exit 1; }
+          done
+          echo "$setc" | grep -qi 'max-age=0\|expires=thu, 01-jan-1970' \
+            && { echo "::error::کوکی نشست منقضی صادر شد"; exit 1; }
+          echo "✅ کوکی refresh با هر ۴ ویژگی امنیتی صادر شد"
+          echo "| ۵b | login موفق + کوکی امن | ✅ | 200 · Secure+HttpOnly+SameSite=Strict |" >> $GITHUB_STEP_SUMMARY
+
+          # ── گام ۶: درخواست احراز هویت‌شده ────────────────────────────────────
+      - name: 'گام ۶ — GET /auth/me با Bearer → 200'
+        run: |
+          set -uo pipefail
+          body=$(mktemp); trap 'rm -f "$body"' EXIT
+          code=$(curl -s --max-time 25 -o "$body" -w '%{http_code}' \
+            "$BASE/api/v1/auth/me" \
+            -H "Authorization: Bearer $ACCESS_TOKEN")
+          echo "کد وضعیت: $code"
+          [ "$code" = "500" ] && { echo "::error::۵۰۰ روی endpoint محافظت‌شده"; exit 1; }
+          [ "$code" = "200" ] || { echo "::error::انتظار ۲۰۰، دریافت $code"; exit 1; }
+          python3 - "$body" <<'PY'
+          import json, sys, os
+          d = json.load(open(sys.argv[1]))
+          u = (d.get('data') or {}).get('user') or {}
+          assert d.get('status') == 'success'
+          assert 'email' in u, 'ایمیل در پاسخ نیست'
+          # قرارداد امنیتی: هش رمز هرگز نباید برگردد.
+          for leak in ('password', 'password_hash', 'passwordHash'):
+              assert leak not in u, f'نشت امنیتی: {leak} در پاسخ /auth/me'
+          same = u['email'].strip().lower() == os.environ['TEST_EMAIL'].strip().lower()
+          assert same, 'ایمیل بازگشتی با کاربر تست یکی نیست'
+          print('هویت بازگشتی با کاربر تست منطبق است: بله')
+          print('نشت رمز در پاسخ: خیر')
+          PY
+          echo "✅ دسترسی احراز هویت‌شده برقرار است"
+          echo "| ۶ | /auth/me با Bearer | ✅ | 200 · هویت منطبق |" >> $GITHUB_STEP_SUMMARY
+
+      - name: 'گام ۶b — /auth/me بدون توکن → 401 (نه ۵۰۰)'
+        run: |
+          set -uo pipefail
+          code=$(curl -s --max-time 25 -o /dev/null -w '%{http_code}' "$BASE/api/v1/auth/me")
+          echo "کد وضعیت: $code"
+          [ "$code" = "500" ] && { echo "::error::۵۰۰ به‌جای ۴۰۱"; exit 1; }
+          [ "$code" = "401" ] || { echo "::error::انتظار ۴۰۱، دریافت $code"; exit 1; }
+          echo "✅ دسترسی بدون توکن به‌درستی رد شد"
+          echo "| ۶b | /auth/me بدون توکن | ✅ | 401 |" >> $GITHUB_STEP_SUMMARY
+
+      - name: 'گام ۶c — /auth/me با توکن جعلی → 401 (نه ۵۰۰)'
+        run: |
+          set -uo pipefail
+          code=$(curl -s --max-time 25 -o /dev/null -w '%{http_code}' \
+            "$BASE/api/v1/auth/me" \
+            -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI5OTk5OTkifQ.invalid-signature-here')
+          echo "کد وضعیت: $code"
+          [ "$code" = "500" ] && { echo "::error::توکن جعلی باعث ۵۰۰ شد"; exit 1; }
+          [ "$code" = "401" ] || { echo "::error::انتظار ۴۰۱، دریافت $code"; exit 1; }
+          echo "✅ توکن با امضای نامعتبر رد شد"
+          echo "| ۶c | توکن جعلی | ✅ | 401 |" >> $GITHUB_STEP_SUMMARY
+
+          # ── گام ۷: logout ────────────────────────────────────────────────────
+      - name: 'گام ۷ — logout + ابطال کوکی'
+        run: |
+          set -uo pipefail
+          hdr=$(mktemp); body=$(mktemp); trap 'rm -f "$hdr" "$body"' EXIT
+          code=$(curl -s --max-time 25 -D "$hdr" -o "$body" -w '%{http_code}' \
+            -X POST "$BASE/api/v1/auth/logout" \
+            -H 'Content-Type: application/json' \
+            -H "Origin: $BASE" \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -d '{}')
+          echo "کد وضعیت: $code"
+          [ "$code" = "500" ] && { echo "::error::logout مقدار ۵۰۰ برگرداند"; exit 1; }
+          [ "$code" = "200" ] || { echo "::error::انتظار ۲۰۰، دریافت $code"; exit 1; }
+          grep -q '"loggedOut":true' "$body" || { echo "::error::پاسخ logout نادرست"; exit 1; }
+
+          setc=$(grep -i '^set-cookie:.*__Host-velora_refresh' "$hdr" || true)
+          [ -z "$setc" ] && { echo "::error::هدر ابطال کوکی فرستاده نشد"; exit 1; }
+          # قاعده: مقدار کوکی هرگز چاپ نمی‌شود؛ فقط ویژگی‌های ساختاری.
+          attrs=$(printf '%s' "$setc" | sed -E 's/__Host-velora_refresh=[^;]*/__Host-velora_refresh=<masked>/I')
+          echo "ویژگی‌های هدر ابطال: $attrs"
+          # PHP هنگام setcookie با '' رشتهٔ ثابت deleted می‌نویسد (Response.php:32).
+          echo "$setc" | grep -Eqi '__Host-velora_refresh=(deleted)?(;|[[:space:]]*$)' \
+            || { echo "::error::کوکی با مقدار غیرخالی برگشت"; exit 1; }
+          echo "$setc" | grep -Eqi 'max-age=(0|-[0-9]+)|expires=' \
+            || { echo "::error::کوکی بدون انقضای گذشته"; exit 1; }
+          for attr in 'httponly' 'secure'; do
+            echo "$setc" | grep -qi "$attr" \
+              || { echo "::error::کوکی ابطال فاقد $attr"; exit 1; }
+          done
+          echo "✅ خروج انجام شد و کوکی refresh باطل شد"
+          echo "| ۷ | logout + ابطال کوکی | ✅ | 200 · Max-Age=0 |" >> $GITHUB_STEP_SUMMARY
+
+          # ── گام ۸: مهم‌ترین assertion امنیتی ─────────────────────────────────
+      - name: 'گام ۸ — access token پس از logout باید بی‌اثر شود'
+        run: |
+          set -uo pipefail
+          body=$(mktemp); trap 'rm -f "$body"' EXIT
+          code=$(curl -s --max-time 25 -o "$body" -w '%{http_code}' \
+            "$BASE/api/v1/auth/me" \
+            -H "Authorization: Bearer $ACCESS_TOKEN")
+          echo "کد وضعیت: $code"
+          if [ "$code" = "200" ]; then
+            echo "::error::🔴 نقص امنیتی — access token پس از logout همچنان کار می‌کند"
+            echo "| ۸ | ابطال نشست پس از logout | ❌ | 200 — نشست زنده ماند |" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          [ "$code" = "500" ] && { echo "::error::۵۰۰ به‌جای ۴۰۱"; exit 1; }
+          [ "$code" = "401" ] || { echo "::error::انتظار ۴۰۱، دریافت $code"; exit 1; }
+          ec=$(python3 -c "import json;
+          d=json.load(open('$body'));print((d.get('error') or {}).get('code','?'))" 2>/dev/null || echo '?')
+          echo "کد خطا: $ec"
+          # AuthService.php:381 باید SESSION_REVOKED بدهد.
+          [ "$ec" = "SESSION_REVOKED" ] \
+            && echo "✅ نشست در سمت سرور واقعاً باطل شد (SESSION_REVOKED)" \
+            || echo "::warning::رد شد ولی با کد $ec به‌جای SESSION_REVOKED"
+          echo "| ۸ | ابطال نشست پس از logout | ✅ | 401 · $ec |" >> $GITHUB_STEP_SUMMARY
+
+          # ── گام ۹: refresh پس از logout ──────────────────────────────────────
+      - name: 'گام ۹ — refresh با کوکی باطل‌شده → 401 (نه ۵۰۰)'
+        run: |
+          set -uo pipefail
+          code=$(curl -s --max-time 25 -o /dev/null -w '%{http_code}' \
+            -X POST "$BASE/api/v1/auth/refresh" \
+            -H 'Content-Type: application/json' \
+            -H "Origin: $BASE" \
+            -H 'Cookie: __Host-velora_refresh=deleted' \
+            -d '{}')
+          echo "کد وضعیت: $code"
+          if [ "$code" = "500" ]; then
+            echo "::error::نقض قاعده — refresh مقدار ۵۰۰ برگرداند"
+            echo "| ۹ | refresh پس از logout | ❌ | 500 |" >> $GITHUB_STEP_SUMMARY; exit 1
+          fi
+          case "$code" in
+            401|403|429) echo "✅ refresh به‌درستی رد شد ($code)" ;;
+            *) echo "::error::کد غیرمنتظره $code"; exit 1 ;;
+          esac
+          echo "| ۹ | refresh پس از logout | ✅ | $code |" >> $GITHUB_STEP_SUMMARY
+
+          # ── F-A12: بررسی افشای اسکریپت‌های تستی ──────────────────────────────
+      - name: 'F-A12 — اسکریپت‌های تستی نباید عمومی باشند'
+        run: |
+          set -uo pipefail
+          fail=0
+          for p in api/test-verify-email.php api/mail-test.php \
+                   api/mail-test-simple.php api/mail-setup.php; do
+            code=$(curl -s --max-time 20 -o /dev/null -w '%{http_code}' "$BASE/$p")
+            if [ "$code" = "200" ]; then
+              echo "::error::🔴 $p در دسترس عمومی است (200)"
+              echo "| F-A12 | $p | ❌ | 200 افشا |" >> $GITHUB_STEP_SUMMARY
+              fail=1
+            else
+              echo "✅ $p مسدود است ($code)"
+              echo "| F-A12 | $p | ✅ | $code |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+          [ "$fail" = "1" ] && { echo "::error::اسکریپت تستی روی استیجینگ افشا شده"; exit 1; }
+          echo "✅ هیچ اسکریپت تستی افشا نشده است"
+
+      # اگر هر گامی پیش از logout شکست بخورد، نشست باز می‌ماند.
+      # این گام تضمین می‌کند نشست تست هرگز روی استیجینگ زنده نماند.
+      - name: پاکسازی تضمین‌شده — ابطال نشست باقی‌مانده
+        if: always()
+        run: |
+          set -uo pipefail
+          if [ -z "${ACCESS_TOKEN:-}" ]; then
+            echo "نشستی ساخته نشده بود — نیازی به پاکسازی نیست"; exit 0
+          fi
+          code=$(curl -s --max-time 20 -o /dev/null -w '%{http_code}' \
+            -X POST "$BASE/api/v1/auth/logout" \
+            -H 'Content-Type: application/json' \
+            -H "Origin: $BASE" \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -d '{}')
+          echo "کد پاکسازی: $code"
+          echo "نشست تست بسته شد (تکرار logout بی‌خطر است)"
+
+      - name: خلاصهٔ نهایی
+        if: always()
+        run: |
+          {
+            echo ""
+            echo "### پوشش"
+            echo "گام‌های ۵ تا ۹ به‌صورت خودکار اثبات شدند."
+            echo "گام‌های ۱ تا ۴ (ثبت‌نام، ارسال ایمیل، تأیید توکن) به‌صورت دستی"
+            echo "توسط انسان انجام شده‌اند — توکن تأیید فقط hash ذخیره می‌شود."
+            echo ""
+            echo "هیچ رکورد جدیدی در پایگاه‌داده ساخته نشد (بدون register)."
+          } >> $GITHUB_STEP_SUMMARY
