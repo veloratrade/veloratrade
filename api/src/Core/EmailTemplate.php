@@ -75,11 +75,18 @@ HTML;
 <title>{$titleSafe}</title>
 </head>
 <body style="margin:0;padding:0;background-color:#eef1f6;font-family:Tahoma,Arial,sans-serif;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
+<!-- Preheader for Mail Clients -->
+<div style="display:none;font-size:1px;color:#eef1f6;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">
+  {$titleSafe} — {$subtitleSafe}
+</div>
 <table lang="{$langSafe}" dir="{$direction}" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#eef1f6;padding:32px 10px;font-family:Tahoma,Arial,sans-serif;">
 <tr><td align="center">
 <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:600px;background:#0e1626;border:1px solid #26334d;border-radius:14px;overflow:hidden;box-shadow:0 12px 32px rgba(10,16,29,0.22);">
-<tr><td style="padding:22px 25px 20px;background:#0a101d;border-bottom:1px solid #26334d;">
-<div style="font-family:Arial,Tahoma,sans-serif;font-size:30px;line-height:36px;font-weight:bold;letter-spacing:5px;color:#d4af37;text-align:center;direction:ltr;">VELORA</div>
+<tr><td align="center" style="padding:28px 25px 22px;background:#0a101d;border-bottom:1px solid #26334d;">
+<a href="https://veloratrade.ir" style="text-decoration:none;display:inline-block;">
+  <img src="https://veloratrade.ir/icon-192.png" width="48" height="48" alt="VELORA" style="display:block;margin:0 auto 10px;width:48px;height:48px;border:0;outline:none;" />
+</a>
+<div style="font-family:Arial,Tahoma,sans-serif;font-size:24px;line-height:28px;font-weight:bold;letter-spacing:4px;color:#d4af37;text-align:center;direction:ltr;">VELORA</div>
 <div style="margin-top:6px;font-family:Arial,Tahoma,sans-serif;font-size:11px;letter-spacing:3px;color:#cbd5e1;text-align:center;direction:ltr;">{$subtitleSafe}</div>
 </td></tr>
 <tr><td style="padding:34px 32px;font-family:Tahoma,Arial,sans-serif;color:#f3f4f6;direction:{$direction};text-align:{$textAlign};">
