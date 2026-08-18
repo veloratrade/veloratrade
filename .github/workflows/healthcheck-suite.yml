@@ -198,20 +198,52 @@ jobs:
           echo "✅ گارد same-origin برقرار است"
           echo "| probe نوشتاری: Origin جعلی → 403 | ✅ | $code |" >> $GITHUB_STEP_SUMMARY
 
-      - name: probe نوشتاری — خروج با Origin درست باید ۲۰۰ بدهد
+      # قرارداد: logout همیشه {"loggedOut":true} برمی‌گرداند (خروج هرگز نباید
+      # کوکی را زنده رها کند). پس صرفِ دیدن loggedOut:true یک تاتولوژی است و
+      # حتی با بک‌اند خراب هم سبز می‌شود. آنچه واقعاً باید اثبات شود اثر جانبی
+      # قابل مشاهده است: Response::clearRefreshCookie باید هدر Set-Cookie را با
+      # مقدار خالی و انقضای گذشته بفرستد.
+      - name: probe نوشتاری — logout باید کوکی refresh را باطل کند
         if: inputs.write_probes
         run: |
-          body=$(curl -s --max-time 25 \
+          set -uo pipefail
+          hdr=$(mktemp); trap 'rm -f "$hdr"' EXIT
+          body=$(curl -s --max-time 25 -D "$hdr" \
             -X POST "$BASE/api/v1/auth/logout" \
             -H 'Content-Type: application/json' \
-            -H "Origin: $BASE" -d '{}')
+            -H "Origin: $BASE" \
+            -H 'Cookie: __Host-velora_refresh=dummytoken123' -d '{}')
+
           echo "پاسخ: $body"
           echo "$body" | grep -q '"loggedOut":true' || {
             echo "::error::خروج پاسخ درست نداد"; exit 1; }
           echo "$body" | grep -q 'sessionRevoked' && {
             echo "::error::کد قدیمی روی سرور است — sessionRevoked هنوز در پاسخ هست"; exit 1; }
-          echo "✅ خروج سالم و کد به‌روز است"
-          echo "| probe نوشتاری: logout با Origin درست | ✅ | loggedOut:true |" >> $GITHUB_STEP_SUMMARY
+
+          # اثر جانبی واقعی: هدر ابطال کوکی باید فرستاده شود.
+          setc=$(grep -i '^set-cookie:.*__Host-velora_refresh' "$hdr" || true)
+          if [ -z "$setc" ]; then
+            echo "::error::logout هدر Set-Cookie برای __Host-velora_refresh نفرستاد — کوکی refresh باطل نمی‌شود"
+            exit 1
+          fi
+          echo "هدر ابطال: $setc"
+
+          # مقدار باید خالی باشد (کوکی پاک شود، نه بازنویسی با توکن تازه).
+          echo "$setc" | grep -Eqi '__Host-velora_refresh=(;|[[:space:]]*$)' || {
+            echo "::error::کوکی refresh با مقدار غیرخالی برگشت — ابطال انجام نشده است"; exit 1; }
+
+          # انقضا باید در گذشته باشد (Max-Age<=0 یا expires گذشته).
+          echo "$setc" | grep -Eqi 'max-age=(0|-[0-9]+)|expires=' || {
+            echo "::error::کوکی refresh بدون انقضای گذشته برگشت — مرورگر آن را نگه می‌دارد"; exit 1; }
+
+          # ویژگی‌های امنیتی نباید در مسیر ابطال افت کنند.
+          echo "$setc" | grep -qi 'httponly' || {
+            echo "::error::کوکی ابطال بدون HttpOnly"; exit 1; }
+          echo "$setc" | grep -qi 'secure' || {
+            echo "::error::کوکی ابطال بدون Secure"; exit 1; }
+
+          echo "✅ خروج سالم است و کوکی refresh واقعاً باطل شد"
+          echo "| probe نوشتاری: logout کوکی refresh را باطل می‌کند | ✅ | Set-Cookie منقضی |" >> $GITHUB_STEP_SUMMARY
 
       # مقایسه منیفست یک بررسی خواندنی است، ولی به محتوای مخزن نیاز دارد.
       # فقط برای تولید معنا دارد: استیجینگ عمداً از main مستقر می‌شود ولی
