@@ -1,0 +1,164 @@
+name: Register E2E (Staging)
+
+# VELORA — تست end-to-end ثبت‌نام روی استیجینگ با ایمیل موقت یک‌بارمصرف (mail.tm)
+#
+# چرا ساخته شد (B-11): باگ ۵۰۰ ثبت‌نام (رفع‌شده در 08188cb) دقیقاً از شکاف پوشش
+# خودکار گام‌های ۱ تا ۴ سفر کاربر عبور کرد؛ user-journey عمداً register ندارد.
+# این workflow آن شکاف را می‌بندد:
+#   register → 201 (نه ۵۰۰) → login پیش از تأیید → 401 EMAIL_NOT_VERIFIED
+#   → دریافت ایمیل تأیید واقعی → verify-email → login موفق + کوکی امن
+#
+# قواعد رعایت‌شده:
+#   • فقط استیجینگ — هیچ اشاره‌ای به دامنه تولید نیست (نام فایل هم دامنه را اعلام می‌کند)
+#   • فقط اجرای دستی (workflow_dispatch) با تأیید RUN
+#   • هر اجرا یک کاربر تصادفی یک‌بارمصرف می‌سازد؛ هیچ حساب واقعی لمس نمی‌شود
+#   • فقط یک ایمیل بیرونی به آدرس موقت یک‌بارمصرف ارسال می‌شود
+#   • توکن/رمز/ایمیل موقت در لاگ mask می‌شوند؛ هرگز چاپ نمی‌شوند
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'برای اجرا عبارت RUN را وارد کنید'
+        required: true
+        default: ''
+
+permissions: {}
+
+concurrency:
+  group: register-e2e-staging
+  cancel-in-progress: false
+
+jobs:
+  e2e:
+    name: register → verify → login روی استیجینگ
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      BASE: https://staging.veloratrade.ir
+      INPUT_CONFIRM: ${{ github.event.inputs.confirm }}
+    steps:
+      - name: سفر کامل ثبت‌نام با صندوق موقت
+        run: |
+          python3 <<'PY'
+          import json, os, random, re, string, sys, time, urllib.request, urllib.error
+
+          BASE = os.environ['BASE']
+          summary = open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8')
+          summary.write("## Register E2E — استیجینگ\n\n| گام | بررسی | نتیجه | شواهد |\n|---|---|---|---|\n")
+          failed = False
+
+          def report(step, name, ok, ev=''):
+              global failed
+              failed = failed or not ok
+              print(('✅' if ok else '❌'), step, name, ev)
+              summary.write(f"| {step} | {name} | {'✅' if ok else '❌'} | {ev} |\n")
+              summary.flush()
+
+          def http(method, url, data=None, headers=None, timeout=25):
+              body = json.dumps(data).encode() if data is not None else None
+              req = urllib.request.Request(url, data=body, method=method)
+              req.add_header('Accept', 'application/json')
+              if data is not None: req.add_header('Content-Type', 'application/json')
+              for k, v in (headers or {}).items(): req.add_header(k, v)
+              try:
+                  with urllib.request.urlopen(req, timeout=timeout) as r:
+                      return r.status, r.read().decode('utf-8', 'replace'), r.headers
+              except urllib.error.HTTPError as e:
+                  return e.code, e.read().decode('utf-8', 'replace'), e.headers
+
+          if os.environ.get('INPUT_CONFIRM') != 'RUN':
+              print('::error::برای اجرا باید ورودی confirm برابر RUN باشد.'); sys.exit(1)
+
+          # ── گام ۱: ساخت صندوق موقت ────────────────────────────────────────
+          st, body, _ = http('GET', 'https://api.mail.tm/domains?page=1')
+          doms = [m['domain'] for m in json.loads(body).get('hydra:member', []) if m.get('isActive')]
+          if not doms:
+              report('۱', 'صندوق موقت', False, f'دامنه فعال یافت نشد (HTTP {st})'); sys.exit(1)
+          local = 'velora-test-' + ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
+          email = f'{local}@{doms[0]}'
+          pw = 'Vt!' + ''.join(random.choices(string.ascii_letters + string.digits, k=14))
+          print(f'::add-mask::{email}'); print(f'::add-mask::{pw}')
+          st, body, _ = http('POST', 'https://api.mail.tm/accounts', {'address': email, 'password': pw})
+          if st not in (200, 201):
+              report('۱', 'صندوق موقت', False, f'sاخت حساب mail.tm: HTTP {st}'); sys.exit(1)
+          st, body, _ = http('POST', 'https://api.mail.tm/token', {'address': email, 'password': pw})
+          mt = json.loads(body).get('token')
+          if not mt:
+              report('۱', 'صندوق موقت', False, f'توکن mail.tm: HTTP {st}'); sys.exit(1)
+          masked_email = local[:4] + '…@' + doms[0]
+          report('۱', 'صندوق موقت ساخته شد', True, masked_email)
+
+          # ── گام ۲: register باید ۲۰۱ بدهد (رگرسیون باگ ۵۰۰) ────────────────
+          st, body, hdr = http('POST', f'{BASE}/api/v1/auth/register',
+              {'email': email, 'password': pw, 'fullName': 'E2E Temp', 'timezone': 'UTC'},
+              {'Origin': BASE})
+          ok = False; ev = f'HTTP {st}'
+          try:
+              d = json.loads(body).get('data', {})
+              ok = st == 201 and d.get('verificationRequired') is True
+              ev += f' verificationRequired={d.get("verificationRequired")}'
+          except Exception: pass
+          if st == 500: ev = 'HTTP 500 — باگ قدیمی برگشته!'
+          report('۲', 'register → 201 + verificationRequired', ok, ev)
+          if not ok: sys.exit(1)
+
+          # ── گام ۳: login پیش از تأیید باید ۴۰۱ EMAIL_NOT_VERIFIED بدهد ──────
+          st, body, _ = http('POST', f'{BASE}/api/v1/auth/login',
+              {'email': email, 'password': pw}, {'Origin': BASE})
+          ec = ''
+          try: ec = (json.loads(body).get('error') or {}).get('code', '')
+          except Exception: pass
+          report('۳', 'گیت login پیش از تأیید', st == 401 and ec == 'EMAIL_NOT_VERIFIED', f'HTTP {st} code={ec}')
+
+          # ── گام ۴: انتظار برای ایمیل تأیید و استخراج توکن (mask شده) ────────
+          token = None
+          for attempt in range(1, 31):
+              time.sleep(12)
+              st, body, _ = http('GET', 'https://api.mail.tm/messages?page=1',
+                  headers={'Authorization': f'Bearer {mt}'})
+              msgs = json.loads(body).get('hydra:member', []) if st == 200 else []
+              for m in msgs[:5]:
+                  st2, det, _ = http('GET', f"https://api.mail.tm/messages/{m['id']}",
+                      headers={'Authorization': f'Bearer {mt}'})
+                  if st2 != 200: continue
+                  d = json.loads(det)
+                  raw = (d.get('text') or '') + '\n' + '\n'.join(d.get('html') or [])
+                  raw = re.sub(r'=\r?\n', '', raw).replace('&amp;', '&')
+                  mtok = re.search(r'#token=([0-9a-f]{64})', raw)
+                  if mtok:
+                      token = mtok.group(1)
+                      print(f'::add-mask::{token}')
+                      break
+              if token: break
+              print(f'… در انتظار ایمیل (تلاش {attempt}/30)')
+          report('۴', 'دریافت ایمیل تأیید واقعی + استخراج توکن', token is not None,
+                 f'{attempt} تلاش × ۱۲ثانیه' if token else 'ایمیل نرسید — SMTP/spam را بررسی کنید')
+          if not token: sys.exit(1)
+
+          # ── گام ۵: verify-email ────────────────────────────────────────────
+          st, body, _ = http('POST', f'{BASE}/api/v1/auth/verify-email',
+              {'token': token}, {'Origin': BASE})
+          ver = False
+          try: ver = json.loads(body).get('data', {}).get('verified') is True
+          except Exception: pass
+          report('۵', 'verify-email → verified', st == 200 and ver, f'HTTP {st}')
+          if st != 200 or not ver: sys.exit(1)
+
+          # ── گام ۶: login موفق + توکن + کوکی ────────────────────────────────
+          st, body, hdr = http('POST', f'{BASE}/api/v1/auth/login',
+              {'email': email, 'password': pw}, {'Origin': BASE})
+          at = ''
+          try: at = json.loads(body).get('data', {}).get('tokens', {}).get('accessToken', '')
+          except Exception: pass
+          if at: print(f'::add-mask::{at}')
+          cookies = hdr.get_all('Set-Cookie') or []
+          setc = next((c for c in cookies if 'HttpOnly' in c), '')
+          ok = st == 200 and bool(at) and bool(setc)
+          report('۶', 'login موفق + accessToken + کوکی HttpOnly', ok,
+                 f'HTTP {st} token={"✓" if at else "✗"} cookie={"✓" if setc else "✗"}')
+
+          print()
+          print('نتیجه کلی:', '❌ FAIL' if failed else '✅ PASS — سفر کامل ثبت‌نام سالم است')
+          sys.exit(1 if failed else 0)
+          PY
