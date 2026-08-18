@@ -163,4 +163,99 @@ jobs:
           verdict = 'ARRIVED' if arrived else 'NOT-ARRIVED'
           print(f'═══ نتیجهٔ خود-حلقه: {verdict}')
           PY
+
+      - name: 'ثبت‌نام با آدرس محلی + خواندن و تحلیل ایمیلِ قالب واقعی (خالی؟ لینک دارد؟)'
+        env:
+          IMAP_HOST: ${{ env.MAIL_HOST }}
+          IMAP_USER: ${{ env.MAIL_USER }}
+          IMAP_PASS: ${{ env.MAIL_PASS }}
+          BASE: https://staging.veloratrade.ir
+        run: |
+          python3 <<'PY'
+          import imaplib, re, os, sys, time, json, random, string, urllib.request, urllib.error, email
+          from email import policy
+          host, user, pw = os.environ['IMAP_HOST'], os.environ['IMAP_USER'], os.environ['IMAP_PASS']
+          BASE = os.environ['BASE']
+
+          def maskline(s, n=170):
+              s = re.sub(r'#token=[0-9a-f]{64}', '#token=***', str(s))
+              s = re.sub(r'([A-Za-z0-9._%+-]{2})[A-Za-z0-9._%+-]*@', r'\1…@', s)
+              return s[:n]
+
+          def http(method, url, data=None, headers=None, timeout=25):
+              body = json.dumps(data).encode() if data is not None else None
+              req = urllib.request.Request(url, data=body, method=method)
+              req.add_header('Accept', 'application/json')
+              if data is not None: req.add_header('Content-Type', 'application/json')
+              for k, v in (headers or {}).items(): req.add_header(k, v)
+              try:
+                  with urllib.request.urlopen(req, timeout=timeout) as r:
+                      return r.status, r.read().decode('utf-8', 'replace')
+              except urllib.error.HTTPError as e:
+                  return e.code, e.read().decode('utf-8', 'replace')
+
+          local, domain = user.split('@')
+          plusaddr = f'{local}+e2e{int(time.time())}@{domain}'
+          jpw = 'Vt!' + ''.join(random.choices(string.ascii_letters + string.digits, k=12))
+          print(f'::add-mask::{plusaddr}')
+
+          sent_for = None
+          for cand in (plusaddr, user):
+              st, body = http('POST', f'{BASE}/api/v1/auth/register',
+                  {'email': cand, 'password': jpw, 'fullName': 'E2E Local', 'timezone': 'UTC'}, {'Origin': BASE})
+              print('register →', st, 'برای', maskline(cand))
+              if st == 201: sent_for = cand; break
+          if not sent_for:
+              print('::error::register نتوانست ایمیلی صادر کند (هردو آدرس ناموفق)'); sys.exit(1)
+
+          M0 = imaplib.IMAP4_SSL(host, 993, timeout=30); M0.login(user, pw); M0.select('INBOX', readonly=True)
+          typ, ids = M0.search(None, 'ALL')
+          before = set(ids[0].split()) if ids and ids[0] else set()
+          M0.close(); M0.logout()
+
+          found = None
+          for i in range(18):
+              time.sleep(10)
+              try:
+                  M = imaplib.IMAP4_SSL(host, 993, timeout=25); M.login(user, pw); M.select('INBOX', readonly=True)
+                  typ, ids = M.search(None, 'ALL')
+                  now = set(ids[0].split()) if ids and ids[0] else set()
+                  new = sorted(now - before, key=int)
+                  if new:
+                      typ, data = M.fetch(new[-1], '(BODY.PEEK[])')
+                      M.close(); M.logout()
+                      if typ == 'OK' and data and data[0]:
+                          found = data[0][1]; break
+                  M.close(); M.logout()
+              except Exception as e:
+                  print('imap poll:', type(e).__name__)
+              print(f'… انتظار ایمیل قالب‌دار محلی ({i+1}/18)')
+          if not found:
+              print('::error::حتی به صندوق محلی هم نرسید! — یعنی مشکل فقط مسیر خارجی نیست؛ بدنه/انکودینگ قالب هم مظنون است')
+              sys.exit(1)
+
+          msg = email.message_from_bytes(found, policy=policy.default)
+          print('═══ ایمیل رسید (محلی) — تحلیل:')
+          print('  Subject :', maskline(msg.get('Subject')))
+          print('  To      :', maskline(msg.get('To')))
+          print('  Type    :', msg.get_content_type(), '| CTE:', msg.get('Content-Transfer-Encoding'), '| اندازه خام:', len(found), 'بایت')
+          texts, htmls = [], []
+          for part in msg.walk():
+              ct = part.get_content_type()
+              if ct in ('text/plain', 'text/html'):
+                  try: payload = part.get_content()
+                  except Exception: payload = ''
+                  (htmls if ct == 'text/html' else texts).append(payload or '')
+          h = '\n'.join(htmls); t = '\n'.join(texts)
+          print(f'  طول text/plain: {len(t.strip())} | طول text/html: {len(h.strip())}')
+          has_link = 'verify-email#token=' in h or 'verify-email#token=' in t
+          print('  لینک تأیید در بدنه:', '✅ موجود' if has_link else '❌ نیست')
+          snippet = re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', ' ', h or t)).strip()[:280]
+          print('  نمونه بدنه:', maskline(snippet) if snippet else '(خالی!)')
+          print()
+          if (h or t).strip():
+              print('🏁 نتیجه: پیام «خالی» نیست — قالب سالم رندر و تحویل محلی شد')
+          else:
+              print('🏁 نتیجه: بدنه خالی است — باگ قالب/انکودینگ تأیید شد')
+          PY
           PY
