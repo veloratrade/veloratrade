@@ -40,7 +40,8 @@ final class AuthController
             $request->headers['user-agent'] ?? null,
         );
 
-        $this->respondWithSession($result, 201);
+        // ثبت‌نام نیازمند تأیید ایمیل است و سشن/توکنی صادر نمی‌کند (برخلاف login).
+        Response::json($result, 201);
     }
 
     /** تأیید توکن ایمیل از لینک ارسال‌شده به کاربر. */
