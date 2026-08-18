@@ -1,8 +1,8 @@
 {
   "_meta": {
     "schema": "velora-project-state/1",
-    "generated_at": "2026-08-18T21:30:36+00:00",
-    "generated_from_commit": "71cd46882f33bf76a7e2368d017397a962da80e4",
+    "generated_at": "2026-08-18T21:57:57+00:00",
+    "generated_from_commit": "c48b906553dfd268870c78f9768122986072da7c",
     "generator": "tools/velora-status.sh --json",
     "regenerate": "bash tools/velora-status.sh --json > docs/PROJECT_STATE.json",
     "authority": "SNAPSHOT ONLY — منبع حقیقت نیست. مرجع: docs/README.md و P1/P2",
@@ -13,9 +13,9 @@
     "name": "veloratrade/veloratrade",
     "private": true,
     "branch": "main",
-    "head": "71cd468",
-    "head_date": "2026-08-18 21:30:34 +0000",
-    "head_subject": "fix(api): improve email deliverability with multipart MIME, RFC 5322 headers and full HTML shell",
+    "head": "c48b906",
+    "head_date": "2026-08-18 21:57:57 +0000",
+    "head_subject": "feat(email): add official gold brand logo and inbox preheader to email template",
     "working_tree_clean": false,
     "tracked_files": 672,
     "readme_version": "2.1.0"
@@ -69,27 +69,27 @@
   "workflows": {
     "ci.yml": {
       "state": "active",
-      "total_runs": 82,
+      "total_runs": 83,
       "last_run": {
-        "at": "2026-08-18T20:41:30Z",
+        "at": "2026-08-18T21:30:58Z",
         "event": "push",
         "conclusion": "success"
       }
     },
     "csp-guard.yml": {
       "state": "active",
-      "total_runs": 71,
+      "total_runs": 72,
       "last_run": {
-        "at": "2026-08-18T20:41:30Z",
+        "at": "2026-08-18T21:30:58Z",
         "event": "push",
         "conclusion": "success"
       }
     },
     "deploy-staging.yml": {
       "state": "active",
-      "total_runs": 7,
+      "total_runs": 8,
       "last_run": {
-        "at": "2026-08-18T18:50:09Z",
+        "at": "2026-08-18T21:32:21Z",
         "event": "workflow_dispatch",
         "conclusion": "success"
       }
@@ -119,9 +119,9 @@
     },
     "healthcheck-staging.yml": {
       "state": "active",
-      "total_runs": 10,
+      "total_runs": 11,
       "last_run": {
-        "at": "2026-08-18T19:02:47Z",
+        "at": "2026-08-18T21:48:57Z",
         "event": "workflow_dispatch",
         "conclusion": "success"
       }
