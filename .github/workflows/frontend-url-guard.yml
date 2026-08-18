@@ -1,0 +1,95 @@
+# VELORA — FRONTEND_URL staging safety verification
+# Run ID: VELORA-FRONTEND-URL-GUARD
+#
+# STATUS: PROPOSAL ONLY — prepared OUTSIDE the repository. Not committed,
+#         not pushed, not executed.
+#
+# PURPOSE
+#   Prove that the staging environment file defines FRONTEND_URL as exactly
+#   the documented staging origin, WITHOUT revealing the value of
+#   STAGING_VELORA_ENV or any other secret.
+#
+# SAFETY PROPERTIES (each one is enforced below, not merely asserted)
+#   * workflow_dispatch ONLY — no push, no pull_request, no schedule,
+#     no workflow_call. It can never run automatically.
+#   * permissions: {} — the GITHUB_TOKEN receives NO scopes at all.
+#   * No FTP credentials are referenced, so it cannot reach the host.
+#   * It never writes to staging, production, or any database.
+#   * The secret is written only to a mode-0600 runner-local temp file that is
+#     deleted on exit; it is never echoed, never exported to a child shell as
+#     output, and never placed in the step summary.
+#   * The guard prints rule IDs and PASS/FAIL only.
+#   * Fails closed: an empty secret, a missing guard file, or any guard
+#     finding fails the job.
+#
+# NOTE: this workflow requires tools/check_frontend_url_guard.py to exist in
+#       the repository. That file is currently OUTSIDE the repo and is NOT
+#       committed, so this workflow cannot run until both are approved.
+
+name: FRONTEND_URL Staging Verification
+
+on:
+  workflow_dispatch:
+
+# No scopes whatsoever. Read-only verification needs none beyond checkout,
+# which actions/checkout performs with the default read token; setting an
+# empty map removes every write capability.
+permissions: {}
+
+concurrency:
+  group: frontend-url-guard
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify staging FRONTEND_URL (read-only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout (read-only)
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Confirm guard is present
+        run: |
+          set -euo pipefail
+          test -f tools/check_frontend_url_guard.py \
+            || { echo "::error::guard script missing"; exit 1; }
+
+      - name: Verify FRONTEND_URL against staging env secret
+        env:
+          VELORA_ENV: ${{ secrets.STAGING_VELORA_ENV }}
+        run: |
+          set -euo pipefail
+          if [ -z "${VELORA_ENV:-}" ]; then
+            echo "::error::STAGING_VELORA_ENV is empty or unavailable; failing closed."
+            exit 1
+          fi
+          umask 077
+          workdir="$(mktemp -d)"
+          trap 'rm -rf "$workdir"' EXIT
+          printf '%s' "$VELORA_ENV" > "$workdir/velora.env"
+          chmod 600 "$workdir/velora.env"
+          # The guard emits rule IDs and PASS/FAIL only; it never prints values.
+          python3 tools/check_frontend_url_guard.py \
+            --env-file "$workdir/velora.env" \
+            --app-env staging \
+            --expect 'https://staging.veloratrade.ir'
+
+      - name: Summary (no values)
+        if: always()
+        run: |
+          {
+            echo "### FRONTEND_URL Staging Verification"
+            echo ""
+            echo "Result: ${{ job.status }}"
+            echo ""
+            echo "Validated the staging environment file against the documented"
+            echo "staging origin. No secret value is printed by this workflow."
+          } >> "$GITHUB_STEP_SUMMARY"
