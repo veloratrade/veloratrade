@@ -68,7 +68,7 @@ final class AuthService
                 $token = bin2hex(random_bytes(32));
                 $this->verifications->invalidateAllForUser($uid);
                 $this->verifications->create($uid, hash('sha256', $token), 86400);
-                $verifyUrl = rtrim((string) Config::get('frontend_url', 'https://veloratrade.ir'), '/') . '/verify-email#token=' . rawurlencode($token);
+                $verifyUrl = rtrim((string) Config::get('frontend_url', 'https://veloratrade.ir'), '/') . '/verify-email?token=' . rawurlencode($token);
 
                 $fn = trim((string) ($existing['full_name'] ?? ''));
                 try {
@@ -103,7 +103,7 @@ final class AuthService
         $token = bin2hex(random_bytes(32));
         $this->verifications->invalidateAllForUser($userId);
         $this->verifications->create($userId, hash('sha256', $token), 86400);
-        $verifyUrl = rtrim((string) Config::get('frontend_url', 'https://veloratrade.ir'), '/') . '/verify-email#token=' . rawurlencode($token);
+        $verifyUrl = rtrim((string) Config::get('frontend_url', 'https://veloratrade.ir'), '/') . '/verify-email?token=' . rawurlencode($token);
 
         try {
             NotificationService::sendVerificationEmail(
@@ -259,7 +259,7 @@ final class AuthService
         $this->verifications->invalidateAllForUser($userId);
         $this->verifications->create($userId, hash('sha256', $token), 86400);
 
-        $verifyUrl = rtrim((string) Config::get('frontend_url', 'https://veloratrade.ir'), '/') . '/verify-email#token=' . rawurlencode($token);
+        $verifyUrl = rtrim((string) Config::get('frontend_url', 'https://veloratrade.ir'), '/') . '/verify-email?token=' . rawurlencode($token);
 
         $fullName = trim((string) ($user['full_name'] ?? ''));
         try {
