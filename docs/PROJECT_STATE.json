@@ -1,8 +1,8 @@
 {
   "_meta": {
     "schema": "velora-project-state/1",
-    "generated_at": "2026-08-18T19:05:06+00:00",
-    "generated_from_commit": "08188cb2dba0bd9ddda68fda31b4767f34d01f4c",
+    "generated_at": "2026-08-18T21:30:36+00:00",
+    "generated_from_commit": "71cd46882f33bf76a7e2368d017397a962da80e4",
     "generator": "tools/velora-status.sh --json",
     "regenerate": "bash tools/velora-status.sh --json > docs/PROJECT_STATE.json",
     "authority": "SNAPSHOT ONLY — منبع حقیقت نیست. مرجع: docs/README.md و P1/P2",
@@ -13,11 +13,11 @@
     "name": "veloratrade/veloratrade",
     "private": true,
     "branch": "main",
-    "head": "08188cb",
-    "head_date": "2026-08-18 18:48:28 +0000",
-    "head_subject": "fix(api): register returned 500 — respondWithSession requires refreshToken absent from verification-required response",
+    "head": "71cd468",
+    "head_date": "2026-08-18 21:30:34 +0000",
+    "head_subject": "fix(api): improve email deliverability with multipart MIME, RFC 5322 headers and full HTML shell",
     "working_tree_clean": false,
-    "tracked_files": 670,
+    "tracked_files": 672,
     "readme_version": "2.1.0"
   },
   "environments": {
@@ -69,18 +69,18 @@
   "workflows": {
     "ci.yml": {
       "state": "active",
-      "total_runs": 67,
+      "total_runs": 82,
       "last_run": {
-        "at": "2026-08-18T18:48:32Z",
+        "at": "2026-08-18T20:41:30Z",
         "event": "push",
         "conclusion": "success"
       }
     },
     "csp-guard.yml": {
       "state": "active",
-      "total_runs": 56,
+      "total_runs": 71,
       "last_run": {
-        "at": "2026-08-18T18:48:32Z",
+        "at": "2026-08-18T20:41:30Z",
         "event": "push",
         "conclusion": "success"
       }
@@ -131,6 +131,24 @@
       "total_runs": 0,
       "last_run": null
     },
+    "mail-diagnostics-staging.yml": {
+      "state": "active",
+      "total_runs": 12,
+      "last_run": {
+        "at": "2026-08-18T20:41:41Z",
+        "event": "workflow_dispatch",
+        "conclusion": "failure"
+      }
+    },
+    "register-e2e-staging.yml": {
+      "state": "active",
+      "total_runs": 2,
+      "last_run": {
+        "at": "2026-08-18T19:16:22Z",
+        "event": "workflow_dispatch",
+        "conclusion": "failure"
+      }
+    },
     "setup-staging-private.yml": {
       "state": "active",
       "total_runs": 4,
@@ -142,11 +160,11 @@
     },
     "user-journey.yml": {
       "state": "active",
-      "total_runs": 3,
+      "total_runs": 4,
       "last_run": {
-        "at": "2026-08-18T16:16:07Z",
+        "at": "2026-08-18T19:05:46Z",
         "event": "workflow_dispatch",
-        "conclusion": "success"
+        "conclusion": "failure"
       }
     }
   },
@@ -217,7 +235,7 @@
     },
     {
       "id": "B-11",
-      "status": "⏳ پیشنهاد ۲۰۲۶-۰۸-۱۸"
+      "status": "🟡 پیاده شد ۲۰۲۶-۰۸-۱۸ (`register-e2e-staging.yml` با صندوق موقت mail.tm) — سبز نهایی منتظر"
     }
   ],
   "next_step": "docs/README.md را کامل بخوان — §3 ماتریس FTP، §6 درس‌ها، §7 کار نیمه‌تمام"

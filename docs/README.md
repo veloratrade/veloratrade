@@ -405,7 +405,13 @@ git diff docs-baseline-v1..main -- docs/
 
 ## 7. وضعیت جاری و کارهای باز (Living Section)
 
-**آخرین وضعیت (2026-08-18 — جلسهٔ agent):**
+**آخرین وضعیت (2026-08-19 — جلسهٔ agent):**
+- ✉️ **اصلاح ساختار ایمیل و ارتقای تحویل‌پذیری (Deliverability):** مشکل عدم تحویل ایمیل‌های قالب‌دار به کلاینت‌های خارجی (نظیر Gmail و Outlook) با وجود وضعیت `Sent` در هاست، با ۵ اصلاح کلیدی در `api/src/Core/Mailer.php` و `api/src/Core/EmailTemplate.php` برطرف شد:
+  1. **بسته‌بندی چندبخشی استاندارد (`multipart/alternative`):** استخراج خودکار نسخه `text/plain` از بدنه HTML در `Mailer::htmlToPlain` و ارسال همزمان هر دو نسخه متنی و HTML جهت رفع جریمه اسپم `MIME_HTML_ONLY`.
+  2. **افزودن هدرهای الزامی RFC 5322:** تولید خودکار هدر `Date` و `Message-ID` یکتا برای تمامی پیام‌های ارسالی جهت رفع جریمه‌های `MISSING_DATE` و `MISSING_MID`.
+  3. **کدگذاری استاندارد هدرها (RFC 2047):** استفاده از `mb_encode_mimeheader` برای شکستن خطوط بیش از ۷۵ کاراکتر در موضوعات فارسی/طولانی.
+  4. **ساختار کامل سند وب در قالب:** افزودن اسکلت استاندارد `<!DOCTYPE html>`, `<html>`, `<head>`, `<meta charset="UTF-8">`, `<body>` در `EmailTemplate::render` جهت رفع رول `HTML_MIME_NO_HTML_TAG`.
+  5. **اصلاح پیوندهای پاورقی:** جایگزینی لینک‌های ناموجود با مسیرهای معتبر (`/support`، `/terms`، `/privacy`).
 - 🐞 **رفع باگ ثبت‌نام (۵۰۰):** هر `POST /api/v1/auth/register` با HTTP 500 پاسخ می‌داد، در حالی‌که کاربر و توکن تأیید در DB ساخته می‌شدند. علت: خروجی verification-required سرویس (بدون `refreshToken`) به `respondWithSession()` پاس می‌شد و آن RuntimeException می‌انداخت. فیکس یک‌خطی در `AuthController::register` — کامیت `08188cb`: پاسخ مستقیم `Response::json($result, 201)` هم‌الگو با `resendVerification`. این مسیر در هیچ خودکاری پوشش نداشت (user-journey عمداً بدون register است) → B-11.
 - 📧 **ایمیل استیجینگ از `log` به SMTP واقعی تغییر کرد** (دستور مالک، برای تست با ایمیل واقعی): Secret `STAGING_VELORA_ENV` به‌روزرسانی شد (فقط بلوک `MAIL_*`؛ مقادیر در سند ثبت نمی‌شود) + Setup run `32173117798` ✅ → Deploy Staging run `32173218420` ✅ (`08188cb`) → Health Check run `32174408893` ✅. بقیهٔ env دست‌نخورده. اکانت SMTP متعلق به تولید (`no-reply@veloratrade.ir`) است — تصمیم مالک.
 - 🔴 **rotation الزامی (B-5):** در این جلسه در چت ثبت شدند: PAT (admin)، رمز SMTP تولید، و محتوای env استیجینگ (JWT_SECRET / APP_ENCRYPTION_KEY / DB_PASS / METAAPI_WEBHOOK_SECRET).
