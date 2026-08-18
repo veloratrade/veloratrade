@@ -128,6 +128,60 @@ jobs:
           fi
           echo "Login OK (http=$code, ${t}s)."
 
+      # ── F-A1 regression ────────────────────────────────────────────────
+      # register() used to hand its result to respondWithSession(), which
+      # requires a refresh credential. Registration never issues one, so the
+      # endpoint threw and surfaced as HTTP 500. This exercises the real
+      # endpoint on the local CI API (MAIL_DRIVER=log, local SQLite) and fails
+      # if the 500 ever returns. Response bodies are never printed.
+      - name: Registration endpoint regression (F-A1)
+        run: |
+          set -uo pipefail
+          # Unique synthetic address: no real user, no pre-existing account.
+          email="ci-f-a1-$(date +%s)-$RANDOM@ci.invalid"
+          code=$(curl -s -o /tmp/register.json -w '%{http_code}' \
+              --max-time 30 -X POST http://127.0.0.1:8081/api/v1/auth/register \
+              -H 'Content-Type: application/json' \
+              -H 'Origin: http://127.0.0.1:8081' \
+              -d "{\"email\":\"$email\",\"password\":\"CiOnlyPassw0rd!\",\"fullName\":\"CI F-A1\"}") \
+            || code=000
+          echo "register: http=$code"
+
+          if [ "$code" = "500" ]; then
+            echo "::error::F-A1 regression — register returned HTTP 500"
+            tail -30 /tmp/server2.log
+            exit 1
+          fi
+          if [ "$code" = "000" ]; then
+            echo "::error::register did not respond"
+            tail -30 /tmp/server2.log
+            exit 1
+          fi
+          if [ "$code" != "201" ]; then
+            echo "::error::register expected HTTP 201, got $code"
+            exit 1
+          fi
+
+          # The account must stay unverified: no session may be issued here.
+          if ! python3 -c "
+          import json,sys
+          d=json.load(open('/tmp/register.json'))
+          sys.exit(0 if d.get('verificationRequired') is True else 1)
+          "; then
+            echo "::error::register did not return verificationRequired=true"
+            exit 1
+          fi
+          if python3 -c "
+          import json,sys
+          d=json.load(open('/tmp/register.json'))
+          sys.exit(0 if 'tokens' in d or 'refreshToken' in json.dumps(d) else 1)
+          "; then
+            echo "::error::register issued a session; it must only require verification"
+            exit 1
+          fi
+
+          echo "Registration OK (http=201, verificationRequired=true, no session)."
+
   python:
     name: Python tooling check
     runs-on: ubuntu-latest
