@@ -28,6 +28,14 @@ final class LocaleManager
 
 namespace Velora\Core;
 
+final class Config
+{
+    public static function get(string $key, mixed $default = null): mixed
+    {
+        return $key === 'frontend_url' ? 'https://staging.veloratrade.ir' : $default;
+    }
+}
+
 require dirname(__DIR__, 2) . '/api/src/Core/EmailTemplate.php';
 
 $assertions = 0;
@@ -54,7 +62,8 @@ $html = EmailTemplate::render(
 );
 
 expect(str_contains($html, 'width="620"'), 'email width must be 620px');
-expect(str_contains($html, 'https://veloratrade.ir/public/assets/velora-email-logo.png'), 'real VELORA email logo must be used');
+expect(str_contains($html, 'https://staging.veloratrade.ir/public/assets/velora-email-logo.png'), 'logo URL must follow the current environment FRONTEND_URL');
+expect(!str_contains($html, 'https://veloratrade.ir/public/assets/velora-email-logo.png'), 'Staging render must not depend on a Production-only asset');
 expect(!str_contains($html, 'icon-192.png'), 'legacy generic icon must not be used');
 expect(str_contains($html, 'border:1px solid #9b782e'), 'outer Gold Outline border missing');
 expect(str_contains($html, 'border:1px solid #3b465a'), 'inner Gold Outline border missing');
