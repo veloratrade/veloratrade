@@ -21,6 +21,8 @@ final class EmailTemplate
         ?string $notice = null,
         ?string $subtitle = null,
         ?string $locale = null,
+        ?string $iconName = null,
+        ?string $iconAlt = null,
     ): string {
         $i18n = LocaleManager::getInstance();
         $locale = $i18n->resolve($locale ?? $i18n->getLanguage());
@@ -34,6 +36,19 @@ final class EmailTemplate
         $subtitleSafe = self::escape($subtitle ?? $t('email.common.subtitleSecurity'));
         $frontendBase = rtrim((string) Config::get('frontend_url', 'https://veloratrade.ir'), '/');
         $logoUrlSafe = self::escape($frontendBase . '/public/assets/velora-email-logo.png');
+
+        $iconHtml = '';
+        if ($iconName !== null && preg_match('/^[a-z0-9-]+$/', $iconName) === 1) {
+            $iconCidSafe = self::escape('velora-' . $iconName);
+            $iconAltSafe = self::escape($iconAlt ?? $badge);
+            $iconHtml = <<<HTML
+<table role="presentation" align="center" width="78" height="78" cellspacing="0" cellpadding="0" border="0" bgcolor="#141f31" style="width:78px;height:78px;margin:0 auto 22px;background:#141f31;border:1px solid #9b782e;border-radius:24px;border-collapse:separate;box-shadow:inset 0 0 0 3px #0e1829,0 12px 28px rgba(0,0,0,0.28);">
+<tr><td align="center" valign="middle" style="width:78px;height:78px;padding:0;">
+<img src="cid:{$iconCidSafe}" width="56" height="56" alt="{$iconAltSafe}" style="display:block;margin:0 auto;width:56px;height:56px;border:0;outline:none;" />
+</td></tr>
+</table>
+HTML;
+        }
 
         $button = '';
         if ($buttonLabel !== null && $buttonUrl !== null) {
@@ -94,7 +109,8 @@ HTML;
 <tr><td style="padding:4px;">
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#0d1829" style="width:100%;background:#0d1829;border:1px solid #3b465a;border-radius:12px;border-collapse:separate;">
 <tr><td style="padding:30px 28px;font-family:Tahoma,Arial,sans-serif;color:#f3f4f6;direction:{$direction};text-align:{$textAlign};">
-<div style="margin:0 0 12px;color:#e7ca73;font-size:13px;font-weight:bold;letter-spacing:0.5px;">▪ {$badgeSafe}</div>
+{$iconHtml}
+<div style="margin:0 0 12px;color:#e7ca73;font-size:13px;font-weight:bold;letter-spacing:0.5px;">{$badgeSafe}</div>
 <h1 style="margin:0 0 20px;font-size:24px;line-height:1.6;color:#ffffff;font-weight:bold;">{$titleSafe}</h1>
 <div style="font-size:15px;line-height:2.1;color:#f3f4f6;">{$contentHtml}</div>
 {$button}

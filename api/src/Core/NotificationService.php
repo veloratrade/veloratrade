@@ -22,6 +22,31 @@ final class NotificationService
         );
     }
 
+    /** Send one rendered template with its dedicated CID icon. */
+    private static function sendWithIcon(
+        string $email,
+        string $subject,
+        string $html,
+        string $iconName,
+        string $eventType,
+        ?int $userId,
+    ): bool {
+        $iconPath = dirname(__DIR__, 3) . '/public/assets/email-icons/' . $iconName . '.png';
+        if (!is_file($iconPath) || !is_readable($iconPath)) {
+            Mailer::$lastError = 'Email icon asset is missing';
+            self::logNotification($userId, $email, $eventType, $subject, false);
+            return false;
+        }
+        $sent = Mailer::sendWithInlineImages(
+            $email,
+            $subject,
+            $html,
+            ['velora-' . $iconName => $iconPath],
+        );
+        self::logNotification($userId, $email, $eventType, $subject, $sent);
+        return $sent;
+    }
+
     /**
      * استخراج نام تمیز کاربر؛ در صورتی که نام خالی باشد یا همان آدرس ایمیل باشد، عبارت «کاربر گرامی» برمی‌گردد.
      */
@@ -49,18 +74,19 @@ final class NotificationService
             '<p style="margin:0 0 14px;color:#ffffff;font-size:16px;font-weight:bold;">سلام ' . $nameSafe . '،</p>' .
             '<p style="margin:0 0 14px;color:#f3f4f6;">برای فعال‌سازی حساب کاربری متصل به ایمیل زیر و شروع فعالیت در پلتفرم، روی دکمه تأیید کلیک کنید:</p>' .
             '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0;background:#141f32;border:1px solid #d4af37;border-radius:10px;box-shadow:0 4px 15px rgba(212,175,55,0.15);">' .
-            '<tr><td align="center" style="padding:14px 20px;font-family:Tahoma,Arial,sans-serif;font-size:16px;font-weight:bold;color:#d4af37;letter-spacing:0.5px;direction:ltr;">✉️ ' . $emailSafe . '</td></tr>' .
+            '<tr><td align="center" style="padding:14px 20px;font-family:Tahoma,Arial,sans-serif;font-size:16px;font-weight:bold;color:#d4af37;letter-spacing:0.5px;direction:ltr;">' . $emailSafe . '</td></tr>' .
             '</table>' .
             '<p style="margin:0 0 14px;color:#f3f4f6;">پس از تأیید، امکان ورود به حساب و استفاده کامل از امکانات ژورنال معاملاتی برای شما فعال خواهد شد.</p>',
             'تأیید و فعال‌سازی حساب',
             $verifyUrl,
             'اعتبار این لینک ۲۴ ساعت است. در صورت منقضی شدن لینک، می‌توانید از صفحه ورود مجدداً درخواست ارسال لینک دهید.',
-            'ACCOUNT SECURITY'
+            'ACCOUNT SECURITY',
+            null,
+            'verification',
+            'تأیید ایمیل'
         );
 
-        $sent = Mailer::send($email, $subject, $html);
-        self::logNotification($userId, $email, 'VERIFICATION_EMAIL', $subject, $sent);
-        return $sent;
+        return self::sendWithIcon($email, $subject, $html, 'verification', 'VERIFICATION_EMAIL', $userId);
     }
 
     /**
@@ -78,18 +104,19 @@ final class NotificationService
             '<p style="margin:0 0 14px;color:#ffffff;font-size:16px;font-weight:bold;">سلام ' . $nameSafe . '،</p>' .
             '<p style="margin:0 0 14px;color:#f3f4f6;">حساب کاربری شما با ایمیل زیر با موفقیت فعال شد:</p>' .
             '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0;background:#141f32;border:1px solid #d4af37;border-radius:10px;box-shadow:0 4px 15px rgba(212,175,55,0.18);">' .
-            '<tr><td align="center" style="padding:14px 20px;font-family:Tahoma,Arial,sans-serif;font-size:16px;font-weight:bold;color:#d4af37;letter-spacing:0.5px;direction:ltr;">✉️ ' . $emailSafe . '</td></tr>' .
+            '<tr><td align="center" style="padding:14px 20px;font-family:Tahoma,Arial,sans-serif;font-size:16px;font-weight:bold;color:#d4af37;letter-spacing:0.5px;direction:ltr;">' . $emailSafe . '</td></tr>' .
             '</table>' .
             '<p style="margin:0 0 14px;color:#f3f4f6;">اکنون آماده ثبت معاملات، مدیریت ریسک و تحلیل حرفه‌ای عملکرد خود در پلتفرم VELORA TRADE هستید.</p>',
             'ورود به داشبورد',
             $dashboardUrl,
             'شروع مسیر حرفه‌ای معامله‌گری شما از همین‌جا است.',
-            'TRADE · SMART ANALYTICS PLATFORM'
+            'TRADE · SMART ANALYTICS PLATFORM',
+            null,
+            'welcome',
+            'خوش‌آمدگویی'
         );
 
-        $sent = Mailer::send($email, $subject, $html);
-        self::logNotification($userId, $email, 'WELCOME_EMAIL', $subject, $sent);
-        return $sent;
+        return self::sendWithIcon($email, $subject, $html, 'welcome', 'WELCOME_EMAIL', $userId);
     }
 
     /**
@@ -107,18 +134,19 @@ final class NotificationService
             '<p style="margin:0 0 14px;color:#ffffff;font-size:16px;font-weight:bold;">سلام ' . $nameSafe . '،</p>' .
             '<p style="margin:0 0 14px;color:#f3f4f6;">درخواست بازیابی رمز عبور برای حساب کاربری زیر دریافت شد:</p>' .
             '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0;background:#141f32;border:1px solid #d4af37;border-radius:10px;box-shadow:0 4px 15px rgba(212,175,55,0.15);">' .
-            '<tr><td align="center" style="padding:14px 20px;font-family:Tahoma,Arial,sans-serif;font-size:16px;font-weight:bold;color:#d4af37;letter-spacing:0.5px;direction:ltr;">✉️ ' . $emailSafe . '</td></tr>' .
+            '<tr><td align="center" style="padding:14px 20px;font-family:Tahoma,Arial,sans-serif;font-size:16px;font-weight:bold;color:#d4af37;letter-spacing:0.5px;direction:ltr;">' . $emailSafe . '</td></tr>' .
             '</table>' .
             '<p style="margin:0 0 14px;color:#f3f4f6;">برای انتخاب رمز عبور جدید و ورود به حساب، روی دکمه زیر کلیک کنید:</p>',
             'تغییر رمز عبور',
             $resetUrl,
             'این لینک تا یک ساعت معتبر است. اگر این درخواست را شما ثبت نکرده‌اید، این ایمیل را نادیده بگیرید.',
-            'TRADE · ACCOUNT SECURITY'
+            'TRADE · ACCOUNT SECURITY',
+            null,
+            'password-reset',
+            'بازیابی رمز عبور'
         );
 
-        $sent = Mailer::send($email, $subject, $html);
-        self::logNotification($userId, $email, 'PASSWORD_RESET_LINK', $subject, $sent);
-        return $sent;
+        return self::sendWithIcon($email, $subject, $html, 'password-reset', 'PASSWORD_RESET_LINK', $userId);
     }
 
     /**
@@ -136,18 +164,19 @@ final class NotificationService
             '<p style="margin:0 0 14px;color:#ffffff;font-size:16px;font-weight:bold;">سلام ' . $nameSafe . '،</p>' .
             '<p style="margin:0 0 14px;color:#f3f4f6;">رمز عبور حساب کاربری زیر با موفقیت تغییر یافت:</p>' .
             '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0;background:#141f32;border:1px solid #10b981;border-radius:10px;box-shadow:0 4px 15px rgba(16,185,129,0.15);">' .
-            '<tr><td align="center" style="padding:14px 20px;font-family:Tahoma,Arial,sans-serif;font-size:16px;font-weight:bold;color:#10b981;letter-spacing:0.5px;direction:ltr;">✔ ' . $emailSafe . '</td></tr>' .
+            '<tr><td align="center" style="padding:14px 20px;font-family:Tahoma,Arial,sans-serif;font-size:16px;font-weight:bold;color:#10b981;letter-spacing:0.5px;direction:ltr;">' . $emailSafe . '</td></tr>' .
             '</table>' .
             '<p style="margin:0 0 14px;color:#f3f4f6;">اگر این تغییر توسط شما انجام نشده است، لطفاً فوراً با تیم پشتیبانی تماس بگیرید و رمز عبور خود را بازنشانی کنید.</p>',
             null,
             null,
             'در جهت حفظ حداکثر امنیت حساب کاربری، تمامی نشست‌های فعال قبلی شما باطل شد.',
-            'TRADE · ACCOUNT SECURITY'
+            'TRADE · ACCOUNT SECURITY',
+            null,
+            'password-changed',
+            'تغییر رمز عبور'
         );
 
-        $sent = Mailer::send($email, $subject, $html);
-        self::logNotification($userId, $email, 'PASSWORD_CHANGED', $subject, $sent);
-        return $sent;
+        return self::sendWithIcon($email, $subject, $html, 'password-changed', 'PASSWORD_CHANGED', $userId);
     }
 
     /**
@@ -188,12 +217,13 @@ final class NotificationService
             'بررسی امنیت حساب',
             $profileUrl,
             'اگر شما وارد نشده‌اید، لطفاً فوراً رمز عبور خود را تغییر داده و نشست‌های فعال را لغو کنید.',
-            'TRADE · ACCOUNT SECURITY'
+            'TRADE · ACCOUNT SECURITY',
+            null,
+            'security',
+            'هشدار امنیتی'
         );
 
-        $sent = Mailer::send($email, $subject, $html);
-        self::logNotification($userId, $email, 'NEW_DEVICE_DETECTED', $subject, $sent);
-        return $sent;
+        return self::sendWithIcon($email, $subject, $html, 'security', 'NEW_DEVICE_DETECTED', $userId);
     }
 
     /**
@@ -224,19 +254,20 @@ final class NotificationService
             '<p style="margin:0 0 14px;color:#f3f4f6;">تبریک می‌گوییم! اولین معامله شما با موفقیت در ژورنال معاملاتی VELORA ثبت شد:</p>' .
             '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0;background:#141f32;border-radius:10px;border:1px solid #d4af37;box-shadow:0 4px 15px rgba(212,175,55,0.15);">' .
             '<tr><td style="padding:16px 20px;color:#e2e8f0;font-size:14px;line-height:2.2;text-align:center;">' .
-            '<div style="font-size:18px;font-weight:bold;color:#d4af37;margin-bottom:8px;">📊 ' . $symbolSafe . ' &nbsp;•&nbsp; ' . $dirLabel . '</div>' .
+            '<div style="font-size:18px;font-weight:bold;color:#d4af37;margin-bottom:8px;">' . $symbolSafe . ' &nbsp;•&nbsp; ' . $dirLabel . '</div>' .
             '<div style="color:#ffffff;font-size:13px;">وضعیت: ثبت موفق در ژورنال معاملاتی</div>' .
             '</td></tr></table>' .
             '<p style="margin:0 0 14px;color:#f3f4f6;">ثبت دقیق و منظم معاملات، اولین قدم در تحلیل حرفه‌ای عملکرد، بهبود مستمر استراتژی‌ها و کاهش ریسک معاملاتی است.</p>',
             'مشاهده تحلیل عملکرد',
             $dashboardUrl,
             'برای دریافت دقیق‌ترین شاخص‌ها و آمار معاملاتی، تمامی معاملات سودده و زیان‌ده خود را ثبت کنید.',
-            'TRADE · SMART ANALYTICS PLATFORM'
+            'TRADE · SMART ANALYTICS PLATFORM',
+            null,
+            'first-trade',
+            'اولین معامله'
         );
 
-        $sent = Mailer::send($email, $subject, $html);
-        self::logNotification($userId, $email, 'FIRST_TRADE_RECORDED', $subject, $sent);
-        return $sent;
+        return self::sendWithIcon($email, $subject, $html, 'first-trade', 'FIRST_TRADE_RECORDED', $userId);
     }
 
     /**
@@ -258,7 +289,7 @@ final class NotificationService
         $titleSafe = htmlspecialchars($achievementTitle, ENT_QUOTES, 'UTF-8');
         $descSafe = htmlspecialchars($achievementDesc, ENT_QUOTES, 'UTF-8');
 
-        $subject = '🏆 دستاورد جدید | VELORA TRADE';
+        $subject = 'دستاورد جدید | VELORA TRADE';
 
         $html = EmailTemplate::render(
             'دستاورد جدید',
@@ -267,18 +298,19 @@ final class NotificationService
             '<p style="margin:0 0 14px;color:#f3f4f6;">شما یک دستاورد جدید در مسیر حرفه‌ای معامله‌گری خود در پلتفرم VELORA TRADE کسب کردید:</p>' .
             '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0;background:#141f32;border-radius:10px;border:1px solid #d4af37;box-shadow:0 4px 15px rgba(212,175,55,0.18);">' .
             '<tr><td style="padding:18px 20px;text-align:center;">' .
-            '<div style="font-size:18px;font-weight:bold;color:#d4af37;margin-bottom:8px;">🏆 ' . $titleSafe . '</div>' .
+            '<div style="font-size:18px;font-weight:bold;color:#d4af37;margin-bottom:8px;">' . $titleSafe . '</div>' .
             '<div style="color:#ffffff;font-size:14px;line-height:1.9;">' . $descSafe . '</div>' .
             '</td></tr></table>' .
             '<p style="margin:0 0 14px;color:#f3f4f6;">با ادامه ثبت معاملات و بهبود شاخص‌های معاملاتی، دستاوردهای بیشتری را در پنل کاربری خود آزاد کنید.</p>',
             'مشاهده دستاوردها',
             $profileUrl,
             'دستاوردهای شما نشان‌دهنده میزان انضباط، استمرار و رشد مهارت معاملاتی شما در VELORA است.',
-            'TRADE · SMART ANALYTICS PLATFORM'
+            'TRADE · SMART ANALYTICS PLATFORM',
+            null,
+            'achievement',
+            'دستاورد جدید'
         );
 
-        $sent = Mailer::send($email, $subject, $html);
-        self::logNotification($userId, $email, 'ACHIEVEMENT_UNLOCKED', $subject, $sent);
-        return $sent;
+        return self::sendWithIcon($email, $subject, $html, 'achievement', 'ACHIEVEMENT_UNLOCKED', $userId);
     }
 }

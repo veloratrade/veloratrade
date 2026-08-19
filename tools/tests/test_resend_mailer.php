@@ -114,6 +114,27 @@ expect(CurlMock::$options[CURLOPT_SSL_VERIFYPEER] === true, 'TLS peer verificati
 expect(CurlMock::$options[CURLOPT_SSL_VERIFYHOST] === 2, 'TLS hostname verification must stay enabled');
 expect(CurlMock::$options[CURLOPT_PROTOCOLS] === CURLPROTO_HTTPS, 'only HTTPS must be allowed');
 
+// CID attachment contract used by dedicated transactional icons.
+CurlMock::reset();
+CurlMock::$response = '{"id":"mock-inline-message-id"}';
+$icon = tempnam(sys_get_temp_dir(), 'velora-icon-');
+file_put_contents($icon, "PNG-MOCK-BYTES");
+$ok = Mailer::sendWithInlineImages(
+    'recipient@example.test',
+    'Inline icon',
+    '<p><img src="cid:velora-verification" alt="Verify"></p>',
+    ['velora-verification' => $icon],
+    'Verify',
+);
+expect($ok, 'Resend inline image request must succeed');
+$inlinePayload = json_decode((string) CurlMock::$options[CURLOPT_POSTFIELDS], true, 512, JSON_THROW_ON_ERROR);
+expect(count($inlinePayload['attachments'] ?? []) === 1, 'one CID attachment must be sent');
+expect($inlinePayload['attachments'][0]['content_id'] === 'velora-verification', 'CID content_id mismatch');
+expect($inlinePayload['attachments'][0]['filename'] === basename($icon), 'CID filename mismatch');
+expect(base64_decode($inlinePayload['attachments'][0]['content'], true) === 'PNG-MOCK-BYTES', 'CID content must be base64 encoded');
+expect(Mailer::$lastMessageId === 'mock-inline-message-id', 'inline send message id missing');
+unlink($icon);
+
 // Provider rejection: status/message are useful, but key-shaped values are redacted.
 CurlMock::reset();
 CurlMock::$status = 422;
