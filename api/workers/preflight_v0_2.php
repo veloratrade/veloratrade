@@ -211,11 +211,30 @@ $webhookSecret = (string) Config::env('METAAPI_WEBHOOK_SECRET', '');
 add_check($checks, 'METAAPI_WEBHOOK_SECRET', $webhookSecret !== '', $webhookSecret !== '' ? 'configured' : 'missing; production webhooks will fail closed');
 
 add_check($checks, 'BCMath extension', true, 'loaded; exact decimal functions available');
-add_check($checks, 'cURL extension', extension_loaded('curl'), extension_loaded('curl') ? 'loaded' : 'missing; MetaApi HTTP calls will fail');
+add_check($checks, 'cURL extension', extension_loaded('curl'), extension_loaded('curl') ? 'loaded' : 'missing; MetaApi and Resend HTTP calls will fail');
 add_check($checks, 'OpenSSL extension', extension_loaded('openssl'), extension_loaded('openssl') ? 'loaded' : 'missing; encryption/JWT/mail TLS may fail');
 
-$mailDriver = strtolower((string) Config::env('MAIL_DRIVER', 'mail'));
-add_check($checks, 'MAIL_DRIVER', !($isProd && $mailDriver === 'log'), 'MAIL_DRIVER=' . $mailDriver . ($isProd && $mailDriver === 'log' ? ' logs reset/verification links; do not use in production' : ''));
+$mailDriver = strtolower(trim((string) Config::env('MAIL_DRIVER', 'mail')));
+$mailDriverAllowed = in_array($mailDriver, ['log', 'mail', 'smtp', 'resend'], true);
+$mailDriverSafe = $mailDriverAllowed && !($isProd && $mailDriver === 'log');
+add_check(
+    $checks,
+    'MAIL_DRIVER',
+    $mailDriverSafe,
+    'MAIL_DRIVER=' . $mailDriver
+        . (!$mailDriverAllowed ? ' is unsupported' : '')
+        . ($isProd && $mailDriver === 'log' ? ' logs reset/verification links; do not use in production' : ''),
+);
+
+$resendKeyConfigured = trim((string) Config::env('RESEND_API_KEY', '')) !== '';
+add_check(
+    $checks,
+    'RESEND_API_KEY',
+    $mailDriver !== 'resend' || $resendKeyConfigured,
+    $mailDriver === 'resend'
+        ? ($resendKeyConfigured ? 'configured (value hidden)' : 'missing; Resend transport will fail closed')
+        : 'not required for selected mail driver',
+);
 
 if ($migrationGate) {
     $migrationPath = dirname(__DIR__) . '/database/migrations/v0.2_metaapi_bridge.sql';

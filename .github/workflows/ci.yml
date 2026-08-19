@@ -40,6 +40,9 @@ jobs:
           fi
           echo "All PHP files parsed cleanly."
 
+      - name: Resend Mailer HTTP mock contract
+        run: php tools/tests/test_resend_mailer.php
+
       - name: Prepare private runtime root
         run: |
           # Config::privateRoot() demands an absolute dir OUTSIDE the document root.
