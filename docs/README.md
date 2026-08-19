@@ -20,11 +20,18 @@
 > 4. **ادعا نکن — اثبات کن.** هر گزارش وضعیت باید شاهد اجرایی داشته باشد (شماره run، خروجی API، کد وضعیت).
 > 5. **رمز نخواه.** به مقدار هیچ Secret نیازی نداری و دسترسی هم نداری. `${{ secrets.NAME }}` کافی است.
 >
-> ### گام صفر — وضعیت زنده را بگیر (~۲۰ ثانیه)
+> ### گام صفر — وضعیت زنده و حافظهٔ تحویل جلسه را بگیر (~۲۰ ثانیه)
 >
 > ```bash
-> bash tools/velora-status.sh          # گزارش خوانا
+> bash tools/velora-status.sh             # Git/GitHub + مأموریت + drift + قدم بعد
+> bash tools/velora-status.sh --context   # اختیاری: .session/SESSION_CONTEXT.md و .json
+> bash tools/velora-status.sh --offline   # بدون شبکه و بدون ادعای وضعیت زنده GitHub
+> bash tools/velora-status.sh --check     # drift/اعتبار ناموفق = exit غیرصفر
 > ```
+>
+> حافظهٔ انسانی و ساختاریافتهٔ ادامهٔ کار در `docs/SESSION_STATE.json` است.
+> خروجی `--context` محلی، ignored و غیرقابل commit است. دادهٔ زنده بر ادعاهای فنی
+> کهنه مقدم است؛ تصمیم‌های مالک و قواعد ایمنی همچنان از سلسله‌مراتب §1 پیروی می‌کنند.
 >
 > ### 🔴 قرارداد اثبات اجرا — این بند اختیاری نیست
 >
@@ -47,10 +54,11 @@
 > protection rules دیده نشد و کهنه‌بودن §7 دیر کشف شد. سند «گفتنِ» گام صفر را
 > داشت ولی هیچ راهی برای **تشخیص نقض** نداشت. حالا دارد.
 >
-> این اسکریپت **فقط‌خواندنی** است و وضعیت واقعی را از git و API می‌خواند:
-> کامیت جاری، هر ۸ workflow و آخرین اجرایشان، Environment و protection rules،
-> نام Secretها (**هرگز مقدار**)، سلامت دو محیط، و backlog. برخلاف متن سند،
-> **هیچ‌وقت کهنه نمی‌شود**.
+> حالت‌های عادی، `--json`، `--offline` و `--check` این اسکریپت **فقط‌خواندنی** هستند
+> و وضعیت واقعی را از Git و API می‌خوانند: کامیت محلی/remote، workflowها و Run ID،
+> Environment و protection rules، فقط نام Secretها (**هرگز مقدار**)، سلامت محیط‌ها،
+> مأموریت فعال، drift و backlog. فقط `--context` دو artifact ignored در `.session/`
+> می‌سازد و هیچ فایل پروژه، workflow یا محیطی را تغییر نمی‌دهد.
 >
 > `docs/PROJECT_STATE.json` همان خروجی به شکل ماشین‌خوان است — یک **snapshot**،
 > نه منبع حقیقت. اگر `_meta.generated_from_commit` با HEAD فعلی فرق دارد،
@@ -82,9 +90,9 @@
 | Document Control | |
 |---|---|
 | شناسه سند | `VELORA-OPS-README` |
-| نسخه | 2.1.0 |
+| نسخه | 2.2.0 |
 | وضعیت | ACTIVE |
-| آخرین به‌روزرسانی | 2026-08-17 |
+| آخرین به‌روزرسانی | 2026-08-19 |
 | مالک | veloratrade (Project Owner) |
 | دامنه اعتبار | کل مخزن `veloratrade/veloratrade` و محیط‌های Staging/Production |
 | مرجع نسخه پایه | Git tag: **`docs-baseline-v1`** (کامیت `06408c9`) |
@@ -406,6 +414,7 @@ git diff docs-baseline-v1..main -- docs/
 ## 7. وضعیت جاری و کارهای باز (Living Section)
 
 **آخرین وضعیت (2026-08-19 — جلسهٔ agent):**
+- 🧭 **ارتقای Session Bootstrap — commit `a5bf75a`:** `tools/velora-status.sh` بدون حذف قابلیت‌های قبلی به گزارش یکپارچهٔ Git محلی/remote، Run ID و SHA workflowها، مأموریت فعال، تشخیص drift، مرز اختیار و حالت‌های `--offline`/`--check`/`--context` ارتقا یافت. حافظهٔ تحویل ساختاریافته در `docs/SESSION_STATE.json` اضافه شد؛ خروجی‌های `.session/SESSION_CONTEXT.{md,json}` ignored هستند. قرارداد آفلاین با ۴ تست در `tools/tests/test_velora_status.py` پوشش داده شد. تغییر ابزار commit شده ولی هنوز push نشده است؛ هیچ workflow یا محیطی اجرا/تغییر داده نشد.
 - ✉️ **اصلاح ساختار ایمیل و ارتقای تحویل‌پذیری (Deliverability):** مشکل عدم تحویل ایمیل‌های قالب‌دار به کلاینت‌های خارجی (نظیر Gmail و Outlook) با وجود وضعیت `Sent` در هاست، با ۵ اصلاح کلیدی در `api/src/Core/Mailer.php` و `api/src/Core/EmailTemplate.php` برطرف شد:
   1. **بسته‌بندی چندبخشی استاندارد (`multipart/alternative`):** استخراج خودکار نسخه `text/plain` از بدنه HTML در `Mailer::htmlToPlain` و ارسال همزمان هر دو نسخه متنی و HTML جهت رفع جریمه اسپم `MIME_HTML_ONLY`.
   2. **افزودن هدرهای الزامی RFC 5322:** تولید خودکار هدر `Date` و `Message-ID` یکتا برای تمامی پیام‌های ارسالی جهت رفع جریمه‌های `MISSING_DATE` و `MISSING_MID`.
