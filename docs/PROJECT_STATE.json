@@ -1,9 +1,11 @@
 {
   "_meta": {
     "schema": "velora-project-state/1",
-    "generated_at": "2026-08-18T23:11:41+00:00",
-    "generated_from_commit": "3cc28b6519baa7436538641cecbf7f9c46c659e3",
+    "generated_at": "2026-08-19T01:04:19+00:00",
+    "generated_from_commit": "01d4d3763b6186bf7e1720f67ccb800c68a1e6be",
     "generator": "tools/velora-status.sh --json",
+    "github_live": true,
+    "network_mode": "online",
     "regenerate": "bash tools/velora-status.sh --json > docs/PROJECT_STATE.json",
     "authority": "SNAPSHOT ONLY — منبع حقیقت نیست. مرجع: docs/README.md و P1/P2",
     "staleness_warning": "اگر generated_from_commit با HEAD فعلی فرق دارد، این فایل کهنه است — بازتولید کن",
@@ -13,13 +15,129 @@
     "name": "veloratrade/veloratrade",
     "private": true,
     "branch": "main",
-    "head": "3cc28b6",
-    "head_date": "2026-08-18 23:11:41 +0000",
-    "head_subject": "fix(email): remove spam-trigger keywords and hidden text from verification template",
-    "working_tree_clean": false,
-    "tracked_files": 672,
-    "readme_version": "2.1.0"
+    "head": "01d4d37",
+    "head_full": "01d4d3763b6186bf7e1720f67ccb800c68a1e6be",
+    "head_date": "2026-08-19 01:04:13 +0000",
+    "head_subject": "docs: document live session handoff",
+    "working_tree_clean": true,
+    "changed_files": [],
+    "tracked_files": 674,
+    "readme_version": "2.2.0",
+    "origin_tracking_head": "8229e9c",
+    "ahead_by": 2,
+    "behind_by": 0,
+    "remote_main_head": "8229e9c",
+    "remote_main_matches_head": false
   },
+  "session_state": {
+    "_meta": {
+      "schema": "velora-session-state/1",
+      "updated_at": "2026-08-19",
+      "based_on_commit": "a5bf75ac135240f1c1414c84880374a9912337e7",
+      "authority": "Human-maintained handoff. Live Git/GitHub evidence overrides technical status claims; owner decisions and safety rules remain authoritative.",
+      "contains_secrets": false
+    },
+    "project_core": {
+      "name": "Velora Trade",
+      "repository": "veloratrade/veloratrade",
+      "architecture": "Static/generated HTML + Vanilla JS/CSS + PHP/PDO API",
+      "operating_model": "staging-first",
+      "documentation_order": [
+        "docs/README.md",
+        "docs/03_PROJECT_STRUCTURE_BASELINE.md",
+        "docs/STAGING_ENVIRONMENT.md"
+      ]
+    },
+    "active_task": {
+      "id": "B-11",
+      "title": "تکمیل E2E ثبت‌نام و تأیید ایمیل",
+      "status": "blocked_external",
+      "environment": "staging",
+      "production_impact": false,
+      "completed": [
+        "خطای HTTP 500 ثبت‌نام رفع شد و مسیر موفق ثبت‌نام HTTP 201 برمی‌گرداند",
+        "workflow ثبت‌نام و تأیید ایمیل روی استیجینگ پیاده‌سازی شد",
+        "تحویل داخلی SMTP و نبود bounce در صندوق فرستنده بررسی شد",
+        "ساختار MIME، هدرهای Date/Message-ID و قالب HTML ایمیل اصلاح شد"
+      ],
+      "established_facts": [
+        "ثبت‌نام در آخرین E2E ثبت‌شده موفق بود اما ایمیل تأیید به صندوق خارجی نرسید",
+        "ارسال SMTP به صندوق داخلی همان هاست موفق بود",
+        "آخرین register-e2e-staging ثبت‌شده ناموفق است"
+      ],
+      "current_diagnosis": "مانع در لایه تحویل خارجی ایمیل هاست قرار دارد؛ تنظیم smarthost یا محدودیت outbound SMTP باید توسط ارائه‌دهنده هاست بررسی شود.",
+      "blocker_owner": "hosting_provider_or_owner",
+      "next_actions": [
+        "مالک وضعیت smarthost یا outbound SMTP را با شرکت هاستینگ مشخص کند",
+        "پس از رفع سمت هاست، register-e2e-staging از GitHub Actions دوباره اجرا شود",
+        "Run ID و نتیجه ثبت و در صورت موفقیت B-11 بسته شود",
+        "docs/SESSION_STATE.json و docs/README.md در همان جلسه به‌روزرسانی شوند"
+      ],
+      "do_not_do": [
+        "بدون شاهد جدید تغییر کد دیگری برای مشکل تحویل خارجی ایمیل اعمال نشود",
+        "Production برای این مأموریت لمس نشود",
+        "از timeout یا HTTP 000 سندباکس، خرابی Staging نتیجه‌گیری نشود"
+      ],
+      "evidence": {
+        "commits": [
+          "08188cb",
+          "c48b906",
+          "3cc28b6"
+        ],
+        "workflow_runs": [
+          {
+            "id": 32175675350,
+            "workflow": "register-e2e-staging.yml",
+            "result": "failure",
+            "note": "ثبت‌نام 201 و گیت پیش از تأیید موفق؛ ایمیل خارجی دریافت نشد"
+          },
+          {
+            "id": 32178851668,
+            "workflow": "mail-diagnostics-staging.yml",
+            "result": "success",
+            "note": "ارسال داخلی SMTP به همان صندوق رسید"
+          }
+        ]
+      }
+    },
+    "approval_boundaries": {
+      "read_and_analyze": "allowed",
+      "local_modification": "owner_approval_required",
+      "commit": "owner_approval_required",
+      "push": "owner_approval_required",
+      "run_workflow": "owner_approval_required",
+      "staging_write": "explicit_owner_approval_required",
+      "production_any_write": "explicit_production_approval_required"
+    },
+    "session_security": {
+      "never_record": [
+        "PAT values",
+        "FTP passwords",
+        "SMTP passwords",
+        "database passwords",
+        "JWT or encryption keys",
+        "environment file contents"
+      ],
+      "preferred_repository_access": "temporary deploy key; otherwise least-privilege short-lived PAT"
+    }
+  },
+  "drift": [
+    {
+      "id": "PROJECT_STATE_STALE",
+      "severity": "warning",
+      "message": "PROJECT_STATE generated from 3cc28b6 does not cover HEAD 01d4d37"
+    },
+    {
+      "id": "REMOTE_MAIN_DIFFERS",
+      "severity": "error",
+      "message": "GitHub main 8229e9c differs from local HEAD 01d4d37"
+    },
+    {
+      "id": "README_PRODUCTION_SECRETS_CONFLICT",
+      "severity": "warning",
+      "message": "README says production FTP secrets are absent, but GitHub reports all three names configured"
+    }
+  ],
   "environments": {
     "production": {
       "url": "https://veloratrade.ir",
@@ -69,47 +187,67 @@
   "workflows": {
     "ci.yml": {
       "state": "active",
-      "total_runs": 85,
+      "total_runs": 86,
       "last_run": {
-        "at": "2026-08-18T22:45:44Z",
+        "id": 32196141770,
+        "at": "2026-08-18T23:12:01Z",
         "event": "push",
-        "conclusion": "success"
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "8229e9c",
+        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32196141770"
       }
     },
     "csp-guard.yml": {
       "state": "active",
-      "total_runs": 74,
+      "total_runs": 75,
       "last_run": {
-        "at": "2026-08-18T22:45:44Z",
+        "id": 32196141768,
+        "at": "2026-08-18T23:12:01Z",
         "event": "push",
-        "conclusion": "success"
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "8229e9c",
+        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32196141768"
       }
     },
     "deploy-staging.yml": {
       "state": "active",
-      "total_runs": 9,
+      "total_runs": 10,
       "last_run": {
-        "at": "2026-08-18T21:58:19Z",
+        "id": 32196143977,
+        "at": "2026-08-18T23:12:03Z",
         "event": "workflow_dispatch",
-        "conclusion": "success"
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "8229e9c",
+        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32196143977"
       }
     },
     "deploy.yml": {
       "state": "active",
       "total_runs": 29,
       "last_run": {
+        "id": 32065125875,
         "at": "2026-08-17T20:18:56Z",
         "event": "workflow_dispatch",
-        "conclusion": "success"
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "0c61327",
+        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32065125875"
       }
     },
     "frontend-url-guard.yml": {
       "state": "active",
       "total_runs": 2,
       "last_run": {
+        "id": 32088159459,
         "at": "2026-08-18T01:25:25Z",
         "event": "workflow_dispatch",
-        "conclusion": "success"
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "6769bed",
+        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32088159459"
       }
     },
     "healthcheck-production.yml": {
@@ -119,11 +257,15 @@
     },
     "healthcheck-staging.yml": {
       "state": "active",
-      "total_runs": 12,
+      "total_runs": 13,
       "last_run": {
-        "at": "2026-08-18T22:37:05Z",
+        "id": 32196975147,
+        "at": "2026-08-18T23:23:36Z",
         "event": "workflow_dispatch",
-        "conclusion": "success"
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "8229e9c",
+        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32196975147"
       }
     },
     "healthcheck-suite.yml": {
@@ -135,36 +277,52 @@
       "state": "active",
       "total_runs": 14,
       "last_run": {
+        "id": 32194191598,
         "at": "2026-08-18T22:45:46Z",
         "event": "workflow_dispatch",
-        "conclusion": "success"
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "b37df0a",
+        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32194191598"
       }
     },
     "register-e2e-staging.yml": {
       "state": "active",
       "total_runs": 3,
       "last_run": {
+        "id": 32195209979,
         "at": "2026-08-18T22:59:20Z",
         "event": "workflow_dispatch",
-        "conclusion": "failure"
+        "status": "completed",
+        "conclusion": "failure",
+        "head_sha": "b37df0a",
+        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32195209979"
       }
     },
     "setup-staging-private.yml": {
       "state": "active",
       "total_runs": 4,
       "last_run": {
+        "id": 32173117798,
         "at": "2026-08-18T18:49:04Z",
         "event": "workflow_dispatch",
-        "conclusion": "success"
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "08188cb",
+        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32173117798"
       }
     },
     "user-journey.yml": {
       "state": "active",
       "total_runs": 4,
       "last_run": {
+        "id": 32174695970,
         "at": "2026-08-18T19:05:46Z",
         "event": "workflow_dispatch",
-        "conclusion": "failure"
+        "status": "completed",
+        "conclusion": "failure",
+        "head_sha": "cd9034b",
+        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32174695970"
       }
     }
   },
