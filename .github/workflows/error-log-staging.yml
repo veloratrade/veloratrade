@@ -1,0 +1,64 @@
+name: Error Log Diagnostics (Staging)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'برای خواندن tail پاک‌سازی‌شده لاگ Staging، READ را وارد کنید'
+        required: true
+        default: ''
+
+permissions: {}
+
+concurrency:
+  group: error-log-diagnostics-staging
+  cancel-in-progress: false
+
+jobs:
+  read-log:
+    name: read-only sanitized error tail
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      FTP_SERVER: ${{ secrets.STAGING_FTP_SERVER }}
+      FTP_USERNAME: ${{ secrets.STAGING_FTP_USERNAME }}
+      FTP_PASSWORD: ${{ secrets.STAGING_FTP_PASSWORD }}
+      INPUT_CONFIRM: ${{ github.event.inputs.confirm }}
+    steps:
+      - name: Download Staging error log read-only
+        run: |
+          set -euo pipefail
+          [ "$INPUT_CONFIRM" = "READ" ] || { echo "::error::confirm باید READ باشد"; exit 1; }
+          sudo apt-get update -qq
+          sudo apt-get install -y -q lftp >/dev/null
+          success=0
+          for attempt in $(seq 1 8); do
+            if lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+              -e "set ftp:ssl-allow no; set net:max-retries 1; set net:timeout 20; get public_html/staging.veloratrade.ir/api/error_log -o /tmp/error_log; bye"; then
+              success=1
+              break
+            fi
+            sleep 5
+          done
+          [ "$success" = 1 ] && [ -s /tmp/error_log ] || { echo "::error::error_log موجود/قابل‌خواندن نیست"; exit 1; }
+
+      - name: Print sanitized diagnostic lines
+        run: |
+          python3 <<'PY'
+          import re
+          lines = open('/tmp/error_log', encoding='utf-8', errors='replace').read().splitlines()[-160:]
+          patterns = re.compile(r'(fatal|error|exception|trace|uncaught|warning|verify|notification|resend)', re.I)
+          shown = 0
+          for line in lines:
+              if not patterns.search(line):
+                  continue
+              line = re.sub(r'([A-Za-z0-9._%+-]{2})[A-Za-z0-9._%+-]*@', r'\1…@', line)
+              line = re.sub(r'(?i)(authorization|password|passwd|secret|api[_-]?key)\s*[:=]\s*\S+', r'\1=[REDACTED]', line)
+              line = re.sub(r'\bre_[A-Za-z0-9._-]+\b', '[REDACTED]', line)
+              line = re.sub(r'(?i)([?&#](?:token|code)=)[^&#\s]+', r'\1[REDACTED]', line)
+              line = re.sub(r'\b[0-9a-f]{48,}\b', '[LONG_HEX_REDACTED]', line, flags=re.I)
+              print(line[:500])
+              shown += 1
+          print(f'SANITIZED_LINES={shown}')
+          PY
+          shred -u /tmp/error_log 2>/dev/null || rm -f /tmp/error_log
