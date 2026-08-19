@@ -21,8 +21,11 @@
 </main></div>
 <script>
 (function () {
-  var params = new URLSearchParams(location.search);
-  var token = params.get('token') || '';
+  var queryParams = new URLSearchParams(location.search);
+  var hashParams = new URLSearchParams(location.hash.replace(/^#/, ''));
+  // Capability tokens are issued in the fragment so they never reach access
+  // logs/referrers. Keep query support only for legacy links.
+  var token = hashParams.get('token') || queryParams.get('token') || '';
   var icon = document.getElementById('icon');
   var title = document.getElementById('title');
   var message = document.getElementById('message');
@@ -40,7 +43,17 @@
     resend.style.display = 'inline-flex';
     return;
   }
-  VeloraData.request('/api/v1/auth/verify-email?token=' + encodeURIComponent(token) + '&notificationLocale=' + encodeURIComponent(VeloraLocale.locale), { token: '', cache: 'no-store' })
+  // Remove the capability from browser history immediately after capturing it.
+  queryParams.delete('token');
+  var cleanUrl = location.pathname + (queryParams.toString() ? '?' + queryParams.toString() : '');
+  history.replaceState(null, document.title, cleanUrl);
+
+  VeloraData.request('/api/v1/auth/verify-email', {
+    method: 'POST',
+    token: '',
+    cache: 'no-store',
+    body: { token: token, notificationLocale: VeloraLocale.locale }
+  })
     .then(function () {
       setState('ok', t('auth.emailVerifiedTitle'), t('auth.emailVerified'));
       login.style.display = 'inline-flex';

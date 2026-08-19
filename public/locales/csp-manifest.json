@@ -2,8 +2,8 @@
   "algorithm": "sha256",
   "localizationVersion": "2026.08.13.11",
   "policyVersion": 2,
-  "releaseHtmlSha256": "1b07cb26b546269197232d49526877d32580362dd256d06899a1944ae9d36616",
-  "releaseId": "2026.08.16.1",
+  "releaseHtmlSha256": "0987008dcd7c01348ba3bff4381e89d3fd5005a7c6a9cfe8df952e02bab3fe8f",
+  "releaseId": "2026.08.19.1",
   "routeCount": 61,
   "routeManifestSha256": "06cb97497bb6fc57675c9b1ef7f526fe9d9b83ea13168b6d094999c898659c7e",
   "routes": {
@@ -912,10 +912,10 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/verify-email/index.html",
-      "htmlSha256": "08b8917cfe64000fb6f894be67591893604beacab82e321c97c14b002b663bd7",
+      "htmlSha256": "44c83f6e1ddd203dc774f1288dec6f795516424dbdc6ecbbc247a4a24afc501d",
       "inlineScriptCount": 1,
       "inlineScriptHashes": [
-        "sha256-p5PR8aEwou3TnzpDC4mKVJ4idPFZQVfYqRPhi8/Ibq0="
+        "sha256-X8OWZhc1YRw55ORE/5Ags/VJVDNxTGml2WsVVB+NgpA="
       ],
       "inlineStyleCount": 1,
       "inlineStyleHashes": [
@@ -1816,10 +1816,10 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "fa/verify-email/index.html",
-      "htmlSha256": "08d436ca9ca790a512a29e8f315a1a2b9bb99a2515472a8e26252c77c6bde8d6",
+      "htmlSha256": "47acee935b75767ac54a336d62be1b74ffb41773fae86099fafb60b4a624b720",
       "inlineScriptCount": 1,
       "inlineScriptHashes": [
-        "sha256-p5PR8aEwou3TnzpDC4mKVJ4idPFZQVfYqRPhi8/Ibq0="
+        "sha256-X8OWZhc1YRw55ORE/5Ags/VJVDNxTGml2WsVVB+NgpA="
       ],
       "inlineStyleCount": 1,
       "inlineStyleHashes": [
