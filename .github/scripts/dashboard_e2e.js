@@ -173,4 +173,8 @@ async function finish(browser) {
     process.exit(1);
   }
   console.log('\nAll dashboard checks passed.');
+  // Playwright may keep transport handles alive on some hosted runners even
+  // after browser.close(). Exit explicitly so a successful test cannot burn
+  // Actions minutes indefinitely.
+  process.exit(0);
 }
