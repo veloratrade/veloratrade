@@ -1,0 +1,190 @@
+name: Resend Diagnostics (Staging)
+
+# Read the deployed Staging env without printing it, execute the repository's
+# real Mailer Resend transport, and prove delivery to a disposable inbox.
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'برای ارسال یک ایمیل واقعی Resend در Staging، RUN را وارد کنید'
+        required: true
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: resend-diagnostics-staging
+  cancel-in-progress: false
+
+jobs:
+  resend:
+    name: config → Resend API → external inbox
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      FTP_SERVER: ${{ secrets.STAGING_FTP_SERVER }}
+      FTP_USERNAME: ${{ secrets.STAGING_FTP_USERNAME }}
+      FTP_PASSWORD: ${{ secrets.STAGING_FTP_PASSWORD }}
+      INPUT_CONFIRM: ${{ github.event.inputs.confirm }}
+
+    steps:
+      - name: Gate and checkout
+        run: |
+          set -euo pipefail
+          [ "$INPUT_CONFIRM" = "RUN" ] || { echo "::error::confirm باید دقیقاً RUN باشد"; exit 1; }
+
+      - uses: actions/checkout@v4
+
+      - name: Read only required values from deployed Staging env
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -q lftp >/dev/null
+          for attempt in $(seq 1 10); do
+            if lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+              -e "set ftp:ssl-allow no; set net:max-retries 2; set net:timeout 30; get velora_private_staging/config/velora.env -o /tmp/velora.env; bye"; then
+              break
+            fi
+            sleep 5
+          done
+          [ -s /tmp/velora.env ] || { echo "::error::velora.env استیجینگ دریافت نشد"; exit 1; }
+
+          python3 <<'PY'
+          import os, uuid
+          values = {}
+          for raw in open('/tmp/velora.env', encoding='utf-8-sig'):
+              line = raw.strip()
+              if not line or line.startswith('#') or '=' not in line:
+                  continue
+              key, value = line.split('=', 1)
+              key, value = key.strip(), value.strip()
+              if key in {'MAIL_DRIVER', 'RESEND_API_KEY'}:
+                  if len(value) >= 2 and value[0] == value[-1] and value[0] in "'\"":
+                      value = value[1:-1]
+                  values[key] = value
+          driver = values.get('MAIL_DRIVER', '').lower()
+          key = values.get('RESEND_API_KEY', '')
+          if driver != 'resend':
+              raise SystemExit('::error::MAIL_DRIVER استیجینگ باید resend باشد؛ مقدار فعلی نمایش داده نمی‌شود')
+          if not key:
+              raise SystemExit('::error::RESEND_API_KEY در env واقعی Staging وجود ندارد یا خالی است')
+          print('::add-mask::' + key)
+          marker = 'VELORA_' + uuid.uuid4().hex
+          with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as out:
+              out.write(f'RESEND_API_KEY<<{marker}\n{key}\n{marker}\n')
+              out.write('MAIL_DRIVER=resend\n')
+          print('MAIL_DRIVER=resend و وجود RESEND_API_KEY تأیید شد؛ مقدار Secret خوانده/چاپ نشد')
+          PY
+          shred -u /tmp/velora.env 2>/dev/null || rm -f /tmp/velora.env
+
+      - name: Create disposable external inbox
+        run: |
+          python3 <<'PY'
+          import json, os, random, string, urllib.request
+          def request(method, url, data=None, token=None):
+              body = json.dumps(data).encode() if data is not None else None
+              req = urllib.request.Request(url, data=body, method=method)
+              req.add_header('Accept', 'application/json')
+              if body is not None: req.add_header('Content-Type', 'application/json')
+              if token: req.add_header('Authorization', 'Bearer ' + token)
+              with urllib.request.urlopen(req, timeout=30) as r:
+                  return r.status, json.loads(r.read().decode())
+          _, domains = request('GET', 'https://api.mail.tm/domains?page=1')
+          members = domains if isinstance(domains, list) else domains.get('hydra:member', [])
+          domain = next(x['domain'] for x in members if x.get('isActive'))
+          address = 'velora-resend-' + ''.join(random.choices(string.ascii_lowercase + string.digits, k=10)) + '@' + domain
+          password = 'Vt!' + ''.join(random.choices(string.ascii_letters + string.digits, k=18))
+          print('::add-mask::' + address); print('::add-mask::' + password)
+          request('POST', 'https://api.mail.tm/accounts', {'address': address, 'password': password})
+          _, auth = request('POST', 'https://api.mail.tm/token', {'address': address, 'password': password})
+          token = auth['token']; print('::add-mask::' + token)
+          marker = 'VELORA-RESEND-' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=12))
+          print('::add-mask::' + marker)
+          with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as out:
+              out.write('TEST_EMAIL=' + address + '\n')
+              out.write('MAILTM_TOKEN=' + token + '\n')
+              out.write('TEST_MARKER=' + marker + '\n')
+          print('صندوق خارجی موقت ساخته شد')
+          PY
+
+      - name: Execute real Mailer Resend transport
+        id: send
+        run: |
+          set -euo pipefail
+          cat > /tmp/resend-real-test.php <<'PHP'
+          <?php
+          declare(strict_types=1);
+          namespace Velora\Core;
+          final class Config {
+              public static function env(string $key, string $default = ''): string {
+                  $value = getenv($key);
+                  return $value === false || $value === '' ? $default : $value;
+              }
+              public static function privatePath(string $path): string { return sys_get_temp_dir() . '/' . $path; }
+          }
+          require getcwd() . '/api/src/Core/Mailer.php';
+          $ok = Mailer::send(
+              getenv('TEST_EMAIL'),
+              getenv('TEST_MARKER'),
+              '<!doctype html><html><body><p>VELORA Resend staging diagnostic</p></body></html>',
+              'VELORA Resend staging diagnostic'
+          );
+          if (!$ok) {
+              fwrite(STDERR, '::error::Mailer failed: ' . (Mailer::$lastError ?? 'unknown safe error') . PHP_EOL);
+              exit(1);
+          }
+          $id = Mailer::$lastMessageId ?? '';
+          if ($id === '') {
+              fwrite(STDERR, "::error::Resend accepted the request without an id\n");
+              exit(1);
+          }
+          file_put_contents(getenv('GITHUB_OUTPUT'), 'message_id=' . $id . PHP_EOL, FILE_APPEND);
+          echo 'Resend API accepted the message; safe message id: ' . $id . PHP_EOL;
+          PHP
+          php /tmp/resend-real-test.php
+          shred -u /tmp/resend-real-test.php 2>/dev/null || rm -f /tmp/resend-real-test.php
+
+      - name: Verify external delivery and sender identity
+        run: |
+          python3 <<'PY'
+          import json, os, time, urllib.request
+          token, marker = os.environ['MAILTM_TOKEN'], os.environ['TEST_MARKER']
+          def get(url):
+              req = urllib.request.Request(url, headers={'Accept':'application/json','Authorization':'Bearer '+token})
+              with urllib.request.urlopen(req, timeout=30) as r: return json.loads(r.read().decode())
+          found = None
+          for attempt in range(1, 25):
+              time.sleep(10)
+              data = get('https://api.mail.tm/messages?page=1')
+              messages = data if isinstance(data, list) else data.get('hydra:member', [])
+              found = next((m for m in messages if marker in (m.get('subject') or '')), None)
+              if found: break
+              print(f'… انتظار تحویل Resend {attempt}/24')
+          if not found:
+              raise SystemExit('::error::Resend پیام را پذیرفت اما تا ۲۴۰ ثانیه به صندوق خارجی نرسید')
+          detail = get('https://api.mail.tm/messages/' + found['id'])
+          sender = detail.get('from') or {}
+          address = (sender.get('address') or '').lower()
+          name = (sender.get('name') or '').strip()
+          if address != 'no-reply@veloratrade.ir':
+              raise SystemExit('::error::From address با قرارداد VELORA تطابق ندارد')
+          if name != 'VELORA TRADE':
+              raise SystemExit('::error::From name با قرارداد VELORA تطابق ندارد')
+          print(f'تحویل خارجی در {attempt * 10} ثانیه: PASS')
+          print('From identity: VELORA TRADE <no-reply@veloratrade.ir> — PASS')
+          PY
+
+      - name: Summary
+        run: |
+          {
+            echo '## Resend Diagnostics — Staging'
+            echo
+            echo '- API request: ✅ accepted'
+            echo '- External delivery: ✅ received'
+            echo '- From: `VELORA TRADE <no-reply@veloratrade.ir>` ✅'
+            echo '- Resend message id: `${{ steps.send.outputs.message_id }}`'
+            echo '- Secret values printed: **No**'
+            echo '- Production touched: **No**'
+          } >> "$GITHUB_STEP_SUMMARY"
