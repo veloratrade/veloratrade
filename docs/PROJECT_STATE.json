@@ -1,8 +1,8 @@
 {
   "_meta": {
     "schema": "velora-project-state/1",
-    "generated_at": "2026-08-19T19:13:58+00:00",
-    "generated_from_commit": "56a4139bbafdda05e0123d73c6777f0b817ca814",
+    "generated_at": "2026-08-19T21:47:25+00:00",
+    "generated_from_commit": "9098bdd9acc2653d2cb29cbb90b46fbdeaa32a40",
     "generator": "tools/velora-status.sh --json",
     "github_live": true,
     "network_mode": "online",
@@ -13,27 +13,28 @@
   },
   "repository": {
     "name": "veloratrade/veloratrade",
-    "private": true,
+    "private": false,
+    "visibility": "public",
     "branch": "main",
-    "head": "56a4139",
-    "head_full": "56a4139bbafdda05e0123d73c6777f0b817ca814",
-    "head_date": "2026-08-19 19:13:37 +0000",
-    "head_subject": "docs: record Production Resend rollout [skip ci]",
+    "head": "9098bdd",
+    "head_full": "9098bdd9acc2653d2cb29cbb90b46fbdeaa32a40",
+    "head_date": "2026-08-19 21:47:13 +0000",
+    "head_subject": "docs: align cost-lock session state [skip ci]",
     "working_tree_clean": true,
     "changed_files": [],
-    "tracked_files": 684,
+    "tracked_files": 685,
     "readme_version": "2.2.0",
-    "origin_tracking_head": "56a4139",
+    "origin_tracking_head": "9098bdd",
     "ahead_by": 0,
     "behind_by": 0,
-    "remote_main_head": "56a4139",
+    "remote_main_head": "9098bdd",
     "remote_main_matches_head": true
   },
   "session_state": {
     "_meta": {
       "schema": "velora-session-state/1",
       "updated_at": "2026-08-19",
-      "based_on_commit": "845bce140b1a663e7c8639f118ffcd3d53e0933c",
+      "based_on_commit": "72256a05e19f4b75b615db8c39982e2e1979a4a6",
       "authority": "Human-maintained handoff. Live Git/GitHub evidence overrides technical status claims; owner decisions and safety rules remain authoritative.",
       "contains_secrets": false
     },
@@ -51,7 +52,7 @@
     "active_task": {
       "id": "B-11",
       "title": "تکمیل E2E ثبت‌نام و تأیید ایمیل",
-      "status": "resend_production_verified",
+      "status": "production_verified_actions_cost_locked",
       "environment": "staging_and_production",
       "production_impact": false,
       "completed": [
@@ -65,7 +66,12 @@
         "مسیر کلیک لینک تأیید در Frontend اصلاح شد: fragment token به POST JSON body منتقل، از history پاک و روی HTML واقعی Staging با page=200/API=200/UI success تأیید شد",
         "Deploy Production با بکاپ ۶۵۰ فایل و allow-list ۴۷۰ فایل روی commit 845bce1 موفق شد",
         "env خصوصی Production با بکاپ server-side به MAIL_DRIVER=resend و RESEND_API_KEY overlay و بدون افشای مقدار راستی‌آزمایی شد",
-        "تست واقعی Production: register=201، ایمیل در ۱۰ ثانیه، From صحیح، page=200، verify API=200، token پاک، success UI و login=200"
+        "تست واقعی Production: register=201، ایمیل در ۱۰ ثانیه، From صحیح، page=200، verify API=200، token پاک، success UI و login=200",
+        "هفت CI قدیمی گیرکرده با مجموع ۱۳۵۳ دقیقه شناسایی و Cancel شدند؛ اکنون active/queued برابر صفر است",
+        "GitHub Actions مخزن از API کاملاً غیرفعال شد تا مصرف جدید غیرممکن باشد",
+        "مخزن Public است و هر ۲۱ runner declaration فقط standard ubuntu-latest/ubuntu-22.04/ubuntu-24.04 هستند",
+        "دو Artifact قدیمی حذف و فقط آخرین بکاپ واقعی Production حدود ۴۹ MB نگهداری شد",
+        "Zero-cost guard اضافه شد: بدون larger runner، schedule، cache، packages-write؛ retention حداکثر ۱۴ روز و بدون artifact در dry-run"
       ],
       "established_facts": [
         "Transactional Email Suite run 32274251200 نتیجه 7/7 delivery و From identity PASS دارد",
@@ -82,20 +88,25 @@
         "Production deploy 32288226521 موفق و Health Check خواندنی خودکار سبز است",
         "Setup Production Resend 32291424454 موفق و env backup/overlay/equality verification کامل است",
         "تست مستقیم خارج از Actions نتیجه PRODUCTION_EMAIL_VERIFICATION=PASS داد",
-        "کلید فعلی RESEND_API_KEY بین Staging و Production مشترک است؛ جداسازی/rotation همچنان توصیه می‌شود"
+        "کلید فعلی RESEND_API_KEY بین Staging و Production مشترک است؛ جداسازی/rotation همچنان توصیه می‌شود",
+        "مالک Billing Overview را بررسی و اعلام کرد مشکلی/بدهی وجود ندارد",
+        "Actions permission فعلی enabled=false و in_progress=0 و queued=0 است",
+        "Workflowهای فعلی ۲۱ runner همگی standard Ubuntu هستند؛ larger/macOS/Windows/self-hosted وجود ندارد",
+        "Artifact فعلی فقط pre-deploy backup جدید با حجم تقریبی ۴۹ MB است"
       ],
       "current_diagnosis": "Resend، همه قالب‌های transactional، مسیر کلیک تأیید و سفر ثبت‌نام/تأیید/ورود روی Staging و Production عملیاتی و Live-verified هستند.",
       "blocker_owner": "none",
       "next_actions": [
-        "در فرصت مناسب API Keyهای Staging و Production جدا و کلید مشترک فعلی rotate شوند",
-        "کاربر تست Production ایجادشده در ممیزی در صورت نیاز از پنل مدیریت پاک شود",
-        "تا reset سهمیه Actions در ۱ سپتامبر ۲۰۲۶، Workflow غیرضروری اجرا نشود (مصرف فعلی ۹۰٪)",
-        "هر تغییر بعدی Production همچنان نیازمند تأیید صریح مالک و backup/dry-run است"
+        "GitHub Actions فقط با تأیید صریح مالک دوباره فعال شود",
+        "پس از فعال‌سازی، tools/check_github_cost_guard.py قبل از هر تغییر workflow سبز بماند",
+        "در Billing یک Budget صفر با Stop usage فعال نگه داشته شود",
+        "آخرین بکاپ Production حداکثر ۱۴ روز نگهداری و سپس خودکار منقضی شود"
       ],
       "do_not_do": [
-        "بدون تأیید صریح مالک deploy/config/database دیگری روی Production انجام نشود",
-        "RESEND_API_KEY در چت، Git، artifact، response، log یا error_message قرار نگیرد",
-        "تا زمان reset سهمیه، تست‌های تکراری GitHub Actions اجرا نشوند"
+        "تا تأیید مالک GitHub Actions فعال نشود",
+        "هیچ larger runner، macOS، Windows، self-hosted، schedule، cache یا package publishing بدون بررسی هزینه اضافه نشود",
+        "artifact dry-run ساخته نشود و retention بیش از ۱۴ روز نشود",
+        "RESEND_API_KEY در چت، Git، artifact، response، log یا error_message قرار نگیرد"
       ],
       "evidence": {
         "commits": [
@@ -108,7 +119,8 @@
           "3fa183f",
           "e52ecc7",
           "1b4458b",
-          "845bce1"
+          "845bce1",
+          "6b8929a"
         ],
         "workflow_runs": [
           {
@@ -209,14 +221,9 @@
   },
   "drift": [
     {
-      "id": "SESSION_STATE_STALE",
-      "severity": "warning",
-      "message": "SESSION_STATE based_on 845bce1 does not cover HEAD 56a4139"
-    },
-    {
       "id": "PROJECT_STATE_STALE",
       "severity": "warning",
-      "message": "PROJECT_STATE generated from 4d25d92 does not cover HEAD 56a4139"
+      "message": "PROJECT_STATE generated from 56a4139 does not cover HEAD 9098bdd"
     }
   ],
   "environments": {
@@ -510,6 +517,10 @@
     "OC-8 Required Reviewers مسدود توسط پلن، نه کمبود دسترسی",
     "OC-12 منیفست‌های ریشه مرجع بستهٔ انتشار نیستند"
   ],
+  "actions_policy": {
+    "enabled": false,
+    "cost_guard": "standard Ubuntu runners only; no schedule/cache/packages-write; artifacts <=14d"
+  },
   "backlog": [
     {
       "id": "B-1",
