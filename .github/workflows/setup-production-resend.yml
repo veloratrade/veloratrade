@@ -1,0 +1,154 @@
+name: Setup Production Resend
+
+# Production-only env overlay. Manual, exact confirmation, server-side backup,
+# hardcoded paths, no Secret output. Run only after Resend-capable code is live.
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_production_resend:
+        description: 'دقیقاً بنویسید: CONFIRM-PRODUCTION-RESEND-ENV'
+        required: true
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: setup-production-resend
+  cancel-in-progress: false
+
+jobs:
+  overlay:
+    name: backup and overlay Production private env
+    if: github.repository == 'veloratrade/veloratrade'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: production
+    env:
+      FTP_SERVER: ${{ secrets.FTP_SERVER }}
+      FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+      FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      INPUT_CONFIRM: ${{ inputs.confirm_production_resend }}
+    steps:
+      - name: Gate and download current private env read-only
+        run: |
+          set -euo pipefail
+          [ "$INPUT_CONFIRM" = "CONFIRM-PRODUCTION-RESEND-ENV" ] || {
+            echo "::error::عبارت تأیید Production نادرست است؛ هیچ اتصالی برقرار نشد"
+            exit 1
+          }
+          [ -n "$RESEND_API_KEY" ] || { echo "::error::RESEND_API_KEY خالی است"; exit 1; }
+          echo "::add-mask::$RESEND_API_KEY"
+          sudo apt-get update -qq
+          sudo apt-get install -y -q lftp >/dev/null
+          success=0
+          for attempt in $(seq 1 15); do
+            if lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+              -e "set ftp:ssl-allow no; set net:max-retries 2; set net:timeout 30; get velora_private/config/velora.env -o /tmp/velora.env.original; bye"; then
+              success=1; break
+            fi
+            sleep 8
+          done
+          [ "$success" = 1 ] && [ -s /tmp/velora.env.original ] || {
+            echo "::error::env فعلی Production دریافت نشد؛ هیچ تغییری اعمال نشد"
+            exit 1
+          }
+          chmod 600 /tmp/velora.env.original
+
+      - name: Build deterministic overlay without printing values
+        run: |
+          set -euo pipefail
+          cp /tmp/velora.env.original /tmp/velora.env.next
+          python3 <<'PY'
+          import os
+          path='/tmp/velora.env.next'
+          updates={
+            'MAIL_DRIVER':'resend',
+            'RESEND_API_KEY':os.environ['RESEND_API_KEY'],
+            'MAIL_FROM':'no-reply@veloratrade.ir',
+            'MAIL_FROM_NAME':'VELORA TRADE',
+          }
+          source=open(path,encoding='utf-8-sig').read().splitlines();out=[];written=set()
+          for line in source:
+            s=line.strip()
+            if s and not s.startswith('#') and '=' in s:
+              key=s.split('=',1)[0].strip()
+              if key in updates:
+                if key not in written:out.append(f'{key}={updates[key]}');written.add(key)
+                continue
+            out.append(line)
+          for key,value in updates.items():
+            if key not in written:out.append(f'{key}={value}')
+          open(path,'w',encoding='utf-8',newline='\n').write('\n'.join(out).rstrip('\n')+'\n')
+          print('Production Resend overlay prepared; values hidden')
+          PY
+          chmod 600 /tmp/velora.env.next
+
+      - name: Upload backup then replace hardcoded Production env
+        run: |
+          set -euo pipefail
+          BACKUP="velora_private/backups/velora.env.pre-resend-${GITHUB_SHA}-${GITHUB_RUN_ID}"
+          echo "::add-mask::$BACKUP"
+          uploaded=0
+          for attempt in $(seq 1 15); do
+            if lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" <<LFTP
+          set ftp:ssl-allow no
+          set net:max-retries 2
+          set net:timeout 30
+          set ftp:passive-mode on
+          mkdir -p velora_private/backups
+          put /tmp/velora.env.original -o $BACKUP
+          chmod 600 $BACKUP
+          put /tmp/velora.env.next -o velora_private/config/velora.env
+          chmod 600 velora_private/config/velora.env
+          bye
+          LFTP
+            then uploaded=1; break; fi
+            sleep 8
+          done
+          [ "$uploaded" = 1 ] || { echo "::error::آپلود Production env شکست خورد"; exit 1; }
+          echo "Backup and overlay uploaded to hardcoded Production private paths"
+
+      - name: Verify deployed metadata and values without disclosure
+        run: |
+          set -euo pipefail
+          success=0
+          for attempt in $(seq 1 10); do
+            if lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+              -e "set ftp:ssl-allow no; set net:max-retries 1; set net:timeout 30; get velora_private/config/velora.env -o /tmp/velora.env.verify; bye"; then
+              success=1; break
+            fi
+            sleep 8
+          done
+          [ "$success" = 1 ] && [ -s /tmp/velora.env.verify ] || { echo "::error::env جدید قابل راستی‌آزمایی نیست"; exit 1; }
+          python3 <<'PY'
+          import os
+          vals={}
+          for raw in open('/tmp/velora.env.verify',encoding='utf-8-sig'):
+            s=raw.strip()
+            if s and not s.startswith('#') and '=' in s:
+              k,v=s.split('=',1);vals[k.strip()]=v.strip().strip('"\'')
+          checks={
+            'MAIL_DRIVER':vals.get('MAIL_DRIVER')=='resend',
+            'RESEND_API_KEY':vals.get('RESEND_API_KEY')==os.environ['RESEND_API_KEY'],
+            'MAIL_FROM':vals.get('MAIL_FROM')=='no-reply@veloratrade.ir',
+            'MAIL_FROM_NAME':vals.get('MAIL_FROM_NAME')=='VELORA TRADE',
+          }
+          for name,ok in checks.items():print(name+('=OK' if ok else '=FAIL'))
+          if not all(checks.values()):raise SystemExit('::error::Production env verification failed')
+          PY
+          shred -u /tmp/velora.env.original /tmp/velora.env.next /tmp/velora.env.verify 2>/dev/null || rm -f /tmp/velora.env.original /tmp/velora.env.next /tmp/velora.env.verify
+
+      - name: Summary
+        run: |
+          {
+            echo '## Production Resend env overlay'
+            echo '- Existing env preserved except approved MAIL_* overlay'
+            echo '- Server-side pre-change backup: created with mode 600'
+            echo '- `MAIL_DRIVER=resend`: verified'
+            echo '- `RESEND_API_KEY`: verified by equality; value hidden'
+            echo '- Production docroot files: unchanged by this workflow'
+          } >> "$GITHUB_STEP_SUMMARY"
