@@ -202,12 +202,13 @@ jobs:
           tar -czf "pre-deploy-${{ github.sha }}.tar.gz" -C backup/docroot .
           echo "| بکاپ پیش از انتشار | $n فایل | artifact پیوست شد |" >> $GITHUB_STEP_SUMMARY
 
-      - name: نگهداری بکاپ به‌عنوان artifact
+      - name: نگهداری بکاپ انتشار واقعی به‌عنوان artifact
+        if: ${{ !inputs.dry_run }}
         uses: actions/upload-artifact@v4
         with:
           name: pre-deploy-backup-${{ github.sha }}
           path: pre-deploy-*.tar.gz
-          retention-days: 90
+          retention-days: 14
 
       - name: اجرای آزمایشی — فقط فهرست، بدون نوشتن
         if: inputs.dry_run

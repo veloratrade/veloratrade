@@ -203,6 +203,12 @@ prod=[n for n in names if not n.startswith('STAGING')]
 print('  Secrets (فقط نام) :', names or 'هیچ')
 print('  Secrets تولید     :', prod or 'هیچ — Deploy Production اجرا نمی‌شود ✅')
 "
+  gh_get "$API/actions/permissions" | python3 -c "
+import sys,json
+try: d=json.load(sys.stdin)
+except Exception: d={}
+print('  GitHub Actions    :', 'فعال' if d.get('enabled') else 'غیرفعال — مصرف جدید صفر ✅')
+"
 else
   echo "  (نیازمند GH_TOKEN)"
 fi
@@ -494,7 +500,7 @@ out={
    "contains_secrets": False
  },
  "repository":{
-   "name":"veloratrade/veloratrade","private":True,
+   "name":"veloratrade/veloratrade","private":False,"visibility":"public",
    "branch": sh('git rev-parse --abbrev-ref HEAD'),
    "head": sh('git rev-parse --short HEAD'),
    "head_full": sh('git rev-parse HEAD'),
@@ -584,6 +590,15 @@ if len(counts)==2:
           "message":f"local HEAD is {out['repository']['behind_by']} commit(s) behind local origin/{branch}"})
 
 if HAVE:
+    repository_meta=api('')
+    if repository_meta.get('full_name'):
+        out['repository']['private']=bool(repository_meta.get('private'))
+        out['repository']['visibility']=repository_meta.get('visibility') or ('private' if repository_meta.get('private') else 'public')
+    actions_policy=api('/actions/permissions')
+    out['actions_policy']={
+        'enabled':actions_policy.get('enabled'),
+        'cost_guard':'standard Ubuntu runners only; no schedule/cache/packages-write; artifacts <=14d',
+    }
     remote=api('/commits/main').get('sha','')
     out['repository']['remote_main_head']=remote[:7] if remote else None
     out['repository']['remote_main_matches_head']=(remote==out['repository']['head_full']) if remote else None

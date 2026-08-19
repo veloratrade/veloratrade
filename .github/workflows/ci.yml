@@ -158,6 +158,9 @@ jobs:
           python -m compileall -q tools *.py 2>&1 | tail -20
           echo "Python sources compiled."
 
+      - name: Enforce zero-cost GitHub workflow policy
+        run: python tools/check_github_cost_guard.py
+
       - name: Set up Node for browser-contract tests
         uses: actions/setup-node@v4
         with:
