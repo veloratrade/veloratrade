@@ -2,7 +2,7 @@
   "_meta": {
     "schema": "velora-session-state/1",
     "updated_at": "2026-08-19",
-    "based_on_commit": "4ef2432a5b54f1bbf6b66ffab4de5a37231b679a",
+    "based_on_commit": "617213ba7b00e39f3f7c009f8b6c90f4b924aef2",
     "authority": "Human-maintained handoff. Live Git/GitHub evidence overrides technical status claims; owner decisions and safety rules remain authoritative.",
     "contains_secrets": false
   },
@@ -20,8 +20,8 @@
   "active_task": {
     "id": "B-11",
     "title": "تکمیل E2E ثبت‌نام و تأیید ایمیل",
-    "status": "gold_outline_email_template_implemented_pending_deploy",
-    "environment": "code_only_no_deploy",
+    "status": "gold_outline_staging_verified_pending_production",
+    "environment": "staging",
     "production_impact": false,
     "completed": [
       "Resend transport با PHP cURL، بدون Composer و با From ثابت پیاده‌سازی و فقط روی Staging منتشر شد",
@@ -43,7 +43,11 @@
       "قالب منتخب Midnight Gold Classic با کارت محتوای Gold Outline در EmailTemplate پیاده‌سازی شد",
       "لوگوی واقعی VELORA به PNG شفاف ۱۹۲×۱۹۲ و Email-safe تبدیل و به public/assets اضافه شد",
       "لینک کمکی زیر CTA در ساختار وجود ندارد و URL دکمه دقیقاً یک‌بار رندر می‌شود",
-      "EmailTemplate Gold Outline contract با ۲۱ assertion و Resend mock با ۲۶ assertion موفق شدند"
+      "EmailTemplate Gold Outline contract با ۲۱ assertion و Resend mock با ۲۶ assertion موفق شدند",
+      "Gold Outline و لوگوی محیط‌محور روی Staging در run 32312976423 منتشر شدند",
+      "ایمیل واقعی در ۱۰ ثانیه تحویل شد؛ From، قاب طلایی دولایه، CTA و نبود لینک کمکی همگی تأیید شدند",
+      "لوگوی PNG محیط Staging با HTTP 200 و content-type image/png دریافت شد",
+      "HTML واقعی تحویل‌شده Sanitized و برای بازبینی بصری ذخیره شد"
     ],
     "established_facts": [
       "Transactional Email Suite run 32274251200 نتیجه 7/7 delivery و From identity PASS دارد",
@@ -67,18 +71,22 @@
       "Artifact فعلی فقط pre-deploy backup جدید با حجم تقریبی ۴۹ MB است",
       "Commit 4ef2432 فقط کد/Asset/Test را ثبت کرده و هیچ Deploy انجام نشده است",
       "هدر و فوتر برای همه NotificationServiceها ثابت مانده و فقط ماژول محتوای مرکزی Gold Outline شده است",
-      "GitHub Actions همچنان غیرفعال است و مصرف جدید صفر مانده است"
+      "GitHub Actions همچنان غیرفعال است و مصرف جدید صفر مانده است",
+      "Commit 617213b URL لوگو را از FRONTEND_URL همان محیط می‌سازد و وابستگی Staging به Asset تولید را حذف می‌کند",
+      "GOLD_OUTLINE_STAGING_EMAIL=PASS: outer/inner gold، sender identity، no helper link و primary CTA همگی true",
+      "GitHub Actions پس از تست دوباره غیرفعال شد؛ active/queued صفر است",
+      "Production هنوز قالب Gold Outline را دریافت نکرده و همان قالب قبلی فعال است"
     ],
-    "current_diagnosis": "طراحی نهایی ایمیل در کد آماده است اما هنوز روی Staging یا Production منتشر نشده؛ نسخه فعال هاست همان قالب قبلی است.",
-    "blocker_owner": "owner_deploy_approval",
+    "current_diagnosis": "قالب منتخب Midnight Gold + Gold Outline روی Staging منتشر و با ایمیل واقعی Live-verified شده است؛ Production هنوز تغییر نکرده و نیازمند تأیید جداگانه مالک است.",
+    "blocker_owner": "owner_production_design_approval",
     "next_actions": [
-      "مالک در صورت تمایل Deploy فقط Staging را جداگانه تأیید کند",
-      "برای Deploy، Actions موقتاً فعال و بلافاصله پس از تست دوباره غیرفعال شود",
-      "پس از تحویل واقعی و بررسی Gmail/Outlook، Production فقط با تأیید جداگانه به‌روزرسانی شود"
+      "مالک HTML واقعی Staging را بازبینی و درباره Production تصمیم بگیرد",
+      "در صورت تأیید، Production با dry-run، backup و تست ایمیل واقعی منتشر شود",
+      "Actions فقط برای همان عملیات موقتاً فعال و سپس دوباره غیرفعال شود"
     ],
     "do_not_do": [
-      "بدون تأیید جدید هیچ Deploy روی Staging یا Production انجام نشود",
-      "GitHub Actions برای آماده‌سازی کد فعال نشود",
+      "بدون تأیید صریح جدید قالب Gold Outline روی Production منتشر نشود",
+      "GitHub Actions خارج از عملیات تأییدشده فعال نماند",
       "RESEND_API_KEY در چت، Git، artifact، response، log یا error_message قرار نگیرد"
     ],
     "evidence": {
@@ -94,7 +102,8 @@
         "1b4458b",
         "845bce1",
         "6b8929a",
-        "4ef2432"
+        "4ef2432",
+        "617213b"
       ],
       "workflow_runs": [
         {
@@ -168,6 +177,12 @@
           "workflow": "setup-production-resend.yml",
           "result": "success",
           "note": "Production private env backup and Resend overlay verified"
+        },
+        {
+          "id": 32312976423,
+          "workflow": "deploy-staging.yml",
+          "result": "success",
+          "note": "Gold Outline + environment-aware logo deployed to Staging"
         }
       ]
     }
