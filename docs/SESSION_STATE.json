@@ -2,7 +2,7 @@
   "_meta": {
     "schema": "velora-session-state/1",
     "updated_at": "2026-08-19",
-    "based_on_commit": "3fa183fa23dfe46cfdda84811b44e0f3fbcaa865",
+    "based_on_commit": "e52ecc7ab9c49d3bdaa03d5f02a19d4f69ea6536",
     "authority": "Human-maintained handoff. Live Git/GitHub evidence overrides technical status claims; owner decisions and safety rules remain authoritative.",
     "contains_secrets": false
   },
@@ -30,7 +30,8 @@
       "سفر ۱۱مرحله‌ای register/verify/login/forgot/reset/new-login/password-changed کاملاً PASS شد",
       "دو باگ مستقل MySQL token consumption و متد ناموجود markUsed رفع و روی Staging اثبات شدند",
       "email_notifications مستقیماً از MySQL خوانده شد و رویدادهای اخیر همگی status=sent و error خالی داشتند",
-      "Health Check Staging و CSP Guard پس از تغییرات موفق شدند"
+      "Health Check Staging و CSP Guard پس از تغییرات موفق شدند",
+      "مسیر کلیک لینک تأیید در Frontend اصلاح شد: fragment token به POST JSON body منتقل، از history پاک و روی HTML واقعی Staging با page=200/API=200/UI success تأیید شد"
     ],
     "established_facts": [
       "Transactional Email Suite run 32274251200 نتیجه 7/7 delivery و From identity PASS دارد",
@@ -38,7 +39,11 @@
       "Email Status run 32279188280 یازده ردیف اخیر را خواند؛ VERIFICATION_EMAIL، WELCOME_EMAIL، ACHIEVEMENT_UNLOCKED، PASSWORD_RESET_LINK و PASSWORD_CHANGED همگی sent و بدون error بودند",
       "Health Check Staging run 32278229003 و CSP Guard run 32279176101 موفق‌اند",
       "Resend API Message IDها امن و قابل‌ردیابی‌اند؛ نمونه مستقیم 56b3b612-82bd-4e99-809d-e4c83e33007b",
-      "Production در تمام این عملیات دست‌نخورده مانده است"
+      "Production در تمام این عملیات دست‌نخورده مانده است",
+      "ریشه باگ کلیک: ایمیل #token می‌ساخت ولی صفحه location.search می‌خواند و body token خالی می‌فرستاد",
+      "Commit e52ecc7 روی Staging در Deploy run 32281002043 منتشر شد",
+      "HTML منتشرشده 9/9 قرارداد JS را پاس کرد و تست live با Token واقعی نتیجه LIVE_EMAIL_LINK_CLICK=PASS داد",
+      "Health Check Staging run 32282465876 پس از اصلاح Frontend موفق است"
     ],
     "current_diagnosis": "تمام مسیرهای ایمیل transactional و سفرهای اصلی احراز هویت روی Staging سبز هستند. مانع فنی ایمیل برای تصمیم مهاجرت Production باقی نمانده؛ هر اقدام Production فقط با تأیید صریح مالک انجام می‌شود.",
     "blocker_owner": "owner_production_approval",
@@ -61,7 +66,8 @@
         "8fdaff1",
         "c31b2e0",
         "9772465",
-        "3fa183f"
+        "3fa183f",
+        "e52ecc7"
       ],
       "workflow_runs": [
         {
@@ -105,6 +111,18 @@
           "workflow": "csp-guard.yml",
           "result": "success",
           "note": "CSP Guard روی HEAD فعلی"
+        },
+        {
+          "id": 32281002043,
+          "workflow": "deploy-staging.yml",
+          "result": "success",
+          "note": "انتشار fix کلیک لینک تأیید روی Staging"
+        },
+        {
+          "id": 32282465876,
+          "workflow": "healthcheck-staging.yml",
+          "result": "success",
+          "note": "Health Check پس از اصلاح Frontend"
         }
       ]
     }
