@@ -86,6 +86,7 @@ jobs:
     name: آپلود روی هاست
     needs: guard
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     environment: production
     steps:
       - uses: actions/checkout@v4
@@ -184,7 +185,12 @@ jobs:
           set net:max-retries 2
           set net:timeout 30
           set ftp:passive-mode on
-          mirror --continue --no-perms --parallel=1 ${{ env.PROD_DOCROOT }} backup/docroot/
+          # public_html شامل docroot مستقل Staging به‌صورت nested است؛ آن محیط
+          # بخشی از Production backup نیست و دانلودش هم بکاپ را بسیار کند می‌کند.
+          mirror --continue --no-perms --parallel=1 \
+                 --exclude-glob staging.veloratrade.ir/ \
+                 --exclude-glob staging.veloratrade.ir/** \
+                 ${{ env.PROD_DOCROOT }} backup/docroot/
           bye
           LFTP
           n=$(find backup/docroot -type f | wc -l)
