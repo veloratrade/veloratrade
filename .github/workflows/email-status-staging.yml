@@ -22,7 +22,7 @@ jobs:
   status:
     name: read-only email notification status
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 25
     env:
       FTP_SERVER: ${{ secrets.STAGING_FTP_SERVER }}
       FTP_USERNAME: ${{ secrets.STAGING_FTP_USERNAME }}
@@ -92,9 +92,9 @@ jobs:
           trap cleanup EXIT
 
           uploaded=0
-          for attempt in $(seq 1 8); do
+          for attempt in $(seq 1 15); do
             if lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
-              -e "set ftp:ssl-allow no; set net:max-retries 1; set net:timeout 20; put /tmp/probe.php -o public_html/staging.veloratrade.ir/public/$NAME; bye"; then
+              -e "set ftp:ssl-allow no; set net:max-retries 2; set net:timeout 30; glob -a rm -f public_html/staging.veloratrade.ir/public/_velora_email_status_*.php; put /tmp/probe.php -o public_html/staging.veloratrade.ir/public/$NAME; bye"; then
               uploaded=1; break
             fi
             sleep 5
