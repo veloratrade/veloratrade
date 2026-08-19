@@ -514,7 +514,7 @@ out={
      "private_root":"/home/piknet/velora_private/",
      "behind_cloudflare":True,
      "ftp_host_note":"از veloratrade.ir برای FTP استفاده نشود — پشت CDN است",
-     "deploy_workflow":"deploy.yml","status":"UNTOUCHED",
+     "deploy_workflow":"deploy.yml","status":"OPERATIONAL",
      "live_probe_status": probe("https://veloratrade.ir/"),
    },
    "staging":{
