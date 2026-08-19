@@ -1,7 +1,8 @@
 name: Resend Diagnostics (Staging)
 
-# Read the deployed Staging env without printing it, execute the repository's
+# Use the dedicated Staging-only RESEND_API_KEY secret, execute the repository's
 # real Mailer Resend transport, and prove delivery to a disposable inbox.
+# setup-staging-private.yml overlays the same Secret into deployed Staging env.
 
 on:
   workflow_dispatch:
@@ -24,9 +25,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     env:
-      FTP_SERVER: ${{ secrets.STAGING_FTP_SERVER }}
-      FTP_USERNAME: ${{ secrets.STAGING_FTP_USERNAME }}
-      FTP_PASSWORD: ${{ secrets.STAGING_FTP_PASSWORD }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      MAIL_DRIVER: resend
       INPUT_CONFIRM: ${{ github.event.inputs.confirm }}
 
     steps:
@@ -37,47 +37,14 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      - name: Read only required values from deployed Staging env
+      - name: Validate dedicated Staging Resend secret
         run: |
           set -euo pipefail
-          sudo apt-get update -qq
-          sudo apt-get install -y -q lftp >/dev/null
-          for attempt in $(seq 1 10); do
-            if lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
-              -e "set ftp:ssl-allow no; set net:max-retries 2; set net:timeout 30; get velora_private_staging/config/velora.env -o /tmp/velora.env; bye"; then
-              break
-            fi
-            sleep 5
-          done
-          [ -s /tmp/velora.env ] || { echo "::error::velora.env استیجینگ دریافت نشد"; exit 1; }
-
-          python3 <<'PY'
-          import os, uuid
-          values = {}
-          for raw in open('/tmp/velora.env', encoding='utf-8-sig'):
-              line = raw.strip()
-              if not line or line.startswith('#') or '=' not in line:
-                  continue
-              key, value = line.split('=', 1)
-              key, value = key.strip(), value.strip()
-              if key in {'MAIL_DRIVER', 'RESEND_API_KEY'}:
-                  if len(value) >= 2 and value[0] == value[-1] and value[0] in "'\"":
-                      value = value[1:-1]
-                  values[key] = value
-          driver = values.get('MAIL_DRIVER', '').lower()
-          key = values.get('RESEND_API_KEY', '')
-          if driver != 'resend':
-              raise SystemExit('::error::MAIL_DRIVER استیجینگ باید resend باشد؛ مقدار فعلی نمایش داده نمی‌شود')
-          if not key:
-              raise SystemExit('::error::RESEND_API_KEY در env واقعی Staging وجود ندارد یا خالی است')
-          print('::add-mask::' + key)
-          marker = 'VELORA_' + uuid.uuid4().hex
-          with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as out:
-              out.write(f'RESEND_API_KEY<<{marker}\n{key}\n{marker}\n')
-              out.write('MAIL_DRIVER=resend\n')
-          print('MAIL_DRIVER=resend و وجود RESEND_API_KEY تأیید شد؛ مقدار Secret خوانده/چاپ نشد')
-          PY
-          shred -u /tmp/velora.env 2>/dev/null || rm -f /tmp/velora.env
+          [ "$MAIL_DRIVER" = "resend" ] || { echo "::error::MAIL_DRIVER تست باید resend باشد"; exit 1; }
+          [ -n "$RESEND_API_KEY" ] || { echo "::error::RESEND_API_KEY خالی است"; exit 1; }
+          echo "::add-mask::$RESEND_API_KEY"
+          echo "Secret مستقل Resend موجود است؛ مقدار آن چاپ نشد"
+          echo "Setup run 32268203145 قبلاً overlay همین Secret را در env واقعی Staging با موفقیت اعمال کرد"
 
       - name: Create disposable external inbox
         run: |
