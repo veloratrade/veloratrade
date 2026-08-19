@@ -1,0 +1,140 @@
+name: Transactional Email Suite (Staging)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'برای ارسال همه قالب‌های transactional روی Staging، RUN را وارد کنید'
+        required: true
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: transactional-email-suite-staging
+  cancel-in-progress: false
+
+jobs:
+  suite:
+    name: seven templates → Resend → external inbox
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      MAIL_DRIVER: resend
+      INPUT_CONFIRM: ${{ github.event.inputs.confirm }}
+    steps:
+      - name: Gate and checkout
+        run: |
+          set -euo pipefail
+          [ "$INPUT_CONFIRM" = "RUN" ] || { echo "::error::confirm باید RUN باشد"; exit 1; }
+          [ -n "$RESEND_API_KEY" ] || { echo "::error::RESEND_API_KEY خالی است"; exit 1; }
+          echo "::add-mask::$RESEND_API_KEY"
+      - uses: actions/checkout@v4
+
+      - name: Create disposable inbox
+        run: |
+          python3 <<'PY'
+          import json, os, random, string, urllib.request
+          def req(method,url,data=None,token=None):
+              body=json.dumps(data).encode() if data is not None else None
+              r=urllib.request.Request(url,data=body,method=method,headers={'Accept':'application/json','User-Agent':'Velora-Email-Suite/1.0'})
+              if body:r.add_header('Content-Type','application/json')
+              if token:r.add_header('Authorization','Bearer '+token)
+              with urllib.request.urlopen(r,timeout=30) as x:return x.status,json.loads(x.read().decode())
+          _,d=req('GET','https://api.mail.tm/domains?page=1'); members=d if isinstance(d,list) else d.get('hydra:member',[])
+          domain=next(x['domain'] for x in members if x.get('isActive'))
+          address='velora-suite-'+''.join(random.choices(string.ascii_lowercase+string.digits,k=12))+'@'+domain
+          password='Vt!'+''.join(random.choices(string.ascii_letters+string.digits,k=18))
+          print('::add-mask::'+address);print('::add-mask::'+password)
+          req('POST','https://api.mail.tm/accounts',{'address':address,'password':password})
+          _,a=req('POST','https://api.mail.tm/token',{'address':address,'password':password}); token=a['token'];print('::add-mask::'+token)
+          with open(os.environ['GITHUB_ENV'],'a') as out:
+              out.write('TEST_EMAIL='+address+'\nMAILTM_TOKEN='+token+'\n')
+          print('Disposable inbox ready')
+          PY
+
+      - name: Send all current transactional templates through real code
+        id: send
+        run: |
+          set -euo pipefail
+          cat >/tmp/notification-suite.php <<'PHP'
+          <?php
+          declare(strict_types=1);
+          namespace Velora\Core;
+          final class Config {
+              public static function env(string $key,string $default=''): string { $v=getenv($key); return $v===false||$v===''?$default:$v; }
+              public static function get(string $key,mixed $default=null): mixed { return $key==='frontend_url'?'https://staging.veloratrade.ir':$default; }
+              public static function privatePath(string $path): string { return sys_get_temp_dir().'/'.$path; }
+          }
+          final class EmailNotificationRepository {
+              public function log(?int $userId,string $email,string $type,string $subject,string $status='sent',?string $error=null,?array $payload=null): void {}
+          }
+          spl_autoload_register(static function(string $class): void {
+              $prefix='Velora\\Core\\';
+              if (!str_starts_with($class,$prefix)) return;
+              $relative=substr($class,strlen($prefix));
+              $file=getcwd().'/api/src/Core/'.str_replace('\\','/',$relative).'.php';
+              if (is_file($file)) require $file;
+          });
+          require getcwd().'/api/src/Core/NotificationService.php';
+          $to=getenv('TEST_EMAIL');
+          $base='https://staging.veloratrade.ir';
+          $cases=[
+              'verification'=>fn()=>NotificationService::sendVerificationEmail($to,'Email Suite',$base.'/verify-email#token='.str_repeat('a',64),900001),
+              'welcome'=>fn()=>NotificationService::sendWelcomeEmail($to,'Email Suite',$base.'/dashboard',900001),
+              'password_reset'=>fn()=>NotificationService::sendPasswordResetTokenEmail($to,'Email Suite',$base.'/reset-password?token='.str_repeat('b',64),900001),
+              'password_changed'=>fn()=>NotificationService::sendPasswordChangedEmail($to,'Email Suite',900001),
+              'new_device'=>fn()=>NotificationService::sendNewDeviceDetectedEmail($to,'Email Suite','192.0.2.1','Velora Suite Browser','2026-08-19 16:00:00 UTC',900001),
+              'first_trade'=>fn()=>NotificationService::sendFirstTradeEmail($to,'Email Suite','EURUSD','buy',$base.'/dashboard',900001),
+              'achievement'=>fn()=>NotificationService::sendAchievementUnlockedEmail($to,'Email Suite','Consistency','Seven-day discipline',$base.'/profile',900001),
+          ];
+          $ids=[];
+          foreach($cases as $name=>$send){
+              $ok=$send();
+              if(!$ok){fwrite(STDERR,'::error::'.$name.' failed: '.(Mailer::$lastError??'unknown safe error').PHP_EOL);exit(1);}
+              $ids[$name]=Mailer::$lastMessageId;
+              echo $name.' accepted id='.Mailer::$lastMessageId.PHP_EOL;
+              sleep(1);
+          }
+          file_put_contents(getenv('GITHUB_OUTPUT'),'count='.count($ids).PHP_EOL,FILE_APPEND);
+          PHP
+          php /tmp/notification-suite.php
+          shred -u /tmp/notification-suite.php 2>/dev/null || rm -f /tmp/notification-suite.php
+
+      - name: Verify all deliveries and sender identity
+        run: |
+          python3 <<'PY'
+          import json,os,time,urllib.request
+          token=os.environ['MAILTM_TOKEN']
+          def get(url):
+              r=urllib.request.Request(url,headers={'Accept':'application/json','Authorization':'Bearer '+token,'User-Agent':'Velora-Email-Suite/1.0'})
+              with urllib.request.urlopen(r,timeout=30) as x:return json.loads(x.read().decode())
+          messages=[]
+          for attempt in range(1,31):
+              time.sleep(10)
+              data=get('https://api.mail.tm/messages?page=1');messages=data if isinstance(data,list) else data.get('hydra:member',[])
+              if len(messages)>=7:break
+              print(f'… deliveries {len(messages)}/7 attempt {attempt}/30')
+          if len(messages)<7:raise SystemExit(f'::error::فقط {len(messages)} از ۷ ایمیل تحویل شد')
+          checked=0
+          for m in messages[:7]:
+              d=get('https://api.mail.tm/messages/'+m['id']);sender=d.get('from') or {}
+              if (sender.get('address') or '').lower()!='no-reply@veloratrade.ir':raise SystemExit('::error::From address mismatch')
+              if (sender.get('name') or '').strip()!='VELORA TRADE':raise SystemExit('::error::From name mismatch')
+              checked+=1
+          print(f'TRANSACTIONAL_DELIVERIES={checked}/7 PASS')
+          print('FROM_IDENTITY=VELORA TRADE <no-reply@veloratrade.ir> PASS')
+          PY
+
+      - name: Summary
+        run: |
+          {
+            echo '## Transactional Email Suite — Staging'
+            echo
+            echo '- Templates accepted by Resend: **${{ steps.send.outputs.count }}/7**'
+            echo '- Messages received externally: **7/7**'
+            echo '- From identity: `VELORA TRADE <no-reply@veloratrade.ir>` ✅'
+            echo '- Production touched: **No**'
+          } >> "$GITHUB_STEP_SUMMARY"
