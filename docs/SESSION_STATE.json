@@ -2,7 +2,7 @@
   "_meta": {
     "schema": "velora-session-state/1",
     "updated_at": "2026-08-19",
-    "based_on_commit": "72256a05e19f4b75b615db8c39982e2e1979a4a6",
+    "based_on_commit": "4ef2432a5b54f1bbf6b66ffab4de5a37231b679a",
     "authority": "Human-maintained handoff. Live Git/GitHub evidence overrides technical status claims; owner decisions and safety rules remain authoritative.",
     "contains_secrets": false
   },
@@ -20,8 +20,8 @@
   "active_task": {
     "id": "B-11",
     "title": "تکمیل E2E ثبت‌نام و تأیید ایمیل",
-    "status": "production_verified_actions_cost_locked",
-    "environment": "staging_and_production",
+    "status": "gold_outline_email_template_implemented_pending_deploy",
+    "environment": "code_only_no_deploy",
     "production_impact": false,
     "completed": [
       "Resend transport با PHP cURL، بدون Composer و با From ثابت پیاده‌سازی و فقط روی Staging منتشر شد",
@@ -39,7 +39,11 @@
       "GitHub Actions مخزن از API کاملاً غیرفعال شد تا مصرف جدید غیرممکن باشد",
       "مخزن Public است و هر ۲۱ runner declaration فقط standard ubuntu-latest/ubuntu-22.04/ubuntu-24.04 هستند",
       "دو Artifact قدیمی حذف و فقط آخرین بکاپ واقعی Production حدود ۴۹ MB نگهداری شد",
-      "Zero-cost guard اضافه شد: بدون larger runner، schedule، cache، packages-write؛ retention حداکثر ۱۴ روز و بدون artifact در dry-run"
+      "Zero-cost guard اضافه شد: بدون larger runner، schedule، cache، packages-write؛ retention حداکثر ۱۴ روز و بدون artifact در dry-run",
+      "قالب منتخب Midnight Gold Classic با کارت محتوای Gold Outline در EmailTemplate پیاده‌سازی شد",
+      "لوگوی واقعی VELORA به PNG شفاف ۱۹۲×۱۹۲ و Email-safe تبدیل و به public/assets اضافه شد",
+      "لینک کمکی زیر CTA در ساختار وجود ندارد و URL دکمه دقیقاً یک‌بار رندر می‌شود",
+      "EmailTemplate Gold Outline contract با ۲۱ assertion و Resend mock با ۲۶ assertion موفق شدند"
     ],
     "established_facts": [
       "Transactional Email Suite run 32274251200 نتیجه 7/7 delivery و From identity PASS دارد",
@@ -60,20 +64,21 @@
       "مالک Billing Overview را بررسی و اعلام کرد مشکلی/بدهی وجود ندارد",
       "Actions permission فعلی enabled=false و in_progress=0 و queued=0 است",
       "Workflowهای فعلی ۲۱ runner همگی standard Ubuntu هستند؛ larger/macOS/Windows/self-hosted وجود ندارد",
-      "Artifact فعلی فقط pre-deploy backup جدید با حجم تقریبی ۴۹ MB است"
+      "Artifact فعلی فقط pre-deploy backup جدید با حجم تقریبی ۴۹ MB است",
+      "Commit 4ef2432 فقط کد/Asset/Test را ثبت کرده و هیچ Deploy انجام نشده است",
+      "هدر و فوتر برای همه NotificationServiceها ثابت مانده و فقط ماژول محتوای مرکزی Gold Outline شده است",
+      "GitHub Actions همچنان غیرفعال است و مصرف جدید صفر مانده است"
     ],
-    "current_diagnosis": "Resend، همه قالب‌های transactional، مسیر کلیک تأیید و سفر ثبت‌نام/تأیید/ورود روی Staging و Production عملیاتی و Live-verified هستند.",
-    "blocker_owner": "none",
+    "current_diagnosis": "طراحی نهایی ایمیل در کد آماده است اما هنوز روی Staging یا Production منتشر نشده؛ نسخه فعال هاست همان قالب قبلی است.",
+    "blocker_owner": "owner_deploy_approval",
     "next_actions": [
-      "GitHub Actions فقط با تأیید صریح مالک دوباره فعال شود",
-      "پس از فعال‌سازی، tools/check_github_cost_guard.py قبل از هر تغییر workflow سبز بماند",
-      "در Billing یک Budget صفر با Stop usage فعال نگه داشته شود",
-      "آخرین بکاپ Production حداکثر ۱۴ روز نگهداری و سپس خودکار منقضی شود"
+      "مالک در صورت تمایل Deploy فقط Staging را جداگانه تأیید کند",
+      "برای Deploy، Actions موقتاً فعال و بلافاصله پس از تست دوباره غیرفعال شود",
+      "پس از تحویل واقعی و بررسی Gmail/Outlook، Production فقط با تأیید جداگانه به‌روزرسانی شود"
     ],
     "do_not_do": [
-      "تا تأیید مالک GitHub Actions فعال نشود",
-      "هیچ larger runner، macOS، Windows، self-hosted، schedule، cache یا package publishing بدون بررسی هزینه اضافه نشود",
-      "artifact dry-run ساخته نشود و retention بیش از ۱۴ روز نشود",
+      "بدون تأیید جدید هیچ Deploy روی Staging یا Production انجام نشود",
+      "GitHub Actions برای آماده‌سازی کد فعال نشود",
       "RESEND_API_KEY در چت، Git، artifact، response، log یا error_message قرار نگیرد"
     ],
     "evidence": {
@@ -88,7 +93,8 @@
         "e52ecc7",
         "1b4458b",
         "845bce1",
-        "6b8929a"
+        "6b8929a",
+        "4ef2432"
       ],
       "workflow_runs": [
         {
