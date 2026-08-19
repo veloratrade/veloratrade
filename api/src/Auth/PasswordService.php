@@ -107,9 +107,19 @@ final class PasswordService
             throw new ValidationException('رمز جدید نباید با رمز عبور قبلی یکسان باشد.', ['newPassword' => 'رمز جدید را متفاوت از رمز قبلی انتخاب کنید.']);
         }
 
-        $this->updatePasswordHash((int) $reset['user_id'], $newPassword);
-        $this->resets->markUsed((int) $reset['id']);
-        $this->resets->invalidateAllForUser((int) $reset['user_id']);
+        // مصرف توکن و تغییر هش باید اتمیک باشند. نسخه قبلی پس از تغییر رمز، متد
+        // ناموجود markUsed() را صدا می‌زد و با HTTP 500 خارج می‌شد؛ در نتیجه رمز
+        // عوض می‌شد ولی پاسخ شکست می‌خورد. consume() قرارداد واقعی repository است.
+        \Velora\Core\Database::transaction(function () use ($reset, $tokenHash, $newPassword): void {
+            if (!$this->resets->consume((int) $reset['id'], $tokenHash)) {
+                throw new ValidationException(
+                    'لینک بازیابی نامعتبر است یا قبلاً استفاده شده است.',
+                    ['token' => 'لینک بازیابی نامعتبر یا استفاده‌شده است.'],
+                );
+            }
+            $this->updatePasswordHash((int) $reset['user_id'], $newPassword);
+            $this->resets->invalidateAllForUser((int) $reset['user_id']);
+        });
 
         // خروج از همه نشست‌ها
         (new SessionRepository())->revokeAllForUser((int) $reset['user_id']);

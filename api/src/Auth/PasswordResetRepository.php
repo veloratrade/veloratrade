@@ -48,15 +48,21 @@ final class PasswordResetRepository
     public function consume(int $id, string $tokenHash): bool
     {
         $now = gmdate('Y-m-d H:i:s');
+        // Native MySQL prepares require unique named placeholders.
         $stmt = Database::connection()->prepare(
             'UPDATE password_resets
-             SET used_at = :now
+             SET used_at = :used_at
              WHERE id = :id
                AND token_hash = :hash
                AND used_at IS NULL
-               AND expires_at >= :now'
+               AND expires_at >= :expires_cutoff'
         );
-        $stmt->execute(['now' => $now, 'id' => $id, 'hash' => $tokenHash]);
+        $stmt->execute([
+            'used_at' => $now,
+            'expires_cutoff' => $now,
+            'id' => $id,
+            'hash' => $tokenHash,
+        ]);
         return $stmt->rowCount() === 1;
     }
 
