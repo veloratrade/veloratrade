@@ -59,6 +59,10 @@ jobs:
               body = json.dumps(data).encode() if data is not None else None
               req = urllib.request.Request(url, data=body, method=method)
               req.add_header('Accept', 'application/json')
+              # Cloudflare blocks Python's default urllib user-agent on valid POSTs.
+              # Use an explicit, identifiable diagnostic agent; this is not a bypass
+              # of application auth and all requests still pass normal WAF/API rules.
+              req.add_header('User-Agent', 'Velora-Staging-E2E/1.0')
               if data is not None: req.add_header('Content-Type', 'application/json')
               for k, v in (headers or {}).items(): req.add_header(k, v)
               try:
