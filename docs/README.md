@@ -10,7 +10,7 @@
 > |---|---|
 > | **Production** (`veloratrade.ir`) | ✅ عملیاتی — commit `845bce1` منتشر، Resend فعال و لینک تأیید Live-verified |
 > | **Staging** (`staging.veloratrade.ir`) | ✅ عملیاتی — Resend و همه سفرهای ایمیل سبز |
-> | **کار جاری** | نگهداری؛ هر تغییر بعدی Production همچنان نیازمند تأیید صریح مالک است |
+> | **کار جاری** | نگهداری؛ GitHub Actions فعلاً غیرفعال و مصرف جدید صفر است |
 >
 > ### ۵ قاعده‌ای که هرگز نقض نمی‌شوند
 >
@@ -366,8 +366,9 @@ healthcheck   healthcheck-production.yml (خودکار)
 اتفاق یک گزارش فهرست است، نه نوشتن روی سایت زنده. انتشار واقعی نیازمند **دو**
 اقدام آگاهانه است: نوشتن عبارت تأیید **و** خاموش‌کردن dry-run.
 
-**بکاپ:** پیش از هر نوشتن، کل docroot دانلود و به‌عنوان artifact نودروزه
-(`pre-deploy-backup-{sha}`) ذخیره می‌شود. **بکاپ خالی = توقف اجرا** — چون یعنی
+**بکاپ:** پیش از هر نوشتن، docroot تولید (با exclude صریح Staging) دانلود می‌شود.
+فقط انتشار واقعی—not dry-run—Artifact `pre-deploy-backup-{sha}` با نگهداری ۱۴روزه
+می‌سازد. **بکاپ خالی = توقف اجرا** — چون یعنی
 مسیر یا اتصال مشکل دارد و ادامه یعنی انتشار بدون راه بازگشت.
 
 **دست‌نخورده روی هاست:** `api/.env` • `api/storage/` • `velora_private/`
@@ -414,6 +415,7 @@ git diff docs-baseline-v1..main -- docs/
 ## 7. وضعیت جاری و کارهای باز (Living Section)
 
 **آخرین وضعیت (2026-08-19 — جلسهٔ agent):**
+- 💸 **قفل هزینه GitHub فعال شد:** مخزن Public و Actions در سطح Repository با API غیرفعال است (`enabled=false`)؛ active/queued برابر صفر. ۷ Dashboard browser job گیرکرده با مجموع ۱۳۵۳ runner-minute Cancel شدند. ریشه در `6b8929a` رفع شد: concurrency/cancel-in-progress، timeout دوازده‌دقیقه‌ای Job، timeout سه‌دقیقه‌ای Node، خروج صریح Playwright و توقف PHP server. ممیزی ۱۸ Workflow/۲۱ Runner: همگی Standard Ubuntu؛ بدون larger/macOS/Windows/self-hosted، schedule، cache یا packages-write. `tools/check_github_cost_guard.py` این قرارداد را enforce می‌کند. دو Artifact قدیمی حذف شدند؛ فقط آخرین بکاپ واقعی Production ≈۴۹ MB باقی مانده. Dry-run دیگر Artifact نمی‌سازد و retention انتشار واقعی ۱۴ روز است. مالک Billing را بررسی و بدون مشکل اعلام کرد.
 - 🚀 **Production با تأیید صریح مالک منتشر و Live-verified شد:** Dry-run `32286432535` ✅ (allow-list=۴۷۰، بکاپ=۶۵۰، صفر نوشتن)، Deploy Production `32288226521` ✅ (بکاپ Artifact + آپلود + Health Check خواندنی)، Setup Production Resend `32291424454` ✅ (بکاپ server-side از env، overlay و equality verification بدون نمایش Secret). تست مستقیم خارج از Actions: register=201، تحویل ایمیل در ۱۰ ثانیه، From دقیق، صفحه تأیید=200، API تأیید=200، Token از history پاک، UI موفق و login=200؛ `PRODUCTION_EMAIL_VERIFICATION=PASS`. برای حفظ سهمیه (مصرف ۹۰٪)، تست نهایی بدون Workflow جدید انجام شد. کلید Resend فعلاً بین Staging/Production مشترک است و جداسازی/rotation توصیه می‌شود.
 - ✉️ **Resend روی Staging کاملاً تأیید شد:** Transport `resend` با PHP cURL، بدون Composer و با From ثابت `VELORA TRADE <no-reply@veloratrade.ir>` فعال است. Resend Diagnostics `32270666565` ✅ (تحویل ۱۰ ثانیه + Message ID امن)، Transactional Suite `32274251200` ✅ (هر ۷ قالب: verification/welcome/password-reset/password-changed/new-device/first-trade/achievement، تحویل `7/7` و From صحیح)، Register E2E `32278095459` ✅ (۱۱/۱۱ گام register→verify→login→forgot→reset→login جدید→اعلان تغییر رمز). دو باگ مستقل کشف و رفع شدند: duplicate named placeholder در native MySQL برای verification/reset token و فراخوانی متد ناموجود `markUsed()` پس از تغییر رمز؛ Regression integration `14/14` سبز است. Email Status `32279188280` ✅ مستقیماً MySQL را خواند: ۱۱ رویداد اخیر شامل `VERIFICATION_EMAIL`، `WELCOME_EMAIL`، `ACHIEVEMENT_UNLOCKED`، `PASSWORD_RESET_LINK` و `PASSWORD_CHANGED` همگی `sent` و بدون error. Health Check `32278229003` ✅ و CSP Guard `32279176101` ✅؛ این شواهد مبنای انتشار تأییدشده Production بودند.
 - 🔗 **کلیک لینک تأیید ایمیل روی Staging رفع و Live-verified شد:** ریشه: Backend لینک امن `#token=...` تولید می‌کرد، اما Frontend فقط `location.search` را می‌خواند و سپس Token خالی در JSON body می‌فرستاد. در `e52ecc7` صفحه حالا fragment را با اولویت می‌خواند، legacy query را فقط برای سازگاری می‌پذیرد، Token را فوراً از browser history حذف می‌کند و `POST /api/v1/auth/verify-email` را با body واقعی می‌فرستد. خروجی‌های FA/EN فقط از Builder بازتولید و CSP release `2026.08.19.1` شد. Deploy Staging `32281002043` ✅؛ HTML منتشرشده قرارداد JS را `9/9` پاس کرد و تست live با ایمیل و Token واقعی: `page=200`، `api=200`، `token_cleared=true`، `success_ui=true` ✅. Health Check `32282465876` ✅؛ همان fix در Production نیز Live-verified شد.
