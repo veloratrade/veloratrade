@@ -1,8 +1,8 @@
 {
   "_meta": {
     "schema": "velora-project-state/1",
-    "generated_at": "2026-08-19T17:36:36+00:00",
-    "generated_from_commit": "4d25d9218d0ff24549190d69c0db625a0b2b2171",
+    "generated_at": "2026-08-19T19:13:58+00:00",
+    "generated_from_commit": "56a4139bbafdda05e0123d73c6777f0b817ca814",
     "generator": "tools/velora-status.sh --json",
     "github_live": true,
     "network_mode": "online",
@@ -15,25 +15,25 @@
     "name": "veloratrade/veloratrade",
     "private": true,
     "branch": "main",
-    "head": "4d25d92",
-    "head_full": "4d25d9218d0ff24549190d69c0db625a0b2b2171",
-    "head_date": "2026-08-19 17:36:26 +0000",
-    "head_subject": "docs: record live verification-link fix",
+    "head": "56a4139",
+    "head_full": "56a4139bbafdda05e0123d73c6777f0b817ca814",
+    "head_date": "2026-08-19 19:13:37 +0000",
+    "head_subject": "docs: record Production Resend rollout [skip ci]",
     "working_tree_clean": true,
     "changed_files": [],
-    "tracked_files": 683,
+    "tracked_files": 684,
     "readme_version": "2.2.0",
-    "origin_tracking_head": "4d25d92",
+    "origin_tracking_head": "56a4139",
     "ahead_by": 0,
     "behind_by": 0,
-    "remote_main_head": "4d25d92",
+    "remote_main_head": "56a4139",
     "remote_main_matches_head": true
   },
   "session_state": {
     "_meta": {
       "schema": "velora-session-state/1",
       "updated_at": "2026-08-19",
-      "based_on_commit": "e52ecc7ab9c49d3bdaa03d5f02a19d4f69ea6536",
+      "based_on_commit": "845bce140b1a663e7c8639f118ffcd3d53e0933c",
       "authority": "Human-maintained handoff. Live Git/GitHub evidence overrides technical status claims; owner decisions and safety rules remain authoritative.",
       "contains_secrets": false
     },
@@ -51,8 +51,8 @@
     "active_task": {
       "id": "B-11",
       "title": "تکمیل E2E ثبت‌نام و تأیید ایمیل",
-      "status": "resend_staging_fully_verified_ready_for_owner_decision",
-      "environment": "staging",
+      "status": "resend_production_verified",
+      "environment": "staging_and_production",
       "production_impact": false,
       "completed": [
         "Resend transport با PHP cURL، بدون Composer و با From ثابت پیاده‌سازی و فقط روی Staging منتشر شد",
@@ -62,7 +62,10 @@
         "دو باگ مستقل MySQL token consumption و متد ناموجود markUsed رفع و روی Staging اثبات شدند",
         "email_notifications مستقیماً از MySQL خوانده شد و رویدادهای اخیر همگی status=sent و error خالی داشتند",
         "Health Check Staging و CSP Guard پس از تغییرات موفق شدند",
-        "مسیر کلیک لینک تأیید در Frontend اصلاح شد: fragment token به POST JSON body منتقل، از history پاک و روی HTML واقعی Staging با page=200/API=200/UI success تأیید شد"
+        "مسیر کلیک لینک تأیید در Frontend اصلاح شد: fragment token به POST JSON body منتقل، از history پاک و روی HTML واقعی Staging با page=200/API=200/UI success تأیید شد",
+        "Deploy Production با بکاپ ۶۵۰ فایل و allow-list ۴۷۰ فایل روی commit 845bce1 موفق شد",
+        "env خصوصی Production با بکاپ server-side به MAIL_DRIVER=resend و RESEND_API_KEY overlay و بدون افشای مقدار راستی‌آزمایی شد",
+        "تست واقعی Production: register=201، ایمیل در ۱۰ ثانیه، From صحیح، page=200، verify API=200، token پاک، success UI و login=200"
       ],
       "established_facts": [
         "Transactional Email Suite run 32274251200 نتیجه 7/7 delivery و From identity PASS دارد",
@@ -74,20 +77,25 @@
         "ریشه باگ کلیک: ایمیل #token می‌ساخت ولی صفحه location.search می‌خواند و body token خالی می‌فرستاد",
         "Commit e52ecc7 روی Staging در Deploy run 32281002043 منتشر شد",
         "HTML منتشرشده 9/9 قرارداد JS را پاس کرد و تست live با Token واقعی نتیجه LIVE_EMAIL_LINK_CLICK=PASS داد",
-        "Health Check Staging run 32282465876 پس از اصلاح Frontend موفق است"
+        "Health Check Staging run 32282465876 پس از اصلاح Frontend موفق است",
+        "Production dry-run 32286432535 موفق بود: بسته ۴۷۰ فایل، بکاپ ۶۵۰ فایل و صفر نوشتن",
+        "Production deploy 32288226521 موفق و Health Check خواندنی خودکار سبز است",
+        "Setup Production Resend 32291424454 موفق و env backup/overlay/equality verification کامل است",
+        "تست مستقیم خارج از Actions نتیجه PRODUCTION_EMAIL_VERIFICATION=PASS داد",
+        "کلید فعلی RESEND_API_KEY بین Staging و Production مشترک است؛ جداسازی/rotation همچنان توصیه می‌شود"
       ],
-      "current_diagnosis": "تمام مسیرهای ایمیل transactional و سفرهای اصلی احراز هویت روی Staging سبز هستند. مانع فنی ایمیل برای تصمیم مهاجرت Production باقی نمانده؛ هر اقدام Production فقط با تأیید صریح مالک انجام می‌شود.",
-      "blocker_owner": "owner_production_approval",
+      "current_diagnosis": "Resend، همه قالب‌های transactional، مسیر کلیک تأیید و سفر ثبت‌نام/تأیید/ورود روی Staging و Production عملیاتی و Live-verified هستند.",
+      "blocker_owner": "none",
       "next_actions": [
-        "مالک نتایج Staging را بازبینی و درباره مهاجرت Production تصمیم صریح بدهد",
-        "در صورت تأیید، Secret مجزای Production ساخته و هرگز از کلید Staging استفاده نشود",
-        "قبل از Production backup/preflight و گاردهای workflow رسمی اجرا شوند",
-        "پس از انتشار Production، Resend delivery، From، Message ID، email_notifications و Health Check Production راستی‌آزمایی شوند"
+        "در فرصت مناسب API Keyهای Staging و Production جدا و کلید مشترک فعلی rotate شوند",
+        "کاربر تست Production ایجادشده در ممیزی در صورت نیاز از پنل مدیریت پاک شود",
+        "تا reset سهمیه Actions در ۱ سپتامبر ۲۰۲۶، Workflow غیرضروری اجرا نشود (مصرف فعلی ۹۰٪)",
+        "هر تغییر بعدی Production همچنان نیازمند تأیید صریح مالک و backup/dry-run است"
       ],
       "do_not_do": [
-        "بدون عبارت تأیید صریح مالک هیچ Secret/env/deploy یا تست نوشتاری Production انجام نشود",
+        "بدون تأیید صریح مالک deploy/config/database دیگری روی Production انجام نشود",
         "RESEND_API_KEY در چت، Git، artifact، response، log یا error_message قرار نگیرد",
-        "کلید Staging برای Production reuse نشود"
+        "تا زمان reset سهمیه، تست‌های تکراری GitHub Actions اجرا نشوند"
       ],
       "evidence": {
         "commits": [
@@ -98,7 +106,9 @@
           "c31b2e0",
           "9772465",
           "3fa183f",
-          "e52ecc7"
+          "e52ecc7",
+          "1b4458b",
+          "845bce1"
         ],
         "workflow_runs": [
           {
@@ -154,6 +164,24 @@
             "workflow": "healthcheck-staging.yml",
             "result": "success",
             "note": "Health Check پس از اصلاح Frontend"
+          },
+          {
+            "id": 32286432535,
+            "workflow": "deploy.yml",
+            "result": "success",
+            "note": "Production dry-run؛ 470-file allow-list، 650-file backup، zero writes"
+          },
+          {
+            "id": 32288226521,
+            "workflow": "deploy.yml",
+            "result": "success",
+            "note": "Production deploy + backup artifact + read-only health check"
+          },
+          {
+            "id": 32291424454,
+            "workflow": "setup-production-resend.yml",
+            "result": "success",
+            "note": "Production private env backup and Resend overlay verified"
           }
         ]
       }
@@ -181,14 +209,14 @@
   },
   "drift": [
     {
-      "id": "PROJECT_STATE_STALE",
+      "id": "SESSION_STATE_STALE",
       "severity": "warning",
-      "message": "PROJECT_STATE generated from 95f7785 does not cover HEAD 4d25d92"
+      "message": "SESSION_STATE based_on 845bce1 does not cover HEAD 56a4139"
     },
     {
-      "id": "README_PRODUCTION_SECRETS_CONFLICT",
+      "id": "PROJECT_STATE_STALE",
       "severity": "warning",
-      "message": "README says production FTP secrets are absent, but GitHub reports all three names configured"
+      "message": "PROJECT_STATE generated from 4d25d92 does not cover HEAD 56a4139"
     }
   ],
   "environments": {
@@ -199,7 +227,7 @@
       "behind_cloudflare": true,
       "ftp_host_note": "از veloratrade.ir برای FTP استفاده نشود — پشت CDN است",
       "deploy_workflow": "deploy.yml",
-      "status": "UNTOUCHED",
+      "status": "OPERATIONAL",
       "live_probe_status": 200
     },
     "staging": {
@@ -241,28 +269,28 @@
   "workflows": {
     "ci.yml": {
       "state": "active",
-      "total_runs": 105,
+      "total_runs": 108,
       "last_run": {
-        "id": 32282575309,
-        "at": "2026-08-19T17:36:31Z",
+        "id": 32286419927,
+        "at": "2026-08-19T18:16:37Z",
         "event": "push",
-        "status": "in_progress",
-        "conclusion": null,
-        "head_sha": "4d25d92",
-        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32282575309"
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "845bce1",
+        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32286419927"
       }
     },
     "csp-guard.yml": {
       "state": "active",
-      "total_runs": 94,
+      "total_runs": 97,
       "last_run": {
-        "id": 32282575284,
-        "at": "2026-08-19T17:36:31Z",
+        "id": 32286419877,
+        "at": "2026-08-19T18:16:37Z",
         "event": "push",
-        "status": "in_progress",
-        "conclusion": null,
-        "head_sha": "4d25d92",
-        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32282575284"
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "845bce1",
+        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32286419877"
       }
     },
     "deploy-staging.yml": {
@@ -280,15 +308,15 @@
     },
     "deploy.yml": {
       "state": "active",
-      "total_runs": 29,
+      "total_runs": 32,
       "last_run": {
-        "id": 32065125875,
-        "at": "2026-08-17T20:18:56Z",
+        "id": 32288226521,
+        "at": "2026-08-19T18:35:51Z",
         "event": "workflow_dispatch",
         "status": "completed",
         "conclusion": "success",
-        "head_sha": "0c61327",
-        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32065125875"
+        "head_sha": "845bce1",
+        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32288226521"
       }
     },
     "email-status-staging.yml": {
@@ -403,6 +431,19 @@
         "conclusion": "success",
         "head_sha": "b8822a2",
         "url": "https://github.com/veloratrade/veloratrade/actions/runs/32270666565"
+      }
+    },
+    "setup-production-resend.yml": {
+      "state": "active",
+      "total_runs": 1,
+      "last_run": {
+        "id": 32291424454,
+        "at": "2026-08-19T19:09:15Z",
+        "event": "workflow_dispatch",
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "845bce1",
+        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32291424454"
       }
     },
     "setup-staging-private.yml": {
