@@ -9,6 +9,12 @@ on:
 permissions:
   contents: read
 
+# One CI run per branch is enough. New pushes cancel obsolete browser jobs so
+# they cannot consume Actions minutes for hours.
+concurrency:
+  group: velora-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   php:
     name: PHP lint and boot test
@@ -165,6 +171,7 @@ jobs:
   dashboard:
     name: Dashboard browser test
     runs-on: ubuntu-latest
+    timeout-minutes: 12
 
     steps:
       - name: Checkout repository
@@ -265,8 +272,12 @@ jobs:
           BASE_URL: http://127.0.0.1:8080
           TEST_EMAIL: ci@velora.test
           TEST_PASSWORD: CiTest1234!
-        run: node .github/scripts/dashboard_e2e.js
+        run: timeout 180s node .github/scripts/dashboard_e2e.js
 
       - name: Server log on failure
         if: failure()
         run: tail -60 /tmp/server.log
+
+      - name: Stop local test server
+        if: always()
+        run: pkill -f 'php -S 127.0.0.1:8080' || true
