@@ -1,8 +1,8 @@
 {
   "_meta": {
     "schema": "velora-project-state/1",
-    "generated_at": "2026-08-19T16:01:24+00:00",
-    "generated_from_commit": "d966311efe0e8c9d50cba9cf08caab67a8de3d7d",
+    "generated_at": "2026-08-19T17:05:01+00:00",
+    "generated_from_commit": "95f7785ecc1659307a207507d6588a00a8033862",
     "generator": "tools/velora-status.sh --json",
     "github_live": true,
     "network_mode": "online",
@@ -15,25 +15,25 @@
     "name": "veloratrade/veloratrade",
     "private": true,
     "branch": "main",
-    "head": "d966311",
-    "head_full": "d966311efe0e8c9d50cba9cf08caab67a8de3d7d",
-    "head_date": "2026-08-19 16:01:12 +0000",
-    "head_subject": "docs: record Staging Resend verification",
+    "head": "95f7785",
+    "head_full": "95f7785ecc1659307a207507d6588a00a8033862",
+    "head_date": "2026-08-19 17:04:47 +0000",
+    "head_subject": "docs: close Staging email verification",
     "working_tree_clean": true,
     "changed_files": [],
-    "tracked_files": 679,
+    "tracked_files": 681,
     "readme_version": "2.2.0",
-    "origin_tracking_head": "d966311",
+    "origin_tracking_head": "95f7785",
     "ahead_by": 0,
     "behind_by": 0,
-    "remote_main_head": "d966311",
+    "remote_main_head": "95f7785",
     "remote_main_matches_head": true
   },
   "session_state": {
     "_meta": {
       "schema": "velora-session-state/1",
       "updated_at": "2026-08-19",
-      "based_on_commit": "bce91ea78ebdb9c045f87782bb3407f88813ec93",
+      "based_on_commit": "3fa183fa23dfe46cfdda84811b44e0f3fbcaa865",
       "authority": "Human-maintained handoff. Live Git/GitHub evidence overrides technical status claims; owner decisions and safety rules remain authoritative.",
       "contains_secrets": false
     },
@@ -51,81 +51,91 @@
     "active_task": {
       "id": "B-11",
       "title": "تکمیل E2E ثبت‌نام و تأیید ایمیل",
-      "status": "resend_staging_verified_followup_required",
+      "status": "resend_staging_fully_verified_ready_for_owner_decision",
       "environment": "staging",
       "production_impact": false,
       "completed": [
-        "خطای HTTP 500 ثبت‌نام رفع شد و مسیر موفق ثبت‌نام HTTP 201 برمی‌گرداند",
-        "Transport مستقل Resend بدون Composer و با PHP cURL پیاده‌سازی و فقط روی Staging منتشر شد",
-        "Resend API درخواست واقعی را پذیرفت و Message ID امن برگرداند",
-        "تحویل خارجی در ۱۰ ثانیه و From برابر VELORA TRADE <no-reply@veloratrade.ir> تأیید شد",
-        "ثبت‌نام واقعی Staging ایمیل تأیید را در اولین poll (۱۲ ثانیه) تحویل داد",
-        "HTTP mock با ۲۶ assertion، PHP lint، CSP Guard و Health Check Staging موفق شدند"
+        "Resend transport با PHP cURL، بدون Composer و با From ثابت پیاده‌سازی و فقط روی Staging منتشر شد",
+        "HTTP mock با ۲۶ assertion و Auth token integration با ۱۴ assertion موفق شدند",
+        "هر ۷ قالب transactional با کد واقعی پذیرفته و در صندوق خارجی تحویل شدند",
+        "سفر ۱۱مرحله‌ای register/verify/login/forgot/reset/new-login/password-changed کاملاً PASS شد",
+        "دو باگ مستقل MySQL token consumption و متد ناموجود markUsed رفع و روی Staging اثبات شدند",
+        "email_notifications مستقیماً از MySQL خوانده شد و رویدادهای اخیر همگی status=sent و error خالی داشتند",
+        "Health Check Staging و CSP Guard پس از تغییرات موفق شدند"
       ],
       "established_facts": [
-        "MAIL_DRIVER=resend و RESEND_API_KEY مستقل از طریق Setup Staging به env خصوصی Staging overlay شدند",
-        "Resend Diagnostics run 32270666565 موفق و Message ID آن 56b3b612-82bd-4e99-809d-e4c83e33007b است",
-        "Register E2E run 32270958783 مراحل register، گیت login و دریافت ایمیل را موفق گذراند",
-        "همان Register E2E در مرحله verify-email با HTTP 500 شکست خورد؛ این خطا پس از تحویل موفق ایمیل و جدا از Transport است",
-        "Health Check Staging run 32273336725 موفق است",
-        "خواندن مستقیم email_notifications به‌علت ناپایداری FTP در run 32271490231 کامل نشد؛ وضعیت sent فقط از قرارداد کد و تحویل واقعی استنتاج می‌شود و شاهد مستقیم DB هنوز باز است"
+        "Transactional Email Suite run 32274251200 نتیجه 7/7 delivery و From identity PASS دارد",
+        "Register E2E run 32278095459 تمام ۱۱ گام ثبت‌نام تا بازیابی رمز را PASS کرده است",
+        "Email Status run 32279188280 یازده ردیف اخیر را خواند؛ VERIFICATION_EMAIL، WELCOME_EMAIL، ACHIEVEMENT_UNLOCKED، PASSWORD_RESET_LINK و PASSWORD_CHANGED همگی sent و بدون error بودند",
+        "Health Check Staging run 32278229003 و CSP Guard run 32279176101 موفق‌اند",
+        "Resend API Message IDها امن و قابل‌ردیابی‌اند؛ نمونه مستقیم 56b3b612-82bd-4e99-809d-e4c83e33007b",
+        "Production در تمام این عملیات دست‌نخورده مانده است"
       ],
-      "current_diagnosis": "مهاجرت ارسال ایمیل Staging به Resend موفق است. مانع تحویل خارجی بسته شد؛ مسئله باز جدید HTTP 500 در verify-email پس از مصرف توکن است و نباید به Resend نسبت داده شود.",
-      "blocker_owner": "engineering",
+      "current_diagnosis": "تمام مسیرهای ایمیل transactional و سفرهای اصلی احراز هویت روی Staging سبز هستند. مانع فنی ایمیل برای تصمیم مهاجرت Production باقی نمانده؛ هر اقدام Production فقط با تأیید صریح مالک انجام می‌شود.",
+      "blocker_owner": "owner_production_approval",
       "next_actions": [
-        "علت HTTP 500 مسیر verify-email روی Staging با کوچک‌ترین patch مستقل تشخیص و رفع شود",
-        "پس از رفع، Register E2E دوباره اجرا و مراحل verify و login سبز شوند",
-        "وضعیت email_notifications با دسترسی خواندنی مطمئن به DB/هاست مستقیماً راستی‌آزمایی شود",
-        "فعال‌سازی Resend در Production فقط با تأیید صریح جداگانه، Secret مستقل Production، preflight، backup و deploy workflow انجام شود"
+        "مالک نتایج Staging را بازبینی و درباره مهاجرت Production تصمیم صریح بدهد",
+        "در صورت تأیید، Secret مجزای Production ساخته و هرگز از کلید Staging استفاده نشود",
+        "قبل از Production backup/preflight و گاردهای workflow رسمی اجرا شوند",
+        "پس از انتشار Production، Resend delivery، From، Message ID، email_notifications و Health Check Production راستی‌آزمایی شوند"
       ],
       "do_not_do": [
-        "خطای verify-email به‌عنوان شکست Resend تفسیر نشود؛ ارسال و تحویل Resend اثبات شده است",
-        "Production بدون تأیید صریح برای مهاجرت Resend لمس نشود",
-        "RESEND_API_KEY در چت، Git، artifact، response، log یا error_message قرار نگیرد"
+        "بدون عبارت تأیید صریح مالک هیچ Secret/env/deploy یا تست نوشتاری Production انجام نشود",
+        "RESEND_API_KEY در چت، Git، artifact، response، log یا error_message قرار نگیرد",
+        "کلید Staging برای Production reuse نشود"
       ],
       "evidence": {
         "commits": [
           "6ad62f3",
           "3ebeb50",
-          "b8822a2",
-          "f03c302"
+          "acd5ff8",
+          "8fdaff1",
+          "c31b2e0",
+          "9772465",
+          "3fa183f"
         ],
         "workflow_runs": [
-          {
-            "id": 32268203145,
-            "workflow": "setup-staging-private.yml",
-            "result": "success",
-            "note": "overlay امن MAIL_DRIVER=resend و RESEND_API_KEY در env خصوصی Staging"
-          },
-          {
-            "id": 32268282263,
-            "workflow": "deploy-staging.yml",
-            "result": "success",
-            "note": "انتشار Resend transport فقط روی Staging"
-          },
           {
             "id": 32270666565,
             "workflow": "resend-diagnostics-staging.yml",
             "result": "success",
-            "note": "API accepted + external delivery + From identity؛ Message ID امن ثبت شد"
+            "note": "Resend API accepted، delivery 10s، From identity PASS"
           },
           {
-            "id": 32270958783,
+            "id": 32274251200,
+            "workflow": "notification-email-suite-staging.yml",
+            "result": "success",
+            "note": "تمام ۷ قالب transactional پذیرفته و تحویل شدند"
+          },
+          {
+            "id": 32276333679,
+            "workflow": "deploy-staging.yml",
+            "result": "success",
+            "note": "auth token fixes روی Staging منتشر شدند"
+          },
+          {
+            "id": 32278095459,
             "workflow": "register-e2e-staging.yml",
-            "result": "failure",
-            "note": "register/email delivery موفق؛ verify-email با HTTP 500 شکست خورد"
+            "result": "success",
+            "note": "۱۱/۱۱ گام register تا password changed PASS"
           },
           {
-            "id": 32273336725,
+            "id": 32279188280,
+            "workflow": "email-status-staging.yml",
+            "result": "success",
+            "note": "MySQL email_notifications: 11 recent rows، همگی sent و بدون error"
+          },
+          {
+            "id": 32278229003,
             "workflow": "healthcheck-staging.yml",
             "result": "success",
-            "note": "Health Check رسمی Staging پس از مهاجرت"
+            "note": "Health Check رسمی Staging"
           },
           {
-            "id": 32271490231,
-            "workflow": "email-status-staging.yml",
-            "result": "cancelled",
-            "note": "بررسی مستقیم DB به‌علت ناپایداری FTP کامل نشد"
+            "id": 32279176101,
+            "workflow": "csp-guard.yml",
+            "result": "success",
+            "note": "CSP Guard روی HEAD فعلی"
           }
         ]
       }
@@ -155,7 +165,7 @@
     {
       "id": "PROJECT_STATE_STALE",
       "severity": "warning",
-      "message": "PROJECT_STATE generated from 01d4d37 does not cover HEAD d966311"
+      "message": "PROJECT_STATE generated from d966311 does not cover HEAD 95f7785"
     },
     {
       "id": "README_PRODUCTION_SECRETS_CONFLICT",
@@ -213,41 +223,41 @@
   "workflows": {
     "ci.yml": {
       "state": "active",
-      "total_runs": 95,
+      "total_runs": 102,
       "last_run": {
-        "id": 32273491865,
-        "at": "2026-08-19T16:01:15Z",
+        "id": 32279561337,
+        "at": "2026-08-19T17:04:51Z",
         "event": "push",
         "status": "in_progress",
         "conclusion": null,
-        "head_sha": "d966311",
-        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32273491865"
+        "head_sha": "95f7785",
+        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32279561337"
       }
     },
     "csp-guard.yml": {
       "state": "active",
-      "total_runs": 84,
+      "total_runs": 91,
       "last_run": {
-        "id": 32273491789,
-        "at": "2026-08-19T16:01:14Z",
+        "id": 32279561276,
+        "at": "2026-08-19T17:04:51Z",
         "event": "push",
-        "status": "in_progress",
-        "conclusion": null,
-        "head_sha": "d966311",
-        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32273491789"
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "95f7785",
+        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32279561276"
       }
     },
     "deploy-staging.yml": {
       "state": "active",
-      "total_runs": 11,
+      "total_runs": 13,
       "last_run": {
-        "id": 32268282263,
-        "at": "2026-08-19T15:08:50Z",
+        "id": 32276333679,
+        "at": "2026-08-19T16:30:47Z",
         "event": "workflow_dispatch",
         "status": "completed",
         "conclusion": "success",
-        "head_sha": "3ebeb50",
-        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32268282263"
+        "head_sha": "c31b2e0",
+        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32276333679"
       }
     },
     "deploy.yml": {
@@ -265,28 +275,28 @@
     },
     "email-status-staging.yml": {
       "state": "active",
-      "total_runs": 1,
+      "total_runs": 3,
       "last_run": {
-        "id": 32271490231,
-        "at": "2026-08-19T15:40:44Z",
+        "id": 32279188280,
+        "at": "2026-08-19T17:00:51Z",
         "event": "workflow_dispatch",
         "status": "completed",
-        "conclusion": "cancelled",
-        "head_sha": "bce91ea",
-        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32271490231"
+        "conclusion": "success",
+        "head_sha": "3fa183f",
+        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32279188280"
       }
     },
     "error-log-staging.yml": {
       "state": "active",
-      "total_runs": 1,
+      "total_runs": 2,
       "last_run": {
-        "id": 32271160074,
-        "at": "2026-08-19T15:37:22Z",
+        "id": 32275817162,
+        "at": "2026-08-19T16:25:26Z",
         "event": "workflow_dispatch",
         "status": "completed",
         "conclusion": "success",
-        "head_sha": "45aa84d",
-        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32271160074"
+        "head_sha": "8fdaff1",
+        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32275817162"
       }
     },
     "frontend-url-guard.yml": {
@@ -309,15 +319,15 @@
     },
     "healthcheck-staging.yml": {
       "state": "active",
-      "total_runs": 14,
+      "total_runs": 15,
       "last_run": {
-        "id": 32273336725,
-        "at": "2026-08-19T15:59:45Z",
+        "id": 32278229003,
+        "at": "2026-08-19T16:50:42Z",
         "event": "workflow_dispatch",
         "status": "completed",
         "conclusion": "success",
-        "head_sha": "bce91ea",
-        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32273336725"
+        "head_sha": "9772465",
+        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32278229003"
       }
     },
     "healthcheck-suite.yml": {
@@ -338,17 +348,30 @@
         "url": "https://github.com/veloratrade/veloratrade/actions/runs/32204587673"
       }
     },
-    "register-e2e-staging.yml": {
+    "notification-email-suite-staging.yml": {
       "state": "active",
-      "total_runs": 7,
+      "total_runs": 1,
       "last_run": {
-        "id": 32270958783,
-        "at": "2026-08-19T15:35:22Z",
+        "id": 32274251200,
+        "at": "2026-08-19T16:08:59Z",
         "event": "workflow_dispatch",
         "status": "completed",
-        "conclusion": "failure",
-        "head_sha": "f03c302",
-        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32270958783"
+        "conclusion": "success",
+        "head_sha": "acd5ff8",
+        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32274251200"
+      }
+    },
+    "register-e2e-staging.yml": {
+      "state": "active",
+      "total_runs": 10,
+      "last_run": {
+        "id": 32278095459,
+        "at": "2026-08-19T16:49:19Z",
+        "event": "workflow_dispatch",
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "9772465",
+        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32278095459"
       }
     },
     "resend-diagnostics-staging.yml": {
