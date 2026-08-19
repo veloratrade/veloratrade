@@ -1,0 +1,296 @@
+name: SMTP Diagnostics (Staging)
+
+# تشخیص مستقل SMTP استیجینگ پس از تغییر provider.
+# زنجیره‌ها را جدا می‌کند:
+#   GitHub runner → SMTP provider → external inbox
+#   Staging app   → SMTP provider → external inbox
+# هیچ وابستگی به IMAP/cPanel webmail ندارد و فقط یک صندوق موقت می‌سازد.
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'برای ارسال دو ایمیل تست استیجینگ، RUN را وارد کنید'
+        required: true
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smtp-diagnostics-staging
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    name: DNS → TLS → AUTH → direct delivery → app delivery
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      FTP_SERVER: ${{ secrets.STAGING_FTP_SERVER }}
+      FTP_USERNAME: ${{ secrets.STAGING_FTP_USERNAME }}
+      FTP_PASSWORD: ${{ secrets.STAGING_FTP_PASSWORD }}
+      INPUT_CONFIRM: ${{ github.event.inputs.confirm }}
+      BASE: https://staging.veloratrade.ir
+
+    steps:
+      - name: Gate
+        run: |
+          set -euo pipefail
+          [ "$INPUT_CONFIRM" = "RUN" ] || {
+            echo "::error::confirm باید دقیقاً RUN باشد"
+            exit 1
+          }
+
+      - name: Read deployed Staging mail configuration safely
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -q lftp dnsutils >/dev/null
+
+          for attempt in $(seq 1 10); do
+            if lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+              -e "set ftp:ssl-allow no; set net:max-retries 2; set net:timeout 30; get velora_private_staging/config/velora.env -o /tmp/velora.env; bye"; then
+              break
+            fi
+            sleep 5
+          done
+          [ -s /tmp/velora.env ] || { echo "::error::velora.env استیجینگ دریافت نشد"; exit 1; }
+
+          python3 <<'PY'
+          import os, uuid
+          wanted = {
+              'MAIL_DRIVER', 'MAIL_HOST', 'MAIL_PORT', 'MAIL_USER',
+              'MAIL_PASS', 'MAIL_FROM', 'MAIL_FROM_NAME'
+          }
+          values = {}
+          with open('/tmp/velora.env', encoding='utf-8-sig') as f:
+              for raw in f:
+                  line = raw.strip()
+                  if not line or line.startswith('#') or '=' not in line:
+                      continue
+                  key, value = line.split('=', 1)
+                  key, value = key.strip(), value.strip()
+                  if key in wanted:
+                      if len(value) >= 2 and value[0] == value[-1] and value[0] in "'\"":
+                          value = value[1:-1]
+                      values[key] = value
+
+          required = ('MAIL_DRIVER', 'MAIL_HOST', 'MAIL_USER', 'MAIL_PASS')
+          missing = [k for k in required if not values.get(k)]
+          if missing:
+              raise SystemExit('::error::کلیدهای اجباری خالی/غایب: ' + ', '.join(missing))
+          values.setdefault('MAIL_PORT', '587')
+          values.setdefault('MAIL_FROM', values['MAIL_USER'])
+          values.setdefault('MAIL_FROM_NAME', 'VELORA TRADE')
+
+          env_file = os.environ['GITHUB_ENV']
+          with open(env_file, 'a', encoding='utf-8') as out:
+              for key, value in values.items():
+                  print(f'::add-mask::{value}')
+                  marker = 'VELORA_' + uuid.uuid4().hex
+                  out.write(f'{key}<<{marker}\n{value}\n{marker}\n')
+          print('تنظیمات موردنیاز پیدا و mask شد؛ هیچ مقداری چاپ نشد')
+          PY
+
+          shred -u /tmp/velora.env 2>/dev/null || rm -f /tmp/velora.env
+
+      - name: Diagnose configured SMTP and external delivery
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          import json, os, random, smtplib, socket, ssl, string, subprocess, sys, time
+          import urllib.error, urllib.request
+          from email.message import EmailMessage
+
+          host = os.environ['MAIL_HOST'].strip()
+          port = int(os.environ.get('MAIL_PORT', '587'))
+          user = os.environ['MAIL_USER']
+          password = os.environ['MAIL_PASS']
+          sender = os.environ.get('MAIL_FROM') or user
+          sender_name = os.environ.get('MAIL_FROM_NAME') or 'VELORA TRADE'
+          driver = os.environ.get('MAIL_DRIVER', '').lower()
+          base = os.environ['BASE']
+          summary_path = os.environ['GITHUB_STEP_SUMMARY']
+          evidence = []
+
+          def report(layer, ok, detail):
+              mark = '✅' if ok else '❌'
+              print(f'{mark} {layer}: {detail}', flush=True)
+              evidence.append((layer, mark, detail))
+
+          def finish(code, verdict):
+              with open(summary_path, 'a', encoding='utf-8') as out:
+                  out.write('## SMTP Diagnostics — Staging\n\n')
+                  out.write('| لایه | نتیجه | شاهد |\n|---|---|---|\n')
+                  for layer, mark, detail in evidence:
+                      out.write(f'| {layer} | {mark} | {detail} |\n')
+                  out.write(f'\n**نتیجه:** {verdict}\n')
+              print('VERDICT:', verdict)
+              raise SystemExit(code)
+
+          def http(method, url, data=None, headers=None, timeout=30):
+              body = json.dumps(data).encode() if data is not None else None
+              req = urllib.request.Request(url, data=body, method=method)
+              req.add_header('Accept', 'application/json')
+              if body is not None:
+                  req.add_header('Content-Type', 'application/json')
+              for k, v in (headers or {}).items():
+                  req.add_header(k, v)
+              try:
+                  with urllib.request.urlopen(req, timeout=timeout) as r:
+                      return r.status, r.read().decode('utf-8', 'replace')
+              except urllib.error.HTTPError as e:
+                  return e.code, e.read().decode('utf-8', 'replace')
+
+          def members(body):
+              parsed = json.loads(body)
+              return parsed if isinstance(parsed, list) else parsed.get('hydra:member', [])
+
+          def mailbox_messages(token):
+              status, body = http('GET', 'https://api.mail.tm/messages?page=1',
+                                  headers={'Authorization': 'Bearer ' + token})
+              return members(body) if status == 200 else []
+
+          if driver != 'smtp':
+              report('Config', False, f'MAIL_DRIVER={driver or "empty"}؛ باید smtp باشد')
+              finish(20, 'اپ از SMTP استفاده نمی‌کند')
+          if not 1 <= port <= 65535:
+              report('Config', False, 'MAIL_PORT نامعتبر است')
+              finish(21, 'پورت SMTP نامعتبر')
+          report('Config', True, f'driver=smtp و port={port} (مقادیر حساس mask هستند)')
+
+          try:
+              addresses = sorted({x[4][0] for x in socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)})
+              report('DNS', bool(addresses), f'{len(addresses)} آدرس برای MAIL_HOST پیدا شد')
+          except Exception as exc:
+              report('DNS', False, type(exc).__name__)
+              finish(22, 'MAIL_HOST در DNS resolve نشد')
+
+          try:
+              with socket.create_connection((host, port), timeout=15):
+                  pass
+              report('TCP', True, f'اتصال به پورت تنظیم‌شده {port} برقرار شد')
+          except Exception as exc:
+              report('TCP', False, f'{type(exc).__name__}: اتصال پورت {port} برقرار نشد')
+              finish(23, 'شبکه/پورت/hostname SMTP مشکل دارد')
+
+          # صندوق مستقل خارجی برای اثبات تحویل واقعی.
+          st, body = http('GET', 'https://api.mail.tm/domains?page=1')
+          domains = [x['domain'] for x in members(body) if x.get('isActive')]
+          if not domains:
+              report('External inbox', False, f'mail.tm domain unavailable (HTTP {st})')
+              finish(24, 'زیرساخت صندوق تست آماده نشد')
+          local = 'velora-smtp-' + ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))
+          recipient = local + '@' + domains[0]
+          mailbox_password = 'Vt!' + ''.join(random.choices(string.ascii_letters + string.digits, k=16))
+          print(f'::add-mask::{recipient}')
+          print(f'::add-mask::{mailbox_password}')
+          st, _ = http('POST', 'https://api.mail.tm/accounts', {'address': recipient, 'password': mailbox_password})
+          if st not in (200, 201):
+              report('External inbox', False, f'account create HTTP {st}')
+              finish(25, 'صندوق خارجی ساخته نشد')
+          st, body = http('POST', 'https://api.mail.tm/token', {'address': recipient, 'password': mailbox_password})
+          mailbox_token = json.loads(body).get('token', '') if st == 200 else ''
+          if not mailbox_token:
+              report('External inbox', False, f'token HTTP {st}')
+              finish(26, 'توکن صندوق خارجی ساخته نشد')
+          print(f'::add-mask::{mailbox_token}')
+          report('External inbox', True, 'صندوق موقت مستقل ساخته شد')
+
+          direct_marker = 'VELORA-SMTP-DIRECT-' + str(int(time.time()))
+          print(f'::add-mask::{direct_marker}')
+          message = EmailMessage()
+          message['From'] = f'{sender_name} <{sender}>'
+          message['To'] = recipient
+          message['Subject'] = direct_marker
+          message['Message-ID'] = f'<diag-{int(time.time())}@{sender.split("@")[-1]}>'
+          message.set_content('Velora staging direct SMTP diagnostic.')
+          message.add_alternative('<html><body><p>Velora staging direct SMTP diagnostic.</p></body></html>', subtype='html')
+
+          smtp = None
+          try:
+              context = ssl.create_default_context()
+              if port == 465:
+                  smtp = smtplib.SMTP_SSL(host, port, timeout=30, context=context)
+                  smtp.ehlo()
+                  tls_mode = 'implicit TLS'
+              else:
+                  smtp = smtplib.SMTP(host, port, timeout=30)
+                  code, _ = smtp.ehlo()
+                  if code != 250:
+                      raise RuntimeError('EHLO rejected')
+                  if not smtp.has_extn('starttls'):
+                      raise RuntimeError('STARTTLS not advertised')
+                  smtp.starttls(context=context)
+                  smtp.ehlo()
+                  tls_mode = 'STARTTLS'
+              report('TLS/EHLO', True, tls_mode + ' برقرار شد')
+              smtp.login(user, password)
+              report('SMTP AUTH', True, 'احراز هویت موفق')
+              refused = smtp.send_message(message)
+              if refused:
+                  raise RuntimeError('recipient refused')
+              report('SMTP transaction', True, 'MAIL FROM/RCPT/DATA با پاسخ موفق پذیرفته شد')
+              smtp.quit(); smtp = None
+          except smtplib.SMTPAuthenticationError as exc:
+              report('SMTP AUTH', False, f'کد {exc.smtp_code}؛ نام کاربری/رمز یا مجوز SMTP اشتباه است')
+              finish(27, 'SMTP authentication شکست خورد')
+          except ssl.SSLCertVerificationError:
+              report('TLS/EHLO', False, 'گواهی TLS با MAIL_HOST تطابق/اعتبار ندارد')
+              finish(28, 'TLS certificate verification شکست خورد')
+          except Exception as exc:
+              report('SMTP transaction', False, type(exc).__name__ + ': ' + str(exc)[:100])
+              finish(29, 'TLS/EHLO یا تراکنش SMTP شکست خورد')
+          finally:
+              if smtp is not None:
+                  try: smtp.close()
+                  except Exception: pass
+
+          direct_received = False
+          for attempt in range(1, 19):
+              time.sleep(10)
+              for item in mailbox_messages(mailbox_token)[:10]:
+                  if direct_marker in (item.get('subject') or ''):
+                      direct_received = True
+                      break
+              if direct_received:
+                  break
+              print(f'… انتظار تحویل مستقیم {attempt}/18', flush=True)
+          report('Direct external delivery', direct_received,
+                 f'پیام در {attempt * 10} ثانیه رسید' if direct_received else 'SMTP پذیرفت اما تا ۱۸۰ ثانیه تحویل نشد')
+          if not direct_received:
+              finish(30, 'Provider پیام را پذیرفت اما تحویل خارجی/DNS reputation مشکل دارد')
+
+          before = {x.get('id') for x in mailbox_messages(mailbox_token)}
+          app_password = 'Vt!' + ''.join(random.choices(string.ascii_letters + string.digits, k=14))
+          print(f'::add-mask::{app_password}')
+          st, body = http('POST', base + '/api/v1/auth/register',
+                          {'email': recipient, 'password': app_password,
+                           'fullName': 'SMTP Diagnostic', 'timezone': 'UTC'},
+                          {'Origin': base})
+          try:
+              verification_required = json.loads(body).get('data', {}).get('verificationRequired') is True
+          except Exception:
+              verification_required = False
+          registered = st == 201 and verification_required
+          report('Staging register', registered, f'HTTP {st}, verificationRequired={verification_required}')
+          if not registered:
+              finish(31, 'اپ قبل از مرحله ارسال ایمیل خطا دارد')
+
+          app_received = False
+          app_attempt = 0
+          for app_attempt in range(1, 19):
+              time.sleep(10)
+              messages = mailbox_messages(mailbox_token)
+              if any(x.get('id') not in before for x in messages):
+                  app_received = True
+                  break
+              print(f'… انتظار ایمیل اپ {app_attempt}/18', flush=True)
+          report('Staging app delivery', app_received,
+                 f'ایمیل اپ در {app_attempt * 10} ثانیه رسید' if app_received else 'ایمیل اپ تا ۱۸۰ ثانیه نرسید')
+
+          if direct_received and not app_received:
+              finish(32, 'Provider و credential سالم‌اند؛ مشکل در اجرای SMTP از هاست یا Mailer/تنظیم runtime است')
+          finish(0, 'SMTP و تحویل خارجی اپ Staging سالم است')
+          PY
