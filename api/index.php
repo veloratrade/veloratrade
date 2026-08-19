@@ -148,6 +148,15 @@ try {
 } catch (NotFoundException $e) {
     Response::error($e->getMessage(), 404, 'NOT_FOUND');
 } catch (\Throwable $e) {
+    // Safe operational evidence for unexpected 500s. Never log the exception
+    // message, request body, token, email, credential, or absolute path.
+    error_log(sprintf(
+        '[VELORA_UNHANDLED] route=%s class=%s file=%s line=%d',
+        $request->path,
+        get_class($e),
+        basename($e->getFile()),
+        $e->getLine(),
+    ));
     $debug = \Velora\Core\Config::get('app_debug', false);
     Response::error(
         $debug ? $e->getMessage() : 'Internal server error.',
