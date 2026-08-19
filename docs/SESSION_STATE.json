@@ -2,7 +2,7 @@
   "_meta": {
     "schema": "velora-session-state/1",
     "updated_at": "2026-08-19",
-    "based_on_commit": "e52ecc7ab9c49d3bdaa03d5f02a19d4f69ea6536",
+    "based_on_commit": "845bce140b1a663e7c8639f118ffcd3d53e0933c",
     "authority": "Human-maintained handoff. Live Git/GitHub evidence overrides technical status claims; owner decisions and safety rules remain authoritative.",
     "contains_secrets": false
   },
@@ -20,8 +20,8 @@
   "active_task": {
     "id": "B-11",
     "title": "تکمیل E2E ثبت‌نام و تأیید ایمیل",
-    "status": "resend_staging_fully_verified_ready_for_owner_decision",
-    "environment": "staging",
+    "status": "resend_production_verified",
+    "environment": "staging_and_production",
     "production_impact": false,
     "completed": [
       "Resend transport با PHP cURL، بدون Composer و با From ثابت پیاده‌سازی و فقط روی Staging منتشر شد",
@@ -31,7 +31,10 @@
       "دو باگ مستقل MySQL token consumption و متد ناموجود markUsed رفع و روی Staging اثبات شدند",
       "email_notifications مستقیماً از MySQL خوانده شد و رویدادهای اخیر همگی status=sent و error خالی داشتند",
       "Health Check Staging و CSP Guard پس از تغییرات موفق شدند",
-      "مسیر کلیک لینک تأیید در Frontend اصلاح شد: fragment token به POST JSON body منتقل، از history پاک و روی HTML واقعی Staging با page=200/API=200/UI success تأیید شد"
+      "مسیر کلیک لینک تأیید در Frontend اصلاح شد: fragment token به POST JSON body منتقل، از history پاک و روی HTML واقعی Staging با page=200/API=200/UI success تأیید شد",
+      "Deploy Production با بکاپ ۶۵۰ فایل و allow-list ۴۷۰ فایل روی commit 845bce1 موفق شد",
+      "env خصوصی Production با بکاپ server-side به MAIL_DRIVER=resend و RESEND_API_KEY overlay و بدون افشای مقدار راستی‌آزمایی شد",
+      "تست واقعی Production: register=201، ایمیل در ۱۰ ثانیه، From صحیح، page=200، verify API=200، token پاک، success UI و login=200"
     ],
     "established_facts": [
       "Transactional Email Suite run 32274251200 نتیجه 7/7 delivery و From identity PASS دارد",
@@ -43,20 +46,25 @@
       "ریشه باگ کلیک: ایمیل #token می‌ساخت ولی صفحه location.search می‌خواند و body token خالی می‌فرستاد",
       "Commit e52ecc7 روی Staging در Deploy run 32281002043 منتشر شد",
       "HTML منتشرشده 9/9 قرارداد JS را پاس کرد و تست live با Token واقعی نتیجه LIVE_EMAIL_LINK_CLICK=PASS داد",
-      "Health Check Staging run 32282465876 پس از اصلاح Frontend موفق است"
+      "Health Check Staging run 32282465876 پس از اصلاح Frontend موفق است",
+      "Production dry-run 32286432535 موفق بود: بسته ۴۷۰ فایل، بکاپ ۶۵۰ فایل و صفر نوشتن",
+      "Production deploy 32288226521 موفق و Health Check خواندنی خودکار سبز است",
+      "Setup Production Resend 32291424454 موفق و env backup/overlay/equality verification کامل است",
+      "تست مستقیم خارج از Actions نتیجه PRODUCTION_EMAIL_VERIFICATION=PASS داد",
+      "کلید فعلی RESEND_API_KEY بین Staging و Production مشترک است؛ جداسازی/rotation همچنان توصیه می‌شود"
     ],
-    "current_diagnosis": "تمام مسیرهای ایمیل transactional و سفرهای اصلی احراز هویت روی Staging سبز هستند. مانع فنی ایمیل برای تصمیم مهاجرت Production باقی نمانده؛ هر اقدام Production فقط با تأیید صریح مالک انجام می‌شود.",
-    "blocker_owner": "owner_production_approval",
+    "current_diagnosis": "Resend، همه قالب‌های transactional، مسیر کلیک تأیید و سفر ثبت‌نام/تأیید/ورود روی Staging و Production عملیاتی و Live-verified هستند.",
+    "blocker_owner": "none",
     "next_actions": [
-      "مالک نتایج Staging را بازبینی و درباره مهاجرت Production تصمیم صریح بدهد",
-      "در صورت تأیید، Secret مجزای Production ساخته و هرگز از کلید Staging استفاده نشود",
-      "قبل از Production backup/preflight و گاردهای workflow رسمی اجرا شوند",
-      "پس از انتشار Production، Resend delivery، From، Message ID، email_notifications و Health Check Production راستی‌آزمایی شوند"
+      "در فرصت مناسب API Keyهای Staging و Production جدا و کلید مشترک فعلی rotate شوند",
+      "کاربر تست Production ایجادشده در ممیزی در صورت نیاز از پنل مدیریت پاک شود",
+      "تا reset سهمیه Actions در ۱ سپتامبر ۲۰۲۶، Workflow غیرضروری اجرا نشود (مصرف فعلی ۹۰٪)",
+      "هر تغییر بعدی Production همچنان نیازمند تأیید صریح مالک و backup/dry-run است"
     ],
     "do_not_do": [
-      "بدون عبارت تأیید صریح مالک هیچ Secret/env/deploy یا تست نوشتاری Production انجام نشود",
+      "بدون تأیید صریح مالک deploy/config/database دیگری روی Production انجام نشود",
       "RESEND_API_KEY در چت، Git، artifact، response، log یا error_message قرار نگیرد",
-      "کلید Staging برای Production reuse نشود"
+      "تا زمان reset سهمیه، تست‌های تکراری GitHub Actions اجرا نشوند"
     ],
     "evidence": {
       "commits": [
@@ -67,7 +75,9 @@
         "c31b2e0",
         "9772465",
         "3fa183f",
-        "e52ecc7"
+        "e52ecc7",
+        "1b4458b",
+        "845bce1"
       ],
       "workflow_runs": [
         {
@@ -123,6 +133,24 @@
           "workflow": "healthcheck-staging.yml",
           "result": "success",
           "note": "Health Check پس از اصلاح Frontend"
+        },
+        {
+          "id": 32286432535,
+          "workflow": "deploy.yml",
+          "result": "success",
+          "note": "Production dry-run؛ 470-file allow-list، 650-file backup، zero writes"
+        },
+        {
+          "id": 32288226521,
+          "workflow": "deploy.yml",
+          "result": "success",
+          "note": "Production deploy + backup artifact + read-only health check"
+        },
+        {
+          "id": 32291424454,
+          "workflow": "setup-production-resend.yml",
+          "result": "success",
+          "note": "Production private env backup and Resend overlay verified"
         }
       ]
     }

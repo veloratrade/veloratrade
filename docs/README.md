@@ -8,14 +8,14 @@
 >
 > | | |
 > |---|---|
-> | **Production** (`veloratrade.ir`) | 🟢 سالم و **دست‌نخورده**. Secrets ندارد، پس `Deploy Production` عملاً اجرا نمی‌شود. **این وضعیت عمدی است.** |
-> | **Staging** (`staging.veloratrade.ir`) | ✅ عملیاتی — محیط کاری فعال. آخرین Smoke Suite: ۱۵/۱۵ سبز |
-> | **کار جاری** | فعال‌سازی تولید **متوقف به‌خواست مالک**. فقط استیجینگ درگیر می‌شود |
+> | **Production** (`veloratrade.ir`) | ✅ عملیاتی — commit `845bce1` منتشر، Resend فعال و لینک تأیید Live-verified |
+> | **Staging** (`staging.veloratrade.ir`) | ✅ عملیاتی — Resend و همه سفرهای ایمیل سبز |
+> | **کار جاری** | نگهداری؛ هر تغییر بعدی Production همچنان نیازمند تأیید صریح مالک است |
 >
 > ### ۵ قاعده‌ای که هرگز نقض نمی‌شوند
 >
 > 1. **بدون تأیید صریح مالک، هیچ تغییری اعمال نکن** — نه commit، نه push، نه اجرای workflow. «دسترسی داشتن» مجوز نیست (NP-1).
-> 2. **Production را لمس نکن.** نه انتشار، نه POST، نه Secret اضافه‌کردن.
+> 2. **Production فقط با تأیید صریح و موردی مالک.** دسترسی فنی یا تأیید یک عملیات، مجوز عملیات بعدی نیست.
 > 3. **تعارض را گزارش کن، تفسیر نکن.** اگر سند با کد یا با دستور مالک نخواند، بایست و بپرس.
 > 4. **ادعا نکن — اثبات کن.** هر گزارش وضعیت باید شاهد اجرایی داشته باشد (شماره run، خروجی API، کد وضعیت).
 > 5. **رمز نخواه.** به مقدار هیچ Secret نیازی نداری و دسترسی هم نداری. `${{ secrets.NAME }}` کافی است.
@@ -142,9 +142,9 @@
 | Database | تولید — 🔴 ممنوعِ لمس | مستقل؛ `schema.sql` وارد شده |
 | `APP_ENV` | `production` | `staging` |
 | CDN / DNS | 🔴 **پشت Cloudflare** — IP واقعی مخفی است | مستقیم به origin (`185.164.72.148`) |
-| Deploy | `deploy.yml` — **عملاً غیرفعال** (Secrets تولید ست نشده؛ عمدی) | `deploy-staging.yml` — فعال، فقط دستی |
+| Deploy | `deploy.yml` — فعال، فقط دستی، تأیید + dry-run + backup | `deploy-staging.yml` — فعال، فقط دستی |
 | Indexing | مجاز | ممنوع (`robots` + `X-Robots-Tag`) |
-| وضعیت فعلی | UNTOUCHED ✅ | **OPERATIONAL ✅** (همه تست‌ها PASS — 2026-08-17) |
+| وضعیت فعلی | **OPERATIONAL ✅** — Resend + verification Live-verified (2026-08-19) | **OPERATIONAL ✅** |
 
 ### دفاع لایه‌ای برای Production (وضعیت ۲۰۲۶-۰۸-۱۷)
 
@@ -171,7 +171,7 @@
 | ⚠️ نام دامنه برای FTP | **`veloratrade.ir` استفاده نشود** — پشت Cloudflare است (`2606:4700:…`) و به هاست نمی‌رسد | `staging.veloratrade.ir` مستقیم به همان IP اشاره دارد |
 | نام کاربری | `piknet` — **اکانت کلی cPanel** | `piknet` — **همان اکانت** |
 | رمز | همان رمز `piknet` | همان رمز `piknet` |
-| Secret فعلی در GitHub | 🔴 **هیچ** (`FTP_SERVER`/`FTP_USERNAME`/`FTP_PASSWORD` تعریف نشده‌اند) | ✅ `STAGING_FTP_SERVER` / `_USERNAME` / `_PASSWORD` |
+| Secret فعلی در GitHub | ✅ `FTP_SERVER` / `_USERNAME` / `_PASSWORD` + `RESEND_API_KEY` | ✅ `STAGING_FTP_SERVER` / `_USERNAME` / `_PASSWORD` + همان `RESEND_API_KEY` فعلی |
 | نقطه ورود پس از لاگین | **`/home/piknet/`** | **`/home/piknet/`** — یکسان |
 | مقصد mirror | **`public_html/`** | `public_html/staging.veloratrade.ir/` |
 | پروتکل | `ftp` ساده + `set ftp:ssl-allow no` (OC-2) | همان |
@@ -414,8 +414,9 @@ git diff docs-baseline-v1..main -- docs/
 ## 7. وضعیت جاری و کارهای باز (Living Section)
 
 **آخرین وضعیت (2026-08-19 — جلسهٔ agent):**
-- ✉️ **Resend روی Staging کاملاً تأیید شد — آماده تصمیم مالک برای Production:** Transport `resend` با PHP cURL، بدون Composer و با From ثابت `VELORA TRADE <no-reply@veloratrade.ir>` فعال است. Resend Diagnostics `32270666565` ✅ (تحویل ۱۰ ثانیه + Message ID امن)، Transactional Suite `32274251200` ✅ (هر ۷ قالب: verification/welcome/password-reset/password-changed/new-device/first-trade/achievement، تحویل `7/7` و From صحیح)، Register E2E `32278095459` ✅ (۱۱/۱۱ گام register→verify→login→forgot→reset→login جدید→اعلان تغییر رمز). دو باگ مستقل کشف و رفع شدند: duplicate named placeholder در native MySQL برای verification/reset token و فراخوانی متد ناموجود `markUsed()` پس از تغییر رمز؛ Regression integration `14/14` سبز است. Email Status `32279188280` ✅ مستقیماً MySQL را خواند: ۱۱ رویداد اخیر شامل `VERIFICATION_EMAIL`، `WELCOME_EMAIL`، `ACHIEVEMENT_UNLOCKED`، `PASSWORD_RESET_LINK` و `PASSWORD_CHANGED` همگی `sent` و بدون error. Health Check `32278229003` ✅ و CSP Guard `32279176101` ✅. Production کاملاً دست‌نخورده است و فقط با تأیید صریح جداگانه مالک مهاجرت می‌کند.
-- 🔗 **کلیک لینک تأیید ایمیل روی Staging رفع و Live-verified شد:** ریشه: Backend لینک امن `#token=...` تولید می‌کرد، اما Frontend فقط `location.search` را می‌خواند و سپس Token خالی در JSON body می‌فرستاد. در `e52ecc7` صفحه حالا fragment را با اولویت می‌خواند، legacy query را فقط برای سازگاری می‌پذیرد، Token را فوراً از browser history حذف می‌کند و `POST /api/v1/auth/verify-email` را با body واقعی می‌فرستد. خروجی‌های FA/EN فقط از Builder بازتولید و CSP release `2026.08.19.1` شد. Deploy Staging `32281002043` ✅؛ HTML منتشرشده قرارداد JS را `9/9` پاس کرد و تست live با ایمیل و Token واقعی: `page=200`، `api=200`، `token_cleared=true`، `success_ui=true` ✅. Health Check `32282465876` ✅. Production دست‌نخورده است.
+- 🚀 **Production با تأیید صریح مالک منتشر و Live-verified شد:** Dry-run `32286432535` ✅ (allow-list=۴۷۰، بکاپ=۶۵۰، صفر نوشتن)، Deploy Production `32288226521` ✅ (بکاپ Artifact + آپلود + Health Check خواندنی)، Setup Production Resend `32291424454` ✅ (بکاپ server-side از env، overlay و equality verification بدون نمایش Secret). تست مستقیم خارج از Actions: register=201، تحویل ایمیل در ۱۰ ثانیه، From دقیق، صفحه تأیید=200، API تأیید=200، Token از history پاک، UI موفق و login=200؛ `PRODUCTION_EMAIL_VERIFICATION=PASS`. برای حفظ سهمیه (مصرف ۹۰٪)، تست نهایی بدون Workflow جدید انجام شد. کلید Resend فعلاً بین Staging/Production مشترک است و جداسازی/rotation توصیه می‌شود.
+- ✉️ **Resend روی Staging کاملاً تأیید شد:** Transport `resend` با PHP cURL، بدون Composer و با From ثابت `VELORA TRADE <no-reply@veloratrade.ir>` فعال است. Resend Diagnostics `32270666565` ✅ (تحویل ۱۰ ثانیه + Message ID امن)، Transactional Suite `32274251200` ✅ (هر ۷ قالب: verification/welcome/password-reset/password-changed/new-device/first-trade/achievement، تحویل `7/7` و From صحیح)، Register E2E `32278095459` ✅ (۱۱/۱۱ گام register→verify→login→forgot→reset→login جدید→اعلان تغییر رمز). دو باگ مستقل کشف و رفع شدند: duplicate named placeholder در native MySQL برای verification/reset token و فراخوانی متد ناموجود `markUsed()` پس از تغییر رمز؛ Regression integration `14/14` سبز است. Email Status `32279188280` ✅ مستقیماً MySQL را خواند: ۱۱ رویداد اخیر شامل `VERIFICATION_EMAIL`، `WELCOME_EMAIL`، `ACHIEVEMENT_UNLOCKED`، `PASSWORD_RESET_LINK` و `PASSWORD_CHANGED` همگی `sent` و بدون error. Health Check `32278229003` ✅ و CSP Guard `32279176101` ✅؛ این شواهد مبنای انتشار تأییدشده Production بودند.
+- 🔗 **کلیک لینک تأیید ایمیل روی Staging رفع و Live-verified شد:** ریشه: Backend لینک امن `#token=...` تولید می‌کرد، اما Frontend فقط `location.search` را می‌خواند و سپس Token خالی در JSON body می‌فرستاد. در `e52ecc7` صفحه حالا fragment را با اولویت می‌خواند، legacy query را فقط برای سازگاری می‌پذیرد، Token را فوراً از browser history حذف می‌کند و `POST /api/v1/auth/verify-email` را با body واقعی می‌فرستد. خروجی‌های FA/EN فقط از Builder بازتولید و CSP release `2026.08.19.1` شد. Deploy Staging `32281002043` ✅؛ HTML منتشرشده قرارداد JS را `9/9` پاس کرد و تست live با ایمیل و Token واقعی: `page=200`، `api=200`، `token_cleared=true`، `success_ui=true` ✅. Health Check `32282465876` ✅؛ همان fix در Production نیز Live-verified شد.
 - 🧭 **ارتقای Session Bootstrap — commit `a5bf75a`:** `tools/velora-status.sh` بدون حذف قابلیت‌های قبلی به گزارش یکپارچهٔ Git محلی/remote، Run ID و SHA workflowها، مأموریت فعال، تشخیص drift، مرز اختیار و حالت‌های `--offline`/`--check`/`--context` ارتقا یافت. حافظهٔ تحویل ساختاریافته در `docs/SESSION_STATE.json` اضافه شد؛ خروجی‌های `.session/SESSION_CONTEXT.{md,json}` ignored هستند. قرارداد آفلاین با ۴ تست در `tools/tests/test_velora_status.py` پوشش داده شد. تغییر ابزار در `a5bf75a` ثبت و روی `main` منتشر شده است؛ خود Bootstrap هیچ عملیات Production انجام نمی‌دهد.
 - ✉️ **اصلاح ساختار ایمیل و ارتقای تحویل‌پذیری (Deliverability):** مشکل عدم تحویل ایمیل‌های قالب‌دار به کلاینت‌های خارجی (نظیر Gmail و Outlook) با وجود وضعیت `Sent` در هاست، با ۵ اصلاح کلیدی در `api/src/Core/Mailer.php` و `api/src/Core/EmailTemplate.php` برطرف شد:
   1. **بسته‌بندی چندبخشی استاندارد (`multipart/alternative`):** استخراج خودکار نسخه `text/plain` از بدنه HTML در `Mailer::htmlToPlain` و ارسال همزمان هر دو نسخه متنی و HTML جهت رفع جریمه اسپم `MIME_HTML_ONLY`.
