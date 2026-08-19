@@ -19,21 +19,58 @@ jobs:
         env:
           FTP_SERVER:   ${{ secrets.STAGING_FTP_SERVER }}
           FTP_USERNAME: ${{ secrets.STAGING_FTP_USERNAME }}
-          FTP_PASSWORD: ${{ secrets.STAGING_FTP_PASSWORD }}
-          VELORA_ENV:   ${{ secrets.STAGING_VELORA_ENV }}
+          FTP_PASSWORD:   ${{ secrets.STAGING_FTP_PASSWORD }}
+          VELORA_ENV:     ${{ secrets.STAGING_VELORA_ENV }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
         run: |
-          set -uo pipefail
+          set -euo pipefail
           sudo apt-get install -y -q lftp > /dev/null
+
+          [ -n "$VELORA_ENV" ] || { echo "::error::STAGING_VELORA_ENV خالی است"; exit 1; }
+          [ -n "$RESEND_API_KEY" ] || { echo "::error::RESEND_API_KEY خالی است"; exit 1; }
+          echo "::add-mask::$RESEND_API_KEY"
 
           mkdir -p private/config private/data private/logs
           printf '%s' "$VELORA_ENV" > private/config/velora.env
+
+          # محتوای کامل env قدیمی حفظ می‌شود؛ فقط transport و کلید Resend به شکل
+          # deterministic جایگزین می‌شوند. هیچ مقدار Secret چاپ نمی‌شود.
+          python3 <<'PY'
+          import os
+          path = 'private/config/velora.env'
+          updates = {
+              'MAIL_DRIVER': 'resend',
+              'RESEND_API_KEY': os.environ['RESEND_API_KEY'],
+              'MAIL_FROM': 'no-reply@veloratrade.ir',
+              'MAIL_FROM_NAME': 'VELORA TRADE',
+          }
+          source = open(path, encoding='utf-8-sig').read().splitlines()
+          output, written = [], set()
+          for line in source:
+              stripped = line.strip()
+              if stripped and not stripped.startswith('#') and '=' in stripped:
+                  key = stripped.split('=', 1)[0].strip()
+                  if key in updates:
+                      if key not in written:
+                          output.append(f'{key}={updates[key]}')
+                          written.add(key)
+                      continue
+              output.append(line)
+          for key, value in updates.items():
+              if key not in written:
+                  output.append(f'{key}={value}')
+          open(path, 'w', encoding='utf-8', newline='\n').write('\n'.join(output).rstrip('\n') + '\n')
+          print('Staging mail transport overlay prepared; values hidden')
+          PY
+          chmod 600 private/config/velora.env
           touch private/data/.gitkeep private/logs/.gitkeep
 
+          uploaded=0
           attempt=0
           until [ $attempt -ge 10 ]; do
             attempt=$((attempt+1))
             echo "===== تلاش $attempt ====="
-            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" <<'LFTP' && break
+            if lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" <<'LFTP'
           set ftp:ssl-allow no
           set net:max-retries 2
           set net:timeout 30
@@ -43,8 +80,14 @@ jobs:
           chmod 700 velora_private_staging/config velora_private_staging/data velora_private_staging/logs
           bye
           LFTP
+            then
+              uploaded=1
+              break
+            fi
             sleep 8
           done
+          [ "$uploaded" = 1 ] || { echo "::error::آپلود env استیجینگ پس از ۱۰ تلاش شکست خورد"; exit 1; }
+          shred -u private/config/velora.env 2>/dev/null || rm -f private/config/velora.env
 
           echo "===== راستی‌آزمایی (فقط متادیتا) ====="
           lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" <<'LFTP'
