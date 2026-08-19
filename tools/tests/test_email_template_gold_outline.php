@@ -59,6 +59,8 @@ $html = EmailTemplate::render(
     'این لینک ۲۴ ساعت معتبر است.',
     'ACCOUNT SECURITY',
     'fa',
+    'verification',
+    'تأیید ایمیل',
 );
 
 expect(str_contains($html, 'width="620"'), 'email width must be 620px');
@@ -69,6 +71,9 @@ expect(str_contains($html, 'border:1px solid #9b782e'), 'outer Gold Outline bord
 expect(str_contains($html, 'border:1px solid #3b465a'), 'inner Gold Outline border missing');
 expect(str_contains($html, 'bgcolor="#101b2d"'), 'email-safe outer background missing');
 expect(str_contains($html, 'bgcolor="#0d1829"'), 'email-safe inner background missing');
+expect(str_contains($html, 'src="cid:velora-verification"'), 'dedicated CID icon missing');
+expect(str_contains($html, 'alt="تأیید ایمیل"'), 'CID icon alt text missing');
+expect(str_contains($html, 'width="78" height="78"'), 'icon frame dimensions missing');
 expect(str_contains($html, 'role="presentation"'), 'table presentation semantics missing');
 expect(str_contains($html, 'dir="rtl"'), 'Persian direction must be RTL');
 expect(str_contains($html, 'border-right:4px solid #d4af37'), 'RTL notice accent missing');

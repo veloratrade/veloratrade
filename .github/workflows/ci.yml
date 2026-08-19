@@ -164,6 +164,9 @@ jobs:
       - name: Enforce zero-cost GitHub workflow policy
         run: python tools/check_github_cost_guard.py
 
+      - name: Verify transactional CID icon assets
+        run: python tools/tests/test_notification_email_icons.py
+
       - name: Set up Node for browser-contract tests
         uses: actions/setup-node@v4
         with:
