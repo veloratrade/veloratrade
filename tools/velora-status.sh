@@ -6,30 +6,77 @@
 #       حافظهٔ جلسات قبل و بدون اینکه مالک چیزی توضیح دهد.
 #
 # ── تضمین‌های این اسکریپت ─────────────────────────────────────────────────────
-#   ✓ فقط خواندنی — هیچ فایلی نوشته/حذف نمی‌شود، هیچ workflow ای اجرا نمی‌شود
+#   ✓ حالت‌های text/json/check/offline فقط خواندنی‌اند؛ workflow اجرا نمی‌شود
 #   ✓ فقط GET به API گیت‌هاب — هیچ POST/PUT/PATCH/DELETE
-#   ✓ هیچ مقدار Secret چاپ نمی‌شود (API گیت‌هاب هم آن را برنمی‌گرداند)
-#   ✓ توکن در خروجی ماسک می‌شود
-#   ✓ اگر توکن نباشد، بخش‌های آفلاین همچنان کار می‌کنند
+#   ✓ --context فقط artifactهای ignored در .session/ می‌سازد؛ فایل پروژه دست‌نخورده
+#   ✓ هیچ مقدار Secret چاپ یا ذخیره نمی‌شود (API هم مقدار را برنمی‌گرداند)
+#   ✓ توکن در خروجی ماسک می‌شود و نبود توکن، گزارش آفلاین را متوقف نمی‌کند
+#   ✓ --json قدیمی برای بازتولید PROJECT_STATE.json سازگار باقی می‌ماند
 #
 # ── استفاده ───────────────────────────────────────────────────────────────────
-#   bash tools/velora-status.sh              # گزارش متنی
-#   GH_TOKEN=xxx bash tools/velora-status.sh # با بخش‌های آنلاین
-#   bash tools/velora-status.sh --json       # خروجی JSON (برای PROJECT_STATE.json)
+#   bash tools/velora-status.sh              # گزارش کامل شروع جلسه
+#   GH_TOKEN=xxx bash tools/velora-status.sh # همراه وضعیت زنده GitHub خصوصی
+#   bash tools/velora-status.sh --offline    # بدون هیچ درخواست شبکه
+#   bash tools/velora-status.sh --check      # اعتبار context/drift؛ خطا = exit 1
+#   bash tools/velora-status.sh --context    # ساخت .session/SESSION_CONTEXT.{md,json}
+#   bash tools/velora-status.sh --json       # stdout JSON؛ سازگار با روش قبلی
+#   bash tools/velora-status.sh --help
 #
-# مرجع: docs/README.md §7 — این اسکریپت جایگزین خواندن سند نیست، مکمل آن است.
+# مرجع: docs/README.md §7/§8 و docs/SESSION_STATE.json.
 # ==============================================================================
 
 set -uo pipefail
 
+# از هر working directory قابل اجرا باشد، اما فقط داخل همین checkout کار کند.
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || true)"
+if [ -z "$REPO_ROOT" ]; then
+  echo "ERROR: velora-status.sh باید داخل checkout گیت اجرا شود." >&2
+  exit 2
+fi
+cd "$REPO_ROOT" || exit 2
+
 REPO="veloratrade/veloratrade"
 API="https://api.github.com/repos/$REPO"
 JSON_MODE=0
-[ "${1:-}" = "--json" ] && JSON_MODE=1
+OFFLINE_MODE=0
+CHECK_MODE=0
+CONTEXT_MODE=0
+
+usage() {
+  cat <<'USAGE'
+VELORA live session bootstrap
+
+Usage:
+  bash tools/velora-status.sh              Full live session report
+  GH_TOKEN=... bash tools/velora-status.sh Include private GitHub live evidence
+  bash tools/velora-status.sh --offline    No network requests
+  bash tools/velora-status.sh --check      Validate freshness/drift (nonzero on failure)
+  bash tools/velora-status.sh --context    Generate ignored .session context files
+  bash tools/velora-status.sh --json       JSON on stdout (PROJECT_STATE compatible)
+  bash tools/velora-status.sh --help
+USAGE
+}
+
+for arg in "$@"; do
+  case "$arg" in
+    --json)    JSON_MODE=1 ;;
+    --offline) OFFLINE_MODE=1 ;;
+    --check)   CHECK_MODE=1 ;;
+    --context) CONTEXT_MODE=1 ;;
+    --help|-h) usage; exit 0 ;;
+    *) echo "ERROR: گزینه ناشناخته: $arg" >&2; usage >&2; exit 2 ;;
+  esac
+done
+
+if [ "$JSON_MODE" = 1 ] && { [ "$CHECK_MODE" = 1 ] || [ "$CONTEXT_MODE" = 1 ]; }; then
+  echo "ERROR: --json را با --check یا --context ترکیب نکن." >&2
+  exit 2
+fi
 
 TOKEN="${GH_TOKEN:-${GITHUB_TOKEN:-}}"
 have_token=0
-[ -n "$TOKEN" ] && have_token=1
+[ -n "$TOKEN" ] && [ "$OFFLINE_MODE" = 0 ] && have_token=1
 
 # ماسک‌کردن هر چیزی که شبیه توکن است
 mask() { sed -E 's/(gh[pousr]_|github_pat_)[A-Za-z0-9_]+/\1***MASKED***/g'; }
@@ -51,19 +98,47 @@ cat <<BANNER
 ╚════════════════════════════════════════════════════════════╝
 تولید: $(date -u '+%Y-%m-%d %H:%M UTC')
 BANNER
-[ "$have_token" = 0 ] && echo "⚠️  بدون GH_TOKEN — بخش‌های آنلاین رد می‌شوند (git محلی کار می‌کند)"
+if [ "$OFFLINE_MODE" = 1 ]; then
+  echo "ℹ️  حالت آفلاین — هیچ درخواست شبکه‌ای انجام نمی‌شود"
+elif [ "$have_token" = 0 ]; then
+  echo "⚠️  بدون GH_TOKEN — بخش‌های GitHub خصوصی رد می‌شوند (Git محلی کار می‌کند)"
+fi
 echo
 
 # ── ۱. مخزن ───────────────────────────────────────────────────────────────────
-hr; echo "۱. مخزن"; hr
-echo "  برنچ         : $(git rev-parse --abbrev-ref HEAD 2>/dev/null)"
-echo "  کامیت        : $(git rev-parse --short HEAD 2>/dev/null)"
+hr; echo "۱. مخزن و همگامی نسخه"; hr
+branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?')
+head_short=$(git rev-parse --short HEAD 2>/dev/null || echo '?')
+head_full=$(git rev-parse HEAD 2>/dev/null || echo '')
+origin_ref="origin/$branch"
+origin_short=$(git rev-parse --short "$origin_ref" 2>/dev/null || true)
+ahead=0; behind=0
+if [ -n "$origin_short" ]; then
+  read -r ahead behind <<EOF_SYNC
+$(git rev-list --left-right --count "HEAD...$origin_ref" 2>/dev/null || echo '0 0')
+EOF_SYNC
+fi
+
+echo "  برنچ         : $branch"
+echo "  کامیت محلی   : $head_short"
+echo "  origin محلی  : ${origin_short:-در دسترس نیست}"
+echo "  فاصله        : ahead=$ahead / behind=$behind"
 echo "  تاریخ        : $(git log -1 --format='%ad' --date=iso 2>/dev/null)"
 echo "  پیام         : $(git log -1 --format='%s' 2>/dev/null | cut -c1-60)"
-dirty=$(git status --porcelain 2>/dev/null | wc -l)
+dirty=$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')
 echo "  working tree : $([ "$dirty" = 0 ] && echo 'تمیز ✅' || echo "$dirty فایل تغییرکرده ⚠️")"
-echo "  فایل‌ها      : $(git ls-files 2>/dev/null | wc -l)"
+echo "  فایل‌ها      : $(git ls-files 2>/dev/null | wc -l | tr -d ' ')"
 echo "  نسخه README  : $(grep -m1 '| نسخه |' docs/README.md 2>/dev/null | tr -dc '0-9.')"
+if [ "$have_token" = 1 ]; then
+  remote_sha=$(gh_get "$API/commits/main" | python3 -c "import sys,json; print(json.load(sys.stdin).get('sha',''))" 2>/dev/null || true)
+  if [ -n "$remote_sha" ]; then
+    echo "  main زنده    : ${remote_sha:0:7} $([ "$remote_sha" = "$head_full" ] && echo '✅ همگام' || echo '⚠️ متفاوت با HEAD محلی')"
+  else
+    echo "  main زنده    : دریافت نشد"
+  fi
+else
+  echo "  main زنده    : بررسی نشد (آخرین origin محلی نمایش داده شد)"
+fi
 echo
 echo "  ۵ کامیت آخر:"
 git log --oneline -5 --format='    %h %s' 2>/dev/null | cut -c1-70
@@ -86,7 +161,9 @@ for w in sorted(wfs,key=lambda x:x['path']):
         n=d['total_count']
         if d['workflow_runs']:
             r=d['workflow_runs'][0]
-            last=f\"{r['created_at'][:16]} {r['event']} → {r['conclusion']}\"
+            result=r.get('conclusion') or r.get('status') or '?'
+            sha=(r.get('head_sha') or '')[:7]
+            last=f\"run={r.get('id')} {r['created_at'][:16]} {r['event']} → {result} sha={sha}\"
         else: last='هرگز اجرا نشده'
     except Exception: n,last='?','?'
     print(f'  {name:32s} runs={str(n):>3s}  {last}')
@@ -132,17 +209,21 @@ fi
 
 # ── ۴. سلامت محیط‌ها ──────────────────────────────────────────────────────────
 echo; hr; echo "۴. سلامت محیط‌ها (GET امن)"; hr
-for pair in "Production|https://veloratrade.ir/" "Staging|https://staging.veloratrade.ir/health"; do
-  label="${pair%%|*}"; url="${pair#*|}"
-  code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 12 "$url" 2>/dev/null)
-  case "$code" in
-    000) note="بی‌پاسخ — احتمالاً OC-1 (فایروال، IP خارج از ایران) نه خرابی" ;;
-    200) note="سالم ✅" ;;
-    *)   note="بررسی لازم" ;;
-  esac
-  printf '  %-12s %-4s %s\n' "$label" "$code" "$note"
-done
-echo "  ⚠️ کد 000 از سندباکس شاهد خرابی نیست — تست معتبر فقط از GitHub Actions"
+if [ "$OFFLINE_MODE" = 1 ]; then
+  echo "  (در حالت --offline عمداً probe نشد؛ هیچ ادعای سلامت زنده‌ای ساخته نشد)"
+else
+  for pair in "Production|https://veloratrade.ir/" "Staging|https://staging.veloratrade.ir/health"; do
+    label="${pair%%|*}"; url="${pair#*|}"
+    code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 12 "$url" 2>/dev/null)
+    case "$code" in
+      000) note="بی‌پاسخ — احتمالاً OC-1 (فایروال، IP خارج از ایران) نه خرابی" ;;
+      200) note="سالم ✅" ;;
+      *)   note="بررسی لازم" ;;
+    esac
+    printf '  %-12s %-4s %s\n' "$label" "$code" "$note"
+  done
+  echo "  ⚠️ کد 000 از سندباکس شاهد خرابی نیست — تست معتبر فقط از GitHub Actions"
+fi
 
 # ── ۵. موانع و کارهای باز ─────────────────────────────────────────────────────
 echo; hr; echo "۵. موانع و کارهای باز (از docs/README.md)"; hr
@@ -198,12 +279,100 @@ cat <<'RULES'
   BR-2  نتیجهٔ ابزار را پیش از گزارش راستی‌آزمایی کن
   BR-5  فرض دسترسی نکن — آزمایش کن
 RULES
+
+# ── ۷. مأموریت فعال و حافظهٔ تحویل ───────────────────────────────────────────
+echo; hr; echo "۷. مأموریت فعال (docs/SESSION_STATE.json)"; hr
+python3 - <<'PY' 2>/dev/null || echo "  🔴 SESSION_STATE نامعتبر یا خوانده‌نشدنی است"
+import json
+p='docs/SESSION_STATE.json'
+d=json.load(open(p, encoding='utf-8'))
+t=d.get('active_task', {})
+print(f"  کار فعال      : {t.get('id','?')} — {t.get('title','?')}")
+print(f"  وضعیت         : {t.get('status','?')}")
+print(f"  محیط          : {t.get('environment','?')}")
+print(f"  مسئول مانع    : {t.get('blocker_owner','?')}")
+print(f"  تشخیص جاری    : {t.get('current_diagnosis','?')}")
+print("\n  انجام‌شده:")
+for x in t.get('completed',[]): print('    ✓ '+x)
+print("\n  اقدام دقیق بعدی:")
+for i,x in enumerate(t.get('next_actions',[]),1): print(f'    {i}. {x}')
+print("\n  پرهیز:")
+for x in t.get('do_not_do',[]): print('    ⛔ '+x)
+PY
+
+# ── ۸. Drift و اعتبار context ────────────────────────────────────────────────
+echo; hr; echo "۸. تازگی اسناد، تعارض‌ها و Drift"; hr
+snapshot_commit=$(python3 -c "import json; print(json.load(open('docs/PROJECT_STATE.json'))['_meta'].get('generated_from_commit',''))" 2>/dev/null || true)
+session_commit=$(python3 -c "import json; print(json.load(open('docs/SESSION_STATE.json'))['_meta'].get('based_on_commit',''))" 2>/dev/null || true)
+context_errors=0
+
+# یک snapshot نمی‌تواند hash کامیتی را که خودش داخل آن commit می‌شود از پیش بداند.
+# بنابراین اختلافی که فقط از فایل خود snapshot/handoff تشکیل شده، تازه محسوب می‌شود.
+covers_head_with_only() {
+  local base="$1" allowed_regex="$2" changed
+  [ -n "$base" ] && git cat-file -e "$base^{commit}" 2>/dev/null || return 1
+  git merge-base --is-ancestor "$base" HEAD 2>/dev/null || return 1
+  changed=$(git diff --name-only "$base..HEAD" 2>/dev/null || return 1)
+  [ -n "$changed" ] || return 0
+  if printf '%s\n' "$changed" | grep -Ev "$allowed_regex" | grep -q .; then
+    return 1
+  fi
+  return 0
+}
+
+if [ -z "$snapshot_commit" ]; then
+  echo "  🔴 docs/PROJECT_STATE.json نامعتبر یا فاقد generated_from_commit"
+  context_errors=$((context_errors+1))
+elif [ "$snapshot_commit" = "$head_full" ] || covers_head_with_only "$snapshot_commit" '^docs/(PROJECT_STATE|SESSION_STATE)\.json$|^docs/README\.md$'; then
+  echo "  ✅ PROJECT_STATE وضعیت فنی HEAD را پوشش می‌دهد"
+else
+  echo "  ⚠️  PROJECT_STATE کهنه: ${snapshot_commit:0:7} پوشش‌دهنده HEAD $head_short نیست"
+  echo "      بازتولید: bash tools/velora-status.sh --json > docs/PROJECT_STATE.json"
+  context_errors=$((context_errors+1))
+fi
+
+if [ -z "$session_commit" ]; then
+  echo "  🔴 docs/SESSION_STATE.json نامعتبر یا فاقد based_on_commit"
+  context_errors=$((context_errors+1))
+elif [ "$session_commit" = "$head_full" ] || covers_head_with_only "$session_commit" '^docs/(SESSION_STATE|PROJECT_STATE)\.json$|^docs/README\.md$'; then
+  echo "  ✅ SESSION_STATE وضعیت تحویل HEAD را پوشش می‌دهد"
+else
+  echo "  ⚠️  SESSION_STATE نیازمند بازبینی: ${session_commit:0:7} پوشش‌دهنده HEAD $head_short نیست"
+  context_errors=$((context_errors+1))
+fi
+
+if [ "$behind" -gt 0 ] 2>/dev/null; then
+  echo "  🔴 checkout محلی $behind کامیت از $origin_ref عقب است"
+  context_errors=$((context_errors+1))
+fi
+
+if [ "$have_token" = 1 ]; then
+  prod_secret_count=$(gh_get "$API/actions/secrets" | python3 -c "import sys,json; n={x.get('name') for x in json.load(sys.stdin).get('secrets',[])}; print(len(n & {'FTP_SERVER','FTP_USERNAME','FTP_PASSWORD'}))" 2>/dev/null || echo 0)
+  if [ "$prod_secret_count" -gt 0 ] && grep -q 'بدون Secrets\|Secrets ندارد\|هیچ.*FTP_SERVER' docs/README.md; then
+    echo "  ⚠️  تعارض مستند: README نبود Secrets تولید را ذکر می‌کند، GitHub نام $prod_secret_count Secret تولید را گزارش می‌دهد"
+  fi
+else
+  echo "  ℹ️  تعارض‌های وابسته به GitHub در حالت بدون توکن قابل‌اثبات نیستند"
+fi
+
+echo "  نتیجه check  : $([ "$context_errors" = 0 ] && echo 'معتبر ✅' || echo "$context_errors خطای تازگی/اعتبار ⚠️")"
+
+# ── ۹. مرز اختیار جلسه ────────────────────────────────────────────────────────
+echo; hr; echo "۹. مرز اختیار و امنیت جلسه"; hr
+cat <<'BOUNDARIES'
+  ✅ مجاز بدون اقدام نوشتاری: خواندن، تحلیل، گزارش، تست محلی غیرمخرب
+  ⚠️ نیازمند تأیید مالک: تغییر فایل، commit، push، اجرای workflow، نوشتن روی Staging
+  ⛔ نیازمند تأیید صریح Production: deploy/POST/FTP/DB/config روی Production
+  🔐 Secret values: هرگز خوانده، چاپ، ذخیره یا درخواست نشوند
+  🔑 دسترسی ترجیحی: Deploy key موقت؛ PAT حداقلی کوتاه‌عمر فقط در صورت نیاز
+BOUNDARIES
+
 echo
 hr
-echo "گام بعد: docs/README.md را کامل بخوان (§3 ماتریس FTP • §6 درس‌ها • §7 کار نیمه‌تمام)"
+echo "گام بعد: مأموریت فعال بالا را با docs/README.md §3/§6/§7 تطبیق بده؛ قبل از تغییر برنامه و دامنه را اعلام کن"
 hr
 
-# ── ۷. توکن جلسه (اثبات اجرا) ────────────────────────────────────────────────
+# ── ۱۰. توکن جلسه (اثبات اجرا) ───────────────────────────────────────────────
 # این کد از داده‌های زندهٔ همین لحظه ساخته می‌شود و حدس‌زدنی نیست.
 # agent موظف است آن را در اولین پیام خود به مالک نقل کند (§8، گام صفر).
 _sess=$(printf '%s|%s|%s|%s' \
@@ -214,24 +383,75 @@ _sess=$(printf '%s|%s|%s|%s' \
         | sha256sum | cut -c1-8)
 echo
 hr
-echo "۷. توکن اثبات اجرا (SESSION PROOF)"
+echo "۱۰. توکن اثبات اجرا (SESSION PROOF)"
 hr
 echo "  VELORA-RUN-$_sess"
+echo "  Context HEAD: $head_short | branch: $branch | dirty: $dirty | errors: $context_errors"
 echo
 echo "  ⚠️ این کد را در اولین پیام به مالک بنویس."
 echo "     بدون آن، هیچ گزارشی از تو معتبر نیست (BR-6)."
 hr
+
+# --context تنها حالت نوشتاری است و فقط artifactهای ignored می‌سازد.
+if [ "$CONTEXT_MODE" = 1 ]; then
+  mkdir -p .session
+  context_args=(--json)
+  [ "$OFFLINE_MODE" = 1 ] && context_args+=(--offline)
+  bash "${BASH_SOURCE[0]}" "${context_args[@]}" > .session/SESSION_CONTEXT.json
+  SESSION_PROOF="VELORA-RUN-$_sess" python3 - <<'PY'
+import datetime, json, os
+live=json.load(open('.session/SESSION_CONTEXT.json', encoding='utf-8'))
+state=json.load(open('docs/SESSION_STATE.json', encoding='utf-8'))
+r=live.get('repository',{}); task=state.get('active_task',{})
+lines=[
+ '# VELORA — Live Session Context','',
+ f"- Generated: `{live.get('_meta',{}).get('generated_at','?')}`",
+ f"- Session proof: `{os.environ.get('SESSION_PROOF','?')}`",
+ f"- Context commit: `{r.get('head','?')}`",
+ f"- Branch: `{r.get('branch','?')}`",
+ f"- Working tree clean: `{r.get('working_tree_clean')}`",
+ f"- Network mode: `{'online' if live.get('_meta',{}).get('github_live') else 'offline/local'}`",'',
+ '## Project Core','',
+ f"- Repository: `{state.get('project_core',{}).get('repository','?')}`",
+ f"- Architecture: {state.get('project_core',{}).get('architecture','?')}",
+ f"- Operating model: `{state.get('project_core',{}).get('operating_model','?')}`",'',
+ '## Active Task','',
+ f"- **{task.get('id','?')} — {task.get('title','?')}**",
+ f"- Status: `{task.get('status','?')}`",
+ f"- Environment: `{task.get('environment','?')}`",
+ f"- Diagnosis: {task.get('current_diagnosis','?')}",'',
+ '### Completed','']
+lines += [f'- {x}' for x in task.get('completed',[])]
+lines += ['', '### Exact Next Actions','']+[f'{i}. {x}' for i,x in enumerate(task.get('next_actions',[]),1)]
+lines += ['', '## Live Workflow Evidence','']
+for name,w in sorted(live.get('workflows',{}).items()):
+    last=w.get('last_run') or {}
+    lines.append(f"- `{name}`: **{last.get('conclusion','never')}** — run `{last.get('id','—')}`, sha `{last.get('head_sha','—')}`")
+lines += ['', '## Drift','']+[f"- {x.get('severity','info').upper()}: {x.get('message')}" for x in live.get('drift',[])]
+lines += ['', '## Safety Boundaries','']+[f"- `{k}`: {v}" for k,v in state.get('approval_boundaries',{}).items()]
+lines += ['', '> This file is generated and ignored by Git. Live evidence overrides stale technical snapshots; owner decisions remain authoritative.','']
+open('.session/SESSION_CONTEXT.md','w',encoding='utf-8').write('\n'.join(lines))
+PY
+  echo
+  echo "  Context ساخته شد:"
+  echo "    .session/SESSION_CONTEXT.md"
+  echo "    .session/SESSION_CONTEXT.json"
+fi
+
+if [ "$CHECK_MODE" = 1 ] && [ "$context_errors" -ne 0 ]; then
+  exit 1
+fi
 exit 0
 fi
 
 # ══════════════════════════════════════════════════════════════════════════════
 # حالت JSON
 # ══════════════════════════════════════════════════════════════════════════════
-export TOK="$TOKEN" HAVE="$have_token" API_URL="$API"
+export TOK="$TOKEN" HAVE="$have_token" OFFLINE="$OFFLINE_MODE" API_URL="$API"
 python3 <<'PY' | mask
-import json, os, subprocess, urllib.request, datetime
+import json, os, subprocess, urllib.request, urllib.error, datetime
 
-TOK=os.environ.get('TOK',''); HAVE=os.environ.get('HAVE')=='1'; API=os.environ['API_URL']
+TOK=os.environ.get('TOK',''); HAVE=os.environ.get('HAVE')=='1'; OFFLINE=os.environ.get('OFFLINE')=='1'; API=os.environ['API_URL']
 
 def sh(c):
     try: return subprocess.run(c,shell=True,capture_output=True,text=True).stdout.strip()
@@ -244,7 +464,16 @@ def api(p):
         return json.load(urllib.request.urlopen(r,timeout=15))
     except Exception: return {}
 
+def covers_head_with_only(base, allowed):
+    """True when commits after base only update self-describing snapshot files."""
+    if not base: return False
+    ok=subprocess.run(['git','merge-base','--is-ancestor',base,'HEAD'],capture_output=True).returncode==0
+    if not ok: return False
+    paths=sh(f'git diff --name-only {base}..HEAD').splitlines()
+    return all(p in allowed for p in paths)
+
 def probe(u):
+    if OFFLINE: return None
     try:
         rq=urllib.request.Request(u,method='GET'); rq.add_header('User-Agent','velora-status')
         return urllib.request.urlopen(rq,timeout=12).status
@@ -257,6 +486,8 @@ out={
    "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds'),
    "generated_from_commit": sh('git rev-parse HEAD'),
    "generator":"tools/velora-status.sh --json",
+   "github_live": HAVE,
+   "network_mode":"offline" if OFFLINE else ("online" if HAVE else "online-no-github-auth"),
    "regenerate":"bash tools/velora-status.sh --json > docs/PROJECT_STATE.json",
    "authority":"SNAPSHOT ONLY — منبع حقیقت نیست. مرجع: docs/README.md و P1/P2",
    "staleness_warning":"اگر generated_from_commit با HEAD فعلی فرق دارد، این فایل کهنه است — بازتولید کن",
@@ -266,12 +497,17 @@ out={
    "name":"veloratrade/veloratrade","private":True,
    "branch": sh('git rev-parse --abbrev-ref HEAD'),
    "head": sh('git rev-parse --short HEAD'),
+   "head_full": sh('git rev-parse HEAD'),
    "head_date": sh("git log -1 --format=%ad --date=iso"),
    "head_subject": sh("git log -1 --format=%s"),
    "working_tree_clean": sh('git status --porcelain')=='',
+   "changed_files": [x for x in sh('git status --porcelain').splitlines() if x],
    "tracked_files": int(sh('git ls-files | wc -l') or 0),
    "readme_version": sh("grep -m1 '| نسخه |' docs/README.md | tr -dc '0-9.'"),
+   "origin_tracking_head": sh("git rev-parse --short origin/$(git rev-parse --abbrev-ref HEAD) 2>/dev/null"),
  },
+ "session_state":{},
+ "drift":[],
  "environments":{
    "production":{
      "url":"https://veloratrade.ir","docroot":"public_html/",
@@ -315,12 +551,57 @@ out={
  ],
 }
 
+# حافظهٔ انسانی جلسه + drift محلی؛ شکست parse صریح ثبت می‌شود، پنهان نمی‌ماند.
+try:
+    state=json.load(open('docs/SESSION_STATE.json',encoding='utf-8'))
+    out['session_state']=state
+    based=state.get('_meta',{}).get('based_on_commit','')
+    if based != out['repository']['head_full'] and not covers_head_with_only(
+        based, {'docs/SESSION_STATE.json','docs/PROJECT_STATE.json','docs/README.md'}):
+        out['drift'].append({"id":"SESSION_STATE_STALE","severity":"warning",
+          "message":f"SESSION_STATE based_on {based[:7] or '?'} does not cover HEAD {out['repository']['head']}"})
+except Exception as e:
+    out['drift'].append({"id":"SESSION_STATE_INVALID","severity":"error",
+      "message":"docs/SESSION_STATE.json is missing or invalid"})
+
+try:
+    snap=json.load(open('docs/PROJECT_STATE.json',encoding='utf-8'))
+    snap_head=snap.get('_meta',{}).get('generated_from_commit','')
+    if snap_head != out['repository']['head_full'] and not covers_head_with_only(
+        snap_head, {'docs/PROJECT_STATE.json'}):
+        out['drift'].append({"id":"PROJECT_STATE_STALE","severity":"warning",
+          "message":f"PROJECT_STATE generated from {snap_head[:7] or '?'} does not cover HEAD {out['repository']['head']}"})
+except Exception:
+    out['drift'].append({"id":"PROJECT_STATE_INVALID","severity":"error",
+      "message":"docs/PROJECT_STATE.json is missing or invalid"})
+
+branch=out['repository']['branch']
+counts=sh(f'git rev-list --left-right --count HEAD...origin/{branch} 2>/dev/null').split()
+if len(counts)==2:
+    out['repository']['ahead_by'],out['repository']['behind_by']=map(int,counts)
+    if out['repository']['behind_by']:
+        out['drift'].append({"id":"LOCAL_BEHIND_ORIGIN","severity":"error",
+          "message":f"local HEAD is {out['repository']['behind_by']} commit(s) behind local origin/{branch}"})
+
 if HAVE:
+    remote=api('/commits/main').get('sha','')
+    out['repository']['remote_main_head']=remote[:7] if remote else None
+    out['repository']['remote_main_matches_head']=(remote==out['repository']['head_full']) if remote else None
+    if remote and remote != out['repository']['head_full']:
+        out['drift'].append({"id":"REMOTE_MAIN_DIFFERS","severity":"error",
+          "message":f"GitHub main {remote[:7]} differs from local HEAD {out['repository']['head']}"})
     s=api('/actions/secrets')
     names=[x['name'] for x in s.get('secrets',[])]
     out['secrets']['names']=names
-    out['secrets']['production_ftp_configured']=any(
+    out['secrets']['production_ftp_configured']=all(
         n in names for n in ('FTP_SERVER','FTP_USERNAME','FTP_PASSWORD'))
+    if out['secrets']['production_ftp_configured']:
+        try: readme=open('docs/README.md',encoding='utf-8').read()
+        except Exception: readme=''
+        if ('Secrets ندارد' in readme or 'هیچ (`FTP_SERVER`' in readme or
+            'هیچ (`FTP_SERVER`/`FTP_USERNAME`/`FTP_PASSWORD`' in readme):
+            out['drift'].append({"id":"README_PRODUCTION_SECRETS_CONFLICT","severity":"warning",
+              "message":"README says production FTP secrets are absent, but GitHub reports all three names configured"})
     for w in api('/actions/workflows').get('workflows',[]):
         n=w['path'].split('/')[-1]
         try:
@@ -329,8 +610,10 @@ if HAVE:
             d=json.load(urllib.request.urlopen(r,timeout=15))
             last=d['workflow_runs'][0] if d['workflow_runs'] else None
             out['workflows'][n]={"state":w['state'],"total_runs":d['total_count'],
-              "last_run":{"at":last['created_at'],"event":last['event'],
-                          "conclusion":last['conclusion']} if last else None}
+              "last_run":{"id":last['id'],"at":last['created_at'],"event":last['event'],
+                          "status":last.get('status'),"conclusion":last.get('conclusion'),
+                          "head_sha":(last.get('head_sha') or '')[:7],
+                          "url":last.get('html_url')} if last else None}
         except Exception:
             out['workflows'][n]={"state":w['state']}
     e=api('/environments/production')

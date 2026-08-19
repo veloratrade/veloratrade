@@ -16,3 +16,8 @@ _database/*.sql
 # فایل‌های موقت
 .DS_Store
 Thumbs.db
+__pycache__/
+*.py[cod]
+
+# context زنده و محلی هر جلسه — تولیدشده توسط tools/velora-status.sh --context
+.session/
