@@ -75,22 +75,32 @@ HTML;
 <title>{$titleSafe}</title>
 </head>
 <body style="margin:0;padding:0;background-color:#eef1f6;font-family:Tahoma,Arial,sans-serif;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;font-size:1px;line-height:1px;">{$titleSafe} — {$subtitleSafe}</div>
 <table lang="{$langSafe}" dir="{$direction}" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#eef1f6;padding:32px 10px;font-family:Tahoma,Arial,sans-serif;">
 <tr><td align="center">
-<table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:600px;background:#0e1626;border:1px solid #26334d;border-radius:14px;overflow:hidden;box-shadow:0 12px 32px rgba(10,16,29,0.22);">
+<table role="presentation" width="620" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:620px;background:#0e1626;border:1px solid #26334d;border-radius:16px;overflow:hidden;box-shadow:0 12px 32px rgba(10,16,29,0.22);">
 <tr><td align="center" style="padding:28px 25px 22px;background:#0a101d;border-bottom:1px solid #26334d;">
 <a href="https://veloratrade.ir" style="text-decoration:none;display:inline-block;">
-  <img src="https://veloratrade.ir/icon-192.png" width="48" height="48" alt="VELORA" style="display:block;margin:0 auto 10px;width:48px;height:48px;border:0;outline:none;" />
+  <img src="https://veloratrade.ir/public/assets/velora-email-logo.png" width="52" height="52" alt="VELORA TRADE" style="display:block;margin:0 auto 10px;width:52px;height:52px;border:0;outline:none;" />
 </a>
 <div style="font-family:Arial,Tahoma,sans-serif;font-size:24px;line-height:28px;font-weight:bold;letter-spacing:4px;color:#d4af37;text-align:center;direction:ltr;">VELORA</div>
 <div style="margin-top:6px;font-family:Arial,Tahoma,sans-serif;font-size:11px;letter-spacing:3px;color:#cbd5e1;text-align:center;direction:ltr;">{$subtitleSafe}</div>
 </td></tr>
-<tr><td style="padding:34px 32px;font-family:Tahoma,Arial,sans-serif;color:#f3f4f6;direction:{$direction};text-align:{$textAlign};">
-<div style="margin:0 0 12px;color:#d4af37;font-size:13px;font-weight:bold;letter-spacing:0.5px;">▪ {$badgeSafe}</div>
+<tr><td style="padding:30px 26px;font-family:Tahoma,Arial,sans-serif;color:#f3f4f6;direction:{$direction};text-align:{$textAlign};">
+<!-- Gold Outline content module: static, table-based and safe for email clients. -->
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#101b2d" style="width:100%;background:#101b2d;border:1px solid #9b782e;border-radius:16px;border-collapse:separate;">
+<tr><td style="padding:4px;">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#0d1829" style="width:100%;background:#0d1829;border:1px solid #3b465a;border-radius:12px;border-collapse:separate;">
+<tr><td style="padding:30px 28px;font-family:Tahoma,Arial,sans-serif;color:#f3f4f6;direction:{$direction};text-align:{$textAlign};">
+<div style="margin:0 0 12px;color:#e7ca73;font-size:13px;font-weight:bold;letter-spacing:0.5px;">▪ {$badgeSafe}</div>
 <h1 style="margin:0 0 20px;font-size:24px;line-height:1.6;color:#ffffff;font-weight:bold;">{$titleSafe}</h1>
 <div style="font-size:15px;line-height:2.1;color:#f3f4f6;">{$contentHtml}</div>
 {$button}
 {$noticeHtml}
+</td></tr>
+</table>
+</td></tr>
+</table>
 </td></tr>
 <tr><td align="center" style="padding:24px 20px;background:#090e18;border-top:1px solid #26334d;font-family:Tahoma,Arial,sans-serif;color:#9eabc0;">
 <div style="font-family:Arial,Tahoma,sans-serif;font-size:12px;font-weight:bold;color:#e2e8f0;">{$copyright}</div>

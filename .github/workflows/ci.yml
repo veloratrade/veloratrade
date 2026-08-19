@@ -49,6 +49,9 @@ jobs:
       - name: Resend Mailer HTTP mock contract
         run: php tools/tests/test_resend_mailer.php
 
+      - name: Gold Outline email template contract
+        run: php tools/tests/test_email_template_gold_outline.php
+
       - name: Auth token consumption integration
         run: php tools/tests/test_auth_token_consumption.php
 
