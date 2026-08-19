@@ -1,0 +1,117 @@
+name: Email Status Diagnostics (Staging)
+
+# Hardcoded, read-only aggregate query executed by a one-use authenticated PHP
+# probe on Staging. The probe self-deletes before querying and the workflow also
+# attempts FTP cleanup. No recipient, user id, token, or Secret is returned.
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'برای بررسی وضعیت email_notifications در Staging، READ را وارد کنید'
+        required: true
+        default: ''
+
+permissions: {}
+
+concurrency:
+  group: email-status-diagnostics-staging
+  cancel-in-progress: false
+
+jobs:
+  status:
+    name: read-only email notification status
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      FTP_SERVER: ${{ secrets.STAGING_FTP_SERVER }}
+      FTP_USERNAME: ${{ secrets.STAGING_FTP_USERNAME }}
+      FTP_PASSWORD: ${{ secrets.STAGING_FTP_PASSWORD }}
+      INPUT_CONFIRM: ${{ github.event.inputs.confirm }}
+      BASE: https://staging.veloratrade.ir
+    steps:
+      - name: Create, upload, execute, and remove one-use probe
+        run: |
+          set -euo pipefail
+          [ "$INPUT_CONFIRM" = "READ" ] || { echo "::error::confirm باید READ باشد"; exit 1; }
+          sudo apt-get update -qq
+          sudo apt-get install -y -q lftp >/dev/null
+          NAME="_velora_email_status_$(openssl rand -hex 12).php"
+          TOKEN="$(openssl rand -hex 32)"
+          HASH="$(printf '%s' "$TOKEN" | sha256sum | awk '{print $1}')"
+          echo "::add-mask::$NAME"; echo "::add-mask::$TOKEN"; echo "::add-mask::$HASH"
+          export NAME TOKEN HASH
+
+          python3 <<'PY'
+          import os
+          template = r'''<?php
+          declare(strict_types=1);
+          $expected = '__HASH__';
+          $provided = (string) ($_SERVER['HTTP_X_VELORA_DIAG'] ?? '');
+          if ($provided === '' || !hash_equals($expected, hash('sha256', $provided))) {
+              http_response_code(404); exit('Not found');
+          }
+          @unlink(__FILE__);
+          require dirname(__DIR__) . '/api/src/bootstrap.php';
+          $pdo = \Velora\Core\Database::connection();
+          $driver = (string) $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+          $since = gmdate('Y-m-d H:i:s', time() - 3600);
+          $stmt = $pdo->prepare('SELECT event_type, status, error_message, created_at FROM email_notifications WHERE created_at >= :since ORDER BY id DESC LIMIT 30');
+          $stmt->execute(['since' => $since]);
+          $rows = [];
+          foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+              $error = (string) ($row['error_message'] ?? '');
+              $error = preg_replace('/\bre_[A-Za-z0-9._-]+\b/', '[REDACTED]', $error) ?? '';
+              $error = preg_replace('/Bearer\s+\S+/i', 'Bearer [REDACTED]', $error) ?? '';
+              $error = preg_replace('/([A-Za-z0-9._%+-]{2})[A-Za-z0-9._%+-]*@/', '$1…@', $error) ?? '';
+              $rows[] = [
+                  'event_type' => (string) $row['event_type'],
+                  'status' => (string) $row['status'],
+                  'error' => mb_substr($error, 0, 240),
+                  'created_at' => (string) $row['created_at'],
+              ];
+          }
+          $users = $pdo->query('SELECT email_verified_at IS NOT NULL AS verified FROM users ORDER BY id DESC LIMIT 5')->fetchAll(PDO::FETCH_ASSOC);
+          header('Content-Type: application/json; charset=utf-8');
+          header('Cache-Control: no-store');
+          echo json_encode([
+              'driver' => $driver,
+              'window_minutes' => 60,
+              'notifications' => $rows,
+              'latest_user_verified_flags' => array_map(static fn(array $r): bool => (bool) $r['verified'], $users),
+          ], JSON_UNESCAPED_SLASHES);
+          '''
+          open('/tmp/probe.php','w',encoding='utf-8').write(template.replace('__HASH__', os.environ['HASH']))
+          PY
+
+          cleanup() {
+            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+              -e "set ftp:ssl-allow no; set net:max-retries 1; set net:timeout 20; rm -f public_html/staging.veloratrade.ir/public/$NAME; bye" >/dev/null 2>&1 || true
+            shred -u /tmp/probe.php /tmp/status.json 2>/dev/null || rm -f /tmp/probe.php /tmp/status.json
+          }
+          trap cleanup EXIT
+
+          uploaded=0
+          for attempt in $(seq 1 8); do
+            if lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+              -e "set ftp:ssl-allow no; set net:max-retries 1; set net:timeout 20; put /tmp/probe.php -o public_html/staging.veloratrade.ir/public/$NAME; bye"; then
+              uploaded=1; break
+            fi
+            sleep 5
+          done
+          [ "$uploaded" = 1 ] || { echo "::error::probe آپلود نشد"; exit 1; }
+
+          code=$(curl -sS -o /tmp/status.json -w '%{http_code}' --max-time 40 \
+            -H "X-Velora-Diag: $TOKEN" "$BASE/public/$NAME")
+          [ "$code" = 200 ] || { echo "::error::probe HTTP $code"; exit 1; }
+          python3 - <<'PY'
+          import json
+          data=json.load(open('/tmp/status.json'))
+          print('DB_DRIVER=' + str(data.get('driver')))
+          print('WINDOW_MINUTES=' + str(data.get('window_minutes')))
+          rows=data.get('notifications',[])
+          print('NOTIFICATION_ROWS=' + str(len(rows)))
+          for row in rows:
+              print('EMAIL_EVENT', row.get('created_at'), row.get('event_type'), row.get('status'), row.get('error') or '-')
+          print('LATEST_USER_VERIFIED_FLAGS=' + json.dumps(data.get('latest_user_verified_flags',[])))
+          PY
