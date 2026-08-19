@@ -32,6 +32,8 @@ final class EmailTemplate
         $badgeSafe = self::escape($badge);
         $titleSafe = self::escape($title);
         $subtitleSafe = self::escape($subtitle ?? $t('email.common.subtitleSecurity'));
+        $frontendBase = rtrim((string) Config::get('frontend_url', 'https://veloratrade.ir'), '/');
+        $logoUrlSafe = self::escape($frontendBase . '/public/assets/velora-email-logo.png');
 
         $button = '';
         if ($buttonLabel !== null && $buttonUrl !== null) {
@@ -81,7 +83,7 @@ HTML;
 <table role="presentation" width="620" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:620px;background:#0e1626;border:1px solid #26334d;border-radius:16px;overflow:hidden;box-shadow:0 12px 32px rgba(10,16,29,0.22);">
 <tr><td align="center" style="padding:28px 25px 22px;background:#0a101d;border-bottom:1px solid #26334d;">
 <a href="https://veloratrade.ir" style="text-decoration:none;display:inline-block;">
-  <img src="https://veloratrade.ir/public/assets/velora-email-logo.png" width="52" height="52" alt="VELORA TRADE" style="display:block;margin:0 auto 10px;width:52px;height:52px;border:0;outline:none;" />
+  <img src="{$logoUrlSafe}" width="52" height="52" alt="VELORA TRADE" style="display:block;margin:0 auto 10px;width:52px;height:52px;border:0;outline:none;" />
 </a>
 <div style="font-family:Arial,Tahoma,sans-serif;font-size:24px;line-height:28px;font-weight:bold;letter-spacing:4px;color:#d4af37;text-align:center;direction:ltr;">VELORA</div>
 <div style="margin-top:6px;font-family:Arial,Tahoma,sans-serif;font-size:11px;letter-spacing:3px;color:#cbd5e1;text-align:center;direction:ltr;">{$subtitleSafe}</div>
