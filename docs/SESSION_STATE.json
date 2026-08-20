@@ -2,7 +2,7 @@
   "_meta": {
     "schema": "velora-session-state/1",
     "updated_at": "2026-08-20",
-    "based_on_commit": "0d29f3cb29f89072066a9ae48e2e0d5462316dd4",
+    "based_on_commit": "4d0e5dce942bf3e2e1d604d24347b4daf08bd0f8",
     "authority": "Human-maintained handoff. Live Git/GitHub evidence overrides technical status claims; owner decisions and safety rules remain authoritative.",
     "contains_secrets": false
   },
@@ -20,8 +20,8 @@
   "active_task": {
     "id": "B-11",
     "title": "تکمیل E2E ثبت‌نام و تأیید ایمیل",
-    "status": "cid_icons_staging_verified_pending_production",
-    "environment": "staging",
+    "status": "cid_icons_production_verified",
+    "environment": "staging_and_production",
     "production_impact": false,
     "completed": [
       "Resend transport با PHP cURL، بدون Composer و با From ثابت پیاده‌سازی و فقط روی Staging منتشر شد",
@@ -52,7 +52,11 @@
       "تمام Emojiهای قدیمی از هفت قالب transactional حذف شدند",
       "Deploy Staging run 32315509808 موفق و هر هفت Asset از Staging با HTTP 200/image/png قابل دریافت‌اند",
       "Suite نهایی run 32317939080 چهار صندوق کم‌حجم و هفت پیام را 7/7 DELIVERY+CID+FROM+DESIGN PASS کرد",
-      "ایمیل تأیید مستقل attachment verification.png را inline/related تحویل داد و Gold Outline/From/no-emoji را تأیید کرد"
+      "ایمیل تأیید مستقل attachment verification.png را inline/related تحویل داد و Gold Outline/From/no-emoji را تأیید کرد",
+      "Production dry-run run 32318428446 با گیت Staging/CSP/security/backup و صفر نوشتن موفق شد",
+      "Production deploy run 32319549527 با backup artifact، upload و read-only health check موفق شد",
+      "تست واقعی Production ایمیل تأیید را در ۱۰ ثانیه با verification.png inline/related CID تحویل داد",
+      "Production لوگو HTTP 200، Gold Outline، From، نبود Emoji/helper، verify API و login همگی PASS شدند"
     ],
     "established_facts": [
       "Transactional Email Suite run 32274251200 نتیجه 7/7 delivery و From identity PASS دارد",
@@ -85,17 +89,22 @@
       "Resend برای هر هفت پیام Message ID برگرداند و Suite نهایی هر هفت PNG اختصاصی را در صندوق خارجی تأیید کرد",
       "mail.tm در تست‌های اولیه یک پیام را suppress و سپس account creation را 429 کرد؛ این نقص با چهار inbox کم‌حجم رفع شد و شکست Resend نبود",
       "Actions پس از تست دوباره enabled=false و active/queued صفر است",
-      "Production هنوز آیکون‌های اختصاصی را دریافت نکرده و قالب فعلی Production بدون این تغییر باقی مانده است"
+      "Production هنوز آیکون‌های اختصاصی را دریافت نکرده و قالب فعلی Production بدون این تغییر باقی مانده است",
+      "PRODUCTION_CID_EMAIL=PASS: register=201، CID attachment، page=200، verify=200، token cleared، success UI و login=200",
+      "Production و Staging اکنون هر دو سیستم هفت آیکون اختصاصی CID را دارند",
+      "Actions پس از انتشار دوباره enabled=false و active/queued صفر است",
+      "آخرین انتشار Production از main شامل سیستم CID commit 33b9b8a و تست‌های پایدار بعدی است"
     ],
-    "current_diagnosis": "سیستم کامل آیکون‌های اختصاصی CID برای هفت نوع ایمیل روی Staging عملیاتی و 7/7 Live-verified است؛ Production هنوز تغییر نکرده و نیازمند تأیید جداگانه مالک است.",
-    "blocker_owner": "owner_production_icon_approval",
+    "current_diagnosis": "سیستم Gold Outline، لوگوی واقعی و هفت آیکون اختصاصی CID روی Staging و Production عملیاتی و Live-verified است.",
+    "blocker_owner": "none",
     "next_actions": [
-      "مالک نتیجه هفت آیکون Staging را بازبینی و درباره Production تصمیم بگیرد",
-      "در صورت تأیید، Production با dry-run، backup، deploy و Suite محدود منتشر شود",
-      "Actions فقط برای عملیات تأییدشده موقتاً فعال و سپس خاموش شود"
+      "در فرصت مناسب کلیدهای Resend Staging/Production جدا و rotate شوند",
+      "کاربران تست موقت در صورت نیاز از دیتابیس پاک شوند",
+      "هر تغییر بعدی Production همچنان با تأیید، dry-run و backup انجام شود",
+      "Actions فقط برای عملیات تأییدشده موقتاً فعال شود"
     ],
     "do_not_do": [
-      "بدون تأیید صریح جدید سیستم CID روی Production منتشر نشود",
+      "بدون تأیید جدید هیچ Deploy یا تغییر Production انجام نشود",
       "Emojiهای قدیمی دوباره به NotificationService برنگردند",
       "GitHub Actions خارج از عملیات تأییدشده فعال نماند",
       "RESEND_API_KEY در چت، Git، artifact، response، log یا error_message قرار نگیرد"
@@ -208,6 +217,18 @@
           "workflow": "notification-email-suite-staging.yml",
           "result": "success",
           "note": "7/7 DELIVERY+CID+FROM+DESIGN PASS across four low-volume inboxes"
+        },
+        {
+          "id": 32318428446,
+          "workflow": "deploy.yml",
+          "result": "success",
+          "note": "Production CID dry-run with backup and zero writes"
+        },
+        {
+          "id": 32319549527,
+          "workflow": "deploy.yml",
+          "result": "success",
+          "note": "Production CID icon deploy + backup artifact + health check"
         }
       ]
     }
