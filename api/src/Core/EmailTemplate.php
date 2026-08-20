@@ -76,6 +76,8 @@ HTML;
         $platform = self::escape($t('email.common.footerPlatform'));
         $terms = self::escape($t('email.common.terms'));
         $privacy = self::escape($t('email.common.privacy'));
+        // BUG-A9: لینک مدیریت ترجیحات/لغو اشتراک — متصل به صفحه پروفایلِ محلی‌سازی‌شده
+        $managePrefs = self::escape($t('email.common.managePreferences'));
         $contact = self::escape($t('email.common.contact'));
         $rights = self::escape($t('email.common.rightsReserved'));
         $copyright = self::escape($t('email.common.copyright', ['year' => gmdate('Y')]));
@@ -97,7 +99,7 @@ HTML;
 <tr><td align="center">
 <table role="presentation" width="620" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:620px;background:#0e1626;border:1px solid #26334d;border-radius:16px;overflow:hidden;box-shadow:0 12px 32px rgba(10,16,29,0.22);">
 <tr><td align="center" style="padding:28px 25px 22px;background:#0a101d;border-bottom:1px solid #26334d;">
-<a href="https://veloratrade.ir" style="text-decoration:none;display:inline-block;">
+<a href="{$frontendBase}" style="text-decoration:none;display:inline-block;">
   <img src="{$logoUrlSafe}" width="52" height="52" alt="VELORA TRADE" style="display:block;margin:0 auto 10px;width:52px;height:52px;border:0;outline:none;" />
 </a>
 <div style="font-family:Arial,Tahoma,sans-serif;font-size:24px;line-height:28px;font-weight:bold;letter-spacing:4px;color:#d4af37;text-align:center;direction:ltr;">VELORA</div>
@@ -123,8 +125,8 @@ HTML;
 <tr><td align="center" style="padding:24px 20px;background:#090e18;border-top:1px solid #26334d;font-family:Tahoma,Arial,sans-serif;color:#9eabc0;">
 <div style="font-family:Arial,Tahoma,sans-serif;font-size:12px;font-weight:bold;color:#e2e8f0;">{$copyright}</div>
 <div style="margin-top:5px;font-size:11px;letter-spacing:.5px;color:#9eabc0;">{$platform}</div>
-<div style="margin-top:14px;font-family:Arial,Tahoma,sans-serif;font-size:12px;direction:ltr;"><a href="https://veloratrade.ir" style="color:#d4af37;text-decoration:none;font-weight:bold;">veloratrade.ir</a><span style="color:#4a5568;"> &nbsp;|&nbsp; </span><a href="mailto:support@veloratrade.ir" style="color:#d4af37;text-decoration:none;">support@veloratrade.ir</a></div>
-<div style="margin-top:12px;font-size:11px;line-height:1.9;"><a href="https://veloratrade.ir/support" style="color:#cbd5e1;text-decoration:none;">{$contact}</a><span style="color:#4a5568;"> &nbsp;•&nbsp; </span><a href="https://veloratrade.ir/terms" style="color:#cbd5e1;text-decoration:none;">{$terms}</a><span style="color:#4a5568;"> &nbsp;•&nbsp; </span><a href="https://veloratrade.ir/privacy" style="color:#cbd5e1;text-decoration:none;">{$privacy}</a></div>
+<div style="margin-top:14px;font-family:Arial,Tahoma,sans-serif;font-size:12px;direction:ltr;"><a href="{$frontendBase}" style="color:#d4af37;text-decoration:none;font-weight:bold;">veloratrade.ir</a><span style="color:#4a5568;"> &nbsp;|&nbsp; </span><a href="mailto:support@veloratrade.ir" style="color:#d4af37;text-decoration:none;">support@veloratrade.ir</a></div>
+<div style="margin-top:12px;font-size:11px;line-height:1.9;"><a href="{$frontendBase}/support" style="color:#cbd5e1;text-decoration:none;">{$contact}</a><span style="color:#4a5568;"> &nbsp;•&nbsp; </span><a href="{$frontendBase}/terms" style="color:#cbd5e1;text-decoration:none;">{$terms}</a><span style="color:#4a5568;"> &nbsp;•&nbsp; </span><a href="{$frontendBase}/privacy" style="color:#cbd5e1;text-decoration:none;">{$privacy}</a><span style="color:#4a5568;"> &nbsp;•&nbsp; </span><a href="{$frontendBase}/profile?focus=email-preferences" style="color:#cbd5e1;text-decoration:none;">{$managePrefs}</a></div>
 <div style="margin-top:13px;font-size:10px;color:#718096;">{$rights}</div>
 </td></tr>
 </table>

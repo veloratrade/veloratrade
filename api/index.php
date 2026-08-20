@@ -65,6 +65,8 @@ $router->post('/api/v1/content-translations/lookup', [ContentTranslationControll
 // ---- Protected routes -----------------------------------------------
 $router->get('/api/v1/auth/me', [AuthController::class, 'me'], $auth);
 $router->post('/api/v1/auth/change-password', [AuthController::class, 'changePassword'], $auth);
+$router->get('/api/v1/auth/email-preferences', [AuthController::class, 'getEmailPreferences'], $auth);
+$router->put('/api/v1/auth/email-preferences', [AuthController::class, 'updateEmailPreferences'], $auth);
 
 $router->get('/api/v1/trades', [TradeController::class, 'index'], $auth);
 $router->post('/api/v1/trades', [TradeController::class, 'store'], $auth);

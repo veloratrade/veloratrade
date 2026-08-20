@@ -25,8 +25,11 @@
 </main></div>
 <script>
 (function () {
-  var params = new URLSearchParams(location.search);
-  var token = params.get('token') || '';
+  var queryParams = new URLSearchParams(location.search);
+  var hashParams = new URLSearchParams(location.hash.replace(/^#/, ''));
+  // Capability tokens are issued in the fragment so they never reach access
+  // logs/referrers. Keep query support only for legacy links already in inboxes.
+  var token = hashParams.get('token') || queryParams.get('token') || '';
   var form = document.getElementById('form');
   var password = document.getElementById('password');
   var confirmation = document.getElementById('confirm');
@@ -35,6 +38,10 @@
   var t = VeloraLocale.t;
   function show(type, text) { message.className = 'msg ' + type; message.textContent = text; }
   if (!token) { show('err', t('auth.resetTokenMissing')); button.disabled = true; }
+  // Remove the capability from browser history immediately after capturing it.
+  queryParams.delete('token');
+  var cleanUrl = location.pathname + (queryParams.toString() ? '?' + queryParams.toString() : '');
+  history.replaceState(null, document.title, cleanUrl);
   form.addEventListener('submit', async function (event) {
     event.preventDefault();
     var value = password.value;

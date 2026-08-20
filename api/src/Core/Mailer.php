@@ -191,6 +191,8 @@ final class Mailer
             'html' => $htmlBody,
             'text' => $plainBody ?? self::htmlToPlain($htmlBody),
             'reply_to' => 'no-reply@veloratrade.ir',
+            // BUG-A9: RFC 2369 one-click unsubscribe/manage preferences
+            'headers' => ['List-Unsubscribe' => self::listUnsubscribeValue()],
         ];
 
         if ($inlineImages !== []) {
@@ -283,6 +285,15 @@ final class Mailer
     }
 
     /** ارسال با mail() استاندارد PHP به همراه ساختار چندبخشی (multipart/alternative) و هدرهای استاندارد */
+    /** BUG-A9: مقدار مشترک هدر List-Unsubscribe (RFC 2369) برای همه درایورها. */
+    private static function listUnsubscribeValue(): string
+    {
+        // از env خوانده می‌شود (هم‌ارز frontend_url در config) تا با لایهٔ حداقلی
+        // پیکربندی درایورهای ایمیل (Config::env) سازگار بماند.
+        $frontend = rtrim(Config::env('FRONTEND_URL', 'https://veloratrade.ir'), '/');
+        return '<mailto:support@veloratrade.ir?subject=unsubscribe>, <' . $frontend . '/profile?focus=email-preferences>';
+    }
+
     private static function sendMail(string $to, string $subject, string $htmlBody, ?string $plainBody = null): bool
     {
         $from = Config::env('MAIL_FROM', 'no-reply@veloratrade.ir');
@@ -304,6 +315,7 @@ final class Mailer
             'MIME-Version: 1.0',
             'X-Mailer: VELORA Mailer/2.0',
             'Auto-Submitted: auto-generated',
+            'List-Unsubscribe: ' . self::listUnsubscribeValue(),
             'Content-Type: multipart/alternative; boundary="' . $altBoundary . '"',
         ];
 
@@ -428,7 +440,8 @@ final class Mailer
                  . "Reply-To: <$from>\r\n"
                  . "MIME-Version: 1.0\r\n"
                  . "X-Mailer: VELORA Mailer/2.0\r\n"
-                 . "Auto-Submitted: auto-generated\r\n";
+                 . "Auto-Submitted: auto-generated\r\n"
+                 . 'List-Unsubscribe: ' . self::listUnsubscribeValue() . "\r\n";
 
         $encodedHtml = self::smtpDataEncode($htmlBody);
         $encodedPlain = self::smtpDataEncode($plainText);
