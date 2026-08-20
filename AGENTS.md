@@ -1,0 +1,206 @@
+# VELORA — Agent Operating Contract
+
+این فایل قرارداد اجباری تمام Agentهایی است که روی مخزن `veloratrade/veloratrade` کار می‌کنند.
+عبارت‌های **باید** و **ممنوع است** الزام قطعی هستند، نه پیشنهاد.
+
+## 1. هدف
+
+Agent باید برای فهم صحیح پروژه، اسناد و کد لازم را در Workspace بررسی کند؛ اما نباید محتوای کامل فایل‌ها، JSONها، Diffها یا Logها را داخل گفت‌وگو بازنشر کند.
+
+**قاعده اصلی:**
+
+> Read internally. Work directly in the repository. Report only concise conclusions and evidence.
+
+## 2. پروتکل اجباری شروع جلسه
+
+Agent باید به‌ترتیب:
+
+1. همین فایل را کامل بخواند.
+2. `docs/README.md` را برای فهم معماری، سیاست‌ها و تاریخچه عملیاتی بررسی کند.
+3. `docs/SESSION_STATE.json` را برای مأموریت، تصمیم‌ها و قدم بعدی بررسی کند.
+4. فقط metadata و بخش‌های لازم `docs/PROJECT_STATE.json` را بررسی کند؛ این فایل Snapshot است، نه منبع حقیقت.
+5. وضعیت زنده را اجرا کند، ولی خروجی کامل را داخل چت نیاورد:
+
+   ```bash
+   bash tools/velora-status.sh > /tmp/velora-status.txt
+   ```
+
+6. فقط موارد لازم را از خروجی استخراج کند: `VELORA-RUN`، HEAD، sync/dirty، محیط‌ها، Actions، Drift، مأموریت فعال و قدم بعدی.
+7. پیش از هر تغییر، برنامه کوتاه و دامنه فایل‌ها را اعلام و منتظر تأیید مالک بماند.
+
+## 3. سیاست فهم داخلی فایل‌ها
+
+Agent مجاز و موظف است فایل‌های لازم را برای فهم پروژه بخواند. برای کنترل Context باید:
+
+- ابتدا نقشه پروژه را با `find`، `git ls-files` و `grep` بسازد.
+- اسناد بزرگ را در بخش‌های منطقی و مرتبط بررسی کند.
+- پس از فهم اولیه، فقط فایل‌ها و بخش‌های مرتبط با مأموریت را دوباره بخواند.
+- برای پیدا کردن وابستگی‌ها از `grep -RIn` استفاده کند.
+- پیش از rename یا حذف، تمام referenceها را جست‌وجو کند.
+- داده زنده Git/GitHub را بر ادعاهای فنی Snapshot قدیمی مقدم بداند.
+
+خواندن داخلی به معنی اجازه نمایش محتوا در چت نیست.
+
+## 4. سیاست سخت‌گیرانه خروجی چت
+
+### 4.1 مواردی که نمایش کامل آن‌ها ممنوع است
+
+Agent نباید در commentary یا پاسخ نهایی این موارد را کامل Paste کند:
+
+- `docs/README.md`
+- `docs/SESSION_STATE.json`
+- `docs/PROJECT_STATE.json`
+- فایل‌های Source
+- فایل‌های Workflow
+- HTML/CSS/JavaScript/PHP کامل
+- `git diff` کامل
+- Log کامل Workflow یا Server
+- خروجی کامل تست‌ها
+- فهرست کامل Tree مخزن
+- محتوای env یا Secret
+- پاسخ خام API شامل داده غیرضروری
+
+### 4.2 موارد مجاز در گزارش
+
+Agent فقط باید این اطلاعات را گزارش کند:
+
+- کد `VELORA-RUN-*`
+- Branch و HEAD کوتاه
+- وضعیت clean/sync
+- وضعیت خلاصه Production و Staging
+- وضعیت GitHub Actions
+- مأموریت فعال و مانع
+- Drift یا تعارض مهم
+- برنامه اقدام کوتاه
+- مسیر فایل‌های تغییرکرده
+- نتیجه تست‌ها به‌صورت PASS/FAIL و شمارش
+- Commit hash، Run ID و HTTP status لازم
+- قدم بعدی و موارد نیازمند تأیید
+
+### 4.3 سقف خروجی
+
+مگر کاربر صریحاً جزئیات بخواهد:
+
+- گزارش شروع جلسه: حداکثر 25 خط.
+- گزارش میانی: حداکثر 3 جمله.
+- Log خطا: حداکثر 30 خط Sanitized و فقط خطوط مرتبط.
+- Code snippet: حداکثر 20 خط.
+- Final report: خلاصه، ساختاریافته و بدون تکرار تاریخچه کامل.
+
+### 4.4 استثنا
+
+نمایش فایل یا Diff کامل فقط وقتی مجاز است که کاربر صریحاً همان فایل یا Diff کامل را درخواست کند و فایل Secret/PII نداشته باشد.
+
+## 5. قواعد استفاده از ابزار برای جلوگیری از Context اضافی
+
+Agent باید خروجی پرحجم را به فایل موقت هدایت کند و فقط Summary را چاپ کند.
+
+### درست
+
+```bash
+bash tools/velora-status.sh > /tmp/status.txt
+grep -E 'VELORA-RUN|کامیت|working tree|Production|Staging|نتیجه check' /tmp/status.txt
+
+some-test-command > /tmp/test.log 2>&1
+printf 'exit=%s\n' "$?"
+tail -20 /tmp/test.log
+
+git diff --stat
+git diff --check
+git status --short
+```
+
+### ممنوع
+
+```bash
+cat docs/README.md
+cat docs/PROJECT_STATE.json
+cat large.log
+git diff
+find . -type f
+```
+
+مگر اینکه خروجی کوچک، هدفمند و برای مأموریت ضروری باشد.
+
+## 6. فرمت اولین پاسخ معتبر
+
+اولین گزارش Agent باید فقط شامل این قالب باشد:
+
+```text
+VELORA-RUN-xxxxxxxx
+HEAD: <short-sha> | branch: <branch> | clean/sync: <status>
+Production: <summary>
+Staging: <summary>
+Actions: <enabled/disabled>
+Active task: <id/status>
+Drift: <none or concise list>
+Exact next action: <one sentence>
+Approval required: <yes/no and scope>
+```
+
+Agent نباید در اولین پاسخ تاریخچه طولانی پروژه را تعریف کند.
+
+## 7. سیاست گزارش تغییرات
+
+پس از کار، گزارش فقط باید شامل موارد زیر باشد:
+
+```text
+CHANGED: paths
+ADDED: paths
+DELETED: paths
+TESTS: command/result summary
+COMMIT: hash or none
+PUSH: yes/no
+WORKFLOW: name + Run ID or none
+STAGING ACTION: concise summary or none
+PRODUCTION ACTION: concise summary or none
+REMAINING: concise list
+```
+
+Diff کامل، محتوای کامل فایل و Log خام نباید تکرار شوند.
+
+## 8. امنیت و Secret
+
+- Secret واقعی در Git، فایل، Artifact، Log یا چت ممنوع است.
+- Agent نباید رمز، API key، env کامل، Cookie، 2FA یا Recovery Code درخواست کند.
+- فقط نام Secretها قابل گزارش است، نه مقدار آن‌ها.
+- خروجی خطا باید قبل از گزارش Sanitized شود.
+- PAT داخل چت باید افشاشده فرض و پس از جلسه Revoke شود.
+- Repository عمومی است؛ PII، dump، runtime data و credential نباید وارد Commit شوند.
+
+## 9. محیط‌ها و مجوز عملیات
+
+- خواندن و تحلیل: مجاز.
+- تغییر فایل: فقط پس از تأیید مالک.
+- Commit و Push: فقط پس از تأیید مالک.
+- اجرای Workflow: فقط پس از تأیید مالک.
+- Staging write/deploy: فقط با تأیید صریح همان عملیات.
+- Production write/deploy/config/database/test: فقط با تأیید صریح و موردی مالک.
+- تأیید یک عملیات، مجوز عملیات بعدی نیست.
+
+## 10. سیاست هزینه GitHub
+
+- GitHub Actions فعلاً باید غیرفعال بماند مگر مالک صریحاً فعال‌سازی موقت را تأیید کند.
+- قبل از فعال‌سازی، `python tools/check_github_cost_guard.py` باید PASS شود.
+- فقط Standard Ubuntu Runner مجاز است.
+- Larger runner، macOS، Windows، self-hosted، schedule، cache و package publishing بدون تأیید هزینه ممنوع‌اند.
+- Actions پس از عملیات تأییدشده دوباره غیرفعال شود.
+- اجرای فعال یا queued پس از پایان باید صفر باشد.
+
+## 11. منابع حقیقت
+
+ترتیب اعتبار:
+
+1. دستور صریح فعلی مالک
+2. `docs/README.md` و اسناد P1/P2
+3. وضعیت زنده Git/GitHub و شواهد اجرایی
+4. `docs/SESSION_STATE.json`
+5. `docs/PROJECT_STATE.json` به‌عنوان Snapshot
+
+در تعارض، Agent باید تعارض را کوتاه گزارش کند و حق تفسیر خودسرانه ندارد.
+
+## 12. اصل نهایی
+
+Agent باید پروژه را عمیق بفهمد، اما گفت‌وگو را سبک نگه دارد:
+
+> Full understanding in Workspace; minimal evidence-based reporting in chat.
