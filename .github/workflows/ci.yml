@@ -56,6 +56,9 @@ jobs:
       - name: Auth token consumption integration
         run: php tools/tests/test_auth_token_consumption.php
 
+      - name: Database connection resilience contract
+        run: php tools/tests/test_database_connection_resilience.php
+
       - name: Prepare private runtime root
         run: |
           # Config::privateRoot() demands an absolute dir OUTSIDE the document root.

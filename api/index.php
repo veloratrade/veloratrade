@@ -20,6 +20,7 @@ use Velora\Auth\AuthController;
 use Velora\Auth\AuthMiddleware;
 use Velora\Core\Exceptions\ApiException;
 use Velora\Core\Exceptions\NotFoundException;
+use Velora\Core\Exceptions\ServiceUnavailableException;
 use Velora\Core\Locale\ContentTranslationController;
 use Velora\Core\Request;
 use Velora\Core\RateLimiter;
@@ -143,6 +144,11 @@ try {
     }
 
     $router->dispatch($request);
+} catch (ServiceUnavailableException $e) {
+    // Retryable dependency failure (database unreachable). Log safe evidence —
+    // route only, never message/credentials/DSN — then render the standard 503.
+    error_log(sprintf('[VELORA_DB_UNAVAILABLE] route=%s status=503', $request->path));
+    Response::error($e->getMessage(), 503, $e->errorCode(), null, $e->messageKey(), $e->params());
 } catch (ApiException $e) {
     Response::error($e->getMessage(), $e->httpStatus(), $e->errorCode(), $e->details(), $e->messageKey(), $e->params());
 } catch (NotFoundException $e) {
