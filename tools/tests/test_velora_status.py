@@ -40,7 +40,22 @@ class VeloraStatusContractTest(unittest.TestCase):
         self.assertFalse(data["_meta"]["github_live"])
         self.assertIsNone(data["environments"]["production"]["live_probe_status"])
         self.assertEqual("B-11", data["session_state"]["active_task"]["id"])
-        self.assertIn("ahead_by", data["repository"])
+        # ahead_by/behind_by contract (CI-aware, still strict):
+        # velora-status.sh only emits divergence counts when origin tracking for the
+        # current branch exists (git rev-list HEAD...origin/<branch>). GitHub Actions
+        # PR checkouts run in detached HEAD without upstream, where graceful omission
+        # is the intended behavior — its absence must be accepted exactly there.
+        repo = data["repository"]
+        if repo.get("origin_tracking_head"):
+            self.assertIn("ahead_by", repo)
+            self.assertIsInstance(repo["ahead_by"], int)
+            self.assertGreaterEqual(repo["ahead_by"], 0)
+            self.assertIn("behind_by", repo)
+            self.assertIsInstance(repo["behind_by"], int)
+            self.assertGreaterEqual(repo["behind_by"], 0)
+        else:
+            self.assertNotIn("ahead_by", repo)
+            self.assertNotIn("behind_by", repo)
         self.assertNotIn("names", data["secrets"])
 
     def test_text_contains_handoff_and_proof(self) -> None:
