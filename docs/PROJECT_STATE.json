@@ -1,8 +1,8 @@
 {
   "_meta": {
     "schema": "velora-project-state/1",
-    "generated_at": "2026-08-19T23:42:48+00:00",
-    "generated_from_commit": "5e49db4f0e196347f492b327782b58d4730b4d31",
+    "generated_at": "2026-08-20T00:41:45+00:00",
+    "generated_from_commit": "f9384e0a995ea4826d839acd6ce663fa27892b0e",
     "generator": "tools/velora-status.sh --json",
     "github_live": true,
     "network_mode": "online",
@@ -16,25 +16,25 @@
     "private": false,
     "visibility": "public",
     "branch": "main",
-    "head": "5e49db4",
-    "head_full": "5e49db4f0e196347f492b327782b58d4730b4d31",
-    "head_date": "2026-08-19 23:42:34 +0000",
-    "head_subject": "docs: record Gold Outline Staging verification [skip ci]",
+    "head": "f9384e0",
+    "head_full": "f9384e0a995ea4826d839acd6ce663fa27892b0e",
+    "head_date": "2026-08-20 00:39:56 +0000",
+    "head_subject": "docs: record Staging CID icon verification [skip ci]",
     "working_tree_clean": true,
     "changed_files": [],
-    "tracked_files": 687,
+    "tracked_files": 703,
     "readme_version": "2.2.0",
-    "origin_tracking_head": "5e49db4",
+    "origin_tracking_head": "f9384e0",
     "ahead_by": 0,
     "behind_by": 0,
-    "remote_main_head": "5e49db4",
+    "remote_main_head": "f9384e0",
     "remote_main_matches_head": true
   },
   "session_state": {
     "_meta": {
       "schema": "velora-session-state/1",
-      "updated_at": "2026-08-19",
-      "based_on_commit": "617213ba7b00e39f3f7c009f8b6c90f4b924aef2",
+      "updated_at": "2026-08-20",
+      "based_on_commit": "0d29f3cb29f89072066a9ae48e2e0d5462316dd4",
       "authority": "Human-maintained handoff. Live Git/GitHub evidence overrides technical status claims; owner decisions and safety rules remain authoritative.",
       "contains_secrets": false
     },
@@ -52,7 +52,7 @@
     "active_task": {
       "id": "B-11",
       "title": "تکمیل E2E ثبت‌نام و تأیید ایمیل",
-      "status": "gold_outline_staging_verified_pending_production",
+      "status": "cid_icons_staging_verified_pending_production",
       "environment": "staging",
       "production_impact": false,
       "completed": [
@@ -79,7 +79,12 @@
         "Gold Outline و لوگوی محیط‌محور روی Staging در run 32312976423 منتشر شدند",
         "ایمیل واقعی در ۱۰ ثانیه تحویل شد؛ From، قاب طلایی دولایه، CTA و نبود لینک کمکی همگی تأیید شدند",
         "لوگوی PNG محیط Staging با HTTP 200 و content-type image/png دریافت شد",
-        "HTML واقعی تحویل‌شده Sanitized و برای بازبینی بصری ذخیره شد"
+        "HTML واقعی تحویل‌شده Sanitized و برای بازبینی بصری ذخیره شد",
+        "هفت آیکون اختصاصی طلایی به PNG شفاف ۱۲۸×۱۲۸ تبدیل و با CID inline در EmailTemplate/NotificationService یکپارچه شدند",
+        "تمام Emojiهای قدیمی از هفت قالب transactional حذف شدند",
+        "Deploy Staging run 32315509808 موفق و هر هفت Asset از Staging با HTTP 200/image/png قابل دریافت‌اند",
+        "Suite نهایی run 32317939080 چهار صندوق کم‌حجم و هفت پیام را 7/7 DELIVERY+CID+FROM+DESIGN PASS کرد",
+        "ایمیل تأیید مستقل attachment verification.png را inline/related تحویل داد و Gold Outline/From/no-emoji را تأیید کرد"
       ],
       "established_facts": [
         "Transactional Email Suite run 32274251200 نتیجه 7/7 delivery و From identity PASS دارد",
@@ -107,17 +112,23 @@
         "Commit 617213b URL لوگو را از FRONTEND_URL همان محیط می‌سازد و وابستگی Staging به Asset تولید را حذف می‌کند",
         "GOLD_OUTLINE_STAGING_EMAIL=PASS: outer/inner gold، sender identity، no helper link و primary CTA همگی true",
         "GitHub Actions پس از تست دوباره غیرفعال شد؛ active/queued صفر است",
-        "Production هنوز قالب Gold Outline را دریافت نکرده و همان قالب قبلی فعال است"
+        "Production هنوز قالب Gold Outline را دریافت نکرده و همان قالب قبلی فعال است",
+        "Commit 33b9b8a سیستم CID icon را پیاده‌سازی و commit 0d29f3c تست ضد burst/rate-limit را تثبیت کرد",
+        "Resend برای هر هفت پیام Message ID برگرداند و Suite نهایی هر هفت PNG اختصاصی را در صندوق خارجی تأیید کرد",
+        "mail.tm در تست‌های اولیه یک پیام را suppress و سپس account creation را 429 کرد؛ این نقص با چهار inbox کم‌حجم رفع شد و شکست Resend نبود",
+        "Actions پس از تست دوباره enabled=false و active/queued صفر است",
+        "Production هنوز آیکون‌های اختصاصی را دریافت نکرده و قالب فعلی Production بدون این تغییر باقی مانده است"
       ],
-      "current_diagnosis": "قالب منتخب Midnight Gold + Gold Outline روی Staging منتشر و با ایمیل واقعی Live-verified شده است؛ Production هنوز تغییر نکرده و نیازمند تأیید جداگانه مالک است.",
-      "blocker_owner": "owner_production_design_approval",
+      "current_diagnosis": "سیستم کامل آیکون‌های اختصاصی CID برای هفت نوع ایمیل روی Staging عملیاتی و 7/7 Live-verified است؛ Production هنوز تغییر نکرده و نیازمند تأیید جداگانه مالک است.",
+      "blocker_owner": "owner_production_icon_approval",
       "next_actions": [
-        "مالک HTML واقعی Staging را بازبینی و درباره Production تصمیم بگیرد",
-        "در صورت تأیید، Production با dry-run، backup و تست ایمیل واقعی منتشر شود",
-        "Actions فقط برای همان عملیات موقتاً فعال و سپس دوباره غیرفعال شود"
+        "مالک نتیجه هفت آیکون Staging را بازبینی و درباره Production تصمیم بگیرد",
+        "در صورت تأیید، Production با dry-run، backup، deploy و Suite محدود منتشر شود",
+        "Actions فقط برای عملیات تأییدشده موقتاً فعال و سپس خاموش شود"
       ],
       "do_not_do": [
-        "بدون تأیید صریح جدید قالب Gold Outline روی Production منتشر نشود",
+        "بدون تأیید صریح جدید سیستم CID روی Production منتشر نشود",
+        "Emojiهای قدیمی دوباره به NotificationService برنگردند",
         "GitHub Actions خارج از عملیات تأییدشده فعال نماند",
         "RESEND_API_KEY در چت، Git، artifact، response، log یا error_message قرار نگیرد"
       ],
@@ -135,7 +146,9 @@
           "845bce1",
           "6b8929a",
           "4ef2432",
-          "617213b"
+          "617213b",
+          "33b9b8a",
+          "0d29f3c"
         ],
         "workflow_runs": [
           {
@@ -215,6 +228,18 @@
             "workflow": "deploy-staging.yml",
             "result": "success",
             "note": "Gold Outline + environment-aware logo deployed to Staging"
+          },
+          {
+            "id": 32315509808,
+            "workflow": "deploy-staging.yml",
+            "result": "success",
+            "note": "Dedicated CID icon system deployed to Staging"
+          },
+          {
+            "id": 32317939080,
+            "workflow": "notification-email-suite-staging.yml",
+            "result": "success",
+            "note": "7/7 DELIVERY+CID+FROM+DESIGN PASS across four low-volume inboxes"
           }
         ]
       }
@@ -244,7 +269,7 @@
     {
       "id": "PROJECT_STATE_STALE",
       "severity": "warning",
-      "message": "PROJECT_STATE generated from b144fd2 does not cover HEAD 5e49db4"
+      "message": "PROJECT_STATE generated from 5e49db4 does not cover HEAD f9384e0"
     }
   ],
   "environments": {
@@ -323,15 +348,15 @@
     },
     "deploy-staging.yml": {
       "state": "active",
-      "total_runs": 16,
+      "total_runs": 17,
       "last_run": {
-        "id": 32312976423,
-        "at": "2026-08-19T23:22:36Z",
+        "id": 32315509808,
+        "at": "2026-08-19T23:59:12Z",
         "event": "workflow_dispatch",
         "status": "completed",
         "conclusion": "success",
-        "head_sha": "617213b",
-        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32312976423"
+        "head_sha": "33b9b8a",
+        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32315509808"
       }
     },
     "deploy.yml": {
@@ -424,15 +449,15 @@
     },
     "notification-email-suite-staging.yml": {
       "state": "active",
-      "total_runs": 1,
+      "total_runs": 4,
       "last_run": {
-        "id": 32274251200,
-        "at": "2026-08-19T16:08:59Z",
+        "id": 32317939080,
+        "at": "2026-08-20T00:36:20Z",
         "event": "workflow_dispatch",
         "status": "completed",
         "conclusion": "success",
-        "head_sha": "acd5ff8",
-        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32274251200"
+        "head_sha": "0d29f3c",
+        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32317939080"
       }
     },
     "register-e2e-staging.yml": {
@@ -459,6 +484,19 @@
         "conclusion": "success",
         "head_sha": "b8822a2",
         "url": "https://github.com/veloratrade/veloratrade/actions/runs/32270666565"
+      }
+    },
+    "resend-message-status.yml": {
+      "state": "active",
+      "total_runs": 1,
+      "last_run": {
+        "id": 32317561161,
+        "at": "2026-08-20T00:30:20Z",
+        "event": "workflow_dispatch",
+        "status": "completed",
+        "conclusion": "failure",
+        "head_sha": "d6b172d",
+        "url": "https://github.com/veloratrade/veloratrade/actions/runs/32317561161"
       }
     },
     "setup-production-resend.yml": {
