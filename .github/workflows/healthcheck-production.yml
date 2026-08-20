@@ -50,6 +50,7 @@ jobs:
     name: گارد تأیید تولید
     if: github.repository == 'veloratrade/veloratrade'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     environment: production
     outputs:
       write_probes: ${{ steps.decide.outputs.write_probes }}

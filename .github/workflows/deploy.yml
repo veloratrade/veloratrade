@@ -54,6 +54,7 @@ jobs:
     name: گارد تأیید مالک
     if: github.repository == 'veloratrade/veloratrade'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     environment: production
     steps:
       - name: بررسی عبارت تأیید

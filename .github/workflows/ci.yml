@@ -19,6 +19,7 @@ jobs:
   php:
     name: PHP lint and boot test
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Checkout repository
@@ -146,6 +147,7 @@ jobs:
   python:
     name: Python tooling check
     runs-on: ubuntu-latest
+    timeout-minutes: 8
 
     steps:
       - name: Checkout repository
