@@ -2,7 +2,7 @@
   "_meta": {
     "schema": "velora-session-state/1",
     "updated_at": "2026-08-20",
-    "based_on_commit": "4d0e5dce942bf3e2e1d604d24347b4daf08bd0f8",
+    "based_on_commit": "1626e639ae648d7940bb6896ae29c3bb5924f325",
     "authority": "Human-maintained handoff. Live Git/GitHub evidence overrides technical status claims; owner decisions and safety rules remain authoritative.",
     "contains_secrets": false
   },
