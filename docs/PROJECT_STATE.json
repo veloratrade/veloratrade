@@ -1,8 +1,8 @@
 {
   "_meta": {
     "schema": "velora-project-state/1",
-    "generated_at": "2026-08-20T01:37:25+00:00",
-    "generated_from_commit": "fc478ca1e1a4d25c7243bc3dc1fd3bb0b379ae66",
+    "generated_at": "2026-08-20T01:53:30+00:00",
+    "generated_from_commit": "e36264362a3ebc86372cbea5ba84f7a10d36020c",
     "generator": "tools/velora-status.sh --json",
     "github_live": true,
     "network_mode": "online",
@@ -16,25 +16,25 @@
     "private": false,
     "visibility": "public",
     "branch": "main",
-    "head": "fc478ca",
-    "head_full": "fc478ca1e1a4d25c7243bc3dc1fd3bb0b379ae66",
-    "head_date": "2026-08-20 01:37:12 +0000",
-    "head_subject": "docs: record Production CID icon rollout [skip ci]",
+    "head": "e362643",
+    "head_full": "e36264362a3ebc86372cbea5ba84f7a10d36020c",
+    "head_date": "2026-08-20 01:53:17 +0000",
+    "head_subject": "docs: align AGENTS session state [skip ci]",
     "working_tree_clean": true,
     "changed_files": [],
-    "tracked_files": 703,
+    "tracked_files": 704,
     "readme_version": "2.2.0",
-    "origin_tracking_head": "fc478ca",
+    "origin_tracking_head": "e362643",
     "ahead_by": 0,
     "behind_by": 0,
-    "remote_main_head": "fc478ca",
+    "remote_main_head": "e362643",
     "remote_main_matches_head": true
   },
   "session_state": {
     "_meta": {
       "schema": "velora-session-state/1",
       "updated_at": "2026-08-20",
-      "based_on_commit": "4d0e5dce942bf3e2e1d604d24347b4daf08bd0f8",
+      "based_on_commit": "1626e639ae648d7940bb6896ae29c3bb5924f325",
       "authority": "Human-maintained handoff. Live Git/GitHub evidence overrides technical status claims; owner decisions and safety rules remain authoritative.",
       "contains_secrets": false
     },
@@ -290,7 +290,7 @@
     {
       "id": "PROJECT_STATE_STALE",
       "severity": "warning",
-      "message": "PROJECT_STATE generated from f9384e0 does not cover HEAD fc478ca"
+      "message": "PROJECT_STATE generated from fc478ca does not cover HEAD e362643"
     }
   ],
   "environments": {
