@@ -45,6 +45,7 @@ jobs:
     name: اجرای Smoke Suite
     if: github.repository == 'veloratrade/veloratrade'
     runs-on: ubuntu-latest
+    timeout-minutes: 12
     env:
       BASE: ${{ inputs.base_url }}
       ENVNAME: ${{ inputs.environment_name }}

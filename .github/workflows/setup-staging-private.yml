@@ -10,10 +10,18 @@ on:
 permissions:
   contents: read
 
+# فقط یک راه‌اندازی هم‌زمان روی private root استیجینگ. لغو در میانه‌ی
+# نوشتن env/ساختار می‌تواند حالت ناقص بجا بگذارد، پس cancel-in-progress
+# غیرفعال است (مثل الگوی deploy، نه الگوی check).
+concurrency:
+  group: setup-staging-private
+  cancel-in-progress: false
+
 jobs:
   setup-private:
     if: github.repository == 'veloratrade/veloratrade'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: ساخت ساختار private و آپلود env
         env:

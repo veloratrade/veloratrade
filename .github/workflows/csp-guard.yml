@@ -18,10 +18,24 @@ on:
 permissions:
   contents: read
 
+# یک اجرا در هر ref کافی است؛ push جدید بررسی‌های قدیمی را لغو می‌کند.
+# این workflow یک check است (نه انتشار)، پس لغو امن است.
+#
+# ⚠️ ایمنی انتشار: این فایل به‌صورت workflow_call داخل deploy.yml و
+# deploy-staging.yml هم صدا زده می‌شود. کلید گروه شامل github.workflow
+# است؛ هنگام فراخوانی از یک deploy، github.workflow به نام workflow
+# فراخوان (مثلاً «Deploy Production») تبدیل می‌شود و گروهی جدا از اجرای
+# مستقل push/PR می‌سازد. بنابراین یک push معمولی هرگز نمی‌تواند گارد CSP
+# در حال اجرا داخل یک انتشار Production را لغو کند.
+concurrency:
+  group: csp-guard-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verify-csp:
     name: تطابق منیفست با صفحات
     runs-on: ubuntu-latest
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
 
@@ -41,6 +55,7 @@ jobs:
   secret-scan:
     name: جلوگیری از نشت اطلاعات حساس
     runs-on: ubuntu-latest
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
 
