@@ -33,11 +33,13 @@ jobs:
           echo "::add-mask::$RESEND_API_KEY"
       - uses: actions/checkout@v4
 
-      - name: Create seven isolated disposable inboxes
+      - name: Create four low-volume disposable inboxes
         run: |
           python3 <<'PY'
           import base64,json,os,random,string,time,urllib.request,urllib.error
-          names=['verification','welcome','password_reset','password_changed','new_device','first_trade','achievement']
+          # mail.tm rate-limits account creation and may suppress a burst of seven
+          # messages to one inbox. Four inboxes, max two messages each, avoid both.
+          names=['auth','password','security','activity']
           def req(method,url,data=None,token=None):
               body=json.dumps(data).encode() if data is not None else None
               r=urllib.request.Request(url,data=body,method=method,headers={'Accept':'application/json','User-Agent':'Velora-Email-Suite/2.0'})
@@ -59,7 +61,9 @@ jobs:
               for attempt in range(1,6):
                   status,_=req('POST','https://api.mail.tm/accounts',{'address':address,'password':password})
                   if status in (200,201):break
-                  time.sleep(2)
+                  delay=min(15*attempt,60) if status==429 else 3
+                  print(f'… mailbox {name} HTTP {status}; retry in {delay}s')
+                  time.sleep(delay)
               if status not in (200,201):raise SystemExit(f'::error::mailbox create failed for {name}: HTTP {status}')
               status,auth=req('POST','https://api.mail.tm/token',{'address':address,'password':password})
               token=auth.get('token','')
@@ -70,7 +74,7 @@ jobs:
           encoded=base64.urlsafe_b64encode(json.dumps(boxes,separators=(',',':')).encode()).decode()
           print('::add-mask::'+encoded)
           with open(os.environ['GITHUB_ENV'],'a') as out:out.write('MAILBOXES_B64='+encoded+'\n')
-          print('SEVEN_ISOLATED_MAILBOXES=READY')
+          print('FOUR_LOW_VOLUME_MAILBOXES=READY')
           PY
 
       - name: Send all current transactional templates through real code
@@ -101,13 +105,13 @@ jobs:
           $to=static fn(string $name): string=>$boxes[$name]['address'];
           $base='https://staging.veloratrade.ir';
           $cases=[
-              'verification'=>fn()=>NotificationService::sendVerificationEmail($to('verification'),'Email Suite',$base.'/verify-email#token='.str_repeat('a',64),900001),
-              'welcome'=>fn()=>NotificationService::sendWelcomeEmail($to('welcome'),'Email Suite',$base.'/dashboard',900001),
-              'password_reset'=>fn()=>NotificationService::sendPasswordResetTokenEmail($to('password_reset'),'Email Suite',$base.'/reset-password?token='.str_repeat('b',64),900001),
-              'password_changed'=>fn()=>NotificationService::sendPasswordChangedEmail($to('password_changed'),'Email Suite',900001),
-              'new_device'=>fn()=>NotificationService::sendNewDeviceDetectedEmail($to('new_device'),'Email Suite','192.0.2.1','Velora Suite Browser','2026-08-20 00:00:00 UTC',900001),
-              'first_trade'=>fn()=>NotificationService::sendFirstTradeEmail($to('first_trade'),'Email Suite','EURUSD','buy',$base.'/dashboard',900001),
-              'achievement'=>fn()=>NotificationService::sendAchievementUnlockedEmail($to('achievement'),'Email Suite','Consistency','Seven-day discipline',$base.'/profile',900001),
+              'verification'=>fn()=>NotificationService::sendVerificationEmail($to('auth'),'Email Suite',$base.'/verify-email#token='.str_repeat('a',64),900001),
+              'welcome'=>fn()=>NotificationService::sendWelcomeEmail($to('auth'),'Email Suite',$base.'/dashboard',900001),
+              'password_reset'=>fn()=>NotificationService::sendPasswordResetTokenEmail($to('password'),'Email Suite',$base.'/reset-password?token='.str_repeat('b',64),900001),
+              'password_changed'=>fn()=>NotificationService::sendPasswordChangedEmail($to('password'),'Email Suite',900001),
+              'new_device'=>fn()=>NotificationService::sendNewDeviceDetectedEmail($to('security'),'Email Suite','192.0.2.1','Velora Suite Browser','2026-08-20 00:00:00 UTC',900001),
+              'first_trade'=>fn()=>NotificationService::sendFirstTradeEmail($to('activity'),'Email Suite','EURUSD','buy',$base.'/dashboard',900001),
+              'achievement'=>fn()=>NotificationService::sendAchievementUnlockedEmail($to('activity'),'Email Suite','Consistency','Seven-day discipline',$base.'/profile',900001),
           ];
           $ids=[];
           foreach($cases as $name=>$send){
@@ -129,36 +133,42 @@ jobs:
           import base64,json,os,re,time,urllib.request
           boxes=json.loads(base64.urlsafe_b64decode(os.environ['MAILBOXES_B64']).decode())
           expected={
-            'verification':'verification.png','welcome':'welcome.png','password_reset':'password-reset.png',
-            'password_changed':'password-changed.png','new_device':'security.png',
-            'first_trade':'first-trade.png','achievement':'achievement.png'
+            'auth':{'verification.png','welcome.png'},
+            'password':{'password-reset.png','password-changed.png'},
+            'security':{'security.png'},
+            'activity':{'first-trade.png','achievement.png'},
           }
           def get(name,url):
               token=boxes[name]['token']
-              r=urllib.request.Request(url,headers={'Accept':'application/json','Authorization':'Bearer '+token,'User-Agent':'Velora-Email-Suite/2.0'})
+              r=urllib.request.Request(url,headers={'Accept':'application/json','Authorization':'Bearer '+token,'User-Agent':'Velora-Email-Suite/2.1'})
               with urllib.request.urlopen(r,timeout=30) as x:return json.loads(x.read().decode())
-          pending=set(boxes);details={}
+          pending=set(boxes);messages_by_box={}
           for attempt in range(1,37):
               for name in list(pending):
                   data=get(name,'https://api.mail.tm/messages?page=1');messages=data if isinstance(data,list) else data.get('hydra:member',[])
-                  if not messages:continue
-                  details[name]=get(name,'https://api.mail.tm/messages/'+messages[0]['id']);pending.remove(name)
+                  if len(messages)>=len(expected[name]):messages_by_box[name]=messages;pending.remove(name)
               if not pending:break
-              print(f'… isolated deliveries {7-len(pending)}/7 pending={sorted(pending)} attempt={attempt}/36')
+              received=sum(len(messages_by_box.get(name,[])) for name in boxes)
+              print(f'… low-volume deliveries boxes={4-len(pending)}/4 pending={sorted(pending)} attempt={attempt}/36')
               time.sleep(10)
-          if pending:raise SystemExit(f'::error::missing isolated deliveries: {sorted(pending)}')
-          for name,d in details.items():
-              sender=d.get('from') or {};html='\n'.join(d.get('html') or []);attachments=d.get('attachments') or []
-              if (sender.get('address') or '').lower()!='no-reply@veloratrade.ir':raise SystemExit(f'::error::{name} From address mismatch')
-              if (sender.get('name') or '').strip()!='VELORA TRADE':raise SystemExit(f'::error::{name} From name mismatch')
-              match=next((a for a in attachments if a.get('filename')==expected[name]),None)
-              if not match:raise SystemExit(f'::error::{name} dedicated icon attachment missing')
-              if match.get('disposition')!='inline' or match.get('related') is not True:raise SystemExit(f'::error::{name} attachment is not inline/related')
-              if not re.search(r'<img[^>]+src="attachment:[^"]+"[^>]*>',html,re.I):raise SystemExit(f'::error::{name} inline icon reference missing')
-              if any(x in html for x in ('✉️','✔','📊','🏆')):raise SystemExit(f'::error::{name} legacy emoji remains')
-              if '#9b782e' not in html.lower() or '#3b465a' not in html.lower():raise SystemExit(f'::error::{name} Gold Outline missing')
-              if 'https://staging.veloratrade.ir/public/assets/velora-email-logo.png' not in html:raise SystemExit(f'::error::{name} environment logo URL mismatch')
-              print(f'{name}: DELIVERY+CID+FROM+DESIGN PASS')
+          if pending:raise SystemExit(f'::error::missing low-volume deliveries: {sorted(pending)}')
+          checked=set()
+          for name,messages in messages_by_box.items():
+              found=set()
+              for message in messages[:len(expected[name])]:
+                  d=get(name,'https://api.mail.tm/messages/'+message['id']);sender=d.get('from') or {};html='\n'.join(d.get('html') or []);attachments=d.get('attachments') or []
+                  if (sender.get('address') or '').lower()!='no-reply@veloratrade.ir':raise SystemExit(f'::error::{name} From address mismatch')
+                  if (sender.get('name') or '').strip()!='VELORA TRADE':raise SystemExit(f'::error::{name} From name mismatch')
+                  inline={a.get('filename') for a in attachments if a.get('disposition')=='inline' and a.get('related') is True}
+                  found |= inline & expected[name]
+                  if not re.search(r'<img[^>]+src="attachment:[^"]+"[^>]*>',html,re.I):raise SystemExit(f'::error::{name} inline icon reference missing')
+                  if any(x in html for x in ('✉️','✔','📊','🏆')):raise SystemExit(f'::error::{name} legacy emoji remains')
+                  if '#9b782e' not in html.lower() or '#3b465a' not in html.lower():raise SystemExit(f'::error::{name} Gold Outline missing')
+                  if 'https://staging.veloratrade.ir/public/assets/velora-email-logo.png' not in html:raise SystemExit(f'::error::{name} environment logo URL mismatch')
+              if found!=expected[name]:raise SystemExit(f'::error::{name} icon set mismatch expected={sorted(expected[name])} found={sorted(found)}')
+              checked |= found
+              print(f'{name}: {len(messages)}/{len(expected[name])} DELIVERY+CID+FROM+DESIGN PASS')
+          if len(checked)!=7:raise SystemExit(f'::error::only {len(checked)}/7 dedicated icons verified')
           print('TRANSACTIONAL_CID_DELIVERIES=7/7 PASS')
           PY
 
