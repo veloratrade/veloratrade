@@ -76,10 +76,16 @@ jobs:
       environment_name: staging
       write_probes: false
 
-  # ── ۳. گارد CSP ────────────────────────────────────────────────
+  # ── ۳. گیت دائمی کیفیت (Phase 3.2): Auth/Email/Security/Localization ──
+  quality_gate:
+    name: گیت دائمی کیفیت — پیش‌شرط انتشار
+    needs: staging_gate
+    uses: ./.github/workflows/quality-gate.yml
+
+  # ── ۴. گارد CSP ────────────────────────────────────────────────
   guard:
     name: بررسی سلامت قبل از انتشار
-    needs: staging_gate
+    needs: quality_gate
     uses: ./.github/workflows/csp-guard.yml
 
   # ── ۳. ساخت بسته + بکاپ + انتقال ───────────────────────────────
