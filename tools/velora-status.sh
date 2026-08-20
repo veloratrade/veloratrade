@@ -574,7 +574,7 @@ try:
     snap=json.load(open('docs/PROJECT_STATE.json',encoding='utf-8'))
     snap_head=snap.get('_meta',{}).get('generated_from_commit','')
     if snap_head != out['repository']['head_full'] and not covers_head_with_only(
-        snap_head, {'docs/PROJECT_STATE.json'}):
+        snap_head, {'AGENTS.md','docs/PROJECT_STATE.json','docs/SESSION_STATE.json','docs/README.md'}):
         out['drift'].append({"id":"PROJECT_STATE_STALE","severity":"warning",
           "message":f"PROJECT_STATE generated from {snap_head[:7] or '?'} does not cover HEAD {out['repository']['head']}"})
 except Exception:
