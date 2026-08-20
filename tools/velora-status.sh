@@ -329,7 +329,7 @@ covers_head_with_only() {
 if [ -z "$snapshot_commit" ]; then
   echo "  🔴 docs/PROJECT_STATE.json نامعتبر یا فاقد generated_from_commit"
   context_errors=$((context_errors+1))
-elif [ "$snapshot_commit" = "$head_full" ] || covers_head_with_only "$snapshot_commit" '^docs/(PROJECT_STATE|SESSION_STATE)\.json$|^docs/README\.md$'; then
+elif [ "$snapshot_commit" = "$head_full" ] || covers_head_with_only "$snapshot_commit" '^AGENTS\.md$|^docs/(PROJECT_STATE|SESSION_STATE)\.json$|^docs/README\.md$'; then
   echo "  ✅ PROJECT_STATE وضعیت فنی HEAD را پوشش می‌دهد"
 else
   echo "  ⚠️  PROJECT_STATE کهنه: ${snapshot_commit:0:7} پوشش‌دهنده HEAD $head_short نیست"
@@ -340,7 +340,7 @@ fi
 if [ -z "$session_commit" ]; then
   echo "  🔴 docs/SESSION_STATE.json نامعتبر یا فاقد based_on_commit"
   context_errors=$((context_errors+1))
-elif [ "$session_commit" = "$head_full" ] || covers_head_with_only "$session_commit" '^docs/(SESSION_STATE|PROJECT_STATE)\.json$|^docs/README\.md$'; then
+elif [ "$session_commit" = "$head_full" ] || covers_head_with_only "$session_commit" '^AGENTS\.md$|^docs/(SESSION_STATE|PROJECT_STATE)\.json$|^docs/README\.md$'; then
   echo "  ✅ SESSION_STATE وضعیت تحویل HEAD را پوشش می‌دهد"
 else
   echo "  ⚠️  SESSION_STATE نیازمند بازبینی: ${session_commit:0:7} پوشش‌دهنده HEAD $head_short نیست"
@@ -563,7 +563,7 @@ try:
     out['session_state']=state
     based=state.get('_meta',{}).get('based_on_commit','')
     if based != out['repository']['head_full'] and not covers_head_with_only(
-        based, {'docs/SESSION_STATE.json','docs/PROJECT_STATE.json','docs/README.md'}):
+        based, {'AGENTS.md','docs/SESSION_STATE.json','docs/PROJECT_STATE.json','docs/README.md'}):
         out['drift'].append({"id":"SESSION_STATE_STALE","severity":"warning",
           "message":f"SESSION_STATE based_on {based[:7] or '?'} does not cover HEAD {out['repository']['head']}"})
 except Exception as e:
