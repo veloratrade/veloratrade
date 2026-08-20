@@ -6,6 +6,7 @@ namespace Velora\Core;
 
 use PDO;
 use PDOException;
+use Velora\Core\Exceptions\ServiceUnavailableException;
 
 /**
  * PDO connection manager (singleton).
@@ -14,6 +15,12 @@ use PDOException;
 final class Database
 {
     private static ?PDO $pdo = null;
+
+    /** Number of attempts to establish the initial MySQL connection. */
+    private const CONNECT_MAX_ATTEMPTS = 3;
+
+    /** Base backoff between connection attempts, in microseconds (100ms). */
+    private const CONNECT_BACKOFF_US = 100000;
 
     public static function connection(): PDO
     {
@@ -65,18 +72,50 @@ final class Database
             $config['charset']
         );
 
-        try {
-            self::$pdo = new PDO($dsn, $config['user'], $config['pass'], [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES => false, // real prepared statements
-                PDO::ATTR_STRINGIFY_FETCHES => false,
-            ]);
-        } catch (PDOException $e) {
-            throw new PDOException('Database connection failed: ' . $e->getMessage(), (int) $e->getCode());
+        // Establishing the connection (not running queries) can fail transiently
+        // on shared hosting — e.g. "Too many connections" or "server has gone
+        // away" during load spikes. Retry the CONNECT step only, with a short
+        // linear backoff. Query execution is never retried here (it happens
+        // outside this method), so this cannot re-run a mutating statement or
+        // leak connections: a successful attempt returns immediately and only
+        // one PDO handle is ever assigned to the singleton.
+        $lastError = null;
+        for ($attempt = 1; $attempt <= self::CONNECT_MAX_ATTEMPTS; $attempt++) {
+            try {
+                self::$pdo = new PDO($dsn, $config['user'], $config['pass'], [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                    PDO::ATTR_EMULATE_PREPARES => false, // real prepared statements
+                    PDO::ATTR_STRINGIFY_FETCHES => false,
+                ]);
+
+                return self::$pdo;
+            } catch (PDOException $e) {
+                $lastError = $e;
+                if ($attempt < self::CONNECT_MAX_ATTEMPTS) {
+                    // Linear backoff: 100ms, 200ms, ... Keeps total added latency
+                    // small (<= ~300ms) while smoothing over brief spikes.
+                    usleep(self::CONNECT_BACKOFF_US * $attempt);
+                }
+            }
         }
 
-        return self::$pdo;
+        // All attempts failed. Emit safe operational evidence only — never the
+        // DSN, host, username, password, or driver message (which may embed
+        // connection details). Only the PDO error code and attempt count.
+        error_log(sprintf(
+            '[VELORA_DB_CONNECT_FAIL] attempts=%d pdo_code=%s',
+            self::CONNECT_MAX_ATTEMPTS,
+            $lastError !== null ? (string) $lastError->getCode() : 'unknown',
+        ));
+
+        // Surface a distinguishable, retryable 503 to the HTTP layer instead of
+        // a generic 500. The message is generic and safe to render to clients.
+        throw new ServiceUnavailableException(
+            'Service temporarily unavailable.',
+            'SERVICE_UNAVAILABLE',
+            'errors.http.503',
+        );
     }
 
     /**
