@@ -190,7 +190,7 @@ jobs:
                   d = json.loads(det)
                   raw = (d.get('text') or '') + '\n' + '\n'.join(d.get('html') or [])
                   raw = re.sub(r'=\r?\n', '', raw).replace('=3D', '=').replace('&amp;', '&')
-                  match = re.search(r'reset-password\?token=([0-9a-f]{64})', raw)
+                  match = re.search(r'reset-password[#?]token=([0-9a-f]{64})', raw)
                   if match:
                       reset_token = match.group(1)
                       print(f'::add-mask::{reset_token}')
