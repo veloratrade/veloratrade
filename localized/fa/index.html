@@ -2,7 +2,7 @@
 
 <html data-i18n-features="common,errors,landing" data-route-locale="fa" data-velora-prelocalized="fa" dir="rtl" lang="fa">
 <head>
-<meta charset="utf-8"/><script src="/public/assets/velora-latin-digits.js?v=2026.08.14.17"></script><link href="/public/assets/velora-latin-digits.css?v=2026.08.14.17" rel="stylesheet"/><script src="/public/assets/velora-locale-registry.js?v=2026.08.21.1"></script><script src="/public/assets/velora-locale-bootstrap.js?v=2026.08.21.1"></script><link href="/public/assets/velora-localization.css?v=2026.08.21.1" rel="stylesheet"/><script src="/public/assets/velora-localization.js?v=2026.08.21.1"></script><script src="/public/assets/velora-data.js?v=2026.08.21.1"></script><script defer="" src="/public/assets/velora-dynamic-content.js?v=2026.08.21.1"></script>
+<meta charset="utf-8"/><script src="/public/assets/velora-latin-digits.js?v=2026.08.14.17"></script><link href="/public/assets/velora-latin-digits.css?v=2026.08.14.17" rel="stylesheet"/><script src="/public/assets/velora-locale-registry.js?v=2026.08.22.1"></script><script src="/public/assets/velora-locale-bootstrap.js?v=2026.08.22.1"></script><link href="/public/assets/velora-localization.css?v=2026.08.22.1" rel="stylesheet"/><script src="/public/assets/velora-localization.js?v=2026.08.22.1"></script><script src="/public/assets/velora-data.js?v=2026.08.22.1"></script><script defer="" src="/public/assets/velora-dynamic-content.js?v=2026.08.22.1"></script>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title data-i18n="common.velora.ai.trading.journal.for.forex.crypto.4da0de5c">VELORA | ژورنال معاملاتی هوشمند برای فارکس, کریپتو و MT4/MT5</title>
 <meta content="VELORA یک ژورنال معاملاتی هوشمند برای ثبت, تحلیل و بهبود معاملات فارکس, کریپتو و بازارهای مالی است; همراه با مدیریت ریسک, تحلیل عملکرد و اتصال MT4 و MT5." data-i18n-content="pages.landing.velora.is.an.ai.powered.trading.journal.98d2d555" name="description"/>
@@ -60,21 +60,21 @@ body{
 ::-webkit-scrollbar-track{background:#05060b}
 ::-webkit-scrollbar-thumb{background:linear-gradient(#8a6a1f,#5c4713);border-radius:8px}
 
-/* ---------- scroll progress ---------- */
+
 #prog{position:fixed;top:0;right:0;height:3px;width:0;z-index:200;background:var(--grad);
   box-shadow:0 0 12px rgba(212,175,55,.7);transition:width .08s linear}
 
-/* ---------- film grain ---------- */
+
 .noise{position:fixed;inset:0;z-index:160;pointer-events:none;opacity:.05;
   background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/><feComponentTransfer><feFuncA type='linear' slope='0.55'/></feComponentTransfer></filter><rect width='140' height='140' filter='url(%23n)'/></svg>")}
 
-/* ---------- cursor glow ---------- */
+
 .cursor-glow{position:fixed;top:0;left:0;width:340px;height:340px;border-radius:50%;
   pointer-events:none;z-index:4;background:radial-gradient(circle,rgba(212,175,55,.085),transparent 62%);
   opacity:0;transition:opacity .5s;will-change:transform}
 body.cg .cursor-glow{opacity:1}
 
-/* ---------- backdrop ---------- */
+
 .bg-aurora{position:fixed;inset:0;z-index:-3;pointer-events:none;
   background:
    radial-gradient(900px 520px at 85% -10%, rgba(212,175,55,.10), transparent 60%),
@@ -91,7 +91,7 @@ body.cg .cursor-glow{opacity:1}
   -webkit-mask-image:radial-gradient(ellipse 90% 70% at 50% 0%, #000 30%, transparent 75%);
 }
 
-/* ---------- type ---------- */
+
 .gold{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
 .gold-shimmer{background:linear-gradient(100deg,#c9942b 15%,#f9e6a8 40%,#fff8dd 50%,#f9e6a8 60%,#c9942b 85%);
   background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
@@ -107,7 +107,7 @@ p.sec-sub{color:var(--mut);font-size:clamp(14.5px,1.4vw,17px);max-width:640px;ma
 .sec-head::after{content:"";display:block;width:70px;height:3px;border-radius:99px;margin:26px auto 0;
   background:var(--grad);box-shadow:0 0 16px rgba(212,175,55,.55)}
 
-/* ---------- buttons ---------- */
+
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;font-family:inherit;
   font-size:15.5px;font-weight:700;padding:13px 30px;border-radius:14px;cursor:pointer;text-decoration:none;
   transition:.25s;border:1px solid transparent;white-space:nowrap}
@@ -121,7 +121,7 @@ p.sec-sub{color:var(--mut);font-size:clamp(14.5px,1.4vw,17px);max-width:640px;ma
 .btn-ghost{background:rgba(212,175,55,.05);border-color:var(--line2);color:var(--gold3)}
 .btn-ghost:hover{background:rgba(212,175,55,.12);transform:translateY(-2px)}
 
-/* ---------- header ---------- */
+
 header{position:fixed;top:0;left:0;right:0;z-index:100;
   backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   background:rgba(4,5,10,.72);border-bottom:1px solid rgba(212,175,55,.10);transition:.3s}
@@ -151,7 +151,7 @@ nav.links a.active{color:var(--gold3)}
 #nav-toggle{display:none;background:none;border:1px solid var(--line2);color:var(--gold3);border-radius:10px;
   width:42px;height:42px;font-size:20px;cursor:pointer}
 
-/* ---------- nav dropdown ---------- */
+
 .nav-dd{position:relative}
 .nav-dd>button{background:none;border:none;font-family:inherit;color:var(--mut);font-size:14.5px;font-weight:500;
   cursor:pointer;display:flex;align-items:center;gap:5px;padding:4px 0;transition:.2s}
@@ -181,7 +181,7 @@ nav.links a.active{color:var(--gold3)}
   color:var(--gold3);font-size:12.5px;font-weight:600;text-decoration:none;transition:.15s}
 .dd-all:hover{background:rgba(212,175,55,.09)}
 
-/* ---------- hero ---------- */
+
 .hero{position:relative;min-height:100svh;display:flex;align-items:center;
   padding:130px 24px 90px;overflow:hidden}
 .hero-inner{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center;width:100%}
@@ -196,7 +196,7 @@ nav.links a.active{color:var(--gold3)}
   background:var(--card);border:1px solid var(--line);border-radius:99px;padding:7px 15px}
 .chip .dot{width:7px;height:7px;border-radius:50%;background:var(--gold);box-shadow:0 0 8px var(--gold)}
 
-/* hero visual */
+
 .hero-visual{position:relative;display:flex;justify-content:center;perspective:1200px}
 .v-ring,.v-ring2{position:absolute;border-radius:50%;pointer-events:none;top:50%;left:50%;translate:-50% -50%}
 .v-ring{width:min(112%,620px);aspect-ratio:1;z-index:0;
@@ -238,7 +238,7 @@ nav.links a.active{color:var(--gold3)}
 @keyframes hint{0%{transform:scaleY(0);transform-origin:top}55%{transform:scaleY(1);transform-origin:top}56%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
 
 
-/* ---------- dashboard mock ---------- */
+
 .db-shell{position:relative;border:1px solid var(--line2);border-radius:26px;overflow:hidden;background:rgba(7,9,15,.94);
   box-shadow:var(--shadow),0 0 90px rgba(212,175,55,.12)}
 .db-chrome{display:flex;align-items:center;gap:12px;padding:11px 18px;border-bottom:1px solid rgba(212,175,55,.12);
@@ -355,7 +355,7 @@ nav.links a.active{color:var(--gold3)}
 .psy-chip.ok{color:#7ee0a8;border-color:rgba(61,220,132,.35);background:rgba(61,220,132,.07)}
 .psy-chip.warn{color:#ffb199;border-color:rgba(255,107,107,.35);background:rgba(255,107,107,.07)}
 
-/* compact hero dashboard */
+
 .hero .v-frame{width:min(100%,600px)}
 .db-hero{grid-template-columns:1fr;min-height:0}
 .db-hero .db-chrome{padding:8px 14px}
@@ -372,7 +372,7 @@ nav.links a.active{color:var(--gold3)}
 .db-hero .tl-tag{display:none}
 .db-hero .psy-chips{margin-top:2px}
 
-/* ---------- meet velora ai ---------- */
+
 .ai-wrap{position:relative;max-width:780px;margin:0 auto}
 .ai-shell{position:relative}
 .ai-glow{position:absolute;top:-14%;bottom:-14%;left:50%;width:min(128%,100vw);transform:translateX(-50%);z-index:0;background:radial-gradient(circle,rgba(212,175,55,.17),transparent 62%);filter:blur(10px);pointer-events:none}
@@ -432,7 +432,7 @@ nav.links a.active{color:var(--gold3)}
 .ai-float .fl-icon.ok{background:rgba(61,220,132,.1);color:#7ee0a8;border:1px solid rgba(61,220,132,.3)}
 .ai-note{text-align:center;color:#6f6a5a;font-size:11.5px;margin-top:16px}
 
-/* ---------- screenshots gallery ---------- */
+
 .shots{display:grid;grid-template-columns:repeat(2,1fr);gap:22px}
 .shot{position:relative;margin:0;background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden;transition:.3s;cursor:default}
 .shot:hover{border-color:var(--line2);transform:translateY(-6px);box-shadow:0 24px 60px rgba(0,0,0,.45)}
@@ -447,7 +447,7 @@ nav.links a.active{color:var(--gold3)}
 .shot figcaption b{display:block;font-size:16px;font-weight:700;margin-bottom:6px}
 .shot figcaption span{font-size:13px;color:var(--mut);line-height:2}
 
-/* ---------- ai feature cards ---------- */
+
 .ai-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:32px}
 .ai-card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 18px;transition:.3s;cursor:default}
 .ai-card:hover{border-color:var(--line2);transform:translateY(-4px);background:var(--card2)}
@@ -460,11 +460,11 @@ nav.links a.active{color:var(--gold3)}
 @media(max-width:720px){.shots{grid-template-columns:1fr}}
 @media(max-width:560px){.ai-cards{grid-template-columns:1fr}}
 
-/* ---------- sections ---------- */
+
 section{position:relative;padding:96px 24px;scroll-margin-top:70px}
 .wrap{max-width:1200px;margin:0 auto}
 
-/* stats band */
+
 .stats{background:linear-gradient(180deg,rgba(212,175,55,.05),transparent);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 .stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:22px;padding:44px 0}
 .stat{text-align:center}
@@ -472,14 +472,14 @@ section{position:relative;padding:96px 24px;scroll-margin-top:70px}
   background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
 .stat span{font-size:13.5px;color:var(--mut)}
 
-/* marquee */
+
 .marquee{overflow:hidden;position:relative;padding:26px 0;border-bottom:1px solid rgba(212,175,55,.08);-webkit-mask-image:linear-gradient(90deg,transparent,#000 15%,#000 85%,transparent);mask-image:linear-gradient(90deg,transparent,#000 15%,#000 85%,transparent)}
 .marquee-track{display:flex;gap:64px;width:max-content;animation:slide 26s linear infinite}
 .marquee span{font-size:15px;font-weight:700;color:#8f876f;white-space:nowrap;display:flex;align-items:center;gap:64px}
 .marquee span::after{content:"✦";color:var(--gold4);font-size:11px}
 @keyframes slide{0%{transform:translateX(0)}100%{transform:translateX(50%)}}
 
-/* features */
+
 .feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
 .feat-card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--r);
   padding:30px 26px;transition:.3s;overflow:hidden;cursor:default}
@@ -497,7 +497,7 @@ section{position:relative;padding:96px 24px;scroll-margin-top:70px}
 .vtag{position:absolute;top:16px;left:16px;font-size:11px;font-weight:700;color:var(--gold3);
   background:rgba(212,175,55,.10);border:1px solid var(--line);border-radius:99px;padding:3px 11px}
 
-/* spotlight */
+
 .spot{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;padding:70px 0}
 .spot+.spot{border-top:1px solid rgba(212,175,55,.08)}
 .spot-media{position:relative;perspective:1000px}
@@ -517,7 +517,7 @@ section{position:relative;padding:96px 24px;scroll-margin-top:70px}
 .spot li::before{content:"✓";flex:none;width:24px;height:24px;display:grid;place-items:center;font-size:12px;font-weight:700;
   color:#1c1303;background:var(--grad);border-radius:8px;margin-top:3px;box-shadow:0 4px 14px rgba(212,175,55,.35)}
 
-/* steps */
+
 .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
 .step{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:34px 26px;
   text-align:center;transition:.3s}
@@ -540,7 +540,7 @@ section{position:relative;padding:96px 24px;scroll-margin-top:70px}
 .step::after{content:"";position:absolute;top:58px;right:-14px;width:26px;height:2px;background:linear-gradient(90deg,var(--gold2),transparent);border-radius:2px}
 .step:last-child::after{display:none}
 
-/* roadmap */
+
 .road{position:relative;padding:70px 0 30px}
 .road-line{position:absolute;top:66px;right:0;left:0;height:2px;
   background:linear-gradient(90deg,transparent,var(--gold2) 12%,var(--gold2) 88%,transparent);opacity:.5}
@@ -557,7 +557,7 @@ section{position:relative;padding:96px 24px;scroll-margin-top:70px}
 .road-node .phase{display:block;width:fit-content;margin:0 auto 10px;font-size:10.5px;font-weight:700;
   color:#a8945a;border:1px solid var(--line);border-radius:99px;padding:2px 11px;background:rgba(212,175,55,.06)}
 
-/* security */
+
 .sec-band{background:linear-gradient(180deg,transparent,rgba(212,175,55,.045) 30%,rgba(212,175,55,.045) 70%,transparent);
   border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 .sec-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;padding:50px 0}
@@ -568,7 +568,7 @@ section{position:relative;padding:96px 24px;scroll-margin-top:70px}
 .sec-item b{display:block;font-size:14px;font-weight:700;margin-bottom:4px}
 .sec-item span{font-size:12.5px;color:var(--mut);line-height:1.8}
 
-/* pricing */
+
 .price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;align-items:stretch;perspective:1200px}
 .price-card{position:relative;display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);
   border-radius:24px;padding:38px 30px;transition:.3s}
@@ -600,7 +600,7 @@ section{position:relative;padding:96px 24px;scroll-margin-top:70px}
 .price-card.hot .price span{color:#e0d9c6}
 .foot-note{text-align:center;color:#6f6a5a;font-size:12.5px;margin-top:26px}
 
-/* comparison */
+
 .cmp-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:20px;background:var(--card);
   box-shadow:0 24px 70px rgba(0,0,0,.35)}
 table.cmp{width:100%;border-collapse:collapse;min-width:660px;font-size:14px}
@@ -616,7 +616,7 @@ table.cmp{width:100%;border-collapse:collapse;min-width:660px;font-size:14px}
 .cmp .na{color:#4d4a41;font-size:12px}
 .cmp .fname{color:#cfc8b4;font-weight:500}
 
-/* faq */
+
 .faq{max-width:820px;margin:0 auto;display:grid;gap:14px}
 .faq details{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;transition:.3s}
 .faq details[open]{border-color:var(--line2);background:rgba(212,175,55,.05)}
@@ -629,7 +629,7 @@ table.cmp{width:100%;border-collapse:collapse;min-width:660px;font-size:14px}
 .faq details[open] summary .plus{transform:rotate(45deg);background:rgba(212,175,55,.15)}
 .faq .a{padding:0 22px 20px;color:var(--mut);font-size:14px;line-height:2.1}
 
-/* cta band */
+
 .cta-band{text-align:center;padding:110px 24px 120px}
 .cta-box{position:relative;max-width:860px;margin:0 auto;border-radius:34px;padding:70px 40px;
   background:linear-gradient(160deg,rgba(212,175,55,.12),rgba(10,13,23,.6) 55%);
@@ -643,7 +643,7 @@ table.cmp{width:100%;border-collapse:collapse;min-width:660px;font-size:14px}
 .cta-box .btn{position:relative}
 .cta-note{position:relative;margin-top:16px;font-size:12px;color:#6f6a5a}
 
-/* back to top */
+
 .to-top{position:fixed;bottom:26px;left:26px;z-index:120;width:48px;height:48px;border-radius:14px;
   border:1px solid var(--line2);background:rgba(8,10,16,.85);color:var(--gold3);cursor:pointer;
   display:grid;place-items:center;opacity:0;transform:translateY(14px);pointer-events:none;transition:.3s;
@@ -651,7 +651,7 @@ table.cmp{width:100%;border-collapse:collapse;min-width:660px;font-size:14px}
 .to-top.show{opacity:1;transform:none;pointer-events:auto}
 .to-top:hover{border-color:var(--gold);box-shadow:0 0 22px rgba(212,175,55,.35)}
 
-/* ---------- footer ---------- */
+
 footer{position:relative;direction:ltr;text-align:left;
   background:linear-gradient(180deg,rgba(212,175,55,.05),transparent 150px),#0F172A;
   padding:64px 24px 0}
@@ -687,13 +687,13 @@ footer::before{content:"";position:absolute;top:0;left:0;right:0;height:1px;
 .foot-tagline .arrow{color:var(--gold);font-weight:700;margin-left:6px}
 .foot-legal{text-align:center;color:#64748b;font-size:11px;padding:0 0 28px;max-width:820px;margin:0 auto;line-height:2}
 
-/* reveal */
+
 html.anim .reveal{opacity:0;transform:translateY(24px);transition:opacity .8s ease,transform .8s ease}
 html.anim .reveal.in{opacity:1;transform:none}
-/* default: content always visible; hiding is opt-in via html.anim */
+
 .reveal.in{opacity:1;transform:none}
 
-/* responsive */
+
 @media(max-width:1100px){
   .hero-inner{grid-template-columns:1fr;gap:48px;padding-top:10px}
   .feat-grid{grid-template-columns:repeat(2,1fr)}
@@ -779,10 +779,7 @@ html.anim .reveal.in{opacity:1;transform:none}
 </style>
 <link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Estedad:wght@100..900&amp;display=swap" rel="stylesheet"/>
 <style id="velora-unified-luxury-sidebar-css">
-/* ============================================================
-   VELORA UNIFIED LUXURY SIDEBAR (DESKTOP & MOBILE DRAWER)
-   Saturated Royal Gold Icons & Text on Rich Dark Navy Background
-   ============================================================ */
+
 .sidebar {
   width: 260px !important;
   flex-shrink: 0 !important;
@@ -939,9 +936,7 @@ html.anim .reveal.in{opacity:1;transform:none}
   display: block;
 }
 
-/* ============================================================
-   MOBILE DRAWER MODE (@media max-width: 980px)
-   ============================================================ */
+
 @media (max-width: 980px) {
   .sidebar {
     position: fixed !important;
@@ -1023,7 +1018,7 @@ function toggleMobileSidebar() {
     try {
       var u = window.VeloraData ? VeloraData.getUser() : null;
       if (!u || !u.fullName || u.email === 'ali.rezaei@velora.app') {
-        // No fake user injection: show neutral placeholders until the memory session is ready.
+        
         u = null;
       }
       var name = (u && u.fullName) ? u.fullName : VeloraLocale.t('common.user');
@@ -1060,10 +1055,7 @@ function toggleMobileSidebar() {
 })();
 </script>
 <style id="velora-modern-topbar-css">
-/* ============================================================
-   VELORA LUXURY TOP NAVIGATION & BACK-BAR (DESKTOP & MOBILE)
-   Frosted Glass · Saturated Royal Gold · Interactive Breadcrumbs
-   ============================================================ */
+
 .velora-top-nav-bar {
   display: flex !important;
   align-items: center !important;
@@ -1170,7 +1162,7 @@ function toggleMobileSidebar() {
   box-shadow: 0 0 8px #4cd39a !important;
 }
 
-/* On mobile, stack and optimize spacing */
+
 @media (max-width: 980px) {
   .velora-top-nav-bar {
   display: flex !important;
@@ -1197,7 +1189,7 @@ function toggleMobileSidebar() {
 }
 </style>
 <style id="velora-remove-bottom-nav">
-/* Completely hide old bottom navigation bar on all screen sizes */
+
 .bottom-nav, #bottomNav, nav.bottom-nav {
   display: none !important;
   visibility: hidden !important;
@@ -1223,8 +1215,8 @@ function toggleMobileSidebar() {
 <link href="/public/assets/velora-pricing-pro.css?v=20260813.1" rel="stylesheet"/>
 <meta content="fa" name="content-language"/><link href="https://veloratrade.ir/fa/" hreflang="fa" rel="alternate"/><link href="https://veloratrade.ir/en/" hreflang="en" rel="alternate"/><link href="https://veloratrade.ir/en/" hreflang="x-default" rel="alternate"/></head>
 <body>
-<!--VELORA-B3-->
-<!-- shared logo gradients -->
+
+
 <svg aria-hidden="true" height="0" style="position:absolute" width="0">
 <defs>
 <lineargradient id="lgA" x1="0" x2="1" y1="0" y2="1">
@@ -1249,7 +1241,7 @@ function toggleMobileSidebar() {
 <div class="cursor-glow" id="cursorGlow"></div>
 <div class="bg-aurora"></div>
 <div class="bg-grid"></div>
-<!-- ================= HEADER ================= -->
+
 <header id="header">
 <div class="nav">
 <a class="logo" href="#top">
@@ -1314,7 +1306,7 @@ function toggleMobileSidebar() {
 <button aria-label="منو" data-i18n-aria-label="common.menu.1f381a4e" id="nav-toggle"><svg aria-hidden="true" fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-width="2" viewbox="0 0 24 24" width="20"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></button>
 </div>
 </header>
-<!-- ================= HERO ================= -->
+
 <section class="hero" id="top">
 <canvas id="bg3d"></canvas>
 <div class="hero-inner">
@@ -1429,7 +1421,7 @@ function toggleMobileSidebar() {
 </div>
 <div class="scroll-hint"><span data-i18n="common.scroll.1dd9cf1f">پیمایش</span><i></i></div>
 </section>
-<!-- ================= STATS ================= -->
+
 <div class="stats">
 <div class="wrap stats-grid reveal">
 <div class="stat"><b data-count="3" data-unit="second">0</b><span data-i18n="common.live.webhook.sync.latency.1480fdd2">تأخیر همگام‌سازی زندهٔ وبهوک</span></div>
@@ -1445,7 +1437,7 @@ function toggleMobileSidebar() {
 <span data-i18n="common.metatrader.4.30421051">متاتریدر 4</span><span data-i18n="common.metatrader.5.81049a9d">متاتریدر 5</span><span data-i18n="common.metaapi.cloud.79f2eb86">ابر MetaApi</span><span>MQL4 / MQL5</span><span data-i18n="common.stripe.69720064">Stripe</span><span data-i18n="common.ios.android.49c9f27e">iOS و Android</span><span data-i18n="common.ecb.rates.ad22014f">نرخ‌های بانک مرکزی اروپا</span><span data-i18n="common.open.api.e66da303">API باز</span>
 </div>
 </div>
-<!-- ================= DASHBOARD PREVIEW ================= -->
+
 <section id="dashboard" style="padding-top:30px">
 <div class="wrap">
 <div class="sec-head reveal">
@@ -1581,7 +1573,7 @@ function toggleMobileSidebar() {
 <p class="foot-note" data-i18n="common.ui.preview.combination.of.roadmap.features.v0.74d24e51" style="margin-top:18px">پیش‌نمایش رابط کاربری — ترکیبی از قابلیت‌های نقشهٔ راه v0.5 تا v1.5 (AI Score, روان‌شناسی, ریسک, ثبات و فاکتور سود)</p>
 </div>
 </section>
-<!-- ================= FEATURES ================= -->
+
 <section id="features">
 <div class="wrap">
 <div class="sec-head reveal">
@@ -1629,7 +1621,7 @@ function toggleMobileSidebar() {
 </div>
 </div>
 </section>
-<!-- ================= MEET VELORA AI ================= -->
+
 <section id="ai" style="padding-top:30px">
 <div class="wrap">
 <div class="sec-head reveal">
@@ -1711,7 +1703,7 @@ function toggleMobileSidebar() {
 </div>
 </div>
 </section>
-<!-- ================= HOW IT WORKS ================= -->
+
 <section id="how">
 <div class="wrap">
 <div class="sec-head reveal">
@@ -1737,7 +1729,7 @@ function toggleMobileSidebar() {
 </div>
 </div>
 </section>
-<!-- ================= SCREENSHOTS ================= -->
+
 <section id="screenshots" style="padding-top:30px">
 <div class="wrap">
 <div class="sec-head reveal">
@@ -1765,7 +1757,7 @@ function toggleMobileSidebar() {
 </div>
 </div>
 </section>
-<!-- ================= SECURITY ================= -->
+
 <div class="sec-band">
 <div class="wrap sec-grid grid-stagger">
 <div class="sec-item reveal">
@@ -1786,7 +1778,7 @@ function toggleMobileSidebar() {
 </div>
 </div>
 </div>
-<!-- ================= PRICING ================= -->
+
 <section id="pricing">
 <div class="wrap">
 <div class="sec-head reveal">
@@ -1842,7 +1834,7 @@ function toggleMobileSidebar() {
 <p class="foot-note" data-i18n="common.secure.payment.via.stripe.14.day.money.fa558835">پرداخت امن از طریق Stripe • ضمانت بازگشت وجه 14 روزه</p>
 </div>
 </section>
-<!-- ================= COMPARISON ================= -->
+
 <section id="compare" style="padding-top:20px">
 <div class="wrap">
 <div class="sec-head reveal">
@@ -1874,7 +1866,7 @@ function toggleMobileSidebar() {
 </div>
 </div>
 </section>
-<!-- ================= FAQ ================= -->
+
 <section id="faq">
 <div class="wrap">
 <div class="sec-head reveal">
@@ -1909,7 +1901,7 @@ function toggleMobileSidebar() {
 </div>
 </div>
 </section>
-<!-- ================= ROADMAP ================= -->
+
 <section id="roadmap" style="padding-top:30px">
 <div class="wrap">
 <div class="sec-head reveal">
@@ -1930,7 +1922,7 @@ function toggleMobileSidebar() {
 </div>
 </div>
 </section>
-<!-- ================= CTA ================= -->
+
 <section class="cta-band" id="cta">
 <div class="wrap">
 <div class="cta-box reveal">
@@ -1945,7 +1937,7 @@ function toggleMobileSidebar() {
 </div>
 </div>
 </section>
-<!-- ================= FOOTER ================= -->
+
 <footer>
 <div class="foot">
 <div class="f-brand">
@@ -2018,14 +2010,13 @@ function toggleMobileSidebar() {
 <div class="foot-tagline"><span class="arrow">&gt;</span> <span data-i18n="common.everything.a.professional.trader.needs.68326da2">هرآنچه یک معامله‌گر حرفه‌ای نیاز دارد.</span> <span class="gold" data-i18n="common.except.the.buy.button.935400fb">به‌جز دکمه خرید.</span></div>
 <p class="foot-legal" data-i18n="common.velora.is.a.trade.journaling.performance.analytics.64749ca5">ولورا ابزار ژورنال‌نویسی و تحلیل عملکرد معاملات است — نه مشاوره مالی. معامله‌گری با ریسک همراه است.</p>
 </footer>
-<!-- back to top -->
+
 <button aria-label="بازگشت به بالا" class="to-top" data-i18n-aria-label="pages.landing.back.to.top.8ad0dd71" id="toTop">
 <svg fill="none" height="18" viewbox="0 0 24 24" width="18"><path d="M12 19V5m0 0l-6 6m6-6l6 6" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2"></path></svg>
 </button>
 <script>
 document.documentElement.classList.add('js');
-/* Content is visible by default. Animation only engages when we are
-   certain IntersectionObserver works — content can never be hidden by a JS failure. */
+
 const forceReveal=()=>{ document.querySelectorAll('.reveal:not(.in)').forEach(el=>el.classList.add('in')); };
 let animReady=false;
 try{ animReady = ('IntersectionObserver' in window); }catch(e){ animReady=false; }
@@ -2041,7 +2032,7 @@ setTimeout(forceReveal, 1500);
 addEventListener('load', ()=>setTimeout(forceReveal, 800));
 addEventListener('scroll', ()=>{ if(document.querySelectorAll('.reveal:not(.in)').length) requestAnimationFrame(forceReveal); }, {passive:true});
 
-/* ============ helpers ============ */
+
 const DPR = Math.min(window.devicePixelRatio || 1, 2);
 function fit(c){ const r = c.getBoundingClientRect(); c.width = r.width * DPR; c.height = r.height * DPR; }
 const TAU = Math.PI * 2;
@@ -2057,7 +2048,7 @@ function octaPts(r){ return [R(r,0,0),R(-r,0,0),R(0,r,0),R(0,-r,0),R(0,0,r),R(0,
 function ringPts(n,r,ty){ const pts=[]; for(let i=0;i<n;i++){ const a=i/n*TAU; let p=R(Math.cos(a)*r,0,Math.sin(a)*r); p=rotX(p,ty||0); pts.push(p); } return pts; }
 const goldStroke=(ctx,a=1)=>{ ctx.strokeStyle='rgba(233,196,92,'+a+')'; };
 
-/* ============ scroll progress + header + scrollspy ============ */
+
 const prog=document.getElementById('prog');
 const header=document.getElementById('header');
 const toTop=document.getElementById('toTop');
@@ -2085,7 +2076,7 @@ if(spySecs.length){
 }
 toTop.addEventListener('click',()=>scrollTo({top:0,behavior:'smooth'}));
 
-/* ============ cursor glow ============ */
+
 if(matchMedia('(pointer:fine)').matches){
   const g=document.getElementById('cursorGlow');
   document.body.classList.add('cg');
@@ -2099,7 +2090,7 @@ if(matchMedia('(pointer:fine)').matches){
   }
 }
 
-/* ============ count-up stats ============ */
+
 const fmtNum={format:n=>VeloraLocale.number(n,{maximumFractionDigits:0})};
 document.querySelectorAll('[data-count]').forEach(el=>{
   const target=parseFloat(el.dataset.count), unit=el.dataset.unit||'';
@@ -2115,7 +2106,7 @@ document.querySelectorAll('[data-count]').forEach(el=>{
   io2.observe(el);
 });
 
-/* ============ stagger reveals ============ */
+
 document.querySelectorAll('.grid-stagger > .reveal').forEach((el,i)=>{
   el.style.transitionDelay=((i%3)*90)+'ms';
 });
@@ -2127,7 +2118,7 @@ try{
 }catch(e){ forceReveal(); }
 
 
-/* ============ newsletter ============ */
+
 const nf=document.getElementById('nl-form');
 if(nf) nf.addEventListener('submit',e=>{
   e.preventDefault();
@@ -2137,7 +2128,7 @@ if(nf) nf.addEventListener('submit',e=>{
   document.getElementById('nl-ok').hidden=false;
 });
 
-/* ============ hero background scene ============ */
+
 (function(){
   const c = document.getElementById('bg3d'); if(!c) return;
   const ctx = c.getContext('2d');
@@ -2199,7 +2190,7 @@ if(nf) nf.addEventListener('submit',e=>{
   frame();
 })();
 
-/* ============ feature icons (3D) ============ */
+
 (function(){
   const canvases = document.querySelectorAll('.icon3d');
   canvases.forEach(cv=>{
@@ -2309,31 +2300,31 @@ if(nf) nf.addEventListener('submit',e=>{
         ctx.beginPath(); pts.forEach((p,i)=>{ i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y); }); ctx.stroke(); ctx.shadowBlur=0;
       }
       else if(kind==='phone'){
-        /* Premium app preview: a glass device with live performance signals, not a wireframe. */
+        
         const pw=Math.min(W,H)*.43, ph=Math.min(W,H)*.67;
         const tilt=Math.sin(t*.8)*.055;
         const rr=(x,y,w,h,r)=>{ctx.beginPath();if(ctx.roundRect){ctx.roundRect(x,y,w,h,r);}else{ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}};
         ctx.save(); ctx.rotate(tilt);
-        // soft device shadow
+        
         ctx.save();ctx.filter='blur(10px)';ctx.fillStyle='rgba(0,0,0,.46)';rr(-pw/2+5,-ph/2+9,pw,ph,19);ctx.fill();ctx.restore();
-        // metallic outer frame
+        
         const frame=ctx.createLinearGradient(-pw/2,-ph/2,pw/2,ph/2);frame.addColorStop(0,'#f9e6a0');frame.addColorStop(.28,'#a97420');frame.addColorStop(.63,'#f4d477');frame.addColorStop(1,'#7b5515');
         ctx.fillStyle=frame;rr(-pw/2,-ph/2,pw,ph,18);ctx.fill();
         ctx.fillStyle='rgba(4,8,17,.96)';rr(-pw/2+3,-ph/2+3,pw-6,ph-6,15);ctx.fill();
-        // live app screen
+        
         const sx=-pw/2+10,sy=-ph/2+16,sw=pw-20,sh=ph-29;
         const screen=ctx.createLinearGradient(sx,sy,sx+sw,sy+sh);screen.addColorStop(0,'rgba(22,35,61,1)');screen.addColorStop(1,'rgba(7,12,25,1)');ctx.fillStyle=screen;rr(sx,sy,sw,sh,11);ctx.fill();
         ctx.strokeStyle='rgba(255,255,255,.10)';ctx.lineWidth=1;rr(sx,sy,sw,sh,11);ctx.stroke();
-        // dynamic top status and mini performance chart
+        
         ctx.fillStyle='rgba(233,196,92,.92)';rr(sx+10,sy+11,sw*.33,4,2);ctx.fill();
         ctx.fillStyle='rgba(76,211,154,.9)';ctx.beginPath();ctx.arc(sx+sw-14,sy+13,3,0,TAU);ctx.fill();
         const base=sy+sh*.66;ctx.strokeStyle='rgba(233,196,92,.88)';ctx.lineWidth=2;ctx.shadowColor='rgba(233,196,92,.55)';ctx.shadowBlur=7;ctx.beginPath();
         [[0,.72],[.15,.61],[.28,.67],[.43,.45],[.58,.52],[.72,.28],[.86,.35],[1,.16]].forEach((v,i)=>{const x=sx+10+v[0]*(sw-20),y=sy+sh*v[1];i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.shadowBlur=0;
         ctx.fillStyle='rgba(255,255,255,.07)';[0,1,2].forEach(i=>{rr(sx+10,base+i*12,sw-(i?34:16),5,2);ctx.fill()});
-        // camera island
+        
         ctx.fillStyle='rgba(0,0,0,.7)';rr(-pw*.15,-ph/2+7,pw*.3,5,3);ctx.fill();
         ctx.restore();
-        // subtle orbit marker outside device
+        
         const a=t*.65;ctx.fillStyle='#fce38a';ctx.shadowColor='rgba(233,196,92,.8)';ctx.shadowBlur=10;ctx.beginPath();ctx.arc(Math.cos(a)*pw*.72,Math.sin(a)*ph*.38,2.5,0,TAU);ctx.fill();ctx.shadowBlur=0;
       }
       ctx.restore();
@@ -2343,7 +2334,7 @@ if(nf) nf.addEventListener('submit',e=>{
   });
 })();
 
-/* ============ dashboard animations ============ */
+
 (function(){
   const CIRC = 163.4;
   const dashIO = new IntersectionObserver(es=>{
@@ -2385,7 +2376,7 @@ if(nf) nf.addEventListener('submit',e=>{
     });
   });
 })();
-/* ============ meet velora AI chat ============ */
+
 (function(){
   const body = document.getElementById('aiBody');
   if(!body) return;
@@ -2393,15 +2384,17 @@ if(nf) nf.addEventListener('submit',e=>{
   const input = document.getElementById('aiInput');
   const sendBtn = document.getElementById('aiSend');
   const freeAsk = document.querySelector('[data-free-ask]');
-  const freePrompts = (document.documentElement.lang || 'fa').toLowerCase().indexOf('fa') === 0
-    ? ['هر سؤالی دربارهٔ معاملاتت بپرس…','چرا امروز زود از معامله خارج شدم؟','بهترین ساعت معاملاتی من چیست؟','برای کاهش Drawdown چه‌کار کنم؟']
-    : ['Ask anything about your trading…','Why did I exit early today?','What is my best trading session?','How can I reduce drawdown?'];
+  
+  const PROMPT_KEYS = ['landing.ai.prompt.free.ask','landing.ai.prompt.exit.early','landing.ai.prompt.best.session','landing.ai.prompt.reduce.drawdown'];
+  function promptText(index){
+    return VeloraLocale.t(PROMPT_KEYS[index % PROMPT_KEYS.length], null, input.placeholder);
+  }
   let promptIndex = 0;
   function rotateFreePrompt(){
-    if (!input.value && document.activeElement !== input) { promptIndex=(promptIndex+1)%freePrompts.length; input.placeholder=freePrompts[promptIndex]; }
+    if (!input.value && document.activeElement !== input) { promptIndex=(promptIndex+1)%PROMPT_KEYS.length; input.placeholder=promptText(promptIndex); }
   }
   setInterval(rotateFreePrompt, 3800);
-  if (freeAsk) freeAsk.addEventListener('click', ()=>{ input.focus(); input.placeholder=freePrompts[0]; if(window.VeloraSound) VeloraSound.play('modal'); });
+  if (freeAsk) freeAsk.addEventListener('click', ()=>{ input.focus(); input.placeholder=promptText(0); if(window.VeloraSound) VeloraSound.play('modal'); });
   const AI_AV = '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z" fill="#e9c45c"/></svg>';
   const USER_AV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c1.2-3.2 4-5 7.5-5s6.3 1.8 7.5 5"/></svg>';
 
@@ -2535,7 +2528,7 @@ if(nf) nf.addEventListener('submit',e=>{
     if (window.VeloraSound) VeloraSound.play('input');
   });
   document.querySelectorAll('[data-ai-insight]').forEach(button=>button.addEventListener('click', ()=>{
-    ask('lose', document.documentElement.lang === 'en' ? 'Show me the trades behind this insight.' : 'معاملات مرتبط با این بینش را نشان بده.');
+    ask('lose', VeloraLocale.t('landing.ai.prompt.insight.trades', null, questionText('lose')));
   }));
   input.addEventListener('keydown', e=>{ if(e.key === 'Enter') sendBtn.click(); });
 
@@ -2551,7 +2544,7 @@ if(nf) nf.addEventListener('submit',e=>{
   if(aiSec) ioAI.observe(aiSec);
 })();
 
-/* ============ tilt cards ============ */
+
 document.querySelectorAll('.tilt').forEach(card=>{
   card.addEventListener('mousemove', e=>{
     const r=card.getBoundingClientRect();
@@ -2579,7 +2572,7 @@ document.querySelectorAll('.tilt-img').forEach(img=>{
   hero.addEventListener('mouseleave', ()=>{ vf.style.transform=''; });
 })();
 
-/* ============ mobile nav ============ */
+
 const nt=document.getElementById('nav-toggle'), links=document.getElementById('links');
 nt.addEventListener('click', ()=>links.classList.toggle('open'));
 links.querySelectorAll('a').forEach(a=>a.addEventListener('click', ()=>links.classList.remove('open')));

@@ -20,7 +20,7 @@
       for (var i = 0; i < nodes.length; i++) nodes[i].style.display = isAdmin ? '' : 'none';
     } catch(e) {}
   }
-  // اول فوراً، بعد با DOMContentLoaded و چند بار دیگر (مطمئن)
+  
   hideAdmin();
   document.addEventListener('DOMContentLoaded', hideAdmin);
   window.addEventListener('velora:session', hideAdmin);
@@ -29,20 +29,14 @@
   setTimeout(hideAdmin, 1500);
 })();
 </script>
-<meta charset="utf-8"/><script src="/public/assets/velora-locale-registry.js?v=2026.08.21.1"></script>
-<script src="/public/assets/velora-latin-digits.js?v=2026.08.14.17"></script><script src="/public/assets/velora-locale-bootstrap.js?v=2026.08.21.1"></script><link href="/public/assets/velora-localization.css?v=2026.08.21.1" rel="stylesheet"/><script src="/public/assets/velora-localization.js?v=2026.08.21.1"></script><script src="/public/assets/velora-data.js?v=2026.08.21.1"></script><script defer="" src="/public/assets/velora-dynamic-content.js?v=2026.08.21.1"></script>
+<meta charset="utf-8"/><script src="/public/assets/velora-locale-registry.js?v=2026.08.22.1"></script>
+<script src="/public/assets/velora-latin-digits.js?v=2026.08.14.17"></script><script src="/public/assets/velora-locale-bootstrap.js?v=2026.08.22.1"></script><link href="/public/assets/velora-localization.css?v=2026.08.22.1" rel="stylesheet"/><script src="/public/assets/velora-localization.js?v=2026.08.22.1"></script><script src="/public/assets/velora-data.js?v=2026.08.22.1"></script><script defer="" src="/public/assets/velora-dynamic-content.js?v=2026.08.22.1"></script>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
 <meta content="#060A14" name="theme-color"/>
 <title data-i18n="common.dashboard.velora.smart.trading.journal.782a8df6">Dashboard | VELORA — Smart Trading Journal</title>
 <link href="/favicon-32.png" rel="icon" sizes="32x32" type="image/png"/>
 <style>
-  /* ============================================================
-     VELORA DASHBOARD — طراحی سطح جهانی
-     الهام: Linear · Vercel (سایدبار و تایپوگرافی)
-            TradingView · Bloomberg (کارت‌های KPI و نمودار)
-            Binance (جدول معاملات) · Revolut (کارت حساب)
-            اپ‌های مدرن (حالت موبایل با نوبار پایین)
-     ============================================================ */
+  
 
   :root {
     --bg: #060A14;
@@ -70,7 +64,7 @@
     -webkit-font-smoothing:antialiased;
   }
 
-  /* ---------- پس‌زمینه شفق ---------- */
+  
   .bgfx {
     position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden;
     background:
@@ -78,10 +72,10 @@
       radial-gradient(800px 600px at -5% 110%, rgba(59,130,246,0.08), transparent 55%);
   }
 
-  /* ---------- چیدمان اصلی ---------- */
+  
   .shell { position:relative; z-index:1; display:flex; min-height:100vh; }
 
-  /* ============ سایدبار (دسکتاپ) — مثل Linear ============ */
+  
   .sidebar {
     width: 240px; flex-shrink:0;
     background:linear-gradient(180deg, rgba(10,17,34,0.9), rgba(6,10,20,0.95));
@@ -135,7 +129,7 @@
   }
   .sb-user .logout:hover { color:var(--red); }
 
-  /* ============ محتوای اصلی ============ */
+  
   .main { flex:1; min-width:0; padding:24px 28px 80px; }
 
   .topbar {
@@ -164,7 +158,7 @@
   }
   .btn-ghost:hover { color:var(--txt); background:rgba(255,255,255,0.07); }
 
-  /* ---------- کارت‌های KPI — مثل Bloomberg/TradingView ---------- */
+  
   .kpi-grid {
     display:grid;
     grid-template-columns:repeat(4, 1fr);
@@ -189,7 +183,7 @@
   .kpi .delta { font-size:11.5px; margin-top:6px; display:inline-flex; align-items:center; gap:4px; font-weight:700; }
   .delta.up { color:var(--green); } .delta.down { color:var(--red); }
 
-  /* ---------- نمودار سرمایه — مثل TradingView ---------- */
+  
   .panel {
     background:linear-gradient(180deg, var(--card2), var(--card));
     border:1px solid var(--border); border-radius:18px;
@@ -217,10 +211,10 @@
   }
   .chart-tip b { color:var(--gold-l); }
 
-  /* ---------- دو ستون: جدول + ساید ---------- */
+  
   .cols { display:grid; grid-template-columns: 1.6fr 1fr; gap:22px; margin-bottom:22px; }
 
-  /* ---------- جدول معاملات — مثل Binance ---------- */
+  
   .table-wrap { overflow-x:auto; border-radius:14px; }
   table.trades { width:100%; border-collapse:collapse; min-width:520px; }
   table.trades th {
@@ -242,7 +236,7 @@
   .tag { font-size:10.5px; background:rgba(139,92,246,0.14); color:#C4B5FD; padding:3px 9px; border-radius:7px; }
   .emot { font-size:13px; }
 
-  /* ---------- استراتژی‌ها — مثل Coinbase ---------- */
+  
   .strat-item { padding:12px 2px; border-bottom:1px solid rgba(255,255,255,0.05); }
   .strat-item:last-child { border-bottom:none; }
   .strat-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
@@ -252,7 +246,7 @@
   .strat-fill { height:100%; border-radius:6px; background:linear-gradient(90deg, #b88d1d, #fce38a); transition:width .8s ease; }
   .strat-meta { display:flex; justify-content:space-between; margin-top:6px; font-size:10.5px; color:var(--faint); }
 
-  /* ---------- کارت حساب — مثل Revolut ---------- */
+  
   .acct-card {
     position:relative; overflow:hidden;
     border-radius:18px; padding:18px 20px;
@@ -277,11 +271,11 @@
   .acct-meta { display:flex; gap:14px; margin-top:10px; font-size:10.5px; color:var(--faint); }
   .acct-meta b { color:var(--muted); font-weight:700; }
 
-  /* ---------- خالی بودن ---------- */
+  
   .empty { text-align:center; padding:40px 20px; color:var(--faint); font-size:13px; }
   .empty svg { width:40px; height:40px; margin-bottom:12px; opacity:.4; }
 
-  /* ---------- حالت موبایل ---------- */
+  
   .mobile-top { display:none; }
   @media (max-width: 980px) {
     .sidebar { display:none; }
@@ -312,7 +306,7 @@
     .kpi .val { font-size:18px; }
   }
 
-  /* ---------- نوبار پایین موبایل — مثل اپ‌های مدرن ---------- */
+  
   .bottom-nav {
     display:none;
   }
@@ -334,7 +328,7 @@
     .bn-item.active { color:var(--gold-l); background:rgba(212,175,55,0.1); }
   }
 
-  /* ---------- مودال خروج ---------- */
+  
   .overlay {
     position:fixed; inset:0; background:rgba(6,10,20,0.7); backdrop-filter:blur(6px);
     z-index:200; display:none; align-items:center; justify-content:center; padding:20px;
@@ -368,7 +362,7 @@
   }
 </style>
 <style id="nebula-grid-skin">
-/* VELORA Nebula Grid — visual layer, functions and IDs remain untouched */
+
 :root{--bg:#070707;--bg2:#0a0a0c;--card:rgba(12,12,15,.45);--card2:rgba(27,25,22,.42);--border:rgba(255,255,255,.20);--gold:#c99c45;--gold-l:#f5ead0;--gold-d:#a77a18;--txt:#f9f7f2;--muted:#b3b6bd;--faint:#8790a0;--green:#65e2a6;--red:#ff8e98}
 body{background:radial-gradient(circle at 9% 28%,#3a352c55,transparent 33%),radial-gradient(circle at 82% 21%,#4e352555,transparent 31%),radial-gradient(circle at 60% 88%,#c28d1d66,transparent 35%),#070707;color:var(--txt)}
 body:before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5;background-image:radial-gradient(#fff 1px,transparent 1px),radial-gradient(#f5d46a 1px,transparent 1.3px);background-size:84px 84px,137px 137px;background-position:10px 8px,48px 60px}.bgfx{display:none}.shell{z-index:1;gap:18px;padding:22px;direction:rtl}.sidebar,.panel,.kpi,.topbar{background:linear-gradient(135deg,rgba(255,255,255,.105),rgba(8,8,10,.27) 55%,rgba(211,174,65,.10));border:1px solid rgba(255,255,255,.30);border-top-color:rgba(255,255,255,.62);box-shadow:0 28px 78px #000b,inset 0 1px rgba(255,255,255,.40),inset -16px -12px 42px rgba(214,174,67,.07);backdrop-filter:blur(42px) saturate(120%)}
@@ -377,7 +371,7 @@ body:before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opac
 @media(max-width:480px){.shell{padding:7px}.topbar{padding:12px}.topbar .actions{gap:6px}.btn-gold,.btn-ghost{font-size:11px;padding:9px 10px}.kpi{padding:12px}.panel{padding:14px}}
 </style>
 <style id="approved-variant-07">
-/* Approved mockup 07 — Conservative / outlined controls */
+
 .btn-gold{background:rgba(8,9,10,.28);border:1px solid rgba(231,193,88,.88);color:#ffe9a2;box-shadow:inset 0 1px rgba(255,255,255,.16),0 8px 20px rgba(0,0,0,.24)}
 .btn-gold:hover{background:rgba(213,174,67,.16);border-color:#ffdf83;box-shadow:inset 0 1px rgba(255,255,255,.20),0 10px 24px rgba(213,170,62,.20)}
 .btn-ghost{background:transparent;border-color:rgba(231,193,88,.48);color:#d9c382}.btn-ghost:hover{background:rgba(255,255,255,.07);color:#fff0bd;border-color:rgba(245,224,151,.76)}
@@ -389,10 +383,7 @@ body:before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opac
 .velora-toast{position:fixed;left:22px;bottom:22px;z-index:10000;max-width:min(360px,calc(100vw - 44px));padding:12px 15px;border:1px solid rgba(232,197,98,.62);border-radius:12px;background:rgba(10,11,14,.93);box-shadow:0 18px 44px rgba(0,0,0,.55);color:#fff0bd;font-size:12px;transform:translateY(160%);opacity:0;transition:transform .25s ease,opacity .25s ease}.velora-toast.show{transform:translateY(0);opacity:1}.acct-action-row{display:flex;gap:7px;margin-top:13px}.acct-action-row button{flex:1;background:transparent;color:#f6e3a1;border:1px solid rgba(229,190,82,.58);border-radius:8px;padding:7px 6px;font:700 10px Tahoma;cursor:pointer;transition:.18s}.acct-action-row button:hover{background:rgba(213,174,67,.15);border-color:#ffe49a}.acct-action-row .ghost{color:#c7d0df;border-color:rgba(255,255,255,.22)}
 </style>
 <style id="velora-unified-luxury-sidebar-css">
-/* ============================================================
-   VELORA UNIFIED LUXURY SIDEBAR (DESKTOP & MOBILE DRAWER)
-   Saturated Royal Gold Icons & Text on Rich Dark Navy Background
-   ============================================================ */
+
 .sidebar {
   width: 260px !important;
   flex-shrink: 0 !important;
@@ -549,9 +540,7 @@ body:before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opac
   display: block;
 }
 
-/* ============================================================
-   MOBILE DRAWER MODE (@media max-width: 980px)
-   ============================================================ */
+
 @media (max-width: 980px) {
   .sidebar {
     position: fixed !important;
@@ -633,7 +622,7 @@ function toggleMobileSidebar() {
     try {
       var u = window.VeloraData ? VeloraData.getUser() : null;
       if (!u || !u.fullName || u.email === 'ali.rezaei@velora.app') {
-        // No fake user injection: show neutral placeholders until the memory session is ready.
+        
         u = null;
       }
       var name = (u && u.fullName) ? u.fullName : VeloraLocale.t('common.user');
@@ -670,10 +659,7 @@ function toggleMobileSidebar() {
 })();
 </script>
 <style id="velora-modern-topbar-css">
-/* ============================================================
-   VELORA LUXURY TOP NAVIGATION & BACK-BAR (DESKTOP & MOBILE)
-   Frosted Glass · Saturated Royal Gold · Interactive Breadcrumbs
-   ============================================================ */
+
 .velora-top-nav-bar {
   display: flex !important;
   align-items: center !important;
@@ -780,7 +766,7 @@ function toggleMobileSidebar() {
   box-shadow: 0 0 8px #4cd39a !important;
 }
 
-/* On mobile, stack and optimize spacing */
+
 @media (max-width: 980px) {
   .velora-top-nav-bar {
   display: flex !important;
@@ -807,7 +793,7 @@ function toggleMobileSidebar() {
 }
 </style>
 <style id="velora-remove-bottom-nav">
-/* Completely hide old bottom navigation bar on all screen sizes */
+
 .bottom-nav, #bottomNav, nav.bottom-nav {
   display: none !important;
   visibility: hidden !important;
