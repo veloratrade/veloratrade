@@ -39,12 +39,12 @@
 - [ ] 🟢 `EXISTS` — `release-id` با الگوی `^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$` معتبر است (اجرا: `validate_release_id` در `tools/localization/build_csp_artifacts.py`)
 - [ ] 🟢 `EXISTS` — `release-id` در `public/locales/csp-manifest.json` و `localized/.csp-release.json` **یکسان** ثبت شده است
 - [ ] 🟢 `EXISTS` — `release-id` هرگز از ساعت سیستم تولید نمی‌شود (اجرا: `test_release_id_is_never_generated_from_time` در `test_build_csp_artifacts.py`)
-- [ ] 🔧 `IMPL-NEEDED` — `commitSha` (git SHA لحظهٔ build) در `csp-manifest.json` و `.csp-release.json` ثبت شود
-- [ ] 🔧 `IMPL-NEEDED` — `sourceDigest` (هش کانونیکال ورودی‌های source: قالب‌های HTML ریشه + `public/locales/{fa,en}.json` + `manifest.json` + `routes.json` + `feature-map.json`) ثبت و معتبر باشد
-- [ ] 🔧 `IMPL-NEEDED` — منیفست‌ها **provenance** حمل کنند: `commitSha + sourceDigest + releaseId` هر سه حاضر باشند
+- [ ] 🟢 `EXISTS` — `commitSha` (git SHA لحظهٔ build) در `csp-manifest.json` و `.csp-release.json` ثبت و اعتبارسنجی می‌شود
+- [ ] 🟢 `EXISTS` — `sourceDigest` (هش کانونیکال ورودی‌های source: قالب‌های HTML ریشه + `public/locales/{fa,en}.json` + `manifest.json` + `routes.json` + `feature-map.json`) ثبت و با source فعلی تطبیق داده می‌شود
+- [ ] 🟢 `EXISTS` — منیفست‌ها **provenance** حمل می‌کنند: `commitSha + sourceDigest + releaseId` هر سه حاضر هستند
 
 > ⚠️ **وضعیت فعلی (۲۰۲۶-۰۸-۲۱):** `releaseId=2026.08.21.1` · `routeCount=61` · `policyVersion=2` · `localizationVersion=2026.08.13.11`.
-> `commitSha` و `sourceDigest` هنوز وجود ندارند — اتصال artifact به commit امروز **برقرار نیست**.
+> `commitSha` و `sourceDigest` اکنون وجود دارند و توسط TEST-26 و گاردهای provenance اعتبارسنجی می‌شوند؛ اتصال `commitSha` به SHA فعلی `main` به‌صورت جداگانه enforce نمی‌شود.
 
 ---
 
@@ -52,9 +52,9 @@
 
 > هدف: ثابت شود artifact با source فعلی هم‌خوان است (regenerate → diff صفر).
 
-- [ ] 🔧 `IMPL-NEEDED` — artifact در **محیط موقت** بازتولید شود (`build_localized_static.build()` در temp dir، بدون promote)
-- [ ] 🔧 `IMPL-NEEDED` — خروجی بازتولیدشده با artifact کامیت‌شده **byte-to-byte برابر** باشد (مقایسه با `generated_state_digest()`)
-- [ ] 🔧 `IMPL-NEEDED` — هیچ drift در این اهداف تولیدی نباشد:
+- [ ] 🟢 `EXISTS` — artifact در **محیط موقت** بازتولید می‌شود (`build_localized_static.build()` در temp dir، بدون promote)
+- [ ] 🟢 `EXISTS` — خروجی بازتولیدشده با artifact کامیت‌شده **byte-to-byte برابر** است (مقایسه با `generated_state_digest()`)
+- [ ] 🟢 `EXISTS` — هیچ drift در این اهداف تولیدی نیست:
   - [ ] `localized/` (شامل `localized/.csp-release.json` — حیاتی، OC-4)
   - [ ] `public/locales/`
   - [ ] `public/locales/chunks/`
@@ -73,8 +73,8 @@
 - [ ] 🟢 `EXISTS` — `.csp-release.json`: `cspManifestSha256` با بایت‌های `csp-manifest.json` برابر است
 - [ ] 🟢 `EXISTS` — `releaseHtmlSha256` (مجموع) با هش‌های routeها سازگار است
 - [ ] 🟢 `EXISTS` — `routeManifestSha256` با `tools/localization/routes.json` برابر است
-- [ ] 🔧 `IMPL-NEEDED` — `feature-manifest.json`: `sha256` هر chunk با فایل `public/locales/chunks/<locale>/<feature>.json` برابر باشد — این چک امروز در `validate_localization.py` هست ولی **در CI وصل نیست**؛ باید در گیت اجرا شود
-- [ ] 🔧 `IMPL-NEEDED` — `validate_localization.py` (هش CSP + هش chunk + برابری مجموعهٔ خروجی‌ها) وارد CI شود
+- [ ] 🟢 `EXISTS` — `feature-manifest.json`: `sha256` هر chunk با فایل `public/locales/chunks/<locale>/<feature>.json` برابر است (اجرا: `validate_localization.py` در `gate-artifacts`)
+- [ ] 🟢 `EXISTS` — `validate_localization.py` (هش CSP + هش chunk + برابری مجموعهٔ خروجی‌ها) در CI و job `gate-artifacts` اجرا می‌شود
 
 ---
 
@@ -82,10 +82,10 @@
 
 > هدف: شکست تازگی artifact، deploy را متوقف کند.
 
-- [ ] 🔧 `IMPL-NEEDED` — تست **TEST-26 — Artifact Freshness** ایجاد شود: `tools/tests/test_artifact_freshness.py` (read-only، regenerate در temp + مقایسه byte)
-- [ ] 🔧 `IMPL-NEEDED` — TEST-26 به گیت مناسب وصل شود: جایگاه پیشنهادی **داخل `gate-static`** (کم‌هزینه) یا job جدید `gate-artifacts` در `.github/workflows/quality-gate.yml`
+- [ ] 🟢 `EXISTS` — تست **TEST-26 — Artifact Freshness** وجود دارد: `tools/tests/test_artifact_freshness.py` (read-only، regenerate در temp + مقایسه byte)
+- [ ] 🟢 `EXISTS` — TEST-26 به job `gate-artifacts` در `.github/workflows/quality-gate.yml` وصل شده است
 - [ ] 🟢 `EXISTS` — aggregator `quality-gate` (release blocker) هر شکست گیت را → «Deployment stops» تبدیل می‌کند (الگوی موجود؛ پس از وصل TEST-26 خودکار پوشش می‌گیرد)
-- [ ] 🔧 `IMPL-NEEDED` — ردیف TEST-26 در `docs/QUALITY_GATE_MATRIX.md` (بخش Localization یا Release Validation) ثبت شود
+- [ ] 🟢 `EXISTS` — ردیف TEST-26 در `docs/QUALITY_GATE_MATRIX.md` (بخش Localization یا Release Validation) ثبت شده است
 
 ---
 
@@ -94,10 +94,10 @@
 > هدف: چیزی که آپلود می‌شود، همان artifact تأییدشده باشد.
 
 - [ ] 🟢 `EXISTS` — artifact **قبل از upload** تأیید می‌شود: `deploy.yml` و `deploy-staging.yml` پیش از آپلود، `quality-gate.yml` و `csp-guard.yml` را اجرا می‌کنند
-- [ ] 🔧 `IMPL-NEEDED` — بستهٔ deploy **provenance** حمل کند (فایل `localized/.csp-release.json` از قبل آپلود می‌شود — با افزودن `commitSha/sourceDigest` همین فایل provenance کامل می‌شود)
-- [ ] 🔧 `IMPL-NEEDED` — **بعد از upload** هش/provenance روی سرور راستی‌آزمایی شود (`lftp get` → مقایسه `releaseHtmlSha256` و `commitSha` با commit جاری)
-- [ ] 🔧 `IMPL-NEEDED` — artifact روی سرور با artifact تأییدشده **برابر** باشد؛ در صورت mismatch، deploy متوقف و هشدار صادر شود
-- [ ] 🔧 `IMPL-NEEDED` — **تأیید باید بعد از upload و قبل از اعلام موفقیت deploy انجام شود** — healthcheck فقط availability را اثبات می‌کند، نه صحت artifact منتشرشده
+- [ ] 🟢 `EXISTS` — بستهٔ deploy **provenance** حمل می‌کند (`localized/.csp-release.json` شامل `commitSha` و `sourceDigest` است و با bundle مخزن مقایسه می‌شود)
+- [ ] 🟢 `EXISTS` — **بعد از upload** provenance روی سرور راستی‌آزمایی می‌شود (`lftp get` → مقایسهٔ پنج field provenance با bundle تأییدشده)
+- [ ] 🔧 `IMPL-NEEDED` — artifact روی سرور با artifact تأییدشده **به‌صورت full byte-to-byte** برابر باشد؛ در صورت mismatch، deploy متوقف و هشدار صادر شود
+- [ ] 🟢 `EXISTS` — **تأیید provenance بعد از upload و قبل از اعلام موفقیت deploy انجام می‌شود** — healthcheck علاوه بر آن availability را بررسی می‌کند
 - [ ] 🔧 `IMPL-NEEDED` — اهداف تولیدی با re-upload اجباری (یا `--ignore-time`) آپلود شوند؛ امروز `lftp mirror --continue --only-newer` **بدون `--delete`** است و فایل stale روی سرور باقی می‌ماند
 
 ---
@@ -109,7 +109,7 @@
 - [ ] 🟢 `EXISTS` — **backup قبل از هر write**: `deploy.yml` بکاپ کامل docroot را قبل از آپلود می‌گیرد (RB-6) و به‌صورت artifact نگه می‌دارد
 - [ ] 🟢 `EXISTS` — **last-known-good commit** ثبت می‌شود: خلاصهٔ deploy شامل `github.sha` است
 - [ ] 🟢 `EXISTS` — **rollback reference** ثبت می‌شود: نام artifact `pre-deploy-backup-<sha>`
-- [ ] 🔧 `IMPL-NEEDED` — **رفتار در mismatch** صریح تعریف و در workflow اجرا شود: mismatch پس از آپلود → توقف + restore از بکاپ + block release (امروز verify پس از آپلود اصلاً وجود ندارد)
+- [ ] 🔧 `IMPL-NEEDED` — **automatic rollback در mismatch** صریح تعریف و در workflow اجرا شود: mismatch پس از آپلود → توقف + restore خودکار از بکاپ + block release (توقف deploy وجود دارد، اما restore خودکار هنوز پیاده‌سازی نشده است)
 
 ---
 
@@ -129,24 +129,24 @@
 
 | بخش | ماهیت |
 |---|---|
-| §0 Artifact Provenance | ۳ آیتم 🟢 موجود · ۳ آیتم 🔧 آینده (`commitSha`, `sourceDigest`) |
-| §1 Source→Artifact Freshness | ۱ آیتم 🟢 جزئی · ۳ آیتم 🔧 آینده (TEST-26) |
-| §2 Manifest Integrity | ۴ آیتم 🟢 موجود · ۲ آیتم 🔧 آینده (اتصال validate_localization به CI) |
-| §3 CI Gate Protection | ۱ آیتم 🟢 موجود · ۳ آیتم 🔧 آینده (TEST-26 + wiring) |
-| §4 Deployment Verification | ۱ آیتم 🟢 موجود · ۴ آیتم 🔧 آینده (provenance + verify پس از آپلود) |
+| §0 Artifact Provenance | ۶ آیتم 🟢 موجود · ۰ آیتم 🔧 آینده |
+| §1 Source→Artifact Freshness | ۴ آیتم 🟢 موجود · ۰ آیتم 🔧 آینده |
+| §2 Manifest Integrity | ۶ آیتم 🟢 موجود · ۰ آیتم 🔧 آینده |
+| §3 CI Gate Protection | ۴ آیتم 🟢 موجود · ۰ آیتم 🔧 آینده |
+| §4 Deployment Verification | ۴ آیتم 🟢 موجود · ۲ آیتم 🔧 آینده (full server byte-to-byte + forced re-upload) |
 | §5 Rollback Protection | ۳ آیتم 🟢 موجود · ۱ آیتم 🔧 آینده (رفتار mismatch) |
 | §6 Ownership Rules | ۴ آیتم 📋 صرفاً مستند/سیاستی — اتوماسیون لازم ندارند |
 
 **Implementation Backlog (خارج از این سند — نیازمند تأیید جداگانه):**
 
-| # | کار آینده | فایل‌هایی که تغییر می‌کنند |
-|---|---|---|
-| 1 | TEST-26 Artifact Freshness (regenerate + byte-compare) | NEW `tools/tests/test_artifact_freshness.py` |
-| 2 | افزودن `commitSha` + `sourceDigest` | `tools/localization/build_csp_artifacts.py` · `build_localized_static.py` |
-| 3 | حالت `--check` (dry-run) برای builder | `build_localized_static.py` |
-| 4 | وصل TEST-26 + `validate_localization.py` به CI | `.github/workflows/quality-gate.yml` |
-| 5 | provenance + verify پس از آپلود + re-upload اجباری | `.github/workflows/deploy.yml` · `deploy-staging.yml` |
-| 6 | به‌روزرسانی اسناد (ردیف TEST-26 + ارجاع از RELEASE_CHECKLIST) | `docs/QUALITY_GATE_MATRIX.md` · `docs/RELEASE_CHECKLIST.md` |
+| # | کار | فایل‌هایی که تغییر می‌کنند | وضعیت |
+|---|---|---|---|
+| 1 | TEST-26 Artifact Freshness (regenerate + byte-compare) | NEW `tools/tests/test_artifact_freshness.py` | 🟢 پیاده‌سازی شد |
+| 2 | افزودن `commitSha` + `sourceDigest` | `tools/localization/build_csp_artifacts.py` · `build_localized_static.py` | 🟢 پیاده‌سازی شد |
+| 3 | حالت `--check` (dry-run) برای builder | `build_localized_static.py` | 🟢 پیاده‌سازی شد |
+| 4 | وصل TEST-26 + `validate_localization.py` به CI | `.github/workflows/quality-gate.yml` | 🟢 پیاده‌سازی شد |
+| 5 | provenance + verify پس از آپلود + re-upload اجباری | `.github/workflows/deploy.yml` · `deploy-staging.yml` | 🟡 provenance/verify پیاده‌سازی شد؛ re-upload اجباری باقی است |
+| 6 | به‌روزرسانی اسناد (ردیف TEST-26 + ارجاع از RELEASE_CHECKLIST) | `docs/QUALITY_GATE_MATRIX.md` · `docs/RELEASE_CHECKLIST.md` | 🟢 پیاده‌سازی شد |
 
 ---
 
@@ -158,4 +158,4 @@
 
 ---
 
-*Created in Phase 4.3 (Artifact Integrity Checklist). Documentation-only — the document itself modifies no production code, schema, env, test, or workflow. وضعیت آیتم‌های 🔧/🟢 در زمان نگارش (مرحلهٔ طراحی Phase 4.3) ثبت شده است؛ پس از پیاده‌سازی گیت، پیش از هر Release بازبینی شوند.*
+*Created in Phase 4.3 (Artifact Integrity Checklist). Documentation-only — the document itself modifies no production code, schema, env, test, or workflow. وضعیت‌های 🔧/🟢 این سند با implementation موجود در main هماهنگ شده‌اند؛ موارد باقی‌مانده پیش از هر Release بازبینی شوند.*

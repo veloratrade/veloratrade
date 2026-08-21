@@ -4,6 +4,9 @@ api/storage/*.sqlite-*
 api/storage/*.log
 *.env
 !api/.env.example
+*.log
+error_log
+logs/
 # داده واقعی کاربران هرگز نباید در مخزن عمومی باشد
 _database/*.sql
 !_database/schema.sql
