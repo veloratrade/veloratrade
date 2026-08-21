@@ -9,8 +9,8 @@
     VeloraData.requireSession('/login').catch(function () { window.location.replace('/login'); });
   }
   document.addEventListener('DOMContentLoaded', guardSession);
-  // Browsers can restore this static page from back/forward cache without
-  // firing DOMContentLoaded again. Revalidate the session on that restore.
+  
+  
   window.addEventListener('pageshow', function (event) {
     if (event.persisted) guardSession();
   });
@@ -26,7 +26,7 @@
       for (var i = 0; i < nodes.length; i++) nodes[i].style.display = isAdmin ? '' : 'none';
     } catch(e) {}
   }
-  // اول فوراً، بعد با DOMContentLoaded و چند بار دیگر (مطمئن)
+  
   hideAdmin();
   document.addEventListener('DOMContentLoaded', hideAdmin);
   window.addEventListener('velora:session', hideAdmin);
@@ -35,20 +35,14 @@
   setTimeout(hideAdmin, 1500);
 })();
 </script>
-<meta charset="utf-8"/><script src="/public/assets/velora-locale-registry.js?v=2026.08.21.1"></script>
-<script src="/public/assets/velora-latin-digits.js?v=2026.08.14.17"></script><script src="/public/assets/velora-locale-bootstrap.js?v=2026.08.21.1"></script><link href="/public/assets/velora-localization.css?v=2026.08.21.1" rel="stylesheet"/><script src="/public/assets/velora-localization.js?v=2026.08.21.1"></script><script src="/public/assets/velora-data.js?v=2026.08.21.1"></script><script defer="" src="/public/assets/velora-dynamic-content.js?v=2026.08.21.1"></script>
+<meta charset="utf-8"/><script src="/public/assets/velora-locale-registry.js?v=2026.08.22.1"></script>
+<script src="/public/assets/velora-latin-digits.js?v=2026.08.14.17"></script><script src="/public/assets/velora-locale-bootstrap.js?v=2026.08.22.1"></script><link href="/public/assets/velora-localization.css?v=2026.08.22.1" rel="stylesheet"/><script src="/public/assets/velora-localization.js?v=2026.08.22.1"></script><script src="/public/assets/velora-data.js?v=2026.08.22.1"></script><script defer="" src="/public/assets/velora-dynamic-content.js?v=2026.08.22.1"></script>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
 <meta content="#060A14" name="theme-color"/>
 <title data-i18n="common.dashboard.velora.smart.trading.journal.782a8df6">داشبورد | VELORA — ژورنال هوشمند معاملات</title>
 <link href="/favicon-32.png" rel="icon" sizes="32x32" type="image/png"/>
 <style>
-  /* ============================================================
-     VELORA DASHBOARD — طراحی سطح جهانی
-     الهام: Linear · Vercel (سایدبار و تایپوگرافی)
-            TradingView · Bloomberg (کارت‌های KPI و نمودار)
-            Binance (جدول معاملات) · Revolut (کارت حساب)
-            اپ‌های مدرن (حالت موبایل با نوبار پایین)
-     ============================================================ */
+  
 
   :root {
     --bg: #060A14;
@@ -76,7 +70,7 @@
     -webkit-font-smoothing:antialiased;
   }
 
-  /* ---------- پس‌زمینه شفق ---------- */
+  
   .bgfx {
     position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden;
     background:
@@ -84,10 +78,10 @@
       radial-gradient(800px 600px at -5% 110%, rgba(59,130,246,0.08), transparent 55%);
   }
 
-  /* ---------- چیدمان اصلی ---------- */
+  
   .shell { position:relative; z-index:1; display:flex; min-height:100vh; }
 
-  /* ============ سایدبار (دسکتاپ) — مثل Linear ============ */
+  
   .sidebar {
     width: 240px; flex-shrink:0;
     background:linear-gradient(180deg, rgba(10,17,34,0.9), rgba(6,10,20,0.95));
@@ -141,7 +135,7 @@
   }
   .sb-user .logout:hover { color:var(--red); }
 
-  /* ============ محتوای اصلی ============ */
+  
   .main { flex:1; min-width:0; padding:24px 28px 80px; }
 
   .topbar {
@@ -170,7 +164,7 @@
   }
   .btn-ghost:hover { color:var(--txt); background:rgba(255,255,255,0.07); }
 
-  /* ---------- کارت‌های KPI — مثل Bloomberg/TradingView ---------- */
+  
   .kpi-grid {
     display:grid;
     grid-template-columns:repeat(4, 1fr);
@@ -195,7 +189,7 @@
   .kpi .delta { font-size:11.5px; margin-top:6px; display:inline-flex; align-items:center; gap:4px; font-weight:700; }
   .delta.up { color:var(--green); } .delta.down { color:var(--red); }
 
-  /* ---------- نمودار سرمایه — مثل TradingView ---------- */
+  
   .panel {
     background:linear-gradient(180deg, var(--card2), var(--card));
     border:1px solid var(--border); border-radius:18px;
@@ -223,10 +217,10 @@
   }
   .chart-tip b { color:var(--gold-l); }
 
-  /* ---------- دو ستون: جدول + ساید ---------- */
+  
   .cols { display:grid; grid-template-columns: 1.6fr 1fr; gap:22px; margin-bottom:22px; }
 
-  /* ---------- جدول معاملات — مثل Binance ---------- */
+  
   .table-wrap { overflow-x:auto; border-radius:14px; }
   table.trades { width:100%; border-collapse:collapse; min-width:520px; }
   table.trades th {
@@ -248,7 +242,7 @@
   .tag { font-size:10.5px; background:rgba(139,92,246,0.14); color:#C4B5FD; padding:3px 9px; border-radius:7px; }
   .emot { font-size:13px; }
 
-  /* ---------- استراتژی‌ها — مثل Coinbase ---------- */
+  
   .strat-item { padding:12px 2px; border-bottom:1px solid rgba(255,255,255,0.05); }
   .strat-item:last-child { border-bottom:none; }
   .strat-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
@@ -258,7 +252,7 @@
   .strat-fill { height:100%; border-radius:6px; background:linear-gradient(90deg, #b88d1d, #fce38a); transition:width .8s ease; }
   .strat-meta { display:flex; justify-content:space-between; margin-top:6px; font-size:10.5px; color:var(--faint); }
 
-  /* ---------- کارت حساب — مثل Revolut ---------- */
+  
   .acct-card {
     position:relative; overflow:hidden;
     border-radius:18px; padding:18px 20px;
@@ -283,11 +277,11 @@
   .acct-meta { display:flex; gap:14px; margin-top:10px; font-size:10.5px; color:var(--faint); }
   .acct-meta b { color:var(--muted); font-weight:700; }
 
-  /* ---------- خالی بودن ---------- */
+  
   .empty { text-align:center; padding:40px 20px; color:var(--faint); font-size:13px; }
   .empty svg { width:40px; height:40px; margin-bottom:12px; opacity:.4; }
 
-  /* ---------- حالت موبایل ---------- */
+  
   .mobile-top { display:none; }
   @media (max-width: 980px) {
     .sidebar { display:none; }
@@ -318,7 +312,7 @@
     .kpi .val { font-size:18px; }
   }
 
-  /* ---------- نوبار پایین موبایل — مثل اپ‌های مدرن ---------- */
+  
   .bottom-nav {
     display:none;
   }
@@ -353,7 +347,7 @@
   }
 </style>
 <style id="nebula-grid-skin">
-/* VELORA Nebula Grid — visual layer, functions and IDs remain untouched */
+
 :root{--bg:#070707;--bg2:#0a0a0c;--card:rgba(12,12,15,.45);--card2:rgba(27,25,22,.42);--border:rgba(255,255,255,.20);--gold:#c99c45;--gold-l:#f5ead0;--gold-d:#a77a18;--txt:#f9f7f2;--muted:#b3b6bd;--faint:#8790a0;--green:#65e2a6;--red:#ff8e98}
 body{background:radial-gradient(circle at 9% 28%,#3a352c55,transparent 33%),radial-gradient(circle at 82% 21%,#4e352555,transparent 31%),radial-gradient(circle at 60% 88%,#c28d1d66,transparent 35%),#070707;color:var(--txt)}
 body:before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5;background-image:radial-gradient(#fff 1px,transparent 1px),radial-gradient(#f5d46a 1px,transparent 1.3px);background-size:84px 84px,137px 137px;background-position:10px 8px,48px 60px}.bgfx{display:none}.shell{z-index:1;gap:18px;padding:22px;direction:rtl}.sidebar,.panel,.kpi,.topbar{background:linear-gradient(135deg,rgba(255,255,255,.105),rgba(8,8,10,.27) 55%,rgba(211,174,65,.10));border:1px solid rgba(255,255,255,.30);border-top-color:rgba(255,255,255,.62);box-shadow:0 28px 78px #000b,inset 0 1px rgba(255,255,255,.40),inset -16px -12px 42px rgba(214,174,67,.07);backdrop-filter:blur(42px) saturate(120%)}
@@ -362,7 +356,7 @@ body:before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opac
 @media(max-width:480px){.shell{padding:7px}.topbar{padding:12px}.topbar .actions{gap:6px}.btn-gold,.btn-ghost{font-size:11px;padding:9px 10px}.kpi{padding:12px}.panel{padding:14px}.velora-top-nav-bar{flex-wrap:wrap!important}.velora-nav-right{flex:1 1 100%;min-width:0!important;justify-content:flex-end!important;flex-wrap:wrap!important}}
 </style>
 <style id="approved-variant-07">
-/* Approved mockup 07 — Conservative / outlined controls */
+
 .btn-gold{background:rgba(8,9,10,.28);border:1px solid rgba(231,193,88,.88);color:#ffe9a2;box-shadow:inset 0 1px rgba(255,255,255,.16),0 8px 20px rgba(0,0,0,.24)}
 .btn-gold:hover{background:rgba(213,174,67,.16);border-color:#ffdf83;box-shadow:inset 0 1px rgba(255,255,255,.20),0 10px 24px rgba(213,170,62,.20)}
 .btn-ghost{background:transparent;border-color:rgba(231,193,88,.48);color:#d9c382}.btn-ghost:hover{background:rgba(255,255,255,.07);color:#fff0bd;border-color:rgba(245,224,151,.76)}
@@ -374,10 +368,7 @@ body:before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opac
 .velora-toast{position:fixed;left:22px;bottom:22px;z-index:10000;max-width:min(360px,calc(100vw - 44px));padding:12px 15px;border:1px solid rgba(232,197,98,.62);border-radius:12px;background:rgba(10,11,14,.93);box-shadow:0 18px 44px rgba(0,0,0,.55);color:#fff0bd;font-size:12px;transform:translateY(160%);opacity:0;transition:transform .25s ease,opacity .25s ease}.velora-toast.show{transform:translateY(0);opacity:1}.acct-action-row{display:flex;gap:7px;margin-top:13px}.acct-action-row button{flex:1;background:transparent;color:#f6e3a1;border:1px solid rgba(229,190,82,.58);border-radius:8px;padding:7px 6px;font:700 10px Tahoma;cursor:pointer;transition:.18s}.acct-action-row button:hover{background:rgba(213,174,67,.15);border-color:#ffe49a}.acct-action-row .ghost{color:#c7d0df;border-color:rgba(255,255,255,.22)}
 </style>
 <style id="velora-unified-luxury-sidebar-css">
-/* ============================================================
-   VELORA UNIFIED LUXURY SIDEBAR (DESKTOP & MOBILE DRAWER)
-   Saturated Royal Gold Icons & Text on Rich Dark Navy Background
-   ============================================================ */
+
 .sidebar {
   width: 260px !important;
   flex-shrink: 0 !important;
@@ -534,9 +525,7 @@ body:before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opac
   display: block;
 }
 
-/* ============================================================
-   MOBILE DRAWER MODE (@media max-width: 980px)
-   ============================================================ */
+
 @media (max-width: 980px) {
   .sidebar {
     position: fixed !important;
@@ -618,7 +607,7 @@ function toggleMobileSidebar() {
     try {
       var u = window.VeloraData ? VeloraData.getUser() : null;
       if (!u || !u.fullName || u.email === 'ali.rezaei@velora.app') {
-        // No fake user injection: show neutral placeholders until the memory session is ready.
+        
         u = null;
       }
       var name = (u && u.fullName) ? u.fullName : VeloraLocale.t('common.user');
@@ -655,10 +644,7 @@ function toggleMobileSidebar() {
 })();
 </script>
 <style id="velora-modern-topbar-css">
-/* ============================================================
-   VELORA LUXURY TOP NAVIGATION & BACK-BAR (DESKTOP & MOBILE)
-   Frosted Glass · Saturated Royal Gold · Interactive Breadcrumbs
-   ============================================================ */
+
 .velora-top-nav-bar {
   display: flex !important;
   align-items: center !important;
@@ -765,7 +751,7 @@ function toggleMobileSidebar() {
   box-shadow: 0 0 8px #4cd39a !important;
 }
 
-/* On mobile, stack and optimize spacing */
+
 @media (max-width: 980px) {
   .velora-top-nav-bar {
   display: flex !important;
@@ -792,7 +778,7 @@ function toggleMobileSidebar() {
 }
 </style>
 <style id="velora-remove-bottom-nav">
-/* Completely hide old bottom navigation bar on all screen sizes */
+
 .bottom-nav, #bottomNav, nav.bottom-nav {
   display: none !important;
   visibility: hidden !important;
@@ -814,7 +800,7 @@ function toggleMobileSidebar() {
 <div class="bgfx"></div>
 <div class="loading-screen" id="loading"><div class="ls-logo"></div><p data-i18n="pages.dashboard.loading.dashboard.4116bcc3">در حال بارگذاری داشبورد...</p></div>
 <div class="shell">
-<!-- سایدبار دسکتاپ -->
+
 <aside class="sidebar" id="veloraSidebar">
 <div class="sb-logo"><img alt="V" src="/velora-logo.svg"/><span data-i18n="common.velora.2e043621">VELORA</span></div>
 <nav class="sb-nav">
@@ -844,7 +830,7 @@ function toggleMobileSidebar() {
 </div>
 </aside>
 <div class="sidebar-overlay" id="veloraSidebarOverlay" onclick="toggleMobileSidebar()"></div>
-<!-- محتوا -->
+
 <main class="main">
 <div class="velora-top-nav-bar" style="margin-bottom:14px !important;padding:10px 16px !important;">
 <div class="velora-nav-left">
@@ -861,14 +847,14 @@ function toggleMobileSidebar() {
 </button>
 </div>
 </div>
-<!-- KPI ها -->
+
 <div class="kpi-grid" id="kpiGrid">
 <div class="kpi"><div class="lbl"><svg fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24"><rect height="9" rx="1.5" width="7" x="3" y="3"></rect><rect height="5" rx="1.5" width="7" x="14" y="3"></rect></svg> <span data-i18n="common.trades.5aa84041">معاملات</span></div><div class="val" id="kpiTrades">—</div></div>
 <div class="kpi"><div class="lbl"><svg fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M8.5 12l2.5 2.5 4.5-5"></path></svg> <span data-i18n="common.win.rate.f57b9504">نرخ برد</span></div><div class="val" id="kpiWin">—</div></div>
 <div class="kpi"><div class="lbl"><svg fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"></path><path d="M15 7h6v6"></path></svg> <span data-i18n="common.net.p.l.21997b05">سود خالص</span></div><div class="val" id="kpiPnl">—</div></div>
 <div class="kpi"><div class="lbl"><svg fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg> <span data-i18n="common.profit.factor.4f05d40f">فاکتور سود</span></div><div class="val" id="kpiPF">—</div></div>
 </div>
-<!-- نمودار سرمایه -->
+
 <div class="panel">
 <div class="panel-head">
 <div class="t"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" viewbox="0 0 24 24"><path d="M3 3v18h18"></path><path d="M7 15l4-6 4 3 5-8"></path></svg> <span data-i18n="common.equity.curve.cf3d44ce">منحنی سرمایه</span></div>
@@ -898,9 +884,9 @@ function toggleMobileSidebar() {
 </div>
 <span class="chart-caption" data-i18n="dashboard.chart.stableTrend30Days">روند پایدار · 30 روز گذشته</span>
 </div>
-<!-- دو ستون -->
+
 <div class="cols">
-<!-- معاملات اخیر -->
+
 <div class="panel">
 <div class="panel-head">
 <div class="t"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" viewbox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path></svg> <span data-i18n="pages.dashboard.recent.trades.5056aea9">معاملات اخیر</span></div>
@@ -913,14 +899,14 @@ function toggleMobileSidebar() {
 </table>
 </div>
 </div>
-<!-- ستون راست -->
+
 <div>
-<!-- استراتژی‌ها -->
+
 <div class="panel" style="margin-bottom:22px;">
 <div class="panel-head"><div class="t"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" viewbox="0 0 24 24"><path d="M12 2l3 6 7 .5-5.5 5 1.5 7-6-3.5-6 3.5 1.5-7L2 8.5 9 8z"></path></svg> <span data-i18n="pages.dashboard.strategy.performance.0633088a">عملکرد استراتژی‌ها</span></div></div>
 <div id="stratList"></div>
 </div>
-<!-- حساب‌ها (نسخه 0.2 - پل ابری MetaApi) -->
+
 <div class="panel" id="acctPanel">
 <div class="panel-head" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
 <div class="t" style="display:flex;align-items:center;gap:6px;">
@@ -936,13 +922,13 @@ function toggleMobileSidebar() {
 </div>
 </main>
 </div>
-<!-- نوبار موبایل -->
+
 <div aria-live="polite" class="velora-toast" id="veloraToast" role="status"></div>
 <script>
 (function () {
   'use strict';
 
-  // ---------- ابزارها ----------
+  
   function $(id) { return document.getElementById(id); }
   var tr = VeloraLocale.t;
   function fmt(n, d) { return VeloraLocale.number(n, { minimumFractionDigits: d || 0, maximumFractionDigits: d === 0 ? 0 : (d || 2) }); }
@@ -957,7 +943,7 @@ function toggleMobileSidebar() {
   var toastTimer = null;
   function notify(message) { var el = $('veloraToast'); if (!el) return; el.textContent = message; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 3200); }
 
-  // ---------- ورود ----------
+  
   async function init() {
     user = await VeloraData.ready();
     if (!VeloraData.getAccessToken()) {
@@ -965,7 +951,7 @@ function toggleMobileSidebar() {
       return;
     }
 
-    // اطلاعات کاربر
+    
     var uname = (user && user.fullName) || '';
     var first = uname.trim().charAt(0) || 'V';
     if($('userAv')) $('userAv').textContent = first;
@@ -983,12 +969,12 @@ function toggleMobileSidebar() {
     if (ld) ld.style.display = 'none';
   }
 
-  // ---------- API helper ----------
+  
   window.api = function api(path, method, body) {
     return VeloraData.request(path, { method: method || 'GET', body: body });
   };
 
-  // ---------- KPI ----------
+  
   async function loadSummary() {
     var d = await api('/api/v1/dashboard/summary');
     var s = d.summary || {};
@@ -1000,7 +986,7 @@ function toggleMobileSidebar() {
     $('kpiPnl').style.color = pnl.pos ? 'var(--green)' : 'var(--red)';
     $('kpiPF').textContent = (s.profitFactor === null || s.profitFactor === '') ? '∞' : fmt(s.profitFactor||0, 2);
 
-    // نمودار
+    
     drawChart(s.equityCurve || []);
   }
 
@@ -1008,7 +994,7 @@ function toggleMobileSidebar() {
     var svg = $('equityChart');
     var W = 600, H = 220, PAD = 14;
     if (!points || points.length < 2) {
-      // داده کم → خط صاف
+      
       points = [{date:'', pnl:'0', equity:'0'},{date:'', pnl:'0', equity:'0'}];
     }
     var vals = points.map(function(p){ return Number(p.equity); });
@@ -1019,7 +1005,7 @@ function toggleMobileSidebar() {
     function X(i) { return PAD + (i / (points.length - 1)) * (W - PAD * 2); }
     function Y(v) { return H - PAD - ((v - min) / rng) * (H - PAD * 2); }
 
-    // منحنی نرم حرفه‌ای: cubic Bezier بر پایه نقاط واقعی سرمایه
+    
     var coords = points.map(function(p, i) { return { x:X(i), y:Y(Number(p.equity)) }; });
     var line = 'M' + coords[0].x.toFixed(1) + ',' + coords[0].y.toFixed(1);
     for (var i = 0; i < coords.length - 1; i++) {
@@ -1033,7 +1019,7 @@ function toggleMobileSidebar() {
     }
     var area = line + ' L' + X(points.length-1).toFixed(1) + ',' + (H - PAD) + ' L' + X(0).toFixed(1) + ',' + (H - PAD) + ' Z';
 
-    // حذف خط/منطقه قبلی
+    
     var oldLine = svg.querySelector('.chart-line'); if (oldLine) oldLine.remove();
     var oldArea = svg.querySelector('.chart-area'); if (oldArea) oldArea.remove();
     var oldDot = svg.querySelector('.chart-dot'); if (oldDot) oldDot.remove();
@@ -1057,12 +1043,12 @@ function toggleMobileSidebar() {
     svg.insertBefore(lineEl, areaEl.nextSibling);
     svg.appendChild(dot);
 
-    // tooltip
+    
     var tip = $('chartTip');
     svg.addEventListener('mousemove', function(ev) {
       var rect = svg.getBoundingClientRect();
       var mx = (ev.clientX - rect.left) / rect.width * W;
-      // نزدیک‌ترین نقطه
+      
       var best = 0, bd = Infinity;
       points.forEach(function(p, i) {
         var d = Math.abs(X(i) - mx);
@@ -1078,7 +1064,7 @@ function toggleMobileSidebar() {
     svg.addEventListener('mouseleave', function(){ tip.style.display = 'none'; });
   }
 
-  // ---------- معاملات ----------
+  
   async function loadTrades() {
     var d = await api('/api/v1/trades?limit=6');
     var items = (d.items || []).map(VeloraData.normalize.trade);
@@ -1103,7 +1089,7 @@ function toggleMobileSidebar() {
     }).join('');
   }
 
-  // ---------- استراتژی‌ها ----------
+  
   async function loadStrategies() {
     var d = await api('/api/v1/dashboard/strategies');
     var list = d.strategies || [];
@@ -1124,7 +1110,7 @@ function toggleMobileSidebar() {
     }).join('');
   }
 
-  // ---------- حساب‌ها (نسخه 0.2 Cloud Bridge) ----------
+  
   window.loadAccounts = async function loadAccounts() {
     var d = await api('/api/v1/accounts');
     var list = (d.accounts || []).map(VeloraData.normalize.account);
@@ -1164,7 +1150,7 @@ function toggleMobileSidebar() {
     });
   }
 
-  // ---------- کنترل‌های زنده حساب‌ها (Variant 07) ----------
+  
   window.syncAccount = async function(id, btn) {
     var original = btn.textContent; btn.disabled = true; btn.textContent = tr('accounts.syncing');
     try {
@@ -1180,7 +1166,7 @@ function toggleMobileSidebar() {
     notify(tr('dashboard.accountDetails', { provider: a.platform || tr('common.account', { number: '' }), number: a.login || '—', balance: VeloraLocale.currency(a.balance, a.currency), equity: VeloraLocale.currency(a.equity, a.currency) }));
   };
 
-  // ---------- رنج نمودار ----------
+  
   document.querySelectorAll('.range button').forEach(function(btn) {
     btn.addEventListener('click', function() {
       document.querySelectorAll('.range button').forEach(function(b){ b.classList.remove('active'); });
@@ -1195,11 +1181,11 @@ function toggleMobileSidebar() {
     drawChart(d.equityCurve || []);
   }
 
-  // ---------- خروج ----------
-  // velora-dialog.js exclusively owns #logoutBtn through its capture-phase
-  // document listener. No page-local or avatar-triggered logout is registered here.
+  
+  
+  
 
-  // ---------- بروزرسانی ----------
+  
   if($('refreshBtn')) $('refreshBtn').addEventListener('click', function() {
     Promise.all([loadSummary(), loadTrades(), loadStrategies(), loadAccounts()]).catch(function(){});
   });
@@ -1207,7 +1193,7 @@ function toggleMobileSidebar() {
   init();
 })();
 </script>
-<!-- مدال اتصال حساب متاتریدر (v0.2 Cloud Bridge) -->
+
 <div id="addAcctModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;align-items:center;justify-content:center;padding:16px;">
 <div style="background:#0f172a;border:1px solid #334155;border-radius:16px;max-width:440px;width:100%;padding:24px;box-shadow:0 20px 40px rgba(0,0,0,0.5);direction:rtl;color:#f8fafc;">
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;border-bottom:1px solid #1e293b;padding-bottom:12px;">

@@ -181,6 +181,165 @@ def normalize_static_numbering(soup: BeautifulSoup, numbering_system: str) -> No
                 tag[attr] = value.translate(LATIN_DIGITS)
 
 
+def strip_js_comments(source: str) -> str:
+    """Remove JS comments from inline scripts in generated output (F-04/M3).
+
+    A conservative single-pass tokenizer tracks string, template-literal and
+    regex-literal state so `//` and `/* */` inside literals are never touched.
+    On any ambiguity the input is returned unchanged (fail-safe: keeping a
+    comment is always behavior-preserving).
+    """
+    out: list[str] = []
+    i = 0
+    n = len(source)
+    # Track the last significant character to decide whether "/" starts a
+    # regex literal (after operators/keywords) or is a division operator.
+    last_significant = ""
+    regex_prefix_chars = set("(,=:[!&|?{};+-*%~^<>\n")
+    regex_prefix_words = {"return", "typeof", "instanceof", "in", "of", "new",
+                          "delete", "void", "throw", "case", "do", "else", "yield"}
+    while i < n:
+        ch = source[i]
+        nxt = source[i + 1] if i + 1 < n else ""
+        if ch in "'\"":
+            quote = ch
+            out.append(ch)
+            i += 1
+            while i < n:
+                out.append(source[i])
+                if source[i] == "\\":
+                    if i + 1 < n:
+                        out.append(source[i + 1])
+                    i += 2
+                    continue
+                if source[i] == quote:
+                    i += 1
+                    break
+                i += 1
+            last_significant = quote
+            continue
+        if ch == "`":
+            out.append(ch)
+            i += 1
+            while i < n:
+                out.append(source[i])
+                if source[i] == "\\":
+                    if i + 1 < n:
+                        out.append(source[i + 1])
+                    i += 2
+                    continue
+                if source[i] == "`":
+                    i += 1
+                    break
+                i += 1
+            last_significant = "`"
+            continue
+        if ch == "/" and nxt == "/":
+            end = source.find("\n", i)
+            i = n if end == -1 else end
+            continue
+        if ch == "/" and nxt == "*":
+            end = source.find("*/", i + 2)
+            if end == -1:
+                out.append(source[i:])
+                break
+            i = end + 2
+            continue
+        if ch == "/":
+            tail = "".join(out).rstrip()
+            word = re.search(r"[A-Za-z_$][A-Za-z0-9_$]*$", tail)
+            starts_regex = (
+                tail == ""
+                or tail[-1] in regex_prefix_chars
+                or (word is not None and word.group(0) in regex_prefix_words)
+            )
+            if starts_regex:
+                out.append(ch)
+                i += 1
+                in_class = False
+                while i < n:
+                    out.append(source[i])
+                    if source[i] == "\\":
+                        if i + 1 < n:
+                            out.append(source[i + 1])
+                        i += 2
+                        continue
+                    if source[i] == "[":
+                        in_class = True
+                    elif source[i] == "]":
+                        in_class = False
+                    elif source[i] == "/" and not in_class:
+                        i += 1
+                        break
+                    elif source[i] == "\n":
+                        # Not a regex after all; bail out conservatively.
+                        i += 1
+                        break
+                    i += 1
+                last_significant = "/"
+                continue
+            out.append(ch)
+            last_significant = ch
+            i += 1
+            continue
+        out.append(ch)
+        if not ch.isspace():
+            last_significant = ch
+        i += 1
+    return "".join(out)
+
+
+def strip_css_comments(source: str) -> str:
+    """Remove CSS block comments outside string literals (F-04/M3)."""
+    out: list[str] = []
+    i = 0
+    n = len(source)
+    while i < n:
+        ch = source[i]
+        if ch in "'\"":
+            quote = ch
+            out.append(ch)
+            i += 1
+            while i < n:
+                out.append(source[i])
+                if source[i] == "\\":
+                    if i + 1 < n:
+                        out.append(source[i + 1])
+                    i += 2
+                    continue
+                if source[i] == quote:
+                    i += 1
+                    break
+                i += 1
+            continue
+        if ch == "/" and i + 1 < n and source[i + 1] == "*":
+            end = source.find("*/", i + 2)
+            if end == -1:
+                break
+            i = end + 2
+            continue
+        out.append(ch)
+        i += 1
+    return "".join(out)
+
+
+def strip_generated_comments(soup: BeautifulSoup) -> None:
+    """Drop development comments from generated output only (F-04/M3).
+
+    Source templates keep their comments; the localized build artifacts must
+    not ship HTML/CSS/JS developer commentary (frequently Persian) to any
+    locale. Runtime behavior is unchanged: only comment tokens are removed.
+    """
+    for comment in soup.find_all(string=lambda node: isinstance(node, Comment)):
+        comment.extract()
+    for tag in soup.find_all("script"):
+        if tag.get("src") is None and tag.string and tag.get("type") in (None, "text/javascript"):
+            tag.string.replace_with(strip_js_comments(tag.string))
+    for tag in soup.find_all("style"):
+        if tag.string:
+            tag.string.replace_with(strip_css_comments(tag.string))
+
+
 def render_html(
     source: str,
     locale: str,
@@ -224,6 +383,7 @@ def render_html(
         soup.head.append(created)
     normalize_static_numbering(soup, numbering_system)
     update_route_seo(soup, canonical_url, alternate_urls, fallback_locale)
+    strip_generated_comments(soup)
     return str(soup)
 
 
