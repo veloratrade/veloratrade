@@ -2,8 +2,8 @@
   "algorithm": "sha256",
   "localizationVersion": "2026.08.13.11",
   "policyVersion": 2,
-  "releaseHtmlSha256": "0987008dcd7c01348ba3bff4381e89d3fd5005a7c6a9cfe8df952e02bab3fe8f",
-  "releaseId": "2026.08.19.1",
+  "releaseHtmlSha256": "ff247e650ba0d24cc878ed925dfcfff8f6789d146cf34700c09ee5d22747c692",
+  "releaseId": "2026.08.21.1",
   "routeCount": 61,
   "routeManifestSha256": "06cb97497bb6fc57675c9b1ef7f526fe9d9b83ea13168b6d094999c898659c7e",
   "routes": {
@@ -323,26 +323,26 @@
         "sha256-oGb8lVOdFFB8uXIHgw/+BbIwiWBRaJyRMijn+WgAav0="
       ],
       "file": "en/dashboard/index.html",
-      "htmlSha256": "e6eb74fd591128a67c2e924305844d02df0ee8c3091bbd158e6022d02991c70c",
+      "htmlSha256": "66e9d54b43bb00994abc0492fef8b1d62d3fda0c4226af6de85d65eb4e89d5b8",
       "inlineScriptCount": 7,
       "inlineScriptHashes": [
         "sha256-7K7+K2frRzpU7tXPl05V/slbXJnLyW13PnABypXsPGM=",
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
         "sha256-FoARsLPZGONZd5lJXfJvGFI1B1afeFEHUiFaj3eQ5v8=",
         "sha256-HOnqEi7Yt5N+AzaDstrv07oltGXWB9G/zhhxWjyOPlc=",
-        "sha256-cmNARYEyc8N1Q1fWKMkPjc58h4DmPHcWiiDN/iHwXeM=",
+        "sha256-QLf0y/Uoc+arvI2pUO6E+vD1ZPM2xbmOc5piQ7SbkBo=",
         "sha256-r47t12bwImaoo+g77pZjNqLHi/WYpu0aaeeKX2FADs4=",
         "sha256-w8NsgCNpqK7nhoe2q2aFxDuLywJMKrk/gUkTN3+ORoI="
       ],
       "inlineStyleCount": 8,
       "inlineStyleHashes": [
         "sha256-/9d+H1IL4pZcoMXjv16CKLOSuVlVVmVQc/rw7S2vOHw=",
-        "sha256-4KomE1ZoiDVSE2I8/eK4t6GXhr2LlSduaNno5R9SMUQ=",
+        "sha256-6FqjKV0eTlpeR4BvcwMwwwxQYDhaiHc3JjWtiSbXKeA=",
         "sha256-F2Q9f9Mnv2C6RMh2j1D0dUtVwbRZ/x7w7tNSoiY829w=",
         "sha256-FtLp+O8ze9pH+n8yJ5iia8Bp4561/iVvSPvajNQ+EyM=",
         "sha256-IfRTAS94dVcLfC3SuZ3wTPgv5XZdbz3tNjehdUjE4+o=",
         "sha256-SAfU4qcLFHrRo/XcRFHC8GKqFKN7GL818GOndVT7jmw=",
-        "sha256-cwJbdLr6q/Bc141aZ0il4zmmKQ8NXLGWx3hDmZ50Ixk=",
+        "sha256-e+amRYvqiA9U7FnukWGnqi5LcY+LHi6IRZmw7TdmOfg=",
         "sha256-i/SZZu5iMWtCZwZGqF+1+s18x0BTSe1QwPUwPc/8GyI="
       ],
       "styleAttributeCount": 42,
@@ -758,10 +758,10 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/reset-password/index.html",
-      "htmlSha256": "845e15b4651acd53f37cb422e2dbbf84f387031b3ff091dbb6a51164d93eea30",
+      "htmlSha256": "603eb9527f0f51720351c77d78273926daf0a242b1a87c490b5f5ae47f5139e2",
       "inlineScriptCount": 1,
       "inlineScriptHashes": [
-        "sha256-HyrslfnGvgu5zzfONV4et+e+lZ+/xos06edt3tkEDY4="
+        "sha256-ofRAy/2keXT9MvumZV9EB3lg0+nQAPE6eeAPA41Q0is="
       ],
       "inlineStyleCount": 1,
       "inlineStyleHashes": [
@@ -1227,26 +1227,26 @@
         "sha256-oGb8lVOdFFB8uXIHgw/+BbIwiWBRaJyRMijn+WgAav0="
       ],
       "file": "fa/dashboard/index.html",
-      "htmlSha256": "32c6e081697473c35bbb1054e4bdaf5aac81ec5a41921b60a47fef8041dd3890",
+      "htmlSha256": "4bdc699f0357c9106dcbb1c79fc25cf023071a2bc0f195679ab9fe27042e0d7c",
       "inlineScriptCount": 7,
       "inlineScriptHashes": [
         "sha256-7K7+K2frRzpU7tXPl05V/slbXJnLyW13PnABypXsPGM=",
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
         "sha256-FoARsLPZGONZd5lJXfJvGFI1B1afeFEHUiFaj3eQ5v8=",
         "sha256-HOnqEi7Yt5N+AzaDstrv07oltGXWB9G/zhhxWjyOPlc=",
-        "sha256-cmNARYEyc8N1Q1fWKMkPjc58h4DmPHcWiiDN/iHwXeM=",
+        "sha256-QLf0y/Uoc+arvI2pUO6E+vD1ZPM2xbmOc5piQ7SbkBo=",
         "sha256-r47t12bwImaoo+g77pZjNqLHi/WYpu0aaeeKX2FADs4=",
         "sha256-w8NsgCNpqK7nhoe2q2aFxDuLywJMKrk/gUkTN3+ORoI="
       ],
       "inlineStyleCount": 8,
       "inlineStyleHashes": [
         "sha256-/9d+H1IL4pZcoMXjv16CKLOSuVlVVmVQc/rw7S2vOHw=",
-        "sha256-4KomE1ZoiDVSE2I8/eK4t6GXhr2LlSduaNno5R9SMUQ=",
+        "sha256-6FqjKV0eTlpeR4BvcwMwwwxQYDhaiHc3JjWtiSbXKeA=",
         "sha256-F2Q9f9Mnv2C6RMh2j1D0dUtVwbRZ/x7w7tNSoiY829w=",
         "sha256-FtLp+O8ze9pH+n8yJ5iia8Bp4561/iVvSPvajNQ+EyM=",
         "sha256-IfRTAS94dVcLfC3SuZ3wTPgv5XZdbz3tNjehdUjE4+o=",
         "sha256-SAfU4qcLFHrRo/XcRFHC8GKqFKN7GL818GOndVT7jmw=",
-        "sha256-cwJbdLr6q/Bc141aZ0il4zmmKQ8NXLGWx3hDmZ50Ixk=",
+        "sha256-e+amRYvqiA9U7FnukWGnqi5LcY+LHi6IRZmw7TdmOfg=",
         "sha256-i/SZZu5iMWtCZwZGqF+1+s18x0BTSe1QwPUwPc/8GyI="
       ],
       "styleAttributeCount": 42,
@@ -1662,10 +1662,10 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "fa/reset-password/index.html",
-      "htmlSha256": "59ceaf3749996ac99ba04a119c4a469f3c93bfcff0228cb81cab67c9176df30d",
+      "htmlSha256": "53f93cbd12727f6c8dc07611860a2b2b7ead2a7d693f1907316455a153839494",
       "inlineScriptCount": 1,
       "inlineScriptHashes": [
-        "sha256-HyrslfnGvgu5zzfONV4et+e+lZ+/xos06edt3tkEDY4="
+        "sha256-ofRAy/2keXT9MvumZV9EB3lg0+nQAPE6eeAPA41Q0is="
       ],
       "inlineStyleCount": 1,
       "inlineStyleHashes": [
