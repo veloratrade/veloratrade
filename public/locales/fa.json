@@ -2,7 +2,7 @@
   "$schema": "./catalog.schema.json",
   "_meta": {
     "locale": "fa",
-    "version": "2026.08.13.11",
+    "version": "2026.08.21.1",
     "source": "tools/localization/migrate_static.py"
   },
   "messages": {
