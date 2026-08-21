@@ -784,6 +784,28 @@ def validate_localization(root: str | Path = ROOT) -> ValidationResult:
                     f"{path.relative_to(repository_root)}:{line_number}"
                 )
 
+    # Shared JS assets must not compare the runtime locale against bare
+    # locale codes: <html lang> carries regional tags (fa-IR, en-GB), so an
+    # exact comparison such as documentElement.lang === 'en' silently breaks
+    # on regional variants. Only comparison operators are matched, so files
+    # that intentionally SET the locale (locale bootstrap/localization
+    # runtime assignments like root.lang = ...) can never trigger this rule.
+    asset_branch_pattern = re.compile(
+        rf"(?:\b\w*(?:locale|language)\b|\blang\b)[^\n;]{{0,80}}(?:===|!==|==|!=)"
+        rf"[^\n;]{{0,20}}['\"](?:{locale_codes})['\"]",
+        re.IGNORECASE,
+    )
+    assets_root = repository_root / "public" / "assets"
+    for path in sorted(assets_root.glob("*.js")):
+        for line_number, line in enumerate(
+            path.read_text(encoding="utf-8", errors="ignore").splitlines(), 1
+        ):
+            if asset_branch_pattern.search(line):
+                errors.append(
+                    f"hard-coded locale branch in shared asset: "
+                    f"{path.relative_to(repository_root)}:{line_number}"
+                )
+
     return ValidationResult(
         errors=tuple(errors),
         routes=len(contract.routes),
