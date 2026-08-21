@@ -91,6 +91,9 @@ final class AuthService
         }
 
         $cost = (int) Config::get('bcrypt_cost', 12);
+        // BUG-A5: همان سیاست واحد رمز که در بازنشانی/تغییر اعمال می‌شود (منبع مشترک، بدون تکرار قواعد)
+        PasswordService::assertResetPasswordRules((string) $data['password'], 'password');
+
         $passwordHash = password_hash($data['password'], PASSWORD_BCRYPT, ['cost' => $cost]);
 
         $userId = $this->users->create([
@@ -221,10 +224,12 @@ final class AuthService
         }
 
         if ($user['email_verified_at'] !== null) {
+            // BUG-A7: ضد-enumeration — پاسخ کاربر تأییدشده دقیقاً همان پاسخ
+            // «آدرس ناموجود/تأییدنشده» است؛ وضعیت تأیید هرگز فاش نمی‌شود.
             return [
-                'sent' => false,
-                'alreadyVerified' => true,
-                'messageKey' => 'auth.emailAlreadyVerified',
+                'sent' => true,
+                'alreadyVerified' => false,
+                'messageKey' => 'auth.verificationSentIfRegistered',
                 'params' => (object) [],
             ];
         }
@@ -273,9 +278,10 @@ final class AuthService
         } catch (\Throwable $e) {}
 
         return [
+            // BUG-A7: حتی پس از ارسال واقعی، پیام عمومیِ ضد-enumeration برمی‌گردد
             'sent' => true,
             'alreadyVerified' => false,
-            'messageKey' => 'auth.verificationResent',
+            'messageKey' => 'auth.verificationSentIfRegistered',
             'params' => (object) [],
         ];
     }

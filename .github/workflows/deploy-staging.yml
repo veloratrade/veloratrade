@@ -28,8 +28,14 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # ── گیت دائمی کیفیت (Phase 3.2): پیش از هر آپلود روی staging ──
+  quality_gate:
+    name: گیت دائمی کیفیت — پیش‌شرط staging
+    uses: ./.github/workflows/quality-gate.yml
+
   guard:
     name: بررسی CSP پیش از staging
+    needs: quality_gate
     uses: ./.github/workflows/csp-guard.yml
 
   deploy-staging:

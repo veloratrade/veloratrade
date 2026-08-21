@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Velora\Auth;
 
 use Velora\Core\Config;
+use Velora\Core\EmailPreferenceRepository;
 use Velora\Core\Exceptions\ForbiddenException;
 use Velora\Core\Exceptions\UnauthorizedException;
 use Velora\Core\RateLimiter;
@@ -173,6 +174,49 @@ final class AuthController
         Response::json([
             'sent' => true,
             'messageKey' => 'auth.passwordResetSentIfRegistered',
+            'params' => (object) [],
+        ]);
+    }
+
+    // ==================== ترجیحات اعلان ایمیل (BUG-A9) ====================
+
+    /** هر update جزئی ابتدا روی وضعیت فعلی/پیش‌فرض merge می‌شود تا هیچ دسته‌ای ناخواسته reset نشود. */
+    private const EMAIL_PREFERENCE_KEYS = [
+        'welcome_email',
+        'security_alerts',
+        'trade_notifications',
+        'weekly_report',
+        'monthly_report',
+        'achievement_notifications',
+    ];
+
+    public function getEmailPreferences(Request $request): never
+    {
+        $prefs = (new EmailPreferenceRepository())->getForUser((int) $request->attributes['user_id']);
+        Response::json([
+            'preferences' => $prefs,
+            'messageKey' => 'auth.emailPreferences',
+            'params' => (object) [],
+        ]);
+    }
+
+    public function updateEmailPreferences(Request $request): never
+    {
+        $repo = new EmailPreferenceRepository();
+        $userId = (int) $request->attributes['user_id'];
+        $merged = $repo->getForUser($userId);
+
+        foreach (self::EMAIL_PREFERENCE_KEYS as $key) {
+            if (array_key_exists($key, $request->body) && is_bool($request->body[$key])) {
+                $merged[$key] = (int) $request->body[$key];
+            }
+        }
+        $repo->setPreferences($userId, $merged);
+
+        Response::json([
+            'updated' => true,
+            'preferences' => $repo->getForUser($userId),
+            'messageKey' => 'auth.emailPreferencesUpdated',
             'params' => (object) [],
         ]);
     }

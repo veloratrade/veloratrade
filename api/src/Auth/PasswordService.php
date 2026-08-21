@@ -43,6 +43,9 @@ final class PasswordService
             throw new ValidationException('Validation failed.', ['newPassword' => 'رمز جدید باید متفاوت از رمز فعلی باشد.']);
         }
 
+        // BUG-A5: همان سیاست واحد رمز که در بازنشانی اعمال می‌شود
+        self::assertResetPasswordRules($data['newPassword']);
+
         $this->updatePasswordHash((int) $user['id'], $data['newPassword']);
 
         // باطل‌کردن همه نشست‌های قبلی (امنیت)
@@ -66,14 +69,31 @@ final class PasswordService
             return; // کاربر وجود ندارد — ولی پیام موفق برمی‌گردد
         }
 
+        // BUG-A1: برای کاربر تأییدنشده همان مسیر «کاربر وجود ندارد» طی می‌شود:
+        // نه توکن ساخته می‌شود، نه ایمیلی ارسال می‌شود، و وجود/وضعیت حساب فاش نمی‌شود.
+        if ($user['email_verified_at'] === null) {
+            return;
+        }
+
         $userId = (int) $user['id'];
+
+        // BUG-A11: سقف per-account (حداکثر ۳ ایمیل بازیابی در هر ساعت) — مکمل
+        // محدودیت per-IP. با سکوت برمی‌گردد تا رفتار ضد-enumeration حفظ شود و
+        // توکن معتبرِ قبلی کاربر سالم بماند (قبل از invalidateAllForUser برمی‌گردد).
+        if ($this->resets->countRecentForUser($userId, 3600) >= 3) {
+            return;
+        }
+
         $this->resets->invalidateAllForUser($userId);
 
         $token = bin2hex(random_bytes(32));
         $this->resets->create($userId, hash('sha256', $token), self::RESET_TTL_SEC);
 
         $frontendBase = Config::get('frontend_url', 'https://veloratrade.ir');
-        $resetUrl = rtrim($frontendBase, '/') . '/reset-password?token=' . $token;
+        // BUG-A2: توکن در fragment قرار می‌گیرد (مانند لینک تأیید ایمیل) تا هرگز وارد
+        // access log سرور، تاریخچه مرورگر یا Referer نشود. صفحه مقصد پس از خواندن،
+        // URL را با history.replaceState پاک‌سازی می‌کند.
+        $resetUrl = rtrim($frontendBase, '/') . '/reset-password#token=' . rawurlencode($token);
 
         NotificationService::sendPasswordResetTokenEmail(
             $user['email'],
@@ -148,13 +168,18 @@ final class PasswordService
         ]);
     }
 
-    private static function assertResetPasswordRules(string $password): void
+    /**
+     * سیاست واحد رمز عبور (BUG-A5): منبع مشترک برای هر سه مسیر ثبت‌نام،
+     * بازنشانی و تغییر رمز — حداقل ۸ کاراکتر + حداقل یک حرف انگلیسی + یک عدد.
+     * نام متد برای سازگاری با تماس‌های فعلی حفظ شده است.
+     */
+    public static function assertResetPasswordRules(string $password, string $field = 'newPassword'): void
     {
         if (mb_strlen($password) < 8) {
-            throw new ValidationException('رمز عبور باید حداقل ۸ کاراکتر باشد.', ['newPassword' => 'حداقل ۸ کاراکتر وارد کنید.']);
+            throw new ValidationException('رمز عبور باید حداقل ۸ کاراکتر باشد.', [$field => 'حداقل ۸ کاراکتر وارد کنید.']);
         }
         if (!preg_match('/[A-Za-z]/', $password) || !preg_match('/[0-9]/', $password)) {
-            throw new ValidationException('رمز عبور باید حداقل شامل یک حرف انگلیسی و یک عدد باشد.', ['newPassword' => 'از حداقل یک حرف انگلیسی و یک عدد استفاده کنید.']);
+            throw new ValidationException('رمز عبور باید حداقل شامل یک حرف انگلیسی و یک عدد باشد.', [$field => 'از حداقل یک حرف انگلیسی و یک عدد استفاده کنید.']);
         }
     }
 }

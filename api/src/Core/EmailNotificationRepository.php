@@ -23,11 +23,22 @@ final class EmailNotificationRepository
         ?string $errorMessage = null,
         ?array $payload = null,
     ): void {
-        try {
-            $db = Database::connection();
+        // BUG-A12: هر اعلان باید مالکِ کاربرِ واقعی داشته باشد. ارجاع نامعتبر هرگز
+        // با تبدیل به 0 یا بلعِ سکوت جا نمی‌افتد — بلند و زود شکست می‌خورد تا
+        // در رخداد اصلی (ارسال) یا audit trail لحظه‌ای گم نشود.
+        $uid = $userId ?? 0;
+        if ($uid <= 0) {
+            throw new \InvalidArgumentException('EmailNotificationRepository::log requires a valid owning user id.');
+        }
 
-            // در صورتی که شناسه کاربر در دسترس نباشد، با 0 ثبت می‌شود
-            $uid = ($userId !== null && $userId > 0) ? $userId : 0;
+        $db = Database::connection();
+        $owner = $db->prepare('SELECT 1 FROM users WHERE id = :id LIMIT 1');
+        $owner->execute(['id' => $uid]);
+        if ($owner->fetchColumn() === false) {
+            throw new \DomainException('EmailNotificationRepository::log references a non-existent user (id=' . $uid . ').');
+        }
+
+        try {
             $payloadJson = $payload !== null ? json_encode($payload, JSON_UNESCAPED_UNICODE) : null;
             $now = gmdate('Y-m-d H:i:s');
 

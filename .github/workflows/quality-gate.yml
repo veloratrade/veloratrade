@@ -1,0 +1,376 @@
+# گیت دائمی کیفیت — Velora Quality Gate
+#
+# لایهٔ دائمی جلوگیری از Regression برای: Authentication / Email System /
+# Security / Localization / Release Validation. نگاشت کامل bug→test در
+# docs/QUALITY_GATE_MATRIX.md است.
+#
+# تریگرها:
+#   - pull_request      → همه گیت‌ها به‌جز e2e (کنترل هزینه)
+#   - push روی main     → همه گیت‌ها + e2e
+#   - workflow_call     → از deploy.yml / deploy-staging.yml پیش از آپلود
+#
+# قانون انتشار (Phase 3.2): اگر quality-gate (جاب تجمیعی) Fail شود،
+# Deployment باید متوقف شود. هر چهار حوزهٔ Auth/Email/Security/Localization
+# در گیت‌های جداگانه پوشش داده می‌شوند.
+#
+# ⚠️ آیمنی لغو: کلید گروه شامل github.workflow است؛ هنگام فراخوانی از یک
+# deploy، github.workflow به نام فراخوان تبدیل می‌شود و گروه جدایی از اجرای
+# push/PR می‌سازد — یک push معمولی هرگز گیتِ در حال اجرای یک Deploy را لغو
+# نمی‌کند (الگوی csp-guard).
+
+name: Quality Gate
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-gate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── gate-static: لینت، کامپایل، دارایی‌ها، parity لوکال ─────────────
+  gate-static:
+    name: gate-static (lint · assets · localization parity)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: sqlite3, pdo_sqlite, mbstring, openssl, curl, bcmath
+          coverage: none
+
+      - name: PHP syntax check (all files)
+        run: |
+          fail=0
+          while IFS= read -r f; do
+            if ! php -l "$f" > /tmp/lint.out 2>&1; then
+              echo "::error file=$f::$(tail -1 /tmp/lint.out)"
+              fail=1
+            fi
+          done < <(find . -name '*.php' -not -path './node_modules/*')
+          [ "$fail" -eq 0 ] || { echo "PHP syntax errors found."; exit 1; }
+          echo "All PHP files parsed cleanly."
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Python compile check (exit code enforced)
+        run: python -m compileall -q tools
+
+      - name: Zero-cost workflow policy guard
+        run: python tools/check_github_cost_guard.py
+
+      - name: Email asset validation (TEST-08)
+        run: php tools/tests/test_email_asset_validation.php
+
+      - name: FA/EN translation key parity (TEST-19)
+        run: php tools/tests/test_email_key_parity.php
+
+      - name: Localization fallback validation (TEST-20)
+        run: php tools/tests/test_locale_fallback.php
+
+      - name: CID icon assets (PNG integrity)
+        run: python tools/tests/test_notification_email_icons.py
+
+      - name: Status tooling contract
+        run: python tools/tests/test_velora_status.py
+
+  # ── gate-contract: قراردادهای ایمیل/قالب/لینک/لوکال ──────────────────
+  gate-contract:
+    name: gate-contract (mailer · template · links · i18n)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: sqlite3, pdo_sqlite, mbstring, openssl, curl, bcmath
+          coverage: none
+
+      - name: Resend mailer HTTP contract
+        run: php tools/tests/test_resend_mailer.php
+
+      - name: Gold Outline template contract
+        run: php tools/tests/test_email_template_gold_outline.php
+
+      - name: Footer link + router contract (TEST-07)
+        run: php tools/tests/test_email_footer_links.php
+
+      - name: Email localization fa/en (TEST-09)
+        run: php tools/tests/test_email_localization.php
+
+      - name: Environment-aware email URLs (TEST-18)
+        run: php tools/tests/test_email_url_environment.php
+
+      - name: Achievement email content (TEST-06)
+        run: php tools/tests/test_achievement_email_content.php
+
+      - name: Preference/unsubscribe contract (TEST-15)
+        run: php tools/tests/test_email_preference_contract.php
+
+      - name: Welcome email preference gate (TEST-14)
+        run: php tools/tests/test_welcome_email_preference.php
+
+  # ── gate-auth: چرخهٔ حیات احراز هویت ────────────────────────────────
+  gate-auth:
+    name: gate-auth (tokens · reset · sessions · login)
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: sqlite3, pdo_sqlite, mbstring, openssl, curl, bcmath
+          coverage: none
+
+      - name: Auth token consumption (legacy integration)
+        run: php tools/tests/test_auth_token_consumption.php
+
+      - name: Forgot blocked for unverified (TEST-01)
+        run: php tools/tests/test_forgot_password_unverified.php
+
+      - name: Forgot verified flow (TEST-02)
+        run: php tools/tests/test_forgot_password_verified.php
+
+      - name: Reset invalidates old password (TEST-03)
+        run: php tools/tests/test_password_reset_invalidation.php
+
+      - name: Reset token single-use (TEST-04)
+        run: php tools/tests/test_reset_token_single_use.php
+
+      - name: Reset token expiry (TEST-05)
+        run: php tools/tests/test_reset_token_expiry.php
+
+      - name: Change-password state (TEST-10)
+        run: php tools/tests/test_change_password_state.php
+
+      - name: Password policy consistency (TEST-12)
+        run: php tools/tests/test_password_policy_consistency.php
+
+      - name: Forgot per-account cap (TEST-16)
+        run: php tools/tests/test_forgot_per_account_limit.php
+
+      - name: Notification user integrity (TEST-17)
+        run: php tools/tests/test_notification_user_integrity.php
+
+      - name: Unverified login protection (TEST-22)
+        run: php tools/tests/test_unverified_login_protection.php
+
+      - name: Session rotation & revoke (TEST-23)
+        run: php tools/tests/test_session_rotation_revoke.php
+
+      - name: DB connection resilience
+        run: php tools/tests/test_database_connection_resilience.php
+
+  # ── gate-security: رگرسیون امنیتی ───────────────────────────────────
+  gate-security:
+    name: gate-security (xss · rate-limit · headers · transport)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: sqlite3, pdo_sqlite, mbstring, openssl, curl, bcmath
+          coverage: none
+
+      - name: Reset token transport security (TEST-11)
+        run: php tools/tests/test_reset_token_transport_security.php
+
+      - name: Resend enumeration protection (TEST-13)
+        run: php tools/tests/test_resend_verification_enumeration.php
+
+      - name: Email template XSS escaping (TEST-21)
+        run: php tools/tests/test_email_xss_escaping.php
+
+      - name: Rate limit enforcement (TEST-24)
+        run: php tools/tests/test_rate_limit_enforcement.php
+
+      - name: Security headers contract (TEST-25)
+        run: php tools/tests/test_security_headers_contract.php
+
+  # ── gate-secrets: CSP guard + secret-scan (استفادهٔ مجدد) ─────────────
+  gate-secrets:
+    name: gate-secrets (CSP + secret-scan)
+    uses: ./.github/workflows/csp-guard.yml
+
+  # ── gate-browser: قرارداد مرورگر صفحهٔ تأیید ایمیل ───────────────────
+  gate-browser:
+    name: gate-browser (verify-email contract)
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verify-email page contract (Python)
+        run: python tools/tests/test_verify_email_contract.py
+
+      - name: Verify-email page behavior (Node)
+        run: node tools/tests/test_verify_email_browser.js
+
+  # ── gate-e2e: فقط main — کنترل هزینهٔ Playwright ────────────────────
+  # روی PR تست e2e داشبورد یک‌بار در ci.yml (جاب dashboard) اجرا می‌شود؛
+  # اینجا فقط روی main/dispatch اجرا می‌شود تا اجرای تکراری-pr نداشته باشیم.
+  gate-e2e:
+    name: gate-e2e (dashboard Playwright, main-only)
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: sqlite3, pdo_sqlite, mbstring, openssl, curl, bcmath
+          coverage: none
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Playwright
+        run: |
+          npm init -y > /dev/null 2>&1
+          npm install --no-save playwright > /dev/null 2>&1
+          npx playwright install --with-deps chromium > /dev/null 2>&1
+          echo "Playwright ready."
+
+      - name: Prepare private runtime root
+        run: |
+          PRIV="$HOME/velora-private"
+          mkdir -p "$PRIV/config" "$PRIV/data" "$PRIV/storage"
+          cat > "$PRIV/config/velora.env" <<ENVEOF
+          APP_ENV=local
+          APP_DEBUG=true
+          JWT_SECRET=ci-only-secret-key-at-least-32-bytes-long-xx
+          APP_ENCRYPTION_KEY=$(head -c 32 /dev/urandom | base64 -w0)
+          MAIL_DRIVER=log
+          DB_DRIVER=sqlite
+          DB_DATABASE=$PRIV/data/velora.sqlite
+          FRONTEND_URL=http://127.0.0.1:8080
+          CORS_ALLOWED_ORIGINS=http://127.0.0.1:8080
+          BCRYPT_COST=10
+          ENVEOF
+          echo "VELORA_PRIVATE_ROOT=$PRIV" >> $GITHUB_ENV
+
+      - name: Seed database with a known test user
+        run: |
+          mkdir -p api/storage
+          php api/init-sqlite.php 2>&1 | tail -5
+          cp api/storage/velora.sqlite "$VELORA_PRIVATE_ROOT/data/velora.sqlite"
+          php -r '
+            $p = getenv("VELORA_PRIVATE_ROOT")."/data/velora.sqlite";
+            $pdo = new PDO("sqlite:".$p);
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $have = array_column($pdo->query("PRAGMA table_info(trading_accounts)")->fetchAll(PDO::FETCH_ASSOC), "name");
+            $add = [
+              "broker" => "TEXT", "platform" => "TEXT", "server" => "TEXT",
+              "mt_login" => "TEXT", "account_type" => "TEXT",
+              "metaapi_account_id" => "TEXT", "sync_status" => "TEXT DEFAULT \"idle\"",
+              "last_synced_at" => "TEXT", "connected_at" => "TEXT",
+              "disconnected_at" => "TEXT", "auto_sync_enabled" => "INTEGER DEFAULT 0",
+              "last_incremental_at" => "TEXT", "connection_checked_at" => "TEXT",
+              "consecutive_errors" => "INTEGER DEFAULT 0", "last_error" => "TEXT",
+              "starting_balance" => "REAL DEFAULT 0", "current_balance" => "REAL DEFAULT 0",
+            ];
+            foreach ($add as $col => $type) {
+              if (!in_array($col, $have, true)) {
+                $pdo->exec("ALTER TABLE trading_accounts ADD COLUMN $col $type");
+              }
+            }
+            $tc = array_column($pdo->query("PRAGMA table_info(trades)")->fetchAll(PDO::FETCH_ASSOC), "name");
+            if (!in_array("external_deal_id", $tc, true)) {
+              $pdo->exec("ALTER TABLE trades ADD COLUMN external_deal_id TEXT");
+            }
+            $hash = password_hash("CiTest1234!", PASSWORD_BCRYPT, ["cost" => 10]);
+            $pdo->prepare(
+              "INSERT OR REPLACE INTO users
+               (id,email,password_hash,full_name,role,timezone,status,email_verified_at,created_at,updated_at)
+               VALUES (900,?,?,?,?,?,?,datetime(\"now\"),datetime(\"now\"),datetime(\"now\"))"
+            )->execute(["ci@velora.test",$hash,"CI User","user","UTC","active"]);
+            echo "Test user ready.\n";
+          '
+
+      - name: Start application
+        run: |
+          VELORA_PROD=1 php -S 127.0.0.1:8080 -t . router.php > /tmp/server.log 2>&1 &
+          for i in $(seq 1 20); do
+            sleep 1
+            if [ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://127.0.0.1:8080/health)" = "200" ]; then
+              echo "Application up."; exit 0
+            fi
+          done
+          echo "::error::Application did not start"; tail -30 /tmp/server.log; exit 1
+
+      - name: Run dashboard end-to-end test
+        env:
+          BASE_URL: http://127.0.0.1:8080
+          TEST_EMAIL: ci@velora.test
+          TEST_PASSWORD: CiTest1234!
+        run: timeout 180s node .github/scripts/dashboard_e2e.js
+
+      - name: Server log on failure
+        if: failure()
+        run: tail -60 /tmp/server.log
+
+      - name: Stop local test server
+        if: always()
+        run: pkill -f 'php -S 127.0.0.1:8080' || true
+
+  # ── quality-gate: تجمیع‌کننده — چک اصلی Required ─────────────────────
+  quality-gate:
+    name: quality-gate (aggregate — release blocker)
+    needs: [gate-static, gate-contract, gate-auth, gate-security, gate-secrets, gate-browser, gate-e2e]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Aggregate gate results
+        env:
+          NEEDED: ${{ toJSON(needs) }}
+        run: |
+          echo "$NEEDED" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          bad=0
+          for j in gate-static gate-contract gate-auth gate-security gate-secrets gate-browser gate-e2e; do
+            r=$(echo "$NEEDED" | jq -r --arg j "$j" '.[$j].result')
+            if [ "$r" != "success" ] && [ "$r" != "skipped" ]; then
+              echo "::error::gate {$j} result={$r}"
+              bad=1
+            fi
+          done
+          if [ "$bad" -ne 0 ]; then
+            echo "::error::Quality Gate FAILED — deployment must stop."
+            exit 1
+          fi
+          echo "✅ Quality Gate PASSED — Auth / Email / Security / Localization / E2E all green."
