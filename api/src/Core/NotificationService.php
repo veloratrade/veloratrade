@@ -62,28 +62,35 @@ final class NotificationService
     /**
      * ۱. ایمیل تأیید ثبت‌نام
      */
-    public static function sendVerificationEmail(string $email, string $fullName, string $verifyUrl, ?int $userId = null): bool
+    public static function sendVerificationEmail(string $email, string $fullName, string $verifyUrl, ?int $userId = null, ?string $notificationLocale = null): bool
     {
         $nameSafe = htmlspecialchars(self::formatName($fullName, $email), ENT_QUOTES, 'UTF-8');
         $emailSafe = htmlspecialchars($email, ENT_QUOTES, 'UTF-8');
-        $subject = 'تأیید ایمیل حساب کاربری | VELORA';
+
+        // BUG-A6: متن ایمیل از catalog محلی‌سازی و بر اساس locale کاربر ساخته می‌شود
+        // (ترجمهٔ موجود استفاده می‌شود؛ هیچ ترجمهٔ جدیدی تکرار/اختراع نمی‌شود).
+        $i18n = \Velora\Core\Locale\LocaleManager::getInstance();
+        $lang = $notificationLocale ?? $i18n->getLanguage();
+        $t = static fn (string $key, array $params = []): string => $i18n->translateFor($lang, $key, $params);
+
+        $subject = $t('email.verification.subject');
 
         $html = EmailTemplate::render(
-            'تأیید حساب کاربری',
-            'فعال‌سازی حساب کاربری VELORA',
-            '<p style="margin:0 0 14px;color:#ffffff;font-size:16px;font-weight:bold;">سلام ' . $nameSafe . '،</p>' .
-            '<p style="margin:0 0 14px;color:#f3f4f6;">برای فعال‌سازی حساب کاربری متصل به ایمیل زیر و شروع فعالیت در پلتفرم، روی دکمه تأیید کلیک کنید:</p>' .
+            $t('email.verification.badge'),
+            $t('email.verification.title'),
+            '<p style="margin:0 0 14px;color:#ffffff;font-size:16px;font-weight:bold;">' . $t('email.common.greeting', ['name' => $nameSafe]) . '</p>' .
+            '<p style="margin:0 0 14px;color:#f3f4f6;">' . $t('email.verification.intro') . '</p>' .
             '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0;background:#141f32;border:1px solid #d4af37;border-radius:10px;box-shadow:0 4px 15px rgba(212,175,55,0.15);">' .
             '<tr><td align="center" style="padding:14px 20px;font-family:Tahoma,Arial,sans-serif;font-size:16px;font-weight:bold;color:#d4af37;letter-spacing:0.5px;direction:ltr;">' . $emailSafe . '</td></tr>' .
             '</table>' .
-            '<p style="margin:0 0 14px;color:#f3f4f6;">پس از تأیید، امکان ورود به حساب و استفاده کامل از امکانات ژورنال معاملاتی برای شما فعال خواهد شد.</p>',
-            'تأیید و فعال‌سازی حساب',
+            '<p style="margin:0 0 14px;color:#f3f4f6;">' . $t('email.verification.after') . '</p>',
+            $t('email.verification.cta'),
             $verifyUrl,
-            'اعتبار این لینک ۲۴ ساعت است. در صورت منقضی شدن لینک، می‌توانید از صفحه ورود مجدداً درخواست ارسال لینک دهید.',
-            'ACCOUNT SECURITY',
-            null,
+            $t('email.verification.notice'),
+            $t('email.common.subtitleSecurity'),
+            $notificationLocale,
             'verification',
-            'تأیید ایمیل'
+            $t('email.verification.badge')
         );
 
         return self::sendWithIcon($email, $subject, $html, 'verification', 'VERIFICATION_EMAIL', $userId);
@@ -94,6 +101,12 @@ final class NotificationService
      */
     public static function sendWelcomeEmail(string $email, string $fullName, string $dashboardUrl, ?int $userId = null): bool
     {
+        // BUG-A8: ایمیل خوش‌آمدگویی (غیرامنیتی) به ترجیح اعلان کاربر احترام می‌گذارد.
+        // سیاست پیش‌فرض: در نبود رکورد ترجیح، ارسال مجاز است (رفتار فعلی repository).
+        if ($userId !== null && !(new EmailPreferenceRepository())->canSend($userId, 'welcome')) {
+            return false;
+        }
+
         $nameSafe = htmlspecialchars(self::formatName($fullName, $email), ENT_QUOTES, 'UTF-8');
         $emailSafe = htmlspecialchars($email, ENT_QUOTES, 'UTF-8');
         $subject = 'VELORA TRADE | Welcome (خوش‌آمدید)';
@@ -279,15 +292,16 @@ final class NotificationService
         string $achievementTitle,
         string $achievementDesc,
         string $profileUrl,
-        ?int $userId = null
+        ?int $userId = null,
+        ?string $notificationLocale = null
     ): bool {
         if ($userId !== null && !(new EmailPreferenceRepository())->canSend($userId, 'achievements')) {
             return false;
         }
 
         $nameSafe = htmlspecialchars(self::formatName($fullName, $email), ENT_QUOTES, 'UTF-8');
-        $titleSafe = htmlspecialchars($achievementTitle, ENT_QUOTES, 'UTF-8');
-        $descSafe = htmlspecialchars($achievementDesc, ENT_QUOTES, 'UTF-8');
+        $titleSafe = htmlspecialchars(self::localizeCopy($achievementTitle, $notificationLocale, 'email.achievement.title'), ENT_QUOTES, 'UTF-8');
+        $descSafe = htmlspecialchars(self::localizeCopy($achievementDesc, $notificationLocale, 'email.achievement.notice'), ENT_QUOTES, 'UTF-8');
 
         $subject = 'دستاورد جدید | VELORA TRADE';
 
@@ -306,11 +320,36 @@ final class NotificationService
             $profileUrl,
             'دستاوردهای شما نشان‌دهنده میزان انضباط، استمرار و رشد مهارت معاملاتی شما در VELORA است.',
             'TRADE · SMART ANALYTICS PLATFORM',
-            null,
+            $notificationLocale,
             'achievement',
             'دستاورد جدید'
         );
 
         return self::sendWithIcon($email, $subject, $html, 'achievement', 'ACHIEVEMENT_UNLOCKED', $userId);
+    }
+
+    /**
+     * BUG-A3: متنی که به‌صورت کلید i18n (مثل achievements.emailVerified.title) به
+     * این لایه می‌رسد باید پیش از رندر ترجمه شود. اگر کلید در catalog وجود نداشته
+     * باشد، به متن عمومیِ localized برمی‌گردد — کلید خام هرگز در HTML نهایی
+     * ایمیل ظاهر نمی‌شود. متن عادی (غیرکلید) بدون تغییر برمی‌گردد.
+     */
+    private static function localizeCopy(string $value, ?string $locale, string $fallbackKey): string
+    {
+        // الگوی کلید catalog: بخش‌های الفبا‌عددی جدا‌شده با نقطه
+        if (!preg_match('/^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)+$/', $value)) {
+            return $value;
+        }
+
+        $i18n = \Velora\Core\Locale\LocaleManager::getInstance();
+        $lang = $locale ?? $i18n->getLanguage();
+
+        $translated = $i18n->translateFor($lang, $value);
+        if ($translated !== $value) {
+            return $translated;
+        }
+
+        // کلید ناشناخته: متن fallbackِ همان locale، نه کلید خام
+        return $i18n->translateFor($lang, $fallbackKey);
     }
 }

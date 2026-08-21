@@ -51,6 +51,40 @@ final class EmailPreferenceRepository
         }
     }
 
+    /**
+     * BUG-A9: خواندن ترجیحات کاربر برای API مدیریت اعلان‌ها.
+     * در نبود رکورد، همه دسته‌ها (به‌جز منطق always-on امنیتی) مقدار پیش‌فرض فعال می‌گیرند.
+     *
+     * @return array<string,int>
+     */
+    public function getForUser(int $userId): array
+    {
+        $defaults = [
+            'welcome_email' => 1,
+            'security_alerts' => 1,
+            'trade_notifications' => 1,
+            'weekly_report' => 1,
+            'monthly_report' => 1,
+            'achievement_notifications' => 1,
+        ];
+
+        try {
+            $stmt = Database::connection()->prepare(
+                'SELECT welcome_email, security_alerts, trade_notifications, weekly_report, monthly_report, achievement_notifications
+                 FROM email_preferences WHERE user_id = :user_id LIMIT 1'
+            );
+            $stmt->execute(['user_id' => $userId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!is_array($row)) {
+                return $defaults;
+            }
+            return array_map('intval', array_merge($defaults, $row));
+        } catch (Throwable) {
+            return $defaults;
+        }
+    }
+
     public function setPreferences(int $userId, array $prefs): void
     {
         try {

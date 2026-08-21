@@ -184,6 +184,10 @@ jobs:
 
   dashboard:
     name: Dashboard browser test
+    # e2e پرهزینه فقط روی PR در این workflow اجرا می‌شود؛ روی push به main
+    # همان تست داخل quality-gate.yml (جاب gate-e2e) اجرا می‌شود تا هیچ
+    # اجرای مرورگری تکراری روی یک ref رخ ندهد (کنترل هزینه — Phase 3.2).
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 12
 

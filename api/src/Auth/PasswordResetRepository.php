@@ -66,6 +66,17 @@ final class PasswordResetRepository
         return $stmt->rowCount() === 1;
     }
 
+    /** BUG-A11: شمارش درخواست‌های اخیر برای سقف per-account رفتار forgot-password. */
+    public function countRecentForUser(int $userId, int $windowSeconds = 3600): int
+    {
+        $cutoff = gmdate('Y-m-d H:i:s', time() - $windowSeconds);
+        $stmt = Database::connection()->prepare(
+            'SELECT COUNT(*) FROM password_resets WHERE user_id = :id AND created_at >= :cutoff'
+        );
+        $stmt->execute(['id' => $userId, 'cutoff' => $cutoff]);
+        return (int) $stmt->fetchColumn();
+    }
+
     public function invalidateAllForUser(int $userId): void
     {
         $now = gmdate('Y-m-d H:i:s');

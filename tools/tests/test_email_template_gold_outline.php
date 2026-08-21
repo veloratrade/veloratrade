@@ -82,9 +82,9 @@ expect(substr_count($html, $url) === 1, 'CTA URL must appear exactly once; no he
 expect(!str_contains($html, 'اگر دکمه'), 'helper-link copy must be absent');
 expect(!str_contains(strtolower($html), 'if the button'), 'English helper-link copy must be absent');
 expect(str_contains($html, 'display:none;max-height:0'), 'hidden inbox preheader missing');
-expect(str_contains($html, 'https://veloratrade.ir/support'), 'shared footer support link missing');
-expect(str_contains($html, 'https://veloratrade.ir/privacy'), 'shared footer privacy link missing');
-expect(str_contains($html, 'https://veloratrade.ir/terms'), 'shared footer terms link missing');
+expect(str_contains($html, 'https://staging.veloratrade.ir/support'), 'shared footer support link must follow the current environment FRONTEND_URL');
+expect(str_contains($html, 'https://staging.veloratrade.ir/privacy'), 'shared footer privacy link must follow the current environment FRONTEND_URL');
+expect(str_contains($html, 'https://staging.veloratrade.ir/terms'), 'shared footer terms link must follow the current environment FRONTEND_URL');
 
 $english = EmailTemplate::render('Security', 'New sign-in', '<p>Review this activity.</p>', 'Review account', 'https://veloratrade.ir/en/profile/', 'If this was not you, secure your account.', null, 'en');
 expect(str_contains($english, 'dir="ltr"'), 'English direction must be LTR');

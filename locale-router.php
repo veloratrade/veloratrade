@@ -120,7 +120,7 @@ if (!$found) {
 $protectedRoutes = [
     'accounts/connect/index.html', 'admin/index.html', 'dashboard/index.html',
     'intelligence/index.html', 'markets/index.html', 'news/index.html',
-    'performance/index.html', 'profile/index.html', 'support/index.html',
+    'performance/index.html', 'profile/index.html',
     'trades/index.html', 'trades/new/index.html', 'wallet/index.html',
 ];
 if ($found && in_array($relativeFile, $protectedRoutes, true)) {
