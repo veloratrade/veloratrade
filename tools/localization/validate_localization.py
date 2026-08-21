@@ -584,6 +584,30 @@ def validate_localization(root: str | Path = ROOT) -> ValidationResult:
     ):
         errors.append("locale registry must not embed full catalogs")
 
+    # F-05: every repository asset must be referenced with exactly one
+    # cache-busting version across all canonical templates. Individual assets
+    # may keep their own intentional version; only cross-page drift of the
+    # same asset (stale cached copies for some routes) is an error.
+    asset_versions: dict[str, dict[str, set[str]]] = {}
+    asset_reference = re.compile(
+        r"/public/assets/([A-Za-z0-9._-]+\.(?:js|css))\?v=([0-9A-Za-z._-]+)"
+    )
+    for path in scope.canonical_paths:
+        source = path.read_text(encoding="utf-8", errors="ignore")
+        for match in asset_reference.finditer(source):
+            asset_versions.setdefault(match.group(1), {}).setdefault(
+                match.group(2), set()
+            ).add(path.relative_to(repository_root).as_posix())
+    for asset, versions in sorted(asset_versions.items()):
+        if len(versions) > 1:
+            spread = ", ".join(
+                f"{version} ({len(pages)} pages)"
+                for version, pages in sorted(versions.items())
+            )
+            errors.append(
+                f"inconsistent cache-busting version for {asset}: {spread}"
+            )
+
     feature_manifest_path = locales_dir / "feature-manifest.json"
     chunk_keys: dict[str, dict[str, set[str]]] = {
         locale: {} for locale in enabled
