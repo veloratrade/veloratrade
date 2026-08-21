@@ -66,6 +66,9 @@
 | Raw keys in achievement copy (BUG-A3) | TEST-06 | `tools/tests/test_achievement_email_content.php` | Translated titles/descriptions | `gate-contract` | ✅ Fixed + Protected by TEST-06 |
 | Verify-page browser contract (fragment) | — | `tools/tests/test_verify_email_contract.py` + `test_verify_email_browser.js` | `#token=` fragment honored, query scrubbed | `gate-browser` + ci.yml `python` job | 🟢 |
 | Artifact freshness / provenance (Phase 4.3) | TEST-26 | `tools/tests/test_artifact_freshness.py` | commitSha + sourceDigest recorded; clean regeneration byte-identical; stale artifact ⇒ `source changed but generated artifact is stale` | `gate-artifacts` | 🟢 |
+| Hardcoded UI freeze (PR-01 V-3/V-0) | — | `tools/localization/check_hardcoded_ui.py` (+ `allowlist-hardcoded.json`) | New Persian-script literal in shared JS / inline scripts ⇒ fail unless allowlisted; count drift / orphan entry ⇒ fail | `gate-static` | 🟢 |
+| Hashed catalog key freeze (PR-01 V-4) | — | `tools/localization/check_frozen_hash_keys.py` (+ `frozen-hash-keys.json`) | Any new `-8hex`-suffixed catalog key ⇒ fail; new keys must be semantic | `gate-static` | 🟢 |
+| Catalog anomaly report (PR-01 V-7, report-only) | — | `tools/localization/report_catalog_anomalies.py` | Prints empty/identical/duplicate/no-Persian anomalies; never blocks (until P6) | `gate-static` | 🟢 |
 
 ## 5. Release Validation
 
@@ -75,7 +78,7 @@ Deployed via `workflow_call` inside `deploy.yml` and `deploy-staging.yml`: the `
 
 | Gate job (quality-gate.yml) | Contents | Wiring |
 |---|---|---|
-| `gate-static` | php -l, Python compile, cost-guard, CID icons, velora_status, TEST-08/19/20 | ✅ Integrated into GitHub Actions Quality Gate |
+| `gate-static` | php -l, Python compile, cost-guard, CID icons, velora_status, TEST-08/19/20, PR-01 i18n freeze (hardcoded UI + frozen hash keys + anomaly report) | ✅ Integrated into GitHub Actions Quality Gate |
 | `gate-contract` | mailer/template/footer/i18n/URL/preference contracts (TEST-06/07/09/14/15/18 + resend + gold-outline) | ✅ Integrated into GitHub Actions Quality Gate |
 | `gate-auth` | Pattern A integration (TEST-01…05, 10, 12, 16, 17, 22, 23 + token consumption + DB resilience) | ✅ Integrated into GitHub Actions Quality Gate |
 | `gate-security` | TEST-11, 13, 21, 24, 25 | ✅ Integrated into GitHub Actions Quality Gate |
@@ -93,6 +96,8 @@ A1→TEST-01 · A2→TEST-11 · A3→TEST-06 · A4→TEST-07 · A5→TEST-12 · 
 **Permanent Release Checklist:** `docs/RELEASE_CHECKLIST.md` — created in Phase 3.2, refreshed in Phase 3.4.
 
 **Artifact Integrity Checklist:** `docs/ARTIFACT_INTEGRITY_CHECKLIST.md` — created in Phase 4.3; its automated surface is TEST-26 (`gate-artifacts`) plus the provenance guards in `deploy.yml` / `deploy-staging.yml`.
+
+**PR-01 i18n freeze baseline:** 265 hardcoded Persian literals across 25 files (shared JS + inline scripts in generated localized HTML) and 879 frozen hashed catalog keys. The earlier hand-audit estimated ~227 violations; the delta is from tokenizer accuracy (distinct string+regex literals, comments stripped via the `build_localized_static.py` tokenizer) plus newly discovered sources — `emotion-icons.js` and Persian JSON-LD meta strings in 13 localized blog pages.
 
 ---
 *Document created in Phase 3.1 (test engineering). Gates wired in Phase 3.2. Audit bugs A1–A12 closed in Phases 4.1–4.7. Refreshed in Phase 3.4 (documentation only — no production code, schema, env, test, or workflow was modified).*
