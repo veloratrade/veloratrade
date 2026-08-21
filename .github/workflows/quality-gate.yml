@@ -85,6 +85,9 @@ jobs:
       - name: CID icon assets (PNG integrity)
         run: python tools/tests/test_notification_email_icons.py
 
+      - name: Symbol registry icon paths (F-09)
+        run: python tools/tests/test_symbols_icon_paths.py
+
       - name: Status tooling contract
         run: python tools/tests/test_velora_status.py
 
