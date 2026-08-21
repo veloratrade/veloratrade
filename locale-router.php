@@ -78,6 +78,19 @@ if ($declaredRouteLocale !== null) {
     // crawlable SEO URLs. Unprefixed requests retain cookie -> browser priority.
     $locale = $declaredRouteLocale;
     $relative = $routeParts[1] ?? '';
+    // F-03: refresh the manual-choice cookie from the explicit prefix so later
+    // unprefixed navigation (e.g. /checkout/) keeps this locale. Behavior change,
+    // documented: the cookie now records the latest explicit intent (prefixed URL
+    // or manual switch) instead of manual switches only. Priority order for any
+    // single request is unchanged (explicit prefix > cookie > Accept-Language >
+    // default); attributes mirror velora-localization.js (Path=/, 1y, Lax).
+    if ($cookieLocale !== $declaredRouteLocale && !headers_sent()) {
+        setcookie($cookieKey, $declaredRouteLocale, [
+            'expires' => time() + 31536000,
+            'path' => '/',
+            'samesite' => 'Lax',
+        ]);
+    }
 } else {
     $locale = $cookieLocale ?? $browserLocale ?? $default;
     $relative = $requestRelative;

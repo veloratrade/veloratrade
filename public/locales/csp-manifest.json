@@ -1,10 +1,10 @@
 {
   "algorithm": "sha256",
-  "commitSha": "8a759e2e0bd9ba8761e65a548acca358571c113b",
-  "localizationVersion": "2026.08.13.11",
+  "commitSha": "f1647ae4b030eba9a4e48b9ab64065bc5c8e5d5a",
+  "localizationVersion": "2026.08.21.1",
   "policyVersion": 2,
-  "releaseHtmlSha256": "ff247e650ba0d24cc878ed925dfcfff8f6789d146cf34700c09ee5d22747c692",
-  "releaseId": "2026.08.21.1",
+  "releaseHtmlSha256": "88546fdda97b4c9b2423d7313c7d2501fcab46fc3fea713c53d9773c0076048a",
+  "releaseId": "2026.08.21.2",
   "routeCount": 61,
   "routeManifestSha256": "06cb97497bb6fc57675c9b1ef7f526fe9d9b83ea13168b6d094999c898659c7e",
   "routes": {
@@ -12,7 +12,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/404.html",
-      "htmlSha256": "9c49f5c5c528e806a3bf00d74b53a2e96e49ab591fe3694a2705028e8679710d",
+      "htmlSha256": "30da4be443a6cc11bc9c4a6031512f536d501e08afd863b6d3e55d2c2555bd14",
       "inlineScriptCount": 0,
       "inlineScriptHashes": [],
       "inlineStyleCount": 1,
@@ -26,7 +26,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/404/index.html",
-      "htmlSha256": "c90642b823bbfa189db13f86785329af7f8fb0324e9ebe9f3b15b076b637a572",
+      "htmlSha256": "8d9f952f7ccd8d7071a38fa7319df24be9a972f6d02b2736d83b546a8957d13a",
       "inlineScriptCount": 0,
       "inlineScriptHashes": [],
       "inlineStyleCount": 1,
@@ -43,7 +43,7 @@
         "sha256-fdsxuozUrZrSZstdFCzfCxeyY9tVbvWXeDBbbP5r7LA="
       ],
       "file": "en/accounts/connect/index.html",
-      "htmlSha256": "715927add051361ca3fa365afd93ecda63664c02aeaa181408cb0fcd7b53cc40",
+      "htmlSha256": "308f14cb603ad63e8606d9f80f63ad89de76def4e15d594d47694041bff2f255",
       "inlineScriptCount": 4,
       "inlineScriptHashes": [
         "sha256-+DXcuxJhO+qxjL3vYVgdZQNTaItHoejOTTi2n/cqtVQ=",
@@ -88,7 +88,7 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "en/admin/index.html",
-      "htmlSha256": "3ccb87c1df7d9795ce2966e0ad36223db73c2a939b0f723006842e8b2c415618",
+      "htmlSha256": "6f830a9cd9031176e3d49471a612c76f1fbde09282d93589ff183c9ba1d06657",
       "inlineScriptCount": 4,
       "inlineScriptHashes": [
         "sha256-1/HRaBWO1knsYQnDiwDw3zenau04tRdbVnIl2+zOs3A=",
@@ -123,7 +123,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/blog/forex-trading-journal/index.html",
-      "htmlSha256": "e3bf883a005a2dc5b28c93d75824f6d41a081d0bc5790a032ad73df911ee135b",
+      "htmlSha256": "2801d8ba8b2e0ca8c7d281c8ade789446cc690c96b5cdcd610ad5241a10a016e",
       "inlineScriptCount": 2,
       "inlineScriptHashes": [
         "sha256-ZTekUcRt5eInc4pc3l2b6H9Wi7B/4+wuhFekXR3oFVs=",
@@ -145,7 +145,7 @@
         "sha256-9CsUczHMxOHGN/Cc7qTRJSxQTvyl3blN2HecpqqvxRA="
       ],
       "file": "en/blog/index.html",
-      "htmlSha256": "0c86d3d6595d296679dc2790567dfb76b21980b7ba234bc0a13733d4459af586",
+      "htmlSha256": "78bf91e50422f890bf559fc5544e8a754aafb2838302e8faf7e8d95f2242a5c5",
       "inlineScriptCount": 0,
       "inlineScriptHashes": [],
       "inlineStyleCount": 1,
@@ -162,7 +162,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/blog/mt4-mt5-trading-journal/index.html",
-      "htmlSha256": "78958ef8440dcea3dad2d858f15765abc403651eb28737fa967434efe246c02f",
+      "htmlSha256": "06a1bc2454e0c3271452be0cbf058e5dbd871082a4b4bd38dfdf8d38f983d62c",
       "inlineScriptCount": 2,
       "inlineScriptHashes": [
         "sha256-+L59rDPFxX12gk9HgBuJgKfO6NYWO1dTh8sg/bq4ipo=",
@@ -182,7 +182,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/blog/risk-management-in-trading/index.html",
-      "htmlSha256": "9999357a9e14952fabeb9f89f33ae4169dcc29141f73bffbe77b734d26ae0bb5",
+      "htmlSha256": "1a1d1ebca225e1893679c61d02a84b52440b2e66226e592df4ffd9109bf3ec41",
       "inlineScriptCount": 2,
       "inlineScriptHashes": [
         "sha256-urmyOBflUA7tjQF+x1bSzGqnK7dhSVPst434h+kTcGU=",
@@ -202,7 +202,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/blog/risk-management-trading/index.html",
-      "htmlSha256": "9999357a9e14952fabeb9f89f33ae4169dcc29141f73bffbe77b734d26ae0bb5",
+      "htmlSha256": "1a1d1ebca225e1893679c61d02a84b52440b2e66226e592df4ffd9109bf3ec41",
       "inlineScriptCount": 2,
       "inlineScriptHashes": [
         "sha256-urmyOBflUA7tjQF+x1bSzGqnK7dhSVPst434h+kTcGU=",
@@ -222,7 +222,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/blog/what-is-a-trading-journal/index.html",
-      "htmlSha256": "c194a857884f9fa6cb510d173471b589dc71d138f778d9be5509b077ac9ad5ed",
+      "htmlSha256": "86d61053424a3fb78d48423b22fe399170491404dbde453b618c36ed77336ff5",
       "inlineScriptCount": 2,
       "inlineScriptHashes": [
         "sha256-HVV3IdnkN93Z6B/cvBNheX9CLY1FcgNau5VdJCBpHSM=",
@@ -242,7 +242,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/blog/what-is-trading-journal/index.html",
-      "htmlSha256": "c194a857884f9fa6cb510d173471b589dc71d138f778d9be5509b077ac9ad5ed",
+      "htmlSha256": "86d61053424a3fb78d48423b22fe399170491404dbde453b618c36ed77336ff5",
       "inlineScriptCount": 2,
       "inlineScriptHashes": [
         "sha256-HVV3IdnkN93Z6B/cvBNheX9CLY1FcgNau5VdJCBpHSM=",
@@ -262,7 +262,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/blog/why-traders-need-a-journal/index.html",
-      "htmlSha256": "10fa41f7d822401e88fa7c0a65ef7b1babae9a8014bd24740beab955a79a796a",
+      "htmlSha256": "b33641ebab17532bd335a11b32fe6500da15f8658e10815359b09cc809ef1ffd",
       "inlineScriptCount": 2,
       "inlineScriptHashes": [
         "sha256-kPpC8Pg9CZyXXrgI7pEUqLLA6wAYGSgchggPkaNvZd0=",
@@ -282,7 +282,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/blog/why-traders-need-journal/index.html",
-      "htmlSha256": "10fa41f7d822401e88fa7c0a65ef7b1babae9a8014bd24740beab955a79a796a",
+      "htmlSha256": "b33641ebab17532bd335a11b32fe6500da15f8658e10815359b09cc809ef1ffd",
       "inlineScriptCount": 2,
       "inlineScriptHashes": [
         "sha256-kPpC8Pg9CZyXXrgI7pEUqLLA6wAYGSgchggPkaNvZd0=",
@@ -302,7 +302,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/checkout/index.html",
-      "htmlSha256": "2bad0e153104fd20f7e92cdaa25b2fae48d906b4861fd8ba287cbd5d8ad1baf8",
+      "htmlSha256": "df118a1caf61fe64806e61ee6b34dfe5f71a2f5dc370ff85278bba2337478210",
       "inlineScriptCount": 1,
       "inlineScriptHashes": [
         "sha256-gHj6/i3kXOFA814ySZ71G+/mSZlk2ejg0F57uZtchd4="
@@ -324,7 +324,7 @@
         "sha256-oGb8lVOdFFB8uXIHgw/+BbIwiWBRaJyRMijn+WgAav0="
       ],
       "file": "en/dashboard/index.html",
-      "htmlSha256": "66e9d54b43bb00994abc0492fef8b1d62d3fda0c4226af6de85d65eb4e89d5b8",
+      "htmlSha256": "2db7759fe66a62490a7e7508f3d883804c5d942f63760738ec4afb39c7e92487",
       "inlineScriptCount": 7,
       "inlineScriptHashes": [
         "sha256-7K7+K2frRzpU7tXPl05V/slbXJnLyW13PnABypXsPGM=",
@@ -392,7 +392,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/forgot-password/index.html",
-      "htmlSha256": "e4fb4f02213606c0d5fd496582ba5eded599a7a98fea1fd2d3ea64f7b8de8942",
+      "htmlSha256": "ca80a205e0ce53805e9a83a6a530fa0442d7ffdabb86689c5e1b53261a3d0a38",
       "inlineScriptCount": 1,
       "inlineScriptHashes": [
         "sha256-Vv0Va6gBN3akRkiboAhAHfHrl3CeIutxjXs+hjofgKI="
@@ -408,7 +408,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/index.html",
-      "htmlSha256": "28a5e2d2794b5af0b2630e3ca5589a174b00e53b2b4b785aadddbe14417f111e",
+      "htmlSha256": "8fd0079b8675d1e35353aaf0848e75d1a4c01c6e59608cbb1b1865952106c94c",
       "inlineScriptCount": 3,
       "inlineScriptHashes": [
         "sha256-6pSptL0GYWY/8hcglWmero7DY5X7W25mMv8NAjgS3mU=",
@@ -447,7 +447,7 @@
         "sha256-wqktoZy7K95t7oIakAliRvAPDsewHzTjKAfDRB4Hbuk="
       ],
       "file": "en/intelligence/index.html",
-      "htmlSha256": "3c1059fd71fe0481dc34229e6dc23c9de282d2f00ab2e7282e9b8fbeb47142db",
+      "htmlSha256": "12a09df1c62a2c0564b46bf3c40cd24d83dd81e45d3e3afa57bbfd7d9fd2637a",
       "inlineScriptCount": 5,
       "inlineScriptHashes": [
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
@@ -515,7 +515,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/login/index.html",
-      "htmlSha256": "cd507c9e3649074e7a8430801c97415f095d13995d0f55eae3ee7829a3eebf96",
+      "htmlSha256": "505dc0e613660c05531a6e0773a062ce61d1e2eeb69d998547d1c8cd2ffebb31",
       "inlineScriptCount": 3,
       "inlineScriptHashes": [
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
@@ -545,7 +545,7 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "en/markets/index.html",
-      "htmlSha256": "f576a5c149f8216b7fa820bd05f103fd40602de4be1b882d24d9b9b1eebbf708",
+      "htmlSha256": "26c54964fa161305d628f2c7366edcdeaae43134c5837b12fbd3a3a66e4f0ea2",
       "inlineScriptCount": 4,
       "inlineScriptHashes": [
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
@@ -587,7 +587,7 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "en/news/index.html",
-      "htmlSha256": "a71bfc1e1ef13a8c1fc0707fff5dab45d51de3b99ff057a56061e8dfb11bc23c",
+      "htmlSha256": "1b46e82905e21177c8166172fe4c3cb3f72321ff00a79888af57f41e5b8a4251",
       "inlineScriptCount": 4,
       "inlineScriptHashes": [
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
@@ -632,7 +632,7 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "en/performance/index.html",
-      "htmlSha256": "2f8e2edae755b61398ec439749e4c7b8cdcb1056f8ec4314617f4d18dd89b89b",
+      "htmlSha256": "3bf982b0927f270a90ff3b5396536e3fa8f480feec0a224c022a24c5b6a417d2",
       "inlineScriptCount": 4,
       "inlineScriptHashes": [
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
@@ -691,7 +691,7 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "en/profile/index.html",
-      "htmlSha256": "b399f5879adceadc3b972435b42987c99a4596f3367581d5b659f4559b6601ff",
+      "htmlSha256": "29983906daabf74db5c82d30ab011400fdfdce0e44ca0d88da3d1b5788adac14",
       "inlineScriptCount": 5,
       "inlineScriptHashes": [
         "sha256-5mIAArcHmI2Sw59NbWYRNwL4YM1V3HRn8xLgPuf5UkY=",
@@ -729,7 +729,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/register/index.html",
-      "htmlSha256": "901fbec17b20a21e9b6b309dccfba7be079edc5c022a6d7a5eb788c5d0c08e51",
+      "htmlSha256": "2b10bc1189d50f47b3ae30413f99b5e5936110c65503024b0cda7b77035cfdf3",
       "inlineScriptCount": 3,
       "inlineScriptHashes": [
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
@@ -759,7 +759,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/reset-password/index.html",
-      "htmlSha256": "603eb9527f0f51720351c77d78273926daf0a242b1a87c490b5f5ae47f5139e2",
+      "htmlSha256": "7461e86eb1d63f99bad28ef66ffb623d0e663b870a46835b3d2e59cb27f955cf",
       "inlineScriptCount": 1,
       "inlineScriptHashes": [
         "sha256-ofRAy/2keXT9MvumZV9EB3lg0+nQAPE6eeAPA41Q0is="
@@ -777,7 +777,7 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "en/support/index.html",
-      "htmlSha256": "be3ae524b2a2d30227b5ee9b66ae255d6ae1ea71a67fea22975dba4ef2dca542",
+      "htmlSha256": "485b9b962d4bfa67039fd8aca141e7f8b572aa6127460fdcc476d9e9b21b1c8e",
       "inlineScriptCount": 4,
       "inlineScriptHashes": [
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
@@ -839,7 +839,7 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "en/trades/index.html",
-      "htmlSha256": "12b2af0f4531e5b8bfd02c9b50f961295df24c5d7676e56a54b789e8cb055bee",
+      "htmlSha256": "9aca4a317268ce816e80c3604700f774b535e29da266947b086569b3d91881f9",
       "inlineScriptCount": 4,
       "inlineScriptHashes": [
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
@@ -873,7 +873,7 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "en/trades/new/index.html",
-      "htmlSha256": "8e7d41b5775d50ef5ff2c8d1287fd89589fddec5167da820495dd573e5d27986",
+      "htmlSha256": "3f41e87964ee9a02d34f315a44cabf9060b9f116cac2a9400c433737cfe85e33",
       "inlineScriptCount": 5,
       "inlineScriptHashes": [
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
@@ -913,7 +913,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/verify-email/index.html",
-      "htmlSha256": "44c83f6e1ddd203dc774f1288dec6f795516424dbdc6ecbbc247a4a24afc501d",
+      "htmlSha256": "985459ff16a2cc4ce1aab9c59981f9288f0702ea56d87ef41563e67be63e6b1f",
       "inlineScriptCount": 1,
       "inlineScriptHashes": [
         "sha256-X8OWZhc1YRw55ORE/5Ags/VJVDNxTGml2WsVVB+NgpA="
@@ -933,7 +933,7 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "en/wallet/index.html",
-      "htmlSha256": "3360785b9c4b743de276040431bccf8d130643d169590b53b73f6b7eaa03aba4",
+      "htmlSha256": "2437948b9ed37d236bf4138aac80b4b8e9fe72519738ff0e9775b2592d75ad87",
       "inlineScriptCount": 4,
       "inlineScriptHashes": [
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
@@ -976,7 +976,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "fa/404.html",
-      "htmlSha256": "5212d485fa9e2b932ac76c375853e2540c747aab2eda12e300dd2ed9f6ffa4cd",
+      "htmlSha256": "fe0a179ac58abd7a5dacdeade1af2aace6016da581e8d1532f5c827070cf8207",
       "inlineScriptCount": 0,
       "inlineScriptHashes": [],
       "inlineStyleCount": 1,
@@ -990,7 +990,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "fa/404/index.html",
-      "htmlSha256": "4d5c0661762979b5fd9a230758409fa083a31b34475025368c0536a5058f9276",
+      "htmlSha256": "7f90e521b69f69134704f2c1961286bc789fcd1f76b6c84333433600ed4c695e",
       "inlineScriptCount": 0,
       "inlineScriptHashes": [],
       "inlineStyleCount": 1,
@@ -1007,7 +1007,7 @@
         "sha256-fdsxuozUrZrSZstdFCzfCxeyY9tVbvWXeDBbbP5r7LA="
       ],
       "file": "fa/accounts/connect/index.html",
-      "htmlSha256": "230a2aedf7d03118e2c2259f5fcad0aa39155f88dc9ec803c3cefd4174f6b20b",
+      "htmlSha256": "1799980ed8b7ff5b4b33cd53d4103d2fe892a1545ea8f27db0a890d8452ea16d",
       "inlineScriptCount": 4,
       "inlineScriptHashes": [
         "sha256-+DXcuxJhO+qxjL3vYVgdZQNTaItHoejOTTi2n/cqtVQ=",
@@ -1052,7 +1052,7 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "fa/admin/index.html",
-      "htmlSha256": "cf8503dfa5b98166dd77a8c43ca87519fafb0b0b52242ded45a6b52ae5274163",
+      "htmlSha256": "17e71748b6de54a5eb8a9bf84df60fc3d95d62882ca7d1f8d4d1357bcf598bce",
       "inlineScriptCount": 4,
       "inlineScriptHashes": [
         "sha256-1/HRaBWO1knsYQnDiwDw3zenau04tRdbVnIl2+zOs3A=",
@@ -1087,7 +1087,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "fa/blog/forex-trading-journal/index.html",
-      "htmlSha256": "be7c6e14e2920cd7ec262c91e1865c68cdfd9dc39f71e3a2ee06d8c95ded1ec8",
+      "htmlSha256": "47ec8a11f91e7845b534b2c0ddf1e689c1fa4c2b41ed485a154240b46e4ff7d6",
       "inlineScriptCount": 2,
       "inlineScriptHashes": [
         "sha256-ZTekUcRt5eInc4pc3l2b6H9Wi7B/4+wuhFekXR3oFVs=",
@@ -1109,7 +1109,7 @@
         "sha256-9CsUczHMxOHGN/Cc7qTRJSxQTvyl3blN2HecpqqvxRA="
       ],
       "file": "fa/blog/index.html",
-      "htmlSha256": "999931b61b3bda10fc6af449b838fe58d45718aca4d154a046a86a4d6b0314d9",
+      "htmlSha256": "fcd2860bedbca22f8199484a4bce5cfa8c797e8d5b4890d058f89ebdf710fb09",
       "inlineScriptCount": 0,
       "inlineScriptHashes": [],
       "inlineStyleCount": 1,
@@ -1126,7 +1126,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "fa/blog/mt4-mt5-trading-journal/index.html",
-      "htmlSha256": "dbf298171608e5f86d82eae95f9b8bbf68a57ccb7184e36202dd6573413b0ee9",
+      "htmlSha256": "d87fc3fdf1deb2fd6cb85b5cb1c6e3f5efcb20a5bda96007c35883df16b581be",
       "inlineScriptCount": 2,
       "inlineScriptHashes": [
         "sha256-+L59rDPFxX12gk9HgBuJgKfO6NYWO1dTh8sg/bq4ipo=",
@@ -1146,7 +1146,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "fa/blog/risk-management-trading/index.html",
-      "htmlSha256": "2b025f01417a038d4d016f8f3e70e47531d1507e09ddd63ec380cc399546612a",
+      "htmlSha256": "08ae023a83b373ce1dbe6a57ee4705172741a1dfca46de67e62c744f508d7194",
       "inlineScriptCount": 2,
       "inlineScriptHashes": [
         "sha256-urmyOBflUA7tjQF+x1bSzGqnK7dhSVPst434h+kTcGU=",
@@ -1166,7 +1166,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "fa/blog/what-is-trading-journal/index.html",
-      "htmlSha256": "61a6b4421252edd99d2d8f3de09136601a6d465cbd655fe064fdb243793630ba",
+      "htmlSha256": "044a370d76afc66b6fa588bf3846daa105200ca770eabd0202c32023804eed4f",
       "inlineScriptCount": 2,
       "inlineScriptHashes": [
         "sha256-HVV3IdnkN93Z6B/cvBNheX9CLY1FcgNau5VdJCBpHSM=",
@@ -1186,7 +1186,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "fa/blog/why-traders-need-journal/index.html",
-      "htmlSha256": "243d51be1d2029076eb53dda7f62b093cf295a2ed3e12f4ab1304d8e7cd39cdd",
+      "htmlSha256": "933a3b5391f131485705323c2af094c4fc2432a5bd3b9ab6ed5942587ce1d8ce",
       "inlineScriptCount": 2,
       "inlineScriptHashes": [
         "sha256-kPpC8Pg9CZyXXrgI7pEUqLLA6wAYGSgchggPkaNvZd0=",
@@ -1206,7 +1206,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "fa/checkout/index.html",
-      "htmlSha256": "1dbb2a1c7cd9cedc6f111cd27913a16e4f2a8ac2cb1e72e3af10450db85cacd4",
+      "htmlSha256": "f897284a8facc363716527f0881b272b9375a26f97f25a6ab8da3dc92def4db0",
       "inlineScriptCount": 1,
       "inlineScriptHashes": [
         "sha256-gHj6/i3kXOFA814ySZ71G+/mSZlk2ejg0F57uZtchd4="
@@ -1228,7 +1228,7 @@
         "sha256-oGb8lVOdFFB8uXIHgw/+BbIwiWBRaJyRMijn+WgAav0="
       ],
       "file": "fa/dashboard/index.html",
-      "htmlSha256": "4bdc699f0357c9106dcbb1c79fc25cf023071a2bc0f195679ab9fe27042e0d7c",
+      "htmlSha256": "1e6933774ccd95f87cd8b16d1e8699a7e34e68daf6a74b5e4406054516817802",
       "inlineScriptCount": 7,
       "inlineScriptHashes": [
         "sha256-7K7+K2frRzpU7tXPl05V/slbXJnLyW13PnABypXsPGM=",
@@ -1296,7 +1296,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "fa/forgot-password/index.html",
-      "htmlSha256": "dddfb2a51125578895693d4eb0405833378426465611cd120904aae875ed1af4",
+      "htmlSha256": "eaf84b88b4a6036a7b5e10ab0292a07dd000d542ea32c9a25b1be4a404234fba",
       "inlineScriptCount": 1,
       "inlineScriptHashes": [
         "sha256-Vv0Va6gBN3akRkiboAhAHfHrl3CeIutxjXs+hjofgKI="
@@ -1312,7 +1312,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "fa/index.html",
-      "htmlSha256": "a95f106fad254f18a044c8a95b2ac82e17c25e40605014d9fe3ef9d397c82501",
+      "htmlSha256": "2a42fe9813f02d1c9a0c26081490be622f22c89b264549218591fda91d6c6a82",
       "inlineScriptCount": 3,
       "inlineScriptHashes": [
         "sha256-6pSptL0GYWY/8hcglWmero7DY5X7W25mMv8NAjgS3mU=",
@@ -1351,7 +1351,7 @@
         "sha256-wqktoZy7K95t7oIakAliRvAPDsewHzTjKAfDRB4Hbuk="
       ],
       "file": "fa/intelligence/index.html",
-      "htmlSha256": "f0fa90934725074e1b153d77fd1251c0268242ba50b07bd89738845d3d4b947a",
+      "htmlSha256": "f183fe3f2450785cc9bc70d01d096a12d839c76664ba30d4d4d83afdd674f79c",
       "inlineScriptCount": 5,
       "inlineScriptHashes": [
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
@@ -1419,7 +1419,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "fa/login/index.html",
-      "htmlSha256": "e50c9dd7c6e48ee46426481806901074a0f6bc8fa0363948875c4ef9fea012cf",
+      "htmlSha256": "227689976d3c10d47181929b8f7d03f7d03ebd5dcf5a4b33f8be028c183fc2b9",
       "inlineScriptCount": 3,
       "inlineScriptHashes": [
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
@@ -1449,7 +1449,7 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "fa/markets/index.html",
-      "htmlSha256": "06f8cb1d80bb25ebb298979b0de55f4dda4f459f57fa3596778e6230fec9a751",
+      "htmlSha256": "fa6062f51896b71918358c840b6eea9421cb3c1cda8e569f2af8d144fd4b7100",
       "inlineScriptCount": 4,
       "inlineScriptHashes": [
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
@@ -1491,7 +1491,7 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "fa/news/index.html",
-      "htmlSha256": "6b8d410208a8c8a1f22df01f74f0c1bd2f8df89e819928eb4ed55a8955a9b539",
+      "htmlSha256": "38b385a15bea442b9af1656141f6b40e8bb39c1b87a317c8c886124d1d4c30e2",
       "inlineScriptCount": 4,
       "inlineScriptHashes": [
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
@@ -1536,7 +1536,7 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "fa/performance/index.html",
-      "htmlSha256": "183b46a09d64bfcc280948ee0389cf2f6d7fe213497d4b0ab11d5b2bc11c3c4e",
+      "htmlSha256": "056acb9c510775fdb6009385273c3e33a097b98d6dbd73996324ce4c8a8e05d2",
       "inlineScriptCount": 4,
       "inlineScriptHashes": [
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
@@ -1595,7 +1595,7 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "fa/profile/index.html",
-      "htmlSha256": "47684a6ba1f12c1a512965f6ce5ee0b45af9987dbd6201d39e20398a13ebad6c",
+      "htmlSha256": "09f70d1432b88512c0fe232e014557d0922d93d9dae3fc3b6aec524b8ac362b6",
       "inlineScriptCount": 5,
       "inlineScriptHashes": [
         "sha256-5mIAArcHmI2Sw59NbWYRNwL4YM1V3HRn8xLgPuf5UkY=",
@@ -1633,7 +1633,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "fa/register/index.html",
-      "htmlSha256": "085c514ffa37aa332ad8e0bdd349f38a30bd91e063cf8e490bae8b0bb4d73fd2",
+      "htmlSha256": "c0adf0bd5cff82fba58ec15e9cf9a3daf65ce10d0ba99e4037a585d5a1cebfba",
       "inlineScriptCount": 3,
       "inlineScriptHashes": [
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
@@ -1663,7 +1663,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "fa/reset-password/index.html",
-      "htmlSha256": "53f93cbd12727f6c8dc07611860a2b2b7ead2a7d693f1907316455a153839494",
+      "htmlSha256": "342f50a86c42e7a7a72d5560647c2d325fa8a224c9f493831ac38fe568f024fb",
       "inlineScriptCount": 1,
       "inlineScriptHashes": [
         "sha256-ofRAy/2keXT9MvumZV9EB3lg0+nQAPE6eeAPA41Q0is="
@@ -1681,7 +1681,7 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "fa/support/index.html",
-      "htmlSha256": "4cda76259027e81e4a7caac3539de51f8d111e3294c439847e744c7a43c94abc",
+      "htmlSha256": "6da396ec6f3aa9797e34ccd0f573b14eaf98fcaecb97f9bd7335629a0c5a66ff",
       "inlineScriptCount": 4,
       "inlineScriptHashes": [
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
@@ -1743,7 +1743,7 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "fa/trades/index.html",
-      "htmlSha256": "fbc9df6c50225aa34ebf15e9c3377dbb357f499d668acc7ebac2b29882f4b44c",
+      "htmlSha256": "9c13190b7817578d86167c837f7ad81875c2d6e40778b841a4909c62d3614ac4",
       "inlineScriptCount": 4,
       "inlineScriptHashes": [
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
@@ -1777,7 +1777,7 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "fa/trades/new/index.html",
-      "htmlSha256": "56e65177b77cbd73d83cdb7c17c2f2273ca5346f41847e2e3f624286b940a0ae",
+      "htmlSha256": "07c2650befb060c67e2dd1f55e2811feab2a7286a4bbd62a5b176ed609cdc67f",
       "inlineScriptCount": 5,
       "inlineScriptHashes": [
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
@@ -1817,7 +1817,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "fa/verify-email/index.html",
-      "htmlSha256": "47acee935b75767ac54a336d62be1b74ffb41773fae86099fafb60b4a624b720",
+      "htmlSha256": "08764704047d21b73ec58773bc0c0855390d9c65415f9daeef561ab347a36e8b",
       "inlineScriptCount": 1,
       "inlineScriptHashes": [
         "sha256-X8OWZhc1YRw55ORE/5Ags/VJVDNxTGml2WsVVB+NgpA="
@@ -1837,7 +1837,7 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "fa/wallet/index.html",
-      "htmlSha256": "1cc7adc608895228668c2517ca55042e2eae9b9637a6ce641bcc052adf9d3984",
+      "htmlSha256": "5b8db9cc2876fdcf8120c28b6d8d71652f538d84e302796b2af0ccf9f7aeda98",
       "inlineScriptCount": 4,
       "inlineScriptHashes": [
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
@@ -1877,5 +1877,5 @@
       ]
     }
   },
-  "sourceDigest": "e8c21f80b54c59a23b38f14a6276baf4e312bbdc845f5a8991d8dc531ba1c7a1"
+  "sourceDigest": "475f7a9d4090d03bc9695d9f435eceddca7b1b2d8e987fed8af3c6c560fb4d48"
 }
