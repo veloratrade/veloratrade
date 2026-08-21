@@ -8,7 +8,7 @@
   if (window.__veloraSmartImport) return;
   window.__veloraSmartImport = true;
 
-  var FA = document.documentElement.lang !== 'en';
+  var FA = (document.documentElement.lang || 'fa').toLowerCase().indexOf('fa') === 0;
   function t(fa, en) { return FA ? fa : en; }
   function escapeHtml(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function (char) {
