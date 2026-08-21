@@ -110,6 +110,7 @@
 | P2 | [`STAGING_ENVIRONMENT.md`](./STAGING_ENVIRONMENT.md) | سیاست محیط‌ها، جداسازی، FTP، Deployment | قبل از هر عملیات محیطی |
 | P3 | [`01_SECURITY_CHECKLIST.md`](./01_SECURITY_CHECKLIST.md) | ممیزی امنیتی دائمی (۳۹ حوزه) | قبل از هر Release |
 | P4 | [`04_STRUCTURE_COMPLIANCE_CHECKLIST.md`](./04_STRUCTURE_COMPLIANCE_CHECKLIST.md) | راستی‌آزمایی انطباق ساختار | پس از تغییرات ساختاری |
+| P5 | [`05_BILINGUAL_CHECKLIST.md`](./05_BILINGUAL_CHECKLIST.md) | چک‌لیست دوزبانهٔ fa/en — کامل‌بودن، RTL/LTR، کاتالوگ، فیچرهای جدید، SEO | قبل از هر Release و هر فیچر دارای متن کاربری |
 | — | `pdf/` | نسخ منبع امضاشده با SHA-256 (غیرقابل ویرایش) | مرجع اختلاف |
 
 > **قرارداد بستهٔ انتشار (Release Package Contract) — از `Structure.pdf` §6:**
