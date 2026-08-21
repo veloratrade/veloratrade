@@ -1,5 +1,6 @@
 {
   "algorithm": "sha256",
+  "commitSha": "8a759e2e0bd9ba8761e65a548acca358571c113b",
   "localizationVersion": "2026.08.13.11",
   "policyVersion": 2,
   "releaseHtmlSha256": "ff247e650ba0d24cc878ed925dfcfff8f6789d146cf34700c09ee5d22747c692",
@@ -1875,5 +1876,6 @@
         "sha256-zxmlHPVtPlUU34/MQPOB+AvH6tiCfHB/72sfg56iGyE="
       ]
     }
-  }
+  },
+  "sourceDigest": "e8c21f80b54c59a23b38f14a6276baf4e312bbdc845f5a8991d8dc531ba1c7a1"
 }

@@ -103,6 +103,24 @@ jobs:
           grep -q "X-Robots-Tag" "$DEST/.htaccess"
           echo "بسته سالم است: $(find "$DEST" -type f | wc -l) فایل"
 
+      - name: گارد provenance بسته (read-only)
+        run: |
+          set -euo pipefail
+          DEST=staging-build
+          python3 - "$DEST" <<'PY'
+          import json, pathlib, sys
+          dest = pathlib.Path(sys.argv[1])
+          pkg = json.loads((dest / "localized/.csp-release.json").read_text(encoding="utf-8"))
+          repo = json.loads(pathlib.Path("localized/.csp-release.json").read_text(encoding="utf-8"))
+          for k in ("releaseId", "commitSha", "sourceDigest", "releaseHtmlSha256", "cspManifestSha256"):
+              if pkg.get(k) != repo.get(k):
+                  raise SystemExit(f"بسته provenance با مخزن ناهماهنگ است: {k} pkg={pkg.get(k)} repo={repo.get(k)}")
+          sha = pkg.get("commitSha")
+          if not sha or not pkg.get("sourceDigest"):
+              raise SystemExit("provenance (commitSha/sourceDigest) در بسته غایب است")
+          print(f"✅ provenance بسته تأیید شد: releaseId={pkg.get('releaseId')} commitSha={sha[:12]}")
+          PY
+
       - name: انتقال با lftp به staging (مقاوم در برابر قطعی هاست)
         env:
           FTP_SERVER:   ${{ secrets.STAGING_FTP_SERVER }}
@@ -144,6 +162,30 @@ jobs:
           cls -l localized/.csp-release.json public/locales/manifest.json
           bye
           LFTP
+
+      - name: راستی‌آزمایی provenance روی سرور (read-only)
+        env:
+          FTP_SERVER:   ${{ secrets.STAGING_FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.STAGING_FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.STAGING_FTP_PASSWORD }}
+        run: |
+          set -uo pipefail
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" <<LFTP
+          set ftp:ssl-allow no
+          set net:timeout 30
+          cd public_html/staging.veloratrade.ir
+          get localized/.csp-release.json -o /tmp/server-csp-release.json
+          bye
+          LFTP
+          python3 - <<'PY'
+          import json, pathlib
+          repo = json.loads(pathlib.Path("localized/.csp-release.json").read_text(encoding="utf-8"))
+          server = json.loads(pathlib.Path("/tmp/server-csp-release.json").read_text(encoding="utf-8"))
+          for k in ("releaseId", "commitSha", "sourceDigest", "releaseHtmlSha256", "cspManifestSha256"):
+              if repo.get(k) != server.get(k):
+                  raise SystemExit(f"provenance روی سرور با آرتیفکت تأییدشده نمی‌خواند: {k} repo={repo.get(k)} server={server.get(k)}")
+          print("✅ آرتیفکت روی سرور با آرتیفکت تأییدشده CI برابر است")
+          PY
 
       - name: خلاصه
         run: |

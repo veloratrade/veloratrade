@@ -20,6 +20,8 @@ try:
         CspArtifactError,
         build_csp_artifacts,
         check_csp_artifacts,
+        compute_source_digest,
+        validate_commit_sha,
         validate_release_id,
         write_csp_artifacts,
     )
@@ -28,6 +30,8 @@ except ImportError:  # Direct script execution.
         CspArtifactError,
         build_csp_artifacts,
         check_csp_artifacts,
+        compute_source_digest,
+        validate_commit_sha,
         validate_release_id,
         write_csp_artifacts,
     )
@@ -387,6 +391,7 @@ def promote_staged_release(
     stage_root: Path,
     *,
     release_id: str,
+    commit_sha: str,
 ) -> None:
     """Promote a complete staged release with same-process backup and rollback."""
 
@@ -417,7 +422,9 @@ def promote_staged_release(
             promoted.append(relative)
 
         _require_csp_check(
-            check_csp_artifacts(repository_root, release_id=release_id),
+            check_csp_artifacts(
+                repository_root, release_id=release_id, commit_sha=commit_sha
+            ),
             "post-promotion CSP check",
         )
     except BaseException as exc:
@@ -450,9 +457,18 @@ def promote_staged_release(
         raise
 
 
-def build(release_id: str) -> tuple[int, int, int, int]:
-    # Validate release metadata before build_chunks() or OUTPUT_DIR can mutate.
+def build_staged(
+    release_id: str,
+    commit_sha: str,
+    stage_root: Path,
+) -> tuple[int, int, int, int]:
+    """Render every generated target into ``stage_root`` without promoting.
+
+    Read-only with respect to the repository: all outputs land under
+    ``stage_root``, which the caller owns (a temp dir or the build transaction).
+    """
     release_identifier = validate_release_id(release_id)
+    commit_identifier = validate_commit_sha(commit_sha)
     manifest = load_json(LOCALES_DIR / "manifest.json")
     config = load_json(ROOT / "tools/localization/feature-map.json")
     routes = load_json(ROOT / "tools/localization/routes.json")["routes"]
@@ -473,108 +489,199 @@ def build(release_id: str) -> tuple[int, int, int, int]:
         raise RuntimeError("enabled locale catalogs must have identical keys")
     all_keys = next(iter(keysets.values()))
 
+    stage_localized = stage_root / "localized"
+    stage_locales = stage_root / "public/locales"
+    stage_chunks = stage_locales / "chunks"
+    stage_feature_manifest = stage_locales / "feature-manifest.json"
+
+    feature_manifest, feature_plan = build_chunks(
+        manifest,
+        config,
+        routes,
+        all_keys,
+        catalogs,
+        chunks_dir=stage_chunks,
+        feature_manifest_path=stage_feature_manifest,
+    )
+
+    rendered_count = 0
+    template_count = 0
+    for route in routes:
+        template = ROOT / route["template"]
+        source = template.read_text(encoding="utf-8")
+        features = collect_page_features(route["template"], feature_plan, config)
+        missing_features = [
+            feature
+            for feature in features
+            if any(
+                feature not in feature_manifest["locales"][locale]
+                for locale in catalogs
+            )
+        ]
+        if missing_features:
+            raise RuntimeError(
+                f"template {route['template']} requires missing chunks: "
+                f"{missing_features}"
+            )
+        template_count += 1
+        preferred_outputs = {
+            locale: route.get("localeOutputs", {}).get(
+                locale, route["outputs"]
+            )[0]
+            for locale in catalogs
+        }
+        alternate_urls = {
+            locale: localized_public_url(locale, preferred_output)
+            for locale, preferred_output in preferred_outputs.items()
+        }
+        for locale, messages in catalogs.items():
+            locale_outputs = list(route["outputs"]) + list(
+                route.get("localeOutputs", {}).get(locale, [])
+            )
+            for output_relative in dict.fromkeys(locale_outputs):
+                output = stage_localized / locale / output_relative
+                output.parent.mkdir(parents=True, exist_ok=True)
+                output.write_text(
+                    render_html(
+                        source,
+                        locale,
+                        locale_meta[locale]["direction"],
+                        locale_meta[locale].get("numberingSystem", "latn"),
+                        messages,
+                        features,
+                        alternate_urls[locale],
+                        alternate_urls,
+                        manifest["fallbackLocale"],
+                    ),
+                    encoding="utf-8",
+                )
+                rendered_count += 1
+
+    csp_artifacts = build_csp_artifacts(
+        ROOT,
+        release_id=release_identifier,
+        commit_sha=commit_identifier,
+        localized_root=stage_localized,
+    )
+    write_csp_artifacts(csp_artifacts, stage_root)
+    _require_csp_check(
+        check_csp_artifacts(
+            ROOT,
+            release_id=release_identifier,
+            commit_sha=commit_identifier,
+            localized_root=stage_localized,
+            artifact_root=stage_root,
+        ),
+        "staged CSP check",
+    )
+
+    return (
+        template_count,
+        rendered_count,
+        sum(len(x) for x in feature_manifest["locales"].values()),
+        int(csp_artifacts.manifest["routeCount"]),
+    )
+
+
+def build(release_id: str, commit_sha: str) -> tuple[int, int, int, int]:
+    # Validate release metadata before build_chunks() or OUTPUT_DIR can mutate.
+    release_identifier = validate_release_id(release_id)
+    commit_identifier = validate_commit_sha(commit_sha)
+
     with tempfile.TemporaryDirectory(
         prefix=".velora-localization-transaction-", dir=ROOT
     ) as transaction_directory:
-        transaction_root = Path(transaction_directory)
-        stage_root = transaction_root / "stage"
-        stage_localized = stage_root / "localized"
-        stage_locales = stage_root / "public/locales"
-        stage_chunks = stage_locales / "chunks"
-        stage_feature_manifest = stage_locales / "feature-manifest.json"
-
-        feature_manifest, feature_plan = build_chunks(
-            manifest,
-            config,
-            routes,
-            all_keys,
-            catalogs,
-            chunks_dir=stage_chunks,
-            feature_manifest_path=stage_feature_manifest,
-        )
-
-        rendered_count = 0
-        template_count = 0
-        for route in routes:
-            template = ROOT / route["template"]
-            source = template.read_text(encoding="utf-8")
-            features = collect_page_features(route["template"], feature_plan, config)
-            missing_features = [
-                feature
-                for feature in features
-                if any(
-                    feature not in feature_manifest["locales"][locale]
-                    for locale in catalogs
-                )
-            ]
-            if missing_features:
-                raise RuntimeError(
-                    f"template {route['template']} requires missing chunks: "
-                    f"{missing_features}"
-                )
-            template_count += 1
-            preferred_outputs = {
-                locale: route.get("localeOutputs", {}).get(
-                    locale, route["outputs"]
-                )[0]
-                for locale in catalogs
-            }
-            alternate_urls = {
-                locale: localized_public_url(locale, preferred_output)
-                for locale, preferred_output in preferred_outputs.items()
-            }
-            for locale, messages in catalogs.items():
-                locale_outputs = list(route["outputs"]) + list(
-                    route.get("localeOutputs", {}).get(locale, [])
-                )
-                for output_relative in dict.fromkeys(locale_outputs):
-                    output = stage_localized / locale / output_relative
-                    output.parent.mkdir(parents=True, exist_ok=True)
-                    output.write_text(
-                        render_html(
-                            source,
-                            locale,
-                            locale_meta[locale]["direction"],
-                            locale_meta[locale].get("numberingSystem", "latn"),
-                            messages,
-                            features,
-                            alternate_urls[locale],
-                            alternate_urls,
-                            manifest["fallbackLocale"],
-                        ),
-                        encoding="utf-8",
-                    )
-                    rendered_count += 1
-
-        csp_artifacts = build_csp_artifacts(
-            ROOT,
-            release_id=release_identifier,
-            localized_root=stage_localized,
-        )
-        write_csp_artifacts(csp_artifacts, stage_root)
-        _require_csp_check(
-            check_csp_artifacts(
-                ROOT,
-                release_id=release_identifier,
-                localized_root=stage_localized,
-                artifact_root=stage_root,
-            ),
-            "staged CSP check",
-        )
+        stage_root = Path(transaction_directory) / "stage"
+        result = build_staged(release_identifier, commit_identifier, stage_root)
         promote_staged_release(
             ROOT,
             stage_root,
             release_id=release_identifier,
-        )
-
-        result = (
-            template_count,
-            rendered_count,
-            sum(len(x) for x in feature_manifest["locales"].values()),
-            int(csp_artifacts.manifest["routeCount"]),
+            commit_sha=commit_identifier,
         )
 
     return result
+
+
+def compare_generated_targets(repository_root: Path, stage_root: Path) -> list[str]:
+    """Byte-compare every generated target between repo and a staged build."""
+
+    mismatches: list[str] = []
+    for relative in _GENERATED_TARGETS:
+        live = repository_root / relative
+        staged = stage_root / relative
+        if not staged.exists() and not staged.is_symlink():
+            mismatches.append(
+                f"missing generated target in build: {relative.as_posix()}"
+            )
+            continue
+        if _path_inventory_digest(live) != _path_inventory_digest(staged):
+            mismatches.append(f"generated artifact drift: {relative.as_posix()}")
+    return mismatches
+
+
+def check_artifact_freshness(
+    repository_root: Path = ROOT,
+) -> tuple[bool, list[str]]:
+    """Regenerate artifacts in a temp dir and prove they match the repo (TEST-26).
+
+    Read-only with respect to tracked files: never writes to ``repository_root``.
+    Returns ``(ok, errors)``.
+    """
+    errors: list[str] = []
+    manifest_path = repository_root / "public/locales/csp-manifest.json"
+    try:
+        manifest = load_json(manifest_path)
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        return False, [f"cannot read csp-manifest.json: {exc}"]
+
+    release_id = manifest.get("releaseId")
+    recorded_sha = manifest.get("commitSha")
+    recorded_digest = manifest.get("sourceDigest")
+
+    # ── §0 provenance presence ───────────────────────────────────────────
+    if not recorded_sha:
+        errors.append(
+            "committed csp-manifest.json is missing commitSha (provenance not recorded)"
+        )
+    else:
+        try:
+            validate_commit_sha(recorded_sha)
+        except CspArtifactError as exc:
+            errors.append(str(exc))
+    if not recorded_digest:
+        errors.append(
+            "committed csp-manifest.json is missing sourceDigest (provenance not recorded)"
+        )
+    if release_id is None:
+        errors.append("committed csp-manifest.json is missing releaseId")
+
+    # ── §1 source freshness (fast path) ──────────────────────────────────
+    if recorded_digest:
+        try:
+            if compute_source_digest(repository_root) != recorded_digest:
+                errors.append(
+                    "source changed but generated artifact is stale "
+                    "(sourceDigest mismatch)"
+                )
+        except CspArtifactError as exc:
+            return False, errors + [f"cannot compute source digest: {exc}"]
+
+    # ── full regeneration byte-compare ───────────────────────────────────
+    if release_id is not None and recorded_sha:
+        try:
+            with tempfile.TemporaryDirectory(
+                prefix=".velora-freshness-", dir=repository_root
+            ) as transaction_directory:
+                stage_root = Path(transaction_directory) / "stage"
+                build_staged(str(release_id), str(recorded_sha), stage_root)
+                errors.extend(compare_generated_targets(repository_root, stage_root))
+        except CspArtifactError as exc:
+            errors.append(f"regeneration failed: {exc}")
+        except (OSError, RuntimeError, ValueError, UnicodeError) as exc:
+            errors.append(f"regeneration failed: {exc}")
+
+    return (not errors), errors
 
 
 def main() -> None:
@@ -584,15 +691,44 @@ def main() -> None:
         required=True,
         help="Explicit CSP release identifier; never generated from the clock.",
     )
+    parser.add_argument(
+        "--commit-sha",
+        help="Explicit git commit SHA provenance; required unless --check is used.",
+    )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Read-only freshness verification: rebuild in temp and compare (TEST-26).",
+    )
     args = parser.parse_args()
+    if not args.check and not args.commit_sha:
+        parser.error("--commit-sha is required unless --check is used")
     try:
         release_id = validate_release_id(args.release_id)
     except CspArtifactError as exc:
         parser.error(str(exc))
-    templates, html_files, chunks, csp_routes = build(release_id)
+    commit_sha = None
+    if args.commit_sha:
+        try:
+            commit_sha = validate_commit_sha(args.commit_sha)
+        except CspArtifactError as exc:
+            parser.error(str(exc))
+
+    if args.check:
+        ok, errors = check_artifact_freshness(ROOT)
+        if ok:
+            print("ARTIFACT_FRESHNESS_OK")
+            return
+        print("ARTIFACT_FRESHNESS_FAILED")
+        for error in errors:
+            print(f"- {error}")
+        raise SystemExit(1)
+
+    templates, html_files, chunks, csp_routes = build(release_id, commit_sha)
     print(
         f"LOCALIZED_BUILD_OK templates={templates} html={html_files} "
-        f"feature_chunks={chunks} csp_routes={csp_routes} releaseId={release_id}"
+        f"feature_chunks={chunks} csp_routes={csp_routes} "
+        f"releaseId={release_id} commitSha={commit_sha}"
     )
 
 
