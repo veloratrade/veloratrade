@@ -364,8 +364,8 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: نصب parser قطعی CSP
-        run: python3 -m pip install --disable-pip-version-check beautifulsoup4==4.15.0
+      - name: نصب وابستگی‌های قطعی (CSP parser + JSON Schema validator)
+        run: python3 -m pip install --disable-pip-version-check beautifulsoup4==4.15.0 jsonschema==4.26.0
 
       - name: Artifact freshness (TEST-26)
         env:
