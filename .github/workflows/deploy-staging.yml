@@ -131,7 +131,7 @@ jobs:
           sudo apt-get install -y -q lftp > /dev/null
 
           # هاست اتصال‌ها را وسط کار reset می‌کند؛ mirror با تکرار بیرونی
-          # ادامه می‌دهد (فقط فایل‌های باقی‌مانده منتقل می‌شوند: --only-newer + size check)
+          # ادامه می‌دهد (--ignore-time: همه فایل‌ها byte-fresh آپلود می‌شوند — Artifact Integrity §4)
           attempt=0
           until [ $attempt -ge 12 ]; do
             attempt=$((attempt+1))
@@ -144,7 +144,7 @@ jobs:
           set net:timeout 30
           set ftp:passive-mode on
           set mirror:parallel-transfer-count 1
-          mirror -R --continue --only-newer --no-perms --no-symlinks \
+          mirror -R --continue --ignore-time --no-perms --no-symlinks \
                  --exclude-glob .git* \
                  staging-build/ public_html/staging.veloratrade.ir/
           bye
