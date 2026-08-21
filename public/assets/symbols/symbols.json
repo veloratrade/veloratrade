@@ -211,7 +211,7 @@
   },
   "GER40": {
     "name": "DAX 40",
-    "icon": "assets/flags/de.png",
+    "icon": "assets/symbols/flags/de.png",
     "type": "index"
   },
   "FTSE100": {
@@ -236,7 +236,7 @@
   },
   "DAX40": {
     "name": "DAX 40",
-    "icon": "assets/flags/de.png",
+    "icon": "assets/symbols/flags/de.png",
     "type": "index"
   },
   "SP500": {

@@ -29,8 +29,8 @@ window.VeloraSymbols = (function () {
   function loadRegistry() {
     if (registry) return Promise.resolve(registry);
     if (registryPromise) return registryPromise;
-    registryPromise = fetch('/public/assets/symbols/symbols.json?v=2026.08.13.34', { cache: 'no-store' })
-      .catch(function () { return fetch('/assets/symbols/symbols.json?v=2026.08.13.34', { cache: 'no-store' }); })
+    registryPromise = fetch('/public/assets/symbols/symbols.json?v=2026.08.22.1', { cache: 'no-store' })
+      .catch(function () { return fetch('/assets/symbols/symbols.json?v=2026.08.22.1', { cache: 'no-store' }); })
       .then(function (r) { return r.json(); })
       .then(function (data) {
         registry = data || {};
