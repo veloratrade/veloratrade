@@ -1,0 +1,245 @@
+{
+  "version": 1,
+  "generated_at": "2026-08-21T23:32:49+00:00",
+  "scope_note": "PR-01 freeze baseline. Each entry documents one known hardcoded Persian-script literal source in shared JS or inline scripts of generated localized HTML. Counting = distinct string/regex literals containing Persian script, after stripping JS comments (tokenizer identical to build_localized_static.py). Resolve an entry via its resolution_pr; the entry must be removed in the same change that eliminates its violations. Categories: see 'categories' map.",
+  "categories": {
+    "legacy-dead": "file is scheduled for deletion",
+    "legacy-dictionary": "inline dictionary scheduled for catalog migration",
+    "regex-intent": "intent-detection regex, not user-facing copy",
+    "seo-meta": "JSON-LD/SEO meta string hardcoded in a localized page",
+    "meta": "legitimate metadata token (e.g. nativeName)"
+  },
+  "entries": [
+    {
+      "id": "V3-001",
+      "file": "localized/en/blog/forex-trading-journal/index.html",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 2,
+      "category": "seo-meta",
+      "reason": "hardcoded Persian JSON-LD meta strings; EN pages currently carry Persian meta (content bug) — triage in a later phase",
+      "resolution_pr": null
+    },
+    {
+      "id": "V3-002",
+      "file": "localized/en/blog/mt4-mt5-trading-journal/index.html",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 2,
+      "category": "seo-meta",
+      "reason": "hardcoded Persian JSON-LD meta strings; EN pages currently carry Persian meta (content bug) — triage in a later phase",
+      "resolution_pr": null
+    },
+    {
+      "id": "V3-003",
+      "file": "localized/en/blog/risk-management-in-trading/index.html",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 2,
+      "category": "seo-meta",
+      "reason": "hardcoded Persian JSON-LD meta strings; EN pages currently carry Persian meta (content bug) — triage in a later phase",
+      "resolution_pr": null
+    },
+    {
+      "id": "V3-004",
+      "file": "localized/en/blog/risk-management-trading/index.html",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 2,
+      "category": "seo-meta",
+      "reason": "hardcoded Persian JSON-LD meta strings; EN pages currently carry Persian meta (content bug) — triage in a later phase",
+      "resolution_pr": null
+    },
+    {
+      "id": "V3-005",
+      "file": "localized/en/blog/what-is-a-trading-journal/index.html",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 2,
+      "category": "seo-meta",
+      "reason": "hardcoded Persian JSON-LD meta strings; EN pages currently carry Persian meta (content bug) — triage in a later phase",
+      "resolution_pr": null
+    },
+    {
+      "id": "V3-006",
+      "file": "localized/en/blog/what-is-trading-journal/index.html",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 2,
+      "category": "seo-meta",
+      "reason": "hardcoded Persian JSON-LD meta strings; EN pages currently carry Persian meta (content bug) — triage in a later phase",
+      "resolution_pr": null
+    },
+    {
+      "id": "V3-007",
+      "file": "localized/en/blog/why-traders-need-a-journal/index.html",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 2,
+      "category": "seo-meta",
+      "reason": "hardcoded Persian JSON-LD meta strings; EN pages currently carry Persian meta (content bug) — triage in a later phase",
+      "resolution_pr": null
+    },
+    {
+      "id": "V3-008",
+      "file": "localized/en/blog/why-traders-need-journal/index.html",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 2,
+      "category": "seo-meta",
+      "reason": "hardcoded Persian JSON-LD meta strings; EN pages currently carry Persian meta (content bug) — triage in a later phase",
+      "resolution_pr": null
+    },
+    {
+      "id": "V3-009",
+      "file": "localized/en/index.html",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 4,
+      "category": "regex-intent",
+      "reason": "intent-detection regexes (e.g. /(lose|باخت)/); move to config/catalog",
+      "resolution_pr": "PR-14"
+    },
+    {
+      "id": "V3-010",
+      "file": "localized/fa/blog/forex-trading-journal/index.html",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 2,
+      "category": "seo-meta",
+      "reason": "hardcoded Persian JSON-LD meta strings; EN pages currently carry Persian meta (content bug) — triage in a later phase",
+      "resolution_pr": null
+    },
+    {
+      "id": "V3-011",
+      "file": "localized/fa/blog/mt4-mt5-trading-journal/index.html",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 2,
+      "category": "seo-meta",
+      "reason": "hardcoded Persian JSON-LD meta strings; EN pages currently carry Persian meta (content bug) — triage in a later phase",
+      "resolution_pr": null
+    },
+    {
+      "id": "V3-012",
+      "file": "localized/fa/blog/risk-management-trading/index.html",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 2,
+      "category": "seo-meta",
+      "reason": "hardcoded Persian JSON-LD meta strings; EN pages currently carry Persian meta (content bug) — triage in a later phase",
+      "resolution_pr": null
+    },
+    {
+      "id": "V3-013",
+      "file": "localized/fa/blog/what-is-trading-journal/index.html",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 2,
+      "category": "seo-meta",
+      "reason": "hardcoded Persian JSON-LD meta strings; EN pages currently carry Persian meta (content bug) — triage in a later phase",
+      "resolution_pr": null
+    },
+    {
+      "id": "V3-014",
+      "file": "localized/fa/blog/why-traders-need-journal/index.html",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 2,
+      "category": "seo-meta",
+      "reason": "hardcoded Persian JSON-LD meta strings; EN pages currently carry Persian meta (content bug) — triage in a later phase",
+      "resolution_pr": null
+    },
+    {
+      "id": "V3-015",
+      "file": "localized/fa/index.html",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 4,
+      "category": "regex-intent",
+      "reason": "intent-detection regexes (e.g. /(lose|باخت)/); move to config/catalog",
+      "resolution_pr": "PR-14"
+    },
+    {
+      "id": "V3-016",
+      "file": "public/assets/emotion-icons.js",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 5,
+      "category": "legacy-dictionary",
+      "reason": "inline Persian labels; migrate to central catalog",
+      "resolution_pr": "PR-08a"
+    },
+    {
+      "id": "V3-017",
+      "file": "public/assets/symbol-icons.js",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 30,
+      "category": "legacy-dictionary",
+      "reason": "inline Persian labels; migrate to central catalog",
+      "resolution_pr": "PR-08a"
+    },
+    {
+      "id": "V3-018",
+      "file": "public/assets/velora-dialog.js",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 6,
+      "category": "legacy-dictionary",
+      "reason": "bilingual copy object keyed off document.documentElement.lang; migrate to central catalog",
+      "resolution_pr": "PR-08b"
+    },
+    {
+      "id": "V3-019",
+      "file": "public/assets/velora-how-modals.js",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 35,
+      "category": "legacy-dictionary",
+      "reason": "t() fallback labels + Persian OCR regexes; migrate to central catalog",
+      "resolution_pr": "PR-08c"
+    },
+    {
+      "id": "V3-020",
+      "file": "public/assets/velora-i18n.js",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 81,
+      "category": "legacy-dead",
+      "reason": "legacy auto-translate module (translate.googleapis.com), zero references; delete the file",
+      "resolution_pr": "PR-07"
+    },
+    {
+      "id": "V3-021",
+      "file": "public/assets/velora-locale-registry.js",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 1,
+      "category": "meta",
+      "reason": "generated nativeName \"فارسی\" sourced from the catalog manifest; legitimate metadata",
+      "resolution_pr": null
+    },
+    {
+      "id": "V3-022",
+      "file": "public/assets/velora-premium-footer.js",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 16,
+      "category": "legacy-dictionary",
+      "reason": "bilingual copy object keyed off document.documentElement.lang; migrate to central catalog",
+      "resolution_pr": "PR-08b"
+    },
+    {
+      "id": "V3-023",
+      "file": "public/assets/velora-product-gallery.js",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 18,
+      "category": "legacy-dictionary",
+      "reason": "bilingual copy object keyed off document.documentElement.lang; migrate to central catalog",
+      "resolution_pr": "PR-08b"
+    },
+    {
+      "id": "V3-024",
+      "file": "public/assets/velora-smart-import-dash.js",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 1,
+      "category": "legacy-dictionary",
+      "reason": "inline Persian labels; migrate to central catalog",
+      "resolution_pr": "PR-08a"
+    },
+    {
+      "id": "V3-025",
+      "file": "public/assets/velora-smart-import.js",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 38,
+      "category": "legacy-dictionary",
+      "reason": "t() fallback labels + Persian OCR regexes; migrate to central catalog",
+      "resolution_pr": "PR-08c"
+    }
+  ],
+  "baseline": {
+    "files": 25,
+    "literals": 265,
+    "frozen_hashed_keys": 879,
+    "note": "Earlier hand-audit estimated ~227 violations (223 shared-JS + 4 inline-script). Actual baseline is 265 distinct literals: the tokenizer counts string AND regex literals after comment-stripping (same tokenizer as build_localized_static.py), and two sources were newly discovered — public/assets/emotion-icons.js and Persian JSON-LD meta strings in 13 localized blog pages."
+  }
+}
