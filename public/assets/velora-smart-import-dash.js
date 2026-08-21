@@ -6,7 +6,8 @@
   window.__vsiDashLink = true;
 
   function label() {
-    return document.documentElement.lang === 'en' ? 'Register from photo' : 'ثبت با عکس MT5';
+    var fa = (document.documentElement.lang || 'fa').toLowerCase().indexOf('fa') === 0;
+    return fa ? 'ثبت با عکس MT5' : 'Register from photo';
   }
 
   function style(a) {
