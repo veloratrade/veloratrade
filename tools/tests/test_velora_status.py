@@ -65,6 +65,20 @@ class VeloraStatusContractTest(unittest.TestCase):
         self.assertIn("VELORA-RUN-", result.stdout)
         self.assertIn("هیچ درخواست شبکه‌ای انجام نمی‌شود", result.stdout)
 
+    def test_workspace_footprint_guard_is_wired(self) -> None:
+        """AGENTS.md §13.1 guard: non-sparse bulky checkouts must be detectable.
+
+        The guard must exist in the script, use the canonical violation id,
+        increment context_errors (so --check turns red), and stay silent in CI
+        where a full checkout is legitimate.
+        """
+        source = SCRIPT.read_text(encoding="utf-8")
+        self.assertIn("WORKSPACE-FOOTPRINT-VIOLATION", source)
+        self.assertIn("core.sparseCheckout", source)
+        self.assertIn("GITHUB_ACTIONS", source)
+        guard_block = source.split("WORKSPACE-FOOTPRINT-VIOLATION")[1]
+        self.assertIn("context_errors", guard_block)
+
     def test_context_artifacts_are_generated_and_ignored(self) -> None:
         result = run("--context", "--offline")
         json_path = ROOT / ".session" / "SESSION_CONTEXT.json"
