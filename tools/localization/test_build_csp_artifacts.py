@@ -23,6 +23,7 @@ from tools.localization.build_csp_artifacts import (
     build_csp_artifacts,
     check_csp_artifacts,
     main,
+    validate_commit_sha,
     validate_release_id,
     write_csp_artifacts,
 )
@@ -153,11 +154,18 @@ class CspArtifactBuilderTestCase(unittest.TestCase):
         artifacts = build_csp_artifacts(
             self.repository_root,
             release_id=current_manifest["releaseId"],
+            commit_sha=current_manifest["commitSha"],
         )
 
         self.assertEqual(artifacts.manifest_bytes, self.manifest_path.read_bytes())
         self.assertEqual(artifacts.release_bytes, self.release_path.read_bytes())
         self.assertEqual(artifacts.manifest["routeCount"], 61)
+        self.assertEqual(
+            artifacts.manifest["commitSha"], current_manifest["commitSha"]
+        )
+        self.assertEqual(
+            artifacts.manifest["sourceDigest"], current_manifest["sourceDigest"]
+        )
 
     def test_repository_check_mode_is_read_only(self) -> None:
         paths = (self.manifest_path, self.release_path)
@@ -179,13 +187,16 @@ class CspArtifactBuilderTestCase(unittest.TestCase):
     def test_manifest_schema_and_serialization_match_current_contract(self) -> None:
         current = json.loads(self.manifest_path.read_text(encoding="utf-8"))
         artifacts = build_csp_artifacts(
-            self.repository_root, release_id=current["releaseId"]
+            self.repository_root,
+            release_id=current["releaseId"],
+            commit_sha=current["commitSha"],
         )
 
         self.assertEqual(
             sorted(artifacts.manifest),
             [
                 "algorithm",
+                "commitSha",
                 "localizationVersion",
                 "policyVersion",
                 "releaseHtmlSha256",
@@ -193,6 +204,7 @@ class CspArtifactBuilderTestCase(unittest.TestCase):
                 "routeCount",
                 "routeManifestSha256",
                 "routes",
+                "sourceDigest",
             ],
         )
         self.assertEqual(
@@ -211,17 +223,21 @@ class CspArtifactBuilderTestCase(unittest.TestCase):
     def test_release_schema_and_serialization_match_current_contract(self) -> None:
         current = json.loads(self.manifest_path.read_text(encoding="utf-8"))
         artifacts = build_csp_artifacts(
-            self.repository_root, release_id=current["releaseId"]
+            self.repository_root,
+            release_id=current["releaseId"],
+            commit_sha=current["commitSha"],
         )
 
         self.assertEqual(
             sorted(artifacts.release),
             [
+                "commitSha",
                 "cspManifestSha256",
                 "policyVersion",
                 "releaseHtmlSha256",
                 "releaseId",
                 "routeCount",
+                "sourceDigest",
             ],
         )
         self.assertEqual(
@@ -397,6 +413,29 @@ class CspArtifactBuilderTestCase(unittest.TestCase):
             self.assertFalse((root / CSP_MANIFEST_RELATIVE).exists())
             self.assertFalse((root / CSP_RELEASE_RELATIVE).exists())
 
+    def test_write_requires_explicit_commit_sha(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._write_fixture(root)
+            stdout = io.StringIO()
+
+            with contextlib.redirect_stdout(stdout):
+                exit_code = main(
+                    ["--root", str(root), "--write", "--release-id", "fixture-release"]
+                )
+
+            self.assertEqual(exit_code, 2)
+            self.assertIn("--write requires an explicit --commit-sha", stdout.getvalue())
+            self.assertFalse((root / CSP_MANIFEST_RELATIVE).exists())
+            self.assertFalse((root / CSP_RELEASE_RELATIVE).exists())
+
+    def test_commit_sha_is_validated_and_normalized(self) -> None:
+        for invalid in ("", "zzzz", "not-a-sha", "g" * 40, "abc" * 2, "a" * 65):
+            with self.subTest(invalid=invalid):
+                with self.assertRaises(CspArtifactError):
+                    validate_commit_sha(invalid)
+        self.assertEqual(validate_commit_sha("ABC" * 3 + "abc1234"), "abcabcabcabc1234")
+
     def test_release_id_is_never_generated_from_time(self) -> None:
         for invalid in ("", " leading", "trailing ", "bad/id", "bad:id", "\n"):
             with self.subTest(invalid=invalid):
@@ -509,7 +548,7 @@ class CspArtifactBuilderTestCase(unittest.TestCase):
 
             with self._patch_localized_builder(root):
                 with self.assertRaises(CspArtifactError):
-                    build_localized_static.build("invalid/release")
+                    build_localized_static.build("invalid/release", "f" * 40)
 
             after = {
                 path.relative_to(root).as_posix(): path.read_bytes()
@@ -530,6 +569,7 @@ class CspArtifactBuilderTestCase(unittest.TestCase):
                 repository_root: Path,
                 *,
                 release_id: str,
+                commit_sha: str | None = None,
                 localized_root: Path | None = None,
             ):
                 self.assertIsNotNone(localized_root)
@@ -547,6 +587,7 @@ class CspArtifactBuilderTestCase(unittest.TestCase):
                 return real_build_csp(
                     repository_root,
                     release_id=release_id,
+                    commit_sha=commit_sha,
                     localized_root=staged_localized,
                 )
 
@@ -563,7 +604,7 @@ class CspArtifactBuilderTestCase(unittest.TestCase):
                 "write_csp_artifacts",
                 side_effect=observed_write_csp,
             ):
-                result = build_localized_static.build("integration-release")
+                result = build_localized_static.build("integration-release", "f" * 40)
 
             self.assertEqual(events, [("build-csp", True), ("write-csp", True)])
             self.assertEqual(result, (1, 2, 4, 2))
@@ -581,7 +622,7 @@ class CspArtifactBuilderTestCase(unittest.TestCase):
                 side_effect=CspArtifactError("fixture CSP failure"),
             ):
                 with self.assertRaisesRegex(CspArtifactError, "fixture CSP failure"):
-                    build_localized_static.build("integration-release")
+                    build_localized_static.build("integration-release", "f" * 40)
 
             self.assertFalse((root / CSP_MANIFEST_RELATIVE).exists())
             self.assertFalse((root / CSP_RELEASE_RELATIVE).exists())
@@ -631,7 +672,7 @@ class CspArtifactBuilderTestCase(unittest.TestCase):
                 side_effect=OSError("staged CSP write failure"),
             ):
                 with self.assertRaisesRegex(OSError, "staged CSP write failure"):
-                    build_localized_static.build("next-release")
+                    build_localized_static.build("next-release", "f" * 40)
 
             self.assertEqual(
                 build_localized_static.generated_state_digest(root), before
@@ -665,7 +706,7 @@ class CspArtifactBuilderTestCase(unittest.TestCase):
                         with self.assertRaisesRegex(
                             OSError, f"promotion failure {fail_at}"
                         ):
-                            build_localized_static.build("next-release")
+                            build_localized_static.build("next-release", "f" * 40)
 
                     self.assertEqual(
                         build_localized_static.generated_state_digest(root), before
@@ -695,7 +736,7 @@ class CspArtifactBuilderTestCase(unittest.TestCase):
                 with self.assertRaisesRegex(
                     CspArtifactError, "post-promotion check failure"
                 ):
-                    build_localized_static.build("next-release")
+                    build_localized_static.build("next-release", "f" * 40)
 
             self.assertEqual(
                 build_localized_static.generated_state_digest(root), before

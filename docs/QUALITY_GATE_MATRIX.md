@@ -65,6 +65,7 @@
 | Broken fallback for unknown locales | TEST-20 | `tools/tests/test_locale_fallback.php` | Unknown locale ⇒ manifest fallback, never raw/empty text | `gate-static` | 🟢 |
 | Raw keys in achievement copy (BUG-A3) | TEST-06 | `tools/tests/test_achievement_email_content.php` | Translated titles/descriptions | `gate-contract` | ✅ Fixed + Protected by TEST-06 |
 | Verify-page browser contract (fragment) | — | `tools/tests/test_verify_email_contract.py` + `test_verify_email_browser.js` | `#token=` fragment honored, query scrubbed | `gate-browser` + ci.yml `python` job | 🟢 |
+| Artifact freshness / provenance (Phase 4.3) | TEST-26 | `tools/tests/test_artifact_freshness.py` | commitSha + sourceDigest recorded; clean regeneration byte-identical; stale artifact ⇒ `source changed but generated artifact is stale` | `gate-artifacts` | 🟢 |
 
 ## 5. Release Validation
 
@@ -81,7 +82,8 @@ Deployed via `workflow_call` inside `deploy.yml` and `deploy-staging.yml`: the `
 | `gate-secrets` | CSP guard + secret-scan via `csp-guard.yml` (`workflow_call`) | ✅ Integrated into GitHub Actions Quality Gate |
 | `gate-browser` | verify/reset page contracts (`test_verify_email_contract.py` + `test_verify_email_browser.js`) | ✅ Integrated into GitHub Actions Quality Gate |
 | `gate-e2e` | dashboard Playwright E2E — push-to-`main` only (PR coverage: ci.yml `dashboard` job; no duplicate browser runs) | ✅ Integrated into GitHub Actions Quality Gate |
-| **`quality-gate`** | aggregator — `needs:` all 7 gates, `if: always()`; any failure/cancellation ⇒ job fails and release stops. Candidate single **Required Status Check** (owner enables it in repo settings) | ✅ Integrated into GitHub Actions Quality Gate |
+| `gate-artifacts` | TEST-26 artifact freshness (regenerate + byte-compare + provenance) + `validate_localization.py` (CSP hashes, chunk hashes, output consistency) | ✅ Integrated into GitHub Actions Quality Gate |
+| **`quality-gate`** | aggregator — `needs:` all 8 gates, `if: always()`; any failure/cancellation ⇒ job fails and release stops. Candidate single **Required Status Check** (owner enables it in repo settings) | ✅ Integrated into GitHub Actions Quality Gate |
 
 **Fix status (Phases 4.1–4.7 — all 12 audit bugs closed, pins green, wired into CI):**
 A1→TEST-01 · A2→TEST-11 · A3→TEST-06 · A4→TEST-07 · A5→TEST-12 · A6→TEST-09 · A7→TEST-13 · A8→TEST-14 · A9→TEST-15 · A10→TEST-18 · A11→TEST-16 · A12→TEST-17
@@ -89,6 +91,8 @@ A1→TEST-01 · A2→TEST-11 · A3→TEST-06 · A4→TEST-07 · A5→TEST-12 · 
 **CI inventory completed in Phase 3.4:** `test_database_connection_resilience.php` (row §1, `gate-auth`) and `test_velora_status.py` (row §3, `gate-static`) are now listed here; both were already running in `quality-gate.yml` and remain in `ci.yml`.
 
 **Permanent Release Checklist:** `docs/RELEASE_CHECKLIST.md` — created in Phase 3.2, refreshed in Phase 3.4.
+
+**Artifact Integrity Checklist:** `docs/ARTIFACT_INTEGRITY_CHECKLIST.md` — created in Phase 4.3; its automated surface is TEST-26 (`gate-artifacts`) plus the provenance guards in `deploy.yml` / `deploy-staging.yml`.
 
 ---
 *Document created in Phase 3.1 (test engineering). Gates wired in Phase 3.2. Audit bugs A1–A12 closed in Phases 4.1–4.7. Refreshed in Phase 3.4 (documentation only — no production code, schema, env, test, or workflow was modified).*
