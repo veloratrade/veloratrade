@@ -57,6 +57,9 @@
 - [ ] `fa.json` ↔ `en.json` key parity = 0 diff (TEST-19)
 - [ ] Unknown locale → manifest fallback (en), never empty/raw key (TEST-20)
 - [ ] `email.*` subjects actually translated (not duplicated strings) in both catalogs
+- [ ] `docs/05_BILINGUAL_CHECKLIST.md` §1–§5 run and green (manual i18n governance)
+- [ ] Page-level FA/EN parity: every SEO page present in both `localized/fa/**` and `localized/en/**`; metadata (title/description/OG) translated per locale, not duplicated
+- [ ] No new hardcoded user-facing copy outside the catalog (PR-01 V-3) and no new hashed catalog keys (PR-01 V-4)
 
 ## 5. Deployment
 
