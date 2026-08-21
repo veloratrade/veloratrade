@@ -248,7 +248,7 @@ jobs:
           set ftp:ssl-allow no
           set net:timeout 30
           set ftp:passive-mode on
-          mirror -R --dry-run --continue --only-newer --no-perms --no-symlinks \
+          mirror -R --dry-run --continue --ignore-time --no-perms --no-symlinks \
                  --exclude-glob .git* \
                  production-build/ ${{ env.PROD_DOCROOT }}
           bye
@@ -277,7 +277,7 @@ jobs:
           set net:timeout 30
           set ftp:passive-mode on
           set mirror:parallel-transfer-count 1
-          mirror -R --continue --only-newer --no-perms --no-symlinks \
+          mirror -R --continue --ignore-time --no-perms --no-symlinks \
                  --exclude-glob .git* \
                  production-build/ ${{ env.PROD_DOCROOT }}
           bye
