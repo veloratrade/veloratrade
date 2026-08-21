@@ -99,6 +99,19 @@ def validate_release_id(value: Any) -> str:
     return value
 
 
+_COMMIT_SHA = re.compile(r"^[0-9a-fA-F]{7,64}$")
+
+
+def validate_commit_sha(value: Any) -> str:
+    """Return a valid lowercase git commit SHA; never synthesize one."""
+
+    if not isinstance(value, str) or _COMMIT_SHA.fullmatch(value) is None:
+        raise CspArtifactError(
+            "commitSha must match [0-9a-f]{7,64} (a valid git commit SHA)"
+        )
+    return value.lower()
+
+
 def _sha256_hex(payload: bytes) -> str:
     return hashlib.sha256(payload).hexdigest()
 
@@ -207,6 +220,70 @@ def _release_html_sha256(routes: Mapping[str, Mapping[str, Any]]) -> str:
     return _sha256_hex(payload)
 
 
+_SOURCE_INPUTS = (
+    "tools/localization/routes.json",
+    "tools/localization/feature-map.json",
+    "public/locales/manifest.json",
+)
+
+
+def _source_inputs(repository_root: Path) -> list[tuple[str, Path]]:
+    """Canonical ordered list of every source file that drives regeneration."""
+
+    inputs: list[tuple[str, Path]] = []
+    for relative in _SOURCE_INPUTS:
+        inputs.append((relative, repository_root / relative))
+
+    locale_manifest = _read_json_object(
+        repository_root / LOCALE_MANIFEST_RELATIVE, "locale manifest"
+    )
+    for locale, entry in locale_manifest.get("locales", {}).items():
+        if entry.get("enabled", True):
+            relative = f"public/locales/{locale}.json"
+            inputs.append((relative, repository_root / relative))
+
+    routes_path = repository_root / ROUTES_RELATIVE
+    routes_raw = routes_path.read_bytes() if routes_path.is_file() else b""
+    if routes_raw:
+        try:
+            routes_payload = json.loads(routes_raw.decode("utf-8"))
+        except (UnicodeError, json.JSONDecodeError) as exc:
+            raise CspArtifactError(f"invalid routes manifest: {exc}") from exc
+        for route in routes_payload.get("routes", []):
+            template = route.get("template")
+            if not isinstance(template, str) or not template:
+                raise CspArtifactError("route template must be a non-empty string")
+            inputs.append((Path(template).as_posix(), repository_root / template))
+
+    seen: set[str] = set()
+    unique: list[tuple[str, Path]] = []
+    for relative, path in inputs:
+        if relative in seen:
+            continue
+        seen.add(relative)
+        unique.append((relative, path))
+    unique.sort(key=lambda item: item[0])
+    return unique
+
+
+def compute_source_digest(repository_root: Path) -> str:
+    """Deterministic digest over every source input of the generated artifacts.
+
+    No timestamp is involved; the digest changes only when a source file
+    (template, catalog, locale manifest, route contract or feature map) changes.
+    """
+
+    digest = hashlib.sha256()
+    for relative, path in _source_inputs(repository_root):
+        if not path.is_file():
+            raise CspArtifactError(f"missing source input: {relative}")
+        digest.update(relative.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(hashlib.sha256(path.read_bytes()).digest())
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
 def _serialize_manifest(payload: Mapping[str, Any]) -> bytes:
     return json.dumps(
         payload,
@@ -228,6 +305,7 @@ def build_csp_artifacts(
     root: str | Path = ROOT,
     *,
     release_id: str,
+    commit_sha: str | None = None,
     localized_root: str | Path | None = None,
 ) -> CspArtifacts:
     """Build both CSP artifacts entirely in memory without writing files."""
@@ -236,6 +314,14 @@ def build_csp_artifacts(
     if not repository_root.is_dir():
         raise CspArtifactError(f"repository root does not exist: {repository_root}")
     release_identifier = validate_release_id(release_id)
+    provenance_commit_sha = (
+        validate_commit_sha(commit_sha) if commit_sha is not None else None
+    )
+    provenance_source_digest = (
+        compute_source_digest(repository_root)
+        if provenance_commit_sha is not None
+        else None
+    )
     source_localized_root = (
         Path(localized_root).resolve()
         if localized_root is not None
@@ -280,6 +366,9 @@ def build_csp_artifacts(
         "routeManifestSha256": _sha256_hex(routes_raw),
         "routes": routes,
     }
+    if provenance_commit_sha is not None:
+        manifest["commitSha"] = provenance_commit_sha
+        manifest["sourceDigest"] = provenance_source_digest
     manifest_bytes = _serialize_manifest(manifest)
     release: dict[str, Any] = {
         "cspManifestSha256": _sha256_hex(manifest_bytes),
@@ -288,6 +377,9 @@ def build_csp_artifacts(
         "releaseId": release_identifier,
         "routeCount": len(routes),
     }
+    if provenance_commit_sha is not None:
+        release["commitSha"] = provenance_commit_sha
+        release["sourceDigest"] = provenance_source_digest
     release_bytes = _serialize_release(release)
     return CspArtifacts(
         manifest=manifest,
@@ -304,10 +396,19 @@ def _existing_release_id(artifact_root: Path) -> str:
     return validate_release_id(manifest.get("releaseId"))
 
 
+def _existing_commit_sha(artifact_root: Path) -> str | None:
+    manifest = _read_json_object(
+        artifact_root / CSP_MANIFEST_RELATIVE, "CSP manifest"
+    )
+    value = manifest.get("commitSha")
+    return validate_commit_sha(value) if value is not None else None
+
+
 def check_csp_artifacts(
     root: str | Path = ROOT,
     *,
     release_id: str | None = None,
+    commit_sha: str | None = None,
     localized_root: str | Path | None = None,
     artifact_root: str | Path | None = None,
 ) -> CspCheckResult:
@@ -324,9 +425,15 @@ def check_csp_artifacts(
         if release_id is not None
         else _existing_release_id(output_artifact_root)
     )
+    selected_commit_sha = (
+        validate_commit_sha(commit_sha)
+        if commit_sha is not None
+        else _existing_commit_sha(output_artifact_root)
+    )
     artifacts = build_csp_artifacts(
         repository_root,
         release_id=selected_release_id,
+        commit_sha=selected_commit_sha,
         localized_root=localized_root,
     )
     expected = (
@@ -444,6 +551,10 @@ def _parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
         "--release-id",
         help="Explicit release metadata; mandatory with --write.",
     )
+    parser.add_argument(
+        "--commit-sha",
+        help="Explicit git commit SHA provenance; mandatory with --write.",
+    )
     return parser.parse_args(list(argv) if argv is not None else None)
 
 
@@ -453,13 +564,18 @@ def main(argv: Iterable[str] | None = None) -> int:
         if args.write:
             if args.release_id is None:
                 raise CspArtifactError("--write requires an explicit --release-id")
-            artifacts = build_csp_artifacts(args.root, release_id=args.release_id)
+            if args.commit_sha is None:
+                raise CspArtifactError("--write requires an explicit --commit-sha")
+            artifacts = build_csp_artifacts(
+                args.root, release_id=args.release_id, commit_sha=args.commit_sha
+            )
             write_csp_artifacts(artifacts, args.root)
             print(
                 "CSP_ARTIFACTS_WRITE_OK "
                 f"routes={artifacts.manifest['routeCount']} "
                 f"policyVersion={CSP_POLICY_VERSION} "
-                f"releaseId={artifacts.manifest['releaseId']}"
+                f"releaseId={artifacts.manifest['releaseId']} "
+                f"commitSha={artifacts.manifest['commitSha']}"
             )
             return 0
 

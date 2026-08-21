@@ -15,6 +15,7 @@
 - [ ] `git status` shows only intended changes; no stray files
 - [ ] **No secret/env values** in the diff (`velora.env`, keys, tokens — never committed)
 - [ ] CSP guard (CSP + secret-scan) green on the commit
+- [ ] **Artifact Integrity gate green (TEST-26):** `tools/tests/test_artifact_freshness.py` must PASS — no `source changed but generated artifact is stale`; `commitSha` + `sourceDigest` present in `csp-manifest.json` / `.csp-release.json` (see `docs/ARTIFACT_INTEGRITY_CHECKLIST.md`)
 - [ ] Docs drift acceptable: `bash tools/velora-status.sh` — SESSION_STATE/PROJECT_STATE reviewed
 - [ ] GitHub Actions billing sanity: no unexpected long-running workflows (zero-cost policy)
 
@@ -60,6 +61,8 @@
 ## 5. Deployment
 
 - [ ] Deploy triggered manually; `quality_gate` job in the deploy workflow is **green** before upload starts
+- [ ] **Artifact provenance guard green** before upload: package `localized/.csp-release.json` byte-identical to repo (`releaseId`/`commitSha`/`sourceDigest`/`releaseHtmlSha256`/`cspManifestSha256`) (built into deploy workflow — Phase 4.3)
+- [ ] **Post-upload provenance verify green (read-only):** server `localized/.csp-release.json` byte-identical to the approved bundle (`releaseId`/`commitSha`/`sourceDigest`/`releaseHtmlSha256`/`cspManifestSha256`) — mismatch must fail the deploy
 - [ ] Backup of current docroot completes before any write (built into deploy workflow — RB-6)
 - [ ] Post-deploy within 10 minutes on Production:
   - [ ] `GET /health` → **200** `{"status":"ok"}`
@@ -72,4 +75,4 @@
 
 ---
 
-*Created in Phase 3.2 (Quality Gate integration); refreshed in Phase 3.4 (documentation only). Update this checklist when a new release-blocking gate is added.*
+*Created in Phase 3.2 (Quality Gate integration); refreshed in Phase 3.4 (documentation only); Phase 4.3 added the Artifact Integrity gate (TEST-26) and provenance references. Update this checklist when a new release-blocking gate is added.*
