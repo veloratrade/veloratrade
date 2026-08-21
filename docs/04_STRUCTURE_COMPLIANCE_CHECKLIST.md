@@ -157,11 +157,11 @@ This is enforced automatically by `.github/workflows/csp-guard.yml`.
 
 ### Known count drift
 
-| Metric | Baseline | Live repo | Note |
+| Metric | Baseline | Live repo (2026-08-21, HEAD `8eb0d21`) | Note |
 |---|---|---|---|
-| Generated locale outputs | 59 | **61** | grew since the audit |
-| Total files | 630 | **809** | includes `.github/`, packaging |
-| API endpoints | 35 + `/health` | unverified this pass | recount before amending |
+| Generated locale outputs | 59 | **61** | grew since the audit; routes.json now has 29 routes |
+| Total files | 630 | **735 files / 169 directories** | the interim 809 count (2026-08-16) predates removal of runtime artifacts |
+| API endpoints | 35 + `/health` | **37 + `/health`** | added: `GET`/`PUT /api/v1/auth/email-preferences` (BUG-A9 fix, TEST-15) |
 
 Neither is a defect — the baseline predates later work. Both need a baseline
 amendment rather than a code change.
@@ -275,6 +275,6 @@ These are **reported, not applied** — approval required.
 |---|---|---|---|
 | A-1 | Runtime secrets at `api/.env` (lines 80, 399, 1062) | `/home/piknet/velora_private/config/velora.env` — sibling of `public_html`, gated by `VELORA_PRIVATE_ROOT`; in-tree path is dev-only fallback | Amend baseline text and the tree diagram at line 1062 |
 | A-2 | 59 generated locale outputs | 61 | Recount and amend |
-| A-3 | 630 files / 159 directories | 809 files | Re-run the walk and amend |
-| A-4 | 35 API endpoints + `/health` | not re-verified this pass | Verify, then amend if changed |
-| A-5 | No CI/CD in the structure map | `.github/workflows/` now holds 4 workflows | Add a CI/CD layer to the map |
+| A-3 | 630 files / 159 directories | 735 files / 169 directories (2026-08-21; interim 809 count was pre-cleanup) | Re-run the walk and amend |
+| A-4 | 35 API endpoints + `/health` | 37 + `/health` (2026-08-21) — added `GET`/`PUT /api/v1/auth/email-preferences` (BUG-A9 fix, TEST-15) | Verify, then amend if changed |
+| A-5 | No CI/CD in the structure map | `.github/workflows/` now holds 20 workflows (see `docs/QUALITY_GATE_MATRIX.md`) | Add a CI/CD layer to the map |

@@ -1872,9 +1872,16 @@ Before any structural change: review this document → approve the finding/goal 
 # BASELINE DELTA / STALE FINDINGS
 
 > This section is separate from the original baseline text above. It records only the approved delta items; it does not modify, reinterpret, or override any part of the transcribed baseline.
+>
+> **Current-state verification (2026-08-21, HEAD `8eb0d21`):** each delta below now carries the live, reproducible value measured against the repository at that commit. The transcribed baseline values remain the historical record of the 2026-08-14 audit.
 
 - **A-1** — مسیر env تغییر کرده (the `.env` path has changed relative to the audited baseline).
+  - **Current state:** runtime secrets live at `/home/piknet/velora_private/config/velora.env` — a sibling of `public_html/`, outside the document root, gated by `VELORA_PRIVATE_ROOT` and fail-closed checks in `api/src/Core/Config.php`. The in-tree `api/.env` path is a dev-only fallback (`APP_ENV=dev` and `VELORA_PRIVATE_ROOT` unset) and the file is absent from the repository. Full verification, exposure probes, and the enforcement checklist: `docs/04_STRUCTURE_COMPLIANCE_CHECKLIST.md` §1 (Runtime Secret Location — RESOLVED DRIFT). Baseline references to `api/.env` as the primary runtime path (lines 80, 286, 355) are historical.
 - **A-2** — تعداد خروجی locale تغییر کرده (the count of generated locale outputs has changed relative to the audited baseline).
+  - **Current state:** **61** generated HTML outputs under `localized/` (baseline: 59) and **29** source routes in `tools/localization/routes.json` (baseline: 28). The added route is the reset-password fragment flow. Measured from the live git tree at `8eb0d21`.
 - **A-3** — تعداد فایل‌ها/پوشه‌ها تغییر کرده (the file/directory counts have changed relative to the audited baseline).
+  - **Current state:** **735 files / 169 directories** tracked at `8eb0d21` (baseline: 630 / 159). Earlier interim counts (e.g. 809 recorded in P4 on 2026-08-16) predate the removal of runtime artifacts (`api/storage/velora.sqlite`, logs) and are equally historical.
 - **A-4** — وضعیت endpointها نیازمند بازشماری است (endpoint status requires re-enumeration).
+  - **Current state:** **37 registered API routes + `GET /health`** in `api/index.php` (baseline: 35 + health). The two routes added since the audit are `GET /api/v1/auth/email-preferences` and `PUT /api/v1/auth/email-preferences` (introduced by the BUG-A9 remediation; contract-pinned by TEST-15 in `docs/QUALITY_GATE_MATRIX.md`).
 - **A-5** — لایه CI/CD اضافه شده (a CI/CD layer has been added since the audited baseline).
+  - **Current state:** **20 workflows** under `.github/workflows/`, including the release-blocking Quality Gate aggregator. The full bug→test→gate mapping and CI wiring are documented in `docs/QUALITY_GATE_MATRIX.md`; the human-facing release surface is `docs/RELEASE_CHECKLIST.md`.
