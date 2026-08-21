@@ -82,7 +82,7 @@
     window.addEventListener('scroll',()=>{const d=document.documentElement;const max=d.scrollHeight-d.clientHeight;document.getElementById('readingProgress').style.width=(max?d.scrollTop/max*100:0)+'%';},{passive:true});
     document.getElementById('copyEmail').addEventListener('click',async function(){var initial=this.textContent;try{await navigator.clipboard.writeText(document.getElementById('privacyEmail').textContent);this.textContent=document.getElementById('privacyCopied').textContent;this.classList.add('ok');setTimeout(()=>{this.textContent=initial;this.classList.remove('ok')},1600)}catch(e){this.textContent='support@veloratrade.ir'}});
   </script>
-<script src="/public/assets/velora-ui-sound.js?v=2026.08.13.1"></script>
+<script src="/public/assets/velora-ui-sound.js?v=2026.08.13.2"></script>
 <script src="/public/assets/velora-dialog.js?v=2026.08.13.1"></script>
 </body>
 </html>
