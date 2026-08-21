@@ -1,0 +1,149 @@
+name: Audit F-02 Users (Production, read-only)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# F-02 impact audit — TEMPORARY workflow. Remove after the finding is closed.
+#
+# Measures how many of the 65 historically exposed accounts (SQL dump in git
+# history, users created 2026-08-02..08) still exist on Production, how many
+# are verified, and how many changed after the 2026-08-16 cleanup.
+#
+# Safety contract:
+#   • workflow_dispatch only + exact phrase CONFIRM-PRODUCTION-READ
+#   • Read-only: the probe runs three aggregate SELECT COUNT(*) queries.
+#     No INSERT/UPDATE/DELETE/DDL anywhere in the probe source.
+#   • Zero PII output: only three integers leave the probe. No emails,
+#     names, hashes, or tokens are selected, let alone printed.
+#   • Reuses the proven one-use authenticated probe pattern from
+#     email-status-staging.yml: random filename, sha256-gated header token,
+#     probe self-deletes on execution, FTP cleanup + shred on exit.
+#   • No new long-lived secrets: uses existing FTP_* production secrets.
+#   • Standard ubuntu runner, no schedule, no cache, no artifacts
+#     (zero-cost policy compliant).
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_production_read:
+        description: 'برای اجرای ممیزی فقط‌خواندنی روی Production دقیقاً CONFIRM-PRODUCTION-READ را وارد کنید'
+        required: true
+        default: ''
+
+permissions: {}
+
+concurrency:
+  group: audit-f02-users-production
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: read-only F-02 impact counts
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      FTP_SERVER: ${{ secrets.FTP_SERVER }}
+      FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+      FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+      INPUT_CONFIRM: ${{ github.event.inputs.confirm_production_read }}
+      BASE: https://veloratrade.ir
+    steps:
+      - name: Gate — explicit production-read confirmation
+        run: |
+          set -euo pipefail
+          if [ "$INPUT_CONFIRM" != "CONFIRM-PRODUCTION-READ" ]; then
+            echo "::error::confirm_production_read باید دقیقاً CONFIRM-PRODUCTION-READ باشد — هیچ اتصالی برقرار نشد"
+            exit 1
+          fi
+
+      - name: Create, upload, execute, and remove one-use read-only probe
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -q lftp >/dev/null
+          NAME="_velora_f02_audit_$(openssl rand -hex 12).php"
+          TOKEN="$(openssl rand -hex 32)"
+          HASH="$(printf '%s' "$TOKEN" | sha256sum | awk '{print $1}')"
+          echo "::add-mask::$NAME"; echo "::add-mask::$TOKEN"; echo "::add-mask::$HASH"
+          export NAME TOKEN HASH
+
+          python3 <<'PY'
+          import os
+          template = r'''<?php
+          declare(strict_types=1);
+          $expected = '__HASH__';
+          $provided = (string) ($_SERVER['HTTP_X_VELORA_DIAG'] ?? '');
+          if ($provided === '' || !hash_equals($expected, hash('sha256', $provided))) {
+              http_response_code(404); exit('Not found');
+          }
+          @unlink(__FILE__);
+          require dirname(__DIR__) . '/api/src/bootstrap.php';
+          $pdo = \Velora\Core\Database::connection();
+          // Read-only aggregate audit: three COUNT(*) values, nothing else.
+          // The exposed dump covers accounts created 2026-08-02..2026-08-08;
+          // the public-history cleanup landed 2026-08-16.
+          $q1 = $pdo->query("SELECT COUNT(*) FROM users WHERE created_at < '2026-08-09'");
+          $existing = (int) $q1->fetchColumn();
+          $q2 = $pdo->query("SELECT COUNT(*) FROM users WHERE created_at < '2026-08-09' AND email_verified_at IS NOT NULL");
+          $verified = (int) $q2->fetchColumn();
+          $q3 = $pdo->query("SELECT COUNT(*) FROM users WHERE created_at < '2026-08-09' AND updated_at > '2026-08-16 00:00:00'");
+          $changedAfterCleanup = (int) $q3->fetchColumn();
+          header('Content-Type: application/json; charset=utf-8');
+          header('Cache-Control: no-store');
+          echo json_encode([
+              'cohort_existing' => $existing,
+              'cohort_verified' => $verified,
+              'cohort_changed_after_2026_08_16' => $changedAfterCleanup,
+          ]);
+          '''
+          open('/tmp/probe.php','w',encoding='utf-8').write(template.replace('__HASH__', os.environ['HASH']))
+          PY
+
+          # Static safety check on the probe before it ever leaves the runner:
+          # abort if any write verb appears in the generated source.
+          if grep -Eiq '\b(INSERT|UPDATE|DELETE|REPLACE|ALTER|DROP|CREATE|TRUNCATE|GRANT)\b' /tmp/probe.php; then
+            echo "::error::probe حاوی فعل نوشتاری است — طبق قرارداد read-only متوقف شد"
+            exit 1
+          fi
+
+          cleanup() {
+            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+              -e "set ftp:ssl-allow no; set net:max-retries 1; set net:timeout 20; rm -f public_html/public/$NAME; bye" >/dev/null 2>&1 || true
+            shred -u /tmp/probe.php /tmp/audit.json 2>/dev/null || rm -f /tmp/probe.php /tmp/audit.json
+          }
+          trap cleanup EXIT
+
+          uploaded=0
+          for attempt in $(seq 1 15); do
+            if lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+              -e "set ftp:ssl-allow no; set net:max-retries 2; set net:timeout 30; glob -a rm -f public_html/public/_velora_f02_audit_*.php; put /tmp/probe.php -o public_html/public/$NAME; bye"; then
+              uploaded=1; break
+            fi
+            sleep 5
+          done
+          [ "$uploaded" = 1 ] || { echo "::error::probe آپلود نشد"; exit 1; }
+
+          code=$(curl -sS -o /tmp/audit.json -w '%{http_code}' --max-time 40 \
+            -H "X-Velora-Diag: $TOKEN" "$BASE/public/$NAME")
+          [ "$code" = 200 ] || { echo "::error::probe HTTP $code"; exit 1; }
+
+          python3 - <<'PY'
+          import json, re
+          raw = open('/tmp/audit.json', encoding='utf-8').read()
+          data = json.loads(raw)
+          # Defense in depth: refuse to print anything that looks like PII,
+          # even though the probe only returns integers.
+          allowed = {'cohort_existing', 'cohort_verified', 'cohort_changed_after_2026_08_16'}
+          if set(data) - allowed or not all(isinstance(v, int) for v in data.values()):
+              raise SystemExit('unexpected probe payload shape — output suppressed')
+          if re.search(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+', raw) or re.search(r'\$2[aby]\$', raw):
+              raise SystemExit('possible PII detected in payload — output suppressed')
+          print('F02_COHORT_EXISTING=%d' % data['cohort_existing'])
+          print('F02_COHORT_VERIFIED=%d' % data['cohort_verified'])
+          print('F02_COHORT_CHANGED_AFTER_CLEANUP=%d' % data['cohort_changed_after_2026_08_16'])
+          PY
+
+      - name: Summary
+        run: |
+          echo "### F-02 impact audit (read-only)" >> $GITHUB_STEP_SUMMARY
+          echo "سه شمارش تجمیعی در لاگ مرحله قبل با پیشوند \`F02_\` ثبت شد — بدون هیچ PII." >> $GITHUB_STEP_SUMMARY
+          echo "این workflow موقتی است و پس از بسته شدن F-02 باید حذف شود." >> $GITHUB_STEP_SUMMARY
