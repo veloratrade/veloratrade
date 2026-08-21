@@ -2,8 +2,8 @@
 
 <html data-i18n-features="common,errors,trades" data-route-locale="en" data-velora-prelocalized="en" dir="ltr" lang="en">
 <head>
-<meta charset="utf-8"/><script src="/public/assets/velora-locale-registry.js?v=2026.08.21.1"></script>
-<script src="/public/assets/velora-latin-digits.js?v=2026.08.14.17"></script><script src="/public/assets/velora-locale-bootstrap.js?v=2026.08.21.1"></script><link href="/public/assets/velora-localization.css?v=2026.08.21.1" rel="stylesheet"/><script src="/public/assets/velora-localization.js?v=2026.08.21.1"></script><script src="/public/assets/velora-data.js?v=2026.08.21.1"></script><script defer="" src="/public/assets/velora-dynamic-content.js?v=2026.08.21.1"></script>
+<meta charset="utf-8"/><script src="/public/assets/velora-locale-registry.js?v=2026.08.22.1"></script>
+<script src="/public/assets/velora-latin-digits.js?v=2026.08.14.17"></script><script src="/public/assets/velora-locale-bootstrap.js?v=2026.08.22.1"></script><link href="/public/assets/velora-localization.css?v=2026.08.22.1" rel="stylesheet"/><script src="/public/assets/velora-localization.js?v=2026.08.22.1"></script><script src="/public/assets/velora-data.js?v=2026.08.22.1"></script><script defer="" src="/public/assets/velora-dynamic-content.js?v=2026.08.22.1"></script>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
 <meta content="#060A14" name="theme-color"/>
 <title data-i18n="pages.trades.new.new.trade.velora.3f37d5ab">New Trade | VELORA</title>
@@ -52,7 +52,7 @@
   select.input{appearance:none;cursor:pointer;}
   .hint{font-size:11px;color:var(--faint);margin-top:5px;line-height:1.7;}
 
-  /* جهت */
+  
   .dir-toggle{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
   .dir-opt{border:1.5px solid var(--border);border-radius:14px;padding:14px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(255,255,255,.02);}
   .dir-opt .d-lbl{font-size:14px;font-weight:800;color:var(--muted);}
@@ -62,7 +62,7 @@
   .dir-opt.sell.sel{border-color:rgba(255,107,107,.6);background:rgba(255,107,107,.08);}
   .dir-opt.sell.sel .d-lbl{color:var(--red);}
 
-  /* امتیاز احساسی */
+  
   .emot-row{display:flex;gap:8px;justify-content:space-between;}
   .emot{border:1.5px solid var(--border);border-radius:14px;padding:10px 6px;text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:7px;flex:1;transition:all .2s;background:rgba(255,255,255,.02);}
   .emot .emot-ico{filter:saturate(.9) drop-shadow(0 2px 5px rgba(0,0,0,.25));transition:transform .15s;}
@@ -71,7 +71,7 @@
   .emot.sel{border-color:rgba(212,175,55,.6);background:rgba(212,175,55,.1);box-shadow:0 4px 12px rgba(212,175,55,.15);}
   .emot small{display:block;font-size:9.5px;color:var(--faint);margin-top:3px;font-weight:700;}
 
-  /* محاسبه‌گر PnL */
+  
   .pnl-box{margin-top:18px;border-radius:14px;padding:16px;background:rgba(6,10,20,.5);border:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
   .pnl-box .lbl{font-size:12px;color:var(--muted);}
   .pnl-box .big{font-size:28px;font-weight:800;direction:ltr;font-variant-numeric:tabular-nums;}
@@ -115,10 +115,7 @@
 <script src="/public/assets/symbol-icons.js?v=2026.08.13.36"></script>
 <script src="/public/assets/emotion-icons.js?v=2026.08.13.47"></script>
 <style id="velora-unified-luxury-sidebar-css">
-/* ============================================================
-   VELORA UNIFIED LUXURY SIDEBAR (DESKTOP & MOBILE DRAWER)
-   Saturated Royal Gold Icons & Text on Rich Dark Navy Background
-   ============================================================ */
+
 .sidebar {
   width: 260px !important;
   flex-shrink: 0 !important;
@@ -275,9 +272,7 @@
   display: block;
 }
 
-/* ============================================================
-   MOBILE DRAWER MODE (@media max-width: 980px)
-   ============================================================ */
+
 @media (max-width: 980px) {
   .sidebar {
     position: fixed !important;
@@ -359,7 +354,7 @@ function toggleMobileSidebar() {
     try {
       var u = window.VeloraData ? VeloraData.getUser() : null;
       if (!u || !u.fullName || u.email === 'ali.rezaei@velora.app') {
-        // No fake user injection: show neutral placeholders until the memory session is ready.
+        
         u = null;
       }
       var name = (u && u.fullName) ? u.fullName : VeloraLocale.t('common.user');
@@ -396,10 +391,7 @@ function toggleMobileSidebar() {
 })();
 </script>
 <style id="velora-modern-topbar-css">
-/* ============================================================
-   VELORA LUXURY TOP NAVIGATION & BACK-BAR (DESKTOP & MOBILE)
-   Frosted Glass · Saturated Royal Gold · Interactive Breadcrumbs
-   ============================================================ */
+
 .velora-top-nav-bar {
   display: flex !important;
   align-items: center !important;
@@ -506,7 +498,7 @@ function toggleMobileSidebar() {
   box-shadow: 0 0 8px #4cd39a !important;
 }
 
-/* On mobile, stack and optimize spacing */
+
 @media (max-width: 980px) {
   .velora-top-nav-bar {
   display: flex !important;
@@ -533,7 +525,7 @@ function toggleMobileSidebar() {
 }
 </style>
 <style id="velora-remove-bottom-nav">
-/* Completely hide old bottom navigation bar on all screen sizes */
+
 .bottom-nav, #bottomNav, nav.bottom-nav {
   display: none !important;
   visibility: hidden !important;
@@ -549,9 +541,7 @@ function toggleMobileSidebar() {
 }
 </style>
 <style id="velora-sym-dropdown-fix">
-/* ============================================================
-   VELORA SYMBOL SELECTOR & DROPDOWN (TRADES/NEW)
-   ============================================================ */
+
 .sym-select {
   position: relative !important;
 }
@@ -836,7 +826,7 @@ function toggleMobileSidebar() {
       for (var i = 0; i < nodes.length; i++) nodes[i].style.display = isAdmin ? '' : 'none';
     } catch(e) {}
   }
-  // اول فوراً، بعد با DOMContentLoaded و چند بار دیگر (مطمئن)
+  
   hideAdmin();
   document.addEventListener('DOMContentLoaded', hideAdmin);
   window.addEventListener('velora:session', hideAdmin);

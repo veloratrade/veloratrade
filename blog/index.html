@@ -2,7 +2,7 @@
 
 <html data-route-locale="fa" dir="rtl" lang="fa">
 <head>
-<meta charset="utf-8"/><script src="/public/assets/velora-locale-registry.js?v=2026.08.21.1"></script><script src="/public/assets/velora-locale-bootstrap.js?v=2026.08.21.1"></script><link href="/public/assets/velora-localization.css?v=2026.08.21.1" rel="stylesheet"/><script src="/public/assets/velora-localization.js?v=2026.08.21.1"></script><script src="/public/assets/velora-data.js?v=2026.08.21.1"></script><script defer="" src="/public/assets/velora-dynamic-content.js?v=2026.08.21.1"></script>
+<meta charset="utf-8"/><script src="/public/assets/velora-locale-registry.js?v=2026.08.22.1"></script><script src="/public/assets/velora-locale-bootstrap.js?v=2026.08.22.1"></script><link href="/public/assets/velora-localization.css?v=2026.08.22.1" rel="stylesheet"/><script src="/public/assets/velora-localization.js?v=2026.08.22.1"></script><script src="/public/assets/velora-data.js?v=2026.08.22.1"></script><script defer="" src="/public/assets/velora-dynamic-content.js?v=2026.08.22.1"></script>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title data-i18n="pages.blog.velora.blog.trading.journal.and.risk.management.68b13dc3">وبلاگ VELORA | آموزش ژورنال معاملاتی و مدیریت ریسک</title>
 <meta content="مقالات آموزشی VELORA درباره ژورنال معاملاتی، تحلیل معاملات، مدیریت ریسک و اتصال MT4/MT5." data-i18n-content="pages.blog.velora.educational.articles.about.trading.journals.forex.e0c3bd3a" name="description"/>
@@ -198,10 +198,11 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;bac
 <div class="newsletter">
 <h3 data-i18n="common.stay.updated.with.new.articles.86805643">از مقالات جدید مطلع شوید</h3>
 <p data-i18n="common.get.the.latest.velora.educational.articles.delivered.ffc7dade">جدیدترین مقالات آموزشی VELORA را در ایمیل خود دریافت کنید.</p>
-<form class="nl-form" onsubmit="event.preventDefault();this.innerHTML='&lt;span style=color:var(--green)&gt;ثبت شد!&lt;/span&gt;'">
-<input data-i18n-placeholder="pages.blog.your.email.address.3a71b5c8" placeholder="ایمیل شما" required="" type="email"/>
+<form class="nl-form" id="nl-form">
+<input data-i18n-placeholder="pages.blog.your.email.address.3a71b5c8" id="nl-email" placeholder="ایمیل شما" required="" type="email"/>
 <button class="btn btn-gold" data-i18n="common.subscribe.8b94a86e" type="submit">عضویت</button>
 </form>
+<div data-i18n="common.subscribed.you.ll.be.the.first.to.1d9ddce2" hidden="" id="nl-ok" style="color:var(--green)">✓ عضو شدید! شما جزو اولین نفرات مطلع خواهید بود.</div>
 </div>
 <!-- FOOTER -->
 <footer class="footer">
@@ -216,5 +217,23 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;bac
 <script src="/public/assets/velora-ui-sound.js?v=2026.08.13.1"></script>
 <script src="/public/assets/velora-dialog.js?v=2026.08.13.1"></script>
 <script src="/public/assets/velora-premium-footer.js?v=20260813.1"></script>
+<script>
+/* F-04/M1: catalog-driven newsletter confirmation (mirrors the landing page
+   pattern) — the success copy is localized build/runtime text, never a
+   hard-coded string in a handler attribute. */
+(function () {
+  'use strict';
+  var form = document.getElementById('nl-form');
+  var ok = document.getElementById('nl-ok');
+  if (!form || !ok) return;
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    var email = document.getElementById('nl-email');
+    if (email && typeof email.checkValidity === 'function' && !email.checkValidity()) { email.focus(); return; }
+    form.hidden = true;
+    ok.hidden = false;
+  });
+})();
+</script>
 </body>
 </html>

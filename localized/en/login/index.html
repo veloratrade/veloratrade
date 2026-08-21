@@ -2,18 +2,14 @@
 
 <html data-i18n-features="common,errors,auth" data-route-locale="en" data-velora-prelocalized="en" dir="ltr" lang="en">
 <head>
-<meta charset="utf-8"/><script src="/public/assets/velora-locale-registry.js?v=2026.08.21.1"></script>
-<script src="/public/assets/velora-latin-digits.js?v=2026.08.14.17"></script><script src="/public/assets/velora-locale-bootstrap.js?v=2026.08.21.1"></script><link href="/public/assets/velora-localization.css?v=2026.08.21.1" rel="stylesheet"/><script src="/public/assets/velora-localization.js?v=2026.08.21.1"></script><script src="/public/assets/velora-data.js?v=2026.08.21.1"></script><script defer="" src="/public/assets/velora-dynamic-content.js?v=2026.08.21.1"></script>
+<meta charset="utf-8"/><script src="/public/assets/velora-locale-registry.js?v=2026.08.22.1"></script>
+<script src="/public/assets/velora-latin-digits.js?v=2026.08.14.17"></script><script src="/public/assets/velora-locale-bootstrap.js?v=2026.08.22.1"></script><link href="/public/assets/velora-localization.css?v=2026.08.22.1" rel="stylesheet"/><script src="/public/assets/velora-localization.js?v=2026.08.22.1"></script><script src="/public/assets/velora-data.js?v=2026.08.22.1"></script><script defer="" src="/public/assets/velora-dynamic-content.js?v=2026.08.22.1"></script>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
 <meta content="#060A14" name="theme-color"/>
 <title data-i18n="pages.login.login.velora.smart.trading.journal.01cdfd4d">Login | VELORA — Smart Trading Journal</title>
 <link href="/favicon-32.png" rel="icon" sizes="32x32" type="image/png"/>
 <style>
-  /* ============================================================
-     VELORA — طراحی سطح جهانی (الهام: Stripe · Linear · Apple ·
-     Coinbase · Binance)
-     سیستم: سرمه‌ای عمیق + طلایی · شیشه‌ای · شفق متحرک · گرید ظریف
-     ============================================================ */
+  
 
   :root {
     --bg:#04050a; --bg2:#070a12; --bg3:#0a0d17;
@@ -37,7 +33,7 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  /* پس‌زمینه طرح B (TradingView / Bloomberg Financial Grid & Trend Glow) */
+  
   .bg { position:fixed; inset:0; z-index:0; overflow:hidden; background:#03050a; }
   .bg::before {
     content:''; position:absolute; inset:0;
@@ -61,7 +57,7 @@
     100% { transform:translate(2%, -2.5%) rotate(-2deg) scale(1.07); }
   }
 
-  /* گرید ظریف با محو شعاعی */
+  
   .bg::after {
     content:''; position:absolute; inset:0;
     background-image:
@@ -72,13 +68,13 @@
             mask-image:radial-gradient(ellipse 90% 80% at 50% 40%, #000 25%, transparent 75%);
   }
 
-  /* نویز ملایم (احساس پریمیوم) */
+  
   .noise {
     position:fixed; inset:0; z-index:3; pointer-events:none; opacity:.035;
     background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>");
   }
 
-  /* ---------- چیدمان ---------- */
+  
   .shell {
     position:relative; z-index:1;
     max-width:1120px; margin:0 auto;
@@ -87,7 +83,7 @@
     padding:30px 22px;
   }
 
-  /* ---------- پنل برند ---------- */
+  
   .brand-panel { display:none; }
   @media (min-width:980px) {
     .shell { justify-content:flex-start; }
@@ -117,7 +113,7 @@
   }
   .brand-panel .sub { margin-top:14px; color:var(--muted); font-size:14.5px; line-height:2.15; max-width:430px; }
 
-  /* نمودار سرمایه متحرک */
+  
   .chart-wrap {
     position:relative; margin-top:38px; width:min(440px, 100%);
     padding:20px 20px 14px;
@@ -143,7 +139,7 @@
   @keyframes drawLine { to { stroke-dashoffset:0; } }
   @keyframes dotIn { to { opacity:1; } }
 
-  /* چیپ‌های شناور */
+  
   .float-chip {
     position:absolute;
     display:flex; align-items:center; gap:8px;
@@ -165,7 +161,7 @@
   .trust-row .tr { display:flex; align-items:center; gap:7px; color:var(--muted); font-size:11.5px; }
   .trust-row .tr svg { color:var(--gold); }
 
-  /* ---------- کارت فرم (شیشه‌ای با قاب گرادیانی) ---------- */
+  
   .card-outer {
     position:relative;
     width:100%; max-width:448px;
@@ -247,7 +243,7 @@
   .forgot { font-size:12px; color:var(--gold); text-decoration:none; font-weight:600; transition:color .2s; }
   .forgot:hover { color:var(--gold-l); text-decoration:underline; }
 
-  /* دکمه طلایی با درخشش عبوری */
+  
   .btn-gold {
     position:relative; overflow:hidden;
     width:100%;
@@ -286,7 +282,7 @@
   .error-box.show { display:block; }
   @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
 
-  /* جداکننده */
+  
   .divider { display:flex; align-items:center; gap:14px; margin:22px 0 4px; color:var(--faint); font-size:11px; letter-spacing:.5px; }
   .divider::before, .divider::after { content:''; flex:1; height:1px; background:linear-gradient(90deg, transparent, rgba(212,175,55,0.3), transparent); }
 
@@ -307,10 +303,7 @@
 </style>
 <link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Estedad:wght@100..900&amp;family=Geist:wght@100..900&amp;display=swap" rel="stylesheet"/>
 <style id="velora-unified-luxury-sidebar-css">
-/* ============================================================
-   VELORA UNIFIED LUXURY SIDEBAR (DESKTOP & MOBILE DRAWER)
-   Saturated Royal Gold Icons & Text on Rich Dark Navy Background
-   ============================================================ */
+
 .sidebar {
   width: 260px !important;
   flex-shrink: 0 !important;
@@ -467,9 +460,7 @@
   display: block;
 }
 
-/* ============================================================
-   MOBILE DRAWER MODE (@media max-width: 980px)
-   ============================================================ */
+
 @media (max-width: 980px) {
   .sidebar {
     position: fixed !important;
@@ -551,7 +542,7 @@ function toggleMobileSidebar() {
     try {
       var u = window.VeloraData ? VeloraData.getUser() : null;
       if (!u || !u.fullName || u.email === 'ali.rezaei@velora.app') {
-        // No fake user injection: show neutral placeholders until the memory session is ready.
+        
         u = null;
       }
       var name = (u && u.fullName) ? u.fullName : VeloraLocale.t('common.user');
@@ -588,10 +579,7 @@ function toggleMobileSidebar() {
 })();
 </script>
 <style id="velora-modern-topbar-css">
-/* ============================================================
-   VELORA LUXURY TOP NAVIGATION & BACK-BAR (DESKTOP & MOBILE)
-   Frosted Glass · Saturated Royal Gold · Interactive Breadcrumbs
-   ============================================================ */
+
 .velora-top-nav-bar {
   display: flex !important;
   align-items: center !important;
@@ -698,7 +686,7 @@ function toggleMobileSidebar() {
   box-shadow: 0 0 8px #4cd39a !important;
 }
 
-/* On mobile, stack and optimize spacing */
+
 @media (max-width: 980px) {
   .velora-top-nav-bar {
   display: flex !important;
@@ -725,7 +713,7 @@ function toggleMobileSidebar() {
 }
 </style>
 <style id="velora-remove-bottom-nav">
-/* Completely hide old bottom navigation bar on all screen sizes */
+
 .bottom-nav, #bottomNav, nav.bottom-nav {
   display: none !important;
   visibility: hidden !important;
@@ -753,7 +741,7 @@ function toggleMobileSidebar() {
 <div class="bg"></div>
 <div class="noise"></div>
 <div class="shell">
-<!-- پنل برند -->
+
 <div class="brand-panel">
 <a class="brand-logo" href="/" style="display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;margin-bottom:24px">
 <div class="logo-mark" style="width:44px;height:44px;display:grid;place-items:center;border-radius:14px;background:linear-gradient(140deg,rgba(212,175,55,.22),rgba(212,175,55,.06));border:1px solid rgba(212,175,55,.34);box-shadow:0 0 28px rgba(212,175,55,.5),inset 0 0 10px rgba(212,175,55,.1)">
@@ -771,7 +759,7 @@ function toggleMobileSidebar() {
 </a>
 <h2><span data-i18n="common.trading.journal.c6cb0c73">Trading journal</span><br/><span data-i18n="common.in.8f5d0068">in</span> <span class="grad" data-i18n="pages.login.world.class.88072244">World-class</span></h2>
 <p class="sub" data-i18n="pages.login.record.every.trade.and.take.your.strategies.92bc640a">Record every trade and take your strategies to the next level with professional metrics.</p>
-<!-- نمودار سرمایه متحرک -->
+
 <div class="chart-wrap">
 <div class="chart-head">
 <span class="lbl" data-i18n="pages.login.equity.curve.sample.9799e6be">Equity Curve — Sample</span>
@@ -808,7 +796,7 @@ function toggleMobileSidebar() {
 <span class="tr"><span class="tic"><svg fill="none" viewbox="0 0 24 24"><path d="m12 3.2 1.9 4.6 5 .6-3.8 3.4 1.1 4.9L12 14.4 7.8 16.7l1.1-4.9-3.8-3.4 5-.6L12 3.2Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.55"></path></svg></span> <span data-i18n="pages.login.professional.analysis.b017ee85">Professional Analysis</span></span>
 </div>
 </div>
-<!-- کارت فرم -->
+
 <div class="card-outer">
 <div class="card-inner">
 <a class="brand-logo" href="/" style="display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;margin-bottom:24px">
