@@ -361,6 +361,18 @@ else
   echo "  ℹ️  تعارض‌های وابسته به GitHub در حالت بدون توکن قابل‌اثبات نیستند"
 fi
 
+# گارد ردپای Workspace (AGENTS.md بند ۱۳) — فقط خارج از CI معنا دارد؛
+# checkout کامل در GitHub Actions طبیعی است و نقض محسوب نمی‌شود.
+if [ -z "${GITHUB_ACTIONS:-}" ] && [ -z "${CI:-}" ]; then
+  _wt_files=$(find . -type f -not -path './.git/*' 2>/dev/null | wc -l | tr -d ' ')
+  _sparse=$(git config --get core.sparseCheckout 2>/dev/null || echo false)
+  if [ "$_sparse" != "true" ] && [ "$_wt_files" -gt 50 ]; then
+    echo "  🔴 WORKSPACE-FOOTPRINT-VIOLATION: checkout غیر sparse با $_wt_files فایل — نقض بند ۱۳.۱ AGENTS.md"
+    echo "      رفع: git sparse-checkout محدود به فایل‌های مأموریت + حذف فایل‌های غیرضروری در همین لحظه"
+    context_errors=$((context_errors+1))
+  fi
+fi
+
 echo "  نتیجه check  : $([ "$context_errors" = 0 ] && echo 'معتبر ✅' || echo "$context_errors خطای تازگی/اعتبار ⚠️")"
 
 # ── ۹. مرز اختیار جلسه ────────────────────────────────────────────────────────
