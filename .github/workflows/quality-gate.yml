@@ -348,10 +348,39 @@ jobs:
         if: always()
         run: pkill -f 'php -S 127.0.0.1:8080' || true
 
+  # ── gate-artifacts: تازگی آرتیفکت‌های تولیدی (TEST-26) ─────────────────
+  # جلوگیری از Artifact Drift: اگر source عوض شود ولی آرتیفکت بازتولید نشده
+  # باشد، یا منیفست‌ها provenance (commitSha/sourceDigest) نداشته باشند،
+  # این گیت قرمز می‌شود و انتشار متوقف می‌گردد. (Phase 4.3)
+  gate-artifacts:
+    name: gate-artifacts (artifact freshness · localization validation)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: نصب parser قطعی CSP
+        run: python3 -m pip install --disable-pip-version-check beautifulsoup4==4.15.0
+
+      - name: Artifact freshness (TEST-26)
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: python tools/tests/test_artifact_freshness.py
+
+      - name: Localization validation (CSP + chunk hashes + output consistency)
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: python tools/localization/validate_localization.py
+
   # ── quality-gate: تجمیع‌کننده — چک اصلی Required ─────────────────────
   quality-gate:
     name: quality-gate (aggregate — release blocker)
-    needs: [gate-static, gate-contract, gate-auth, gate-security, gate-secrets, gate-browser, gate-e2e]
+    needs: [gate-static, gate-contract, gate-auth, gate-security, gate-secrets, gate-browser, gate-e2e, gate-artifacts]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -362,7 +391,7 @@ jobs:
         run: |
           echo "$NEEDED" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
           bad=0
-          for j in gate-static gate-contract gate-auth gate-security gate-secrets gate-browser gate-e2e; do
+          for j in gate-static gate-contract gate-auth gate-security gate-secrets gate-browser gate-e2e gate-artifacts; do
             r=$(echo "$NEEDED" | jq -r --arg j "$j" '.[$j].result')
             if [ "$r" != "success" ] && [ "$r" != "skipped" ]; then
               echo "::error::gate {$j} result={$r}"
