@@ -66,6 +66,29 @@
   root.setAttribute('data-locale', resolved);
   root.setAttribute('data-direction', root.dir);
 
+  /* F-03: internal links that opt in via [data-velora-localized-href] are rewritten
+     to carry the resolved locale prefix, so cross-page navigation (e.g. the pricing
+     CTA -> /checkout/) preserves the active locale instead of re-negotiating it. */
+  function localizeAnchors(scope) {
+    if (!scope || typeof scope.querySelectorAll !== 'function') return;
+    var anchors = scope.querySelectorAll('[data-velora-localized-href]');
+    for (var index = 0; index < anchors.length; index += 1) {
+      var anchor = anchors[index];
+      var href = anchor.getAttribute('href');
+      if (!href || href.charAt(0) !== '/' || href.indexOf('//') === 0) continue;
+      var firstSegment = href.replace(/^\/+/, '').split(/[/?#]/)[0].toLowerCase().replace('_', '-');
+      if (localeIndex[firstSegment]) continue; /* already explicit */
+      anchor.setAttribute('href', href === '/' ? '/' + resolved + '/' : '/' + resolved + href);
+    }
+  }
+  if (typeof document.addEventListener === 'function') {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function () { localizeAnchors(document); });
+    } else {
+      localizeAnchors(document);
+    }
+  }
+
   /* Generated HTML that matches the resolved locale is paint-ready. The concealment
      path exists only for stale/static fallback HTML or a migrated localStorage choice. */
   if (prelocalized !== resolved) {
