@@ -79,4 +79,68 @@ expect('Explicit locale URL wins over persisted and browser choices', {
   locale: 'en', dir: 'ltr', booting: false
 });
 
-console.log('LOCALE_RESOLUTION_TEST_OK explicit_locale_url=true cookie_priority=true browser_primary=true unsupported_browser=en prelocalized_first_paint=true');
+/* F-03 regression: [data-velora-localized-href] anchors are rewritten with the
+   resolved locale prefix so navigation (e.g. pricing CTA -> /checkout/) keeps
+   the active locale. Already-prefixed and external links stay untouched. */
+function resolveAnchors(options, anchorHrefs) {
+  const anchors = anchorHrefs.map((href) => {
+    const attrs = { href, 'data-velora-localized-href': '' };
+    return {
+      getAttribute(name) { return attrs[name] === undefined ? null : attrs[name]; },
+      setAttribute(name, value) { attrs[name] = String(value); },
+      get href() { return attrs.href; }
+    };
+  });
+  const attributes = {
+    'data-route-locale': options.declaredRoute === undefined ? 'fa' : options.declaredRoute,
+    'data-velora-prelocalized': options.prelocalized || ''
+  };
+  const root = {
+    lang: '', dir: '',
+    getAttribute(name) { return attributes[name] || null; },
+    setAttribute(name, value) { attributes[name] = String(value); },
+    classList: { add() {}, remove() {} }
+  };
+  const window = {
+    __VELORA_LOCALE_REGISTRY__: registry,
+    location: { pathname: options.pathname || '/' },
+    navigator: {
+      language: options.language || '',
+      languages: options.languages === undefined ? [options.language || ''] : options.languages
+    },
+    localStorage: { getItem() { return null; } },
+    setTimeout() {}
+  };
+  const documentMock = {
+    documentElement: root,
+    cookie: options.cookie ? `${registry.cookieKey}=${encodeURIComponent(options.cookie)}` : '',
+    readyState: 'complete',
+    addEventListener() {},
+    querySelectorAll(selector) {
+      if (selector !== '[data-velora-localized-href]') throw new Error('unexpected selector: ' + selector);
+      return anchors;
+    }
+  };
+  const context = { window, document: documentMock, Object, String, Error, decodeURIComponent };
+  vm.runInNewContext(bootstrap, context, { filename: 'velora-locale-bootstrap.js' });
+  return anchors.map((anchor) => anchor.href);
+}
+
+function expectAnchors(name, options, hrefs, expected) {
+  const actual = resolveAnchors(options, hrefs);
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+    throw new Error(`${name}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
+  }
+}
+
+expectAnchors('English page rewrites checkout CTA to /en/', { pathname: '/en/', declaredRoute: 'en', prelocalized: 'en', language: 'fa-IR' },
+  ['/checkout/?plan=professional'], ['/en/checkout/?plan=professional']);
+expectAnchors('Persian page rewrites checkout CTA to /fa/', { pathname: '/fa/', declaredRoute: 'fa', prelocalized: 'fa', language: 'en-GB' },
+  ['/checkout/?plan=professional'], ['/fa/checkout/?plan=professional']);
+expectAnchors('Cookie locale drives rewrite on unprefixed page', { cookie: 'en', prelocalized: 'en', language: 'fa-IR' },
+  ['/checkout/'], ['/en/checkout/']);
+expectAnchors('Already-prefixed, root, and external links are preserved', { pathname: '/en/', declaredRoute: 'en', prelocalized: 'en' },
+  ['/en/checkout/', '/', 'https://example.com/x', '//cdn.example.com/y'],
+  ['/en/checkout/', '/en/', 'https://example.com/x', '//cdn.example.com/y']);
+
+console.log('LOCALE_RESOLUTION_TEST_OK explicit_locale_url=true cookie_priority=true browser_primary=true unsupported_browser=en prelocalized_first_paint=true localized_href_rewrite=true');
