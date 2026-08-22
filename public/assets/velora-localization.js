@@ -224,6 +224,21 @@
         document.cookie = encodeURIComponent(registry.cookieKey || 'velora_locale') + '=' + encodeURIComponent(locale)
           + '; Path=/; Max-Age=31536000; SameSite=Lax';
       } catch (_) {}
+      /* PR-04: persist the manual choice server-side when signed in so the saved
+         preference follows the account across devices. Fire-and-forget — the UI
+         switch must never block on the network. */
+      try {
+        var veloraData = global.VeloraData;
+        var veloraAccessToken = veloraData && typeof veloraData.getAccessToken === 'function'
+          ? veloraData.getAccessToken() : null;
+        if (veloraAccessToken && typeof global.fetch === 'function') {
+          global.fetch('/api/v1/auth/me/preferences', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + veloraAccessToken },
+            body: JSON.stringify({ locale: locale })
+          }).catch(function () {});
+        }
+      } catch (_) {}
       var routeLocale = explicitPathLocale();
       if (routeLocale && routeLocale !== locale && global.location && typeof global.location.assign === 'function') {
         var links = document.querySelectorAll('link[rel~="alternate"][hreflang]');
