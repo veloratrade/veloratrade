@@ -109,6 +109,9 @@ jobs:
       - name: Structure source-locator contract (OC-14/BR-9)
         run: python tools/tests/test_structure_source_locator.py
 
+      - name: Structure index drift guard (OC-14)
+        run: python tools/structure_sync.py --check
+
       - name: Route contract unit tests
         run: python -m unittest tools.localization.test_route_contract -v
 

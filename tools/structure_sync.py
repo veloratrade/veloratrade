@@ -11,7 +11,8 @@ Owner-approved model:
 
 Modes:
   --report   (default)  scan project, compare to the index, print drift (exit 0)
-  --update              rewrite the index block to match the live scan
+  --check              same as --report but exit 1 on drift (CI enforcement)
+  --update             rewrite the index block to match the live scan
 
 Drift = top-level dirs present in the repo but not indexed (NEW), or indexed but
 no longer in the repo (REMOVED). No network, no build, no secret access.
@@ -79,15 +80,24 @@ def main() -> int:
     print("NEW (in repo, not indexed)    :", new or "none")
     print("REMOVED (indexed, not in repo):", removed or "none")
 
+    drift = bool(new) or bool(removed)
+
     if mode == "--update":
         write_index(live)
         print(">> index block rewritten in docs/03_...md to match the live scan")
         print(">> (PDF untouched; no new file created)")
-    elif mode == "--report":
+        return 0
+    if mode == "--check":
+        if drift:
+            print(">> FAIL: structure drift — run `python tools/structure_sync.py --update`")
+            print("          and commit docs/03_PROJECT_STRUCTURE_BASELINE.md with your change")
+            return 1
+        print(">> OK: structure index is in sync with the repo")
+        return 0
+    if mode == "--report":
         print("(report mode — exit 0; run --update to sync)")
-    else:
-        raise SystemExit("ERROR: unknown mode '%s' (use --report or --update)" % mode)
-    return 0
+        return 0
+    raise SystemExit("ERROR: unknown mode '%s' (use --report / --check / --update)" % mode)
 
 
 if __name__ == "__main__":
