@@ -1,5 +1,73 @@
 # VELORA — Bilingual Checklist (fa/en)
 
+## 0. Non-Negotiable Bilingual Development Rules
+
+> **Scope:** applies to every new feature, route, page, API endpoint, and email template.
+> These are development-time rules, not release-time checks — follow them while writing
+> code, not only before shipping it. Violating any rule below is a defect, not a style
+> preference.
+
+1. **All user-facing text must come from localization catalogs.**
+   `public/locales/fa.json` / `public/locales/en.json` (and their per-feature chunks under
+   `public/locales/chunks/{fa,en}/*.json`) are the only authored source of user-facing copy.
+   No feature may introduce displayed text any other way.
+
+2. **No hardcoded user-facing Persian/English strings** in HTML, JS, PHP, API responses,
+   or email templates. New code must reference a catalog key
+   (`data-i18n` / `data-i18n-content` / `t()` / catalog lookup), never a literal string.
+   Enforced by `tools/localization/check_hardcoded_ui.py` (PR-01 V-3); any narrow, reviewed
+   exception must be allowlisted in `tools/localization/allowlist-hardcoded.json` with a
+   `category`, `reason`, and `resolution_pr` — never silently ignored.
+
+3. **New routes/features must have:**
+   - `fa` coverage and `en` coverage (no locale-only orphan page);
+   - proper route registration in `tools/localization/routes.json`, so the build produces
+     both locale outputs from the **same** canonical template — never two hand-authored
+     page copies;
+   - the localization keys the new UI needs, added to both catalogs before/with the feature,
+     reusing existing keys wherever the copy already exists instead of adding duplicates.
+   Enforced by `tools/localization/route_contract.py` (route/output/locale integrity) and
+   `tools/localization/validate_localization.py` (per-route fa/en output-set comparison).
+
+4. **New API errors must use `messageKey`, not raw translated text.**
+   Follow the existing contract (`ApiException::messageKey()`, e.g.
+   `errors.validation.format`, `auth.emailVerified`): the API returns a stable
+   `code`/`messageKey`/`params` triple; `message` stays a language-neutral fallback for logs.
+   The UI resolves `messageKey` through the catalog — it never renders a hardcoded string
+   from the backend.
+
+5. **New email templates must resolve locale using the existing locale resolution system**
+   (`LocaleManager::resolve()` plus the `users.locale` / `notificationLocale` fallback chain
+   already used by `AuthService`, `PasswordService`, and `NotificationService`). Do not invent
+   a parallel locale-detection path for a new email. Covered by TEST-09
+   (`tools/tests/test_email_localization.php`) and the PR-05 contract
+   (`tools/tests/test_email_locale_resolution.php`).
+
+6. **SEO metadata and structured data must support both locales.** `<title>`, meta
+   description, Open Graph tags, canonical/hreflang links, and any `application/ld+json`
+   block (`headline`, `description`, `mainEntityOfPage`, etc.) must all resolve per-locale
+   through the same build pipeline (`tools/localization/build_localized_static.py`'s
+   `render_html()` / `update_route_seo()`) — never hardcoded in one language. Verified by
+   `validate_localization.py`'s generated-metadata checks.
+
+7. **New features must update or add localization tests when needed.** If a feature adds
+   new catalog keys, a new route, a new email, or new structured data, its PR must show the
+   relevant test(s) passing (or add one) — see `docs/QUALITY_GATE_MATRIX.md` for the current
+   Risk → Test → Gate mapping. Do not ship user-facing copy or a new bilingual surface with
+   zero test coverage.
+
+**Automated enforcement reference:**
+
+| Rule area | Tool |
+|---|---|
+| Hardcoded copy freeze | `tools/localization/check_hardcoded_ui.py` |
+| Frozen/no-new-hashed-key catalog governance | `tools/localization/check_frozen_hash_keys.py` |
+| fa/en output parity, SEO metadata, catalog completeness | `tools/localization/validate_localization.py` |
+| Route/locale-output contract | `tools/localization/route_contract.py` |
+| Email locale resolution | `tools/tests/test_email_localization.php`, `tools/tests/test_email_locale_resolution.php` |
+
+---
+
 > **Purpose:** the human-side governance checklist for the Velora bilingual system.
 > The automated gates catch regressions in CI; this document is the manual surface
 > every release and every new user-facing feature must pass.

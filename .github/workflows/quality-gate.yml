@@ -70,6 +70,9 @@ jobs:
       - name: Python compile check (exit code enforced)
         run: python -m compileall -q tools
 
+      - name: نصب وابستگی‌های قطعی (CSP parser + JSON Schema validator)
+        run: python3 -m pip install --disable-pip-version-check beautifulsoup4==4.15.0 jsonschema==4.26.0
+
       - name: Zero-cost workflow policy guard
         run: python tools/check_github_cost_guard.py
 
@@ -96,6 +99,25 @@ jobs:
 
       - name: Status tooling contract
         run: python tools/tests/test_velora_status.py
+
+      - name: Route contract unit tests
+        run: python -m unittest tools.localization.test_route_contract -v
+
+      - name: Brand policy regression (display-brand exception)
+        run: python3 test_brand_policy.py
+        working-directory: tools/localization
+
+      - name: PR-01 freeze checker self-tests (hardcoded UI + frozen hash)
+        run: python -m tools.localization.test_pr01_freeze
+
+      - name: tools_align shadow-mode unit tests
+        run: python -m unittest tools.localization.test_tools_align -v
+
+      - name: migrate_static canonical-scope unit tests
+        run: python -m unittest tools.localization.test_migrate_static -v
+
+      - name: validate_localization unit tests
+        run: python -m unittest tools.localization.test_validate_localization -v
 
   # ── gate-contract: قراردادهای ایمیل/قالب/لینک/لوکال ──────────────────
   gate-contract:
@@ -135,6 +157,15 @@ jobs:
 
       - name: Welcome email preference gate (TEST-14)
         run: php tools/tests/test_welcome_email_preference.php
+
+      - name: Email locale resolution contract (PR-05)
+        run: php tools/tests/test_email_locale_resolution.php
+
+      - name: User locale preference persistence
+        run: php tools/tests/test_user_locale_preference.php
+
+      - name: Saved-locale preference endpoint contract (PR-04)
+        run: php tools/tests/test_user_locale_preference_endpoint.php
 
   # ── gate-auth: چرخهٔ حیات احراز هویت ────────────────────────────────
   gate-auth:
