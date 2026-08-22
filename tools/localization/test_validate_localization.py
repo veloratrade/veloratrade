@@ -121,6 +121,70 @@ class ScopedLocalizationValidatorTestCase(unittest.TestCase):
             errors,
         )
 
+    def test_seo_json_ld_main_entity_of_page(self) -> None:
+        options = {
+            "relative": "localized/en/blog/example/index.html",
+            "locale": "en",
+            "expected_direction": "ltr",
+            "canonical_url": "/en/blog/example/",
+            "alternate_urls": {
+                "fa": "/fa/blog/example/",
+                "en": "/en/blog/example/",
+            },
+            "fallback_locale": "en",
+        }
+        base = """<!doctype html>
+<html lang="en" dir="ltr" data-velora-prelocalized="en">
+<head>
+<link rel="canonical" href="https://veloratrade.ir/en/blog/example/">
+<meta property="og:url" content="https://veloratrade.ir/en/blog/example/">
+<link rel="alternate" hreflang="fa" href="https://veloratrade.ir/fa/blog/example/">
+<link rel="alternate" hreflang="en" href="https://veloratrade.ir/en/blog/example/">
+<link rel="alternate" hreflang="x-default" href="https://veloratrade.ir/en/blog/example/">
+{json_ld}
+</head><body></body></html>"""
+
+        # Correct mainEntityOfPage matching the locale's canonical URL: no error.
+        valid = base.format(
+            json_ld=(
+                '<script type="application/ld+json">'
+                '{"@context":"https://schema.org","@type":"Article",'
+                '"headline":"Example","mainEntityOfPage":'
+                '"https://veloratrade.ir/en/blog/example/"}</script>'
+            )
+        )
+        self.assertEqual(generated_metadata_errors(valid, **options), [])
+
+        # Wrong mainEntityOfPage (e.g. unlocalized or wrong-locale URL): flagged.
+        invalid = base.format(
+            json_ld=(
+                '<script type="application/ld+json">'
+                '{"@context":"https://schema.org","@type":"Article",'
+                '"headline":"Example","mainEntityOfPage":'
+                '"https://veloratrade.ir/blog/example/"}</script>'
+            )
+        )
+        errors = generated_metadata_errors(invalid, **options)
+        self.assertIn(
+            "localized JSON-LD mainEntityOfPage mismatch: "
+            "localized/en/blog/example/index.html",
+            errors,
+        )
+
+        # JSON-LD without a mainEntityOfPage key must never be flagged.
+        no_key = base.format(
+            json_ld=(
+                '<script type="application/ld+json">'
+                '{"@context":"https://schema.org","@type":"Organization",'
+                '"name":"VELORA"}</script>'
+            )
+        )
+        self.assertEqual(generated_metadata_errors(no_key, **options), [])
+
+        # A page with no JSON-LD at all must never be flagged.
+        no_script = base.format(json_ld="")
+        self.assertEqual(generated_metadata_errors(no_script, **options), [])
+
     def test_csp_linkage_checks(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)

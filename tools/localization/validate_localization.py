@@ -290,6 +290,18 @@ def generated_metadata_errors(
     )
     if hreflangs != expected_hreflangs:
         errors.append(f"localized hreflang mismatch: {relative}")
+
+    for script in soup.find_all("script", attrs={"type": "application/ld+json"}):
+        if not script.string:
+            continue
+        try:
+            data = json.loads(script.string)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(data, dict) or "mainEntityOfPage" not in data:
+            continue
+        if data.get("mainEntityOfPage") != expected_absolute:
+            errors.append(f"localized JSON-LD mainEntityOfPage mismatch: {relative}")
     return errors
 
 
