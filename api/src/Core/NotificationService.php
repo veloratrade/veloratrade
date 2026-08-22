@@ -42,11 +42,17 @@ final class NotificationService
             self::logNotification($userId, $email, $eventType, $subject, false);
             return false;
         }
+        $logoPath = dirname(__DIR__, 3) . '/public/assets/velora-email-logo.png';
+        if (!is_file($logoPath) || !is_readable($logoPath)) {
+            Mailer::$lastError = 'Email logo asset is missing';
+            self::logNotification($userId, $email, $eventType, $subject, false);
+            return false;
+        }
         $sent = Mailer::sendWithInlineImages(
             $email,
             $subject,
             $html,
-            ['velora-' . $iconName => $iconPath],
+            ['velora-logo' => $logoPath, 'velora-' . $iconName => $iconPath],
         );
         self::logNotification($userId, $email, $eventType, $subject, $sent);
         return $sent;

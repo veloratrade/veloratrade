@@ -1,10 +1,10 @@
 {
   "algorithm": "sha256",
-  "commitSha": "4dc5bc9136de9b6aa9747fd8041f0be9fde366b1",
+  "commitSha": "c89e7772ee11815df15c3a9be272418da172cebf",
   "localizationVersion": "2026.08.22.1",
   "policyVersion": 2,
-  "releaseHtmlSha256": "854df7c4fd1c271021f3a01558c7becea5d8b3616cbd07105b8daa87afe6d8af",
-  "releaseId": "2026.08.22.5",
+  "releaseHtmlSha256": "17210d765d988c262fd4b5819adb87e025a6dd30068775160d7733718984f7a8",
+  "releaseId": "2026.08.23.1",
   "routeCount": 61,
   "routeManifestSha256": "77c267b42c509fae6a9f070298df1548d94a669176ed74999d28945504bdc251",
   "routes": {
@@ -840,13 +840,13 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "en/trades/index.html",
-      "htmlSha256": "63ca991ba2578d47d95c3d75f96f9d9e7c165416c045c41dccfa2dffcc79d161",
+      "htmlSha256": "e53cce7599951a44396d78b16af8ea8bab834f82d955a31913356103d84700d2",
       "inlineScriptCount": 4,
       "inlineScriptHashes": [
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
         "sha256-VVSQj8uRcSoK3TViPfAjMxzXKy/AftAJIr3gt3bG4Pg=",
-        "sha256-kLMDAnh3r/7yquE3bkHy6O46uzQDY6RhoszZPrrGUfE=",
-        "sha256-szW3zu54V9uMCIQu+hOzMuU2au9Gi2c3IX2SJa3ee5Y="
+        "sha256-szW3zu54V9uMCIQu+hOzMuU2au9Gi2c3IX2SJa3ee5Y=",
+        "sha256-xKMANSzGJTE9htAjNOahZhFMXH0PacMb3zaxnFufXnY="
       ],
       "inlineStyleCount": 4,
       "inlineStyleHashes": [
@@ -1745,13 +1745,13 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "fa/trades/index.html",
-      "htmlSha256": "08a5ea0f1c5894af1fbf9d307daad2ab1df702f250b8e8d52ccc4de85ff99686",
+      "htmlSha256": "2deca6a141d1ac4f838a29f324a14137fbfb5ce5d649e200faaa72778048df6b",
       "inlineScriptCount": 4,
       "inlineScriptHashes": [
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
         "sha256-VVSQj8uRcSoK3TViPfAjMxzXKy/AftAJIr3gt3bG4Pg=",
-        "sha256-kLMDAnh3r/7yquE3bkHy6O46uzQDY6RhoszZPrrGUfE=",
-        "sha256-szW3zu54V9uMCIQu+hOzMuU2au9Gi2c3IX2SJa3ee5Y="
+        "sha256-szW3zu54V9uMCIQu+hOzMuU2au9Gi2c3IX2SJa3ee5Y=",
+        "sha256-xKMANSzGJTE9htAjNOahZhFMXH0PacMb3zaxnFufXnY="
       ],
       "inlineStyleCount": 4,
       "inlineStyleHashes": [
@@ -1879,5 +1879,5 @@
       ]
     }
   },
-  "sourceDigest": "4fc5c02b3d7af06fd0784fa2479da3ad34bf317149d54289f29f65b14146ec07"
+  "sourceDigest": "789611c63aec7eeb1aefe2517246e32e46db7feec27aa4e99acd1ce7f2f197bd"
 }
