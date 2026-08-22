@@ -412,6 +412,26 @@
     });
   }
 
+  // Robust number normalization for OCR text: faDigits -> resolve decimal/thousands
+  // separators. Fixes the comma/dot corruption (e.g. "1,234.56" stayed "1.234.56").
+  //   "1,234.56" -> 1234.56  |  "1.234,56" -> 1234.56  |  "1,0854" -> 1.0854 (trading default)
+  function normalizeNumber(raw) {
+    var s = faDigits(String(raw == null ? '' : raw)).replace(/\s+/g, '')
+           .replace(/\u066B/g, '.').replace(/\u066C/g, ',') // Arabic decimal/thousands separators
+           .replace(/[^\d.,\-+]/g, '');
+    if (!s) return '';
+    var sign = /^[+-]/.test(s) ? s.charAt(0) : '';
+    s = s.replace(/^[+-]/, '');
+    var hasDot = s.indexOf('.') !== -1, hasComma = s.indexOf(',') !== -1;
+    if (hasDot && hasComma) {
+      if (s.lastIndexOf(',') > s.lastIndexOf('.')) s = s.replace(/\./g, '').replace(',', '.');
+      else s = s.replace(/,/g, '');
+    } else if (hasComma) {
+      s = s.replace(/,/g, '.'); // comma-only -> decimal (MT5/localized trading default)
+    }
+    return sign + s;
+  }
+
   function showNum(value) {
     var text = faDigits(value == null ? '' : value);
     if (!text) return '';
@@ -514,9 +534,15 @@
     text = joinThousands(text);
     text = text.replace(/[→—–‒−]/g, '->');
     var out = {};
+    var NUMERIC_KEYS = { volume: 1, entryPrice: 1, exitPrice: 1, stopLoss: 1, takeProfit: 1, swap: 1, commission: 1, profitLoss: 1 };
     function set(key, value, score) {
       if (value == null || value === '' || value === '-' || out[key]) return;
-      out[key] = { value: String(value).trim(), confidence: score };
+      var v = String(value).trim();
+      if (NUMERIC_KEYS[key]) {
+        v = normalizeNumber(v);
+        if (!isFinite(parseFloat(v))) return; // reject OCR garbage that is not a number
+      }
+      out[key] = { value: v, confidence: score };
     }
     function grab(re, g) {
       var m = text.match(re);
@@ -582,7 +608,30 @@
     if (closeT) set('closeTime', closeT, 80);
 
     fillCardExtras(text, out, set);
+    validateFields(out);
     return out;
+  }
+
+  // Lower confidence on implausible numeric values so the existing "Review needed"
+  // badge warns the user before anything is saved. Values are never silently dropped.
+  function validateFields(out) {
+    function num(key) { return out[key] ? parseFloat(normalizeNumber(out[key].value)) : NaN; }
+    function demote(key) { if (out[key]) out[key].confidence = Math.min(out[key].confidence, 40); }
+    ['entryPrice', 'exitPrice', 'stopLoss', 'takeProfit', 'volume'].forEach(function (k) {
+      var n = num(k);
+      if (out[k] && (!isFinite(n) || n <= 0)) demote(k);
+    });
+    var vol = num('volume');
+    if (isFinite(vol) && vol > 10000) demote('volume');
+    var dir = out.direction && out.direction.value;
+    var entry = num('entryPrice'), sl = num('stopLoss'), tp = num('takeProfit');
+    if (dir === 'buy') {
+      if (isFinite(entry) && isFinite(sl) && sl >= entry) demote('stopLoss');
+      if (isFinite(entry) && isFinite(tp) && tp <= entry) demote('takeProfit');
+    } else if (dir === 'sell') {
+      if (isFinite(entry) && isFinite(sl) && sl <= entry) demote('stopLoss');
+      if (isFinite(entry) && isFinite(tp) && tp >= entry) demote('takeProfit');
+    }
   }
 
   function fillCardExtras(text, out, set) {
