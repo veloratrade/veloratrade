@@ -22,6 +22,9 @@ CREATE TABLE IF NOT EXISTS users (
     full_name     VARCHAR(120)    NOT NULL DEFAULT '',
     role          ENUM('user','admin') NOT NULL DEFAULT 'user',
     timezone      VARCHAR(64)     NOT NULL DEFAULT 'UTC',
+    locale        VARCHAR(35)     NOT NULL DEFAULT 'fa',          -- UI language preference (fa/en) — PR-03
+    locale_source VARCHAR(16)     NOT NULL DEFAULT 'default',     -- default|browser|cookie|user — PR-03
+    locale_updated_at DATETIME    NULL,                           -- last explicit preference write (UTC) — PR-03
     status        ENUM('active','suspended') NOT NULL DEFAULT 'active',
     email_verified_at DATETIME    NULL,                       -- ستون تأیید ایمیل (لینک فعال‌سازی)
     created_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
