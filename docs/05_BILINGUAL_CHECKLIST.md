@@ -171,6 +171,8 @@ Every new user-facing feature must verify, **in the same PR**:
 | PR-01 V-3 — hardcoded UI freeze | `gate-static` | `tools/localization/check_hardcoded_ui.py` |
 | PR-01 V-4 — frozen hash keys | `gate-static` | `tools/localization/check_frozen_hash_keys.py` |
 | PR-01 V-7 — catalog anomaly report (report-only) | `gate-static` | `tools/localization/report_catalog_anomalies.py` |
+| PR-09 — orphan catalog-key report (report-only) | `gate-static` | `tools/localization/report_orphan_catalog_keys.py` |
+| PR-09 — route/E2E coverage contract | `gate-static` | `tools/localization/route_e2e_contract.py` |
 | TEST-09 — email localization fa/en | `gate-contract` | `tools/tests/test_email_localization.php` |
 | CSP guard — manifest ↔ HTML match | `gate-secrets` / `csp-guard.yml` | `tools/localization/build_csp_artifacts.py --check` |
 

@@ -5,145 +5,169 @@
       "template": "index.html",
       "outputs": [
         "index.html"
-      ]
+      ],
+      "e2eCategory": "informational"
     },
     {
       "template": "404.html",
       "outputs": [
         "404.html"
-      ]
+      ],
+      "e2eCategory": "informational"
     },
     {
       "template": "404/index.html",
       "outputs": [
         "404/index.html"
-      ]
+      ],
+      "e2eCategory": "informational"
     },
     {
       "template": "accounts/connect/index.html",
       "outputs": [
         "accounts/connect/index.html"
-      ]
+      ],
+      "e2eCategory": "critical"
     },
     {
       "template": "admin/index.html",
       "outputs": [
         "admin/index.html"
-      ]
+      ],
+      "e2eCategory": "critical"
     },
     {
       "template": "checkout/index.html",
       "outputs": [
         "checkout/index.html"
-      ]
+      ],
+      "e2eCategory": "critical"
     },
     {
       "template": "dashboard/index.html",
       "outputs": [
         "dashboard/index.html"
-      ]
+      ],
+      "e2eCategory": "critical"
     },
     {
       "template": "forgot-password/index.html",
       "outputs": [
         "forgot-password/index.html"
-      ]
+      ],
+      "e2eCategory": "critical"
     },
     {
       "template": "intelligence/index.html",
       "outputs": [
         "intelligence/index.html"
-      ]
+      ],
+      "e2eCategory": "informational"
     },
     {
       "template": "login/index.html",
       "outputs": [
         "login/index.html"
-      ]
+      ],
+      "e2eCategory": "critical"
     },
     {
       "template": "markets/index.html",
       "outputs": [
         "markets/index.html"
-      ]
+      ],
+      "e2eCategory": "informational"
     },
     {
       "template": "news/index.html",
       "outputs": [
         "news/index.html"
-      ]
+      ],
+      "e2eCategory": "informational"
     },
     {
       "template": "performance/index.html",
       "outputs": [
         "performance/index.html"
-      ]
+      ],
+      "e2eCategory": "informational"
     },
     {
       "template": "privacy/index.html",
       "outputs": [
         "privacy/index.html"
-      ]
+      ],
+      "e2eCategory": "informational"
     },
     {
       "template": "profile/index.html",
       "outputs": [
         "profile/index.html"
-      ]
+      ],
+      "e2eCategory": "critical"
     },
     {
       "template": "register/index.html",
       "outputs": [
         "register/index.html"
-      ]
+      ],
+      "e2eCategory": "critical"
     },
     {
       "template": "reset-password/index.html",
       "outputs": [
         "reset-password/index.html"
-      ]
+      ],
+      "e2eCategory": "critical"
     },
     {
       "template": "support/index.html",
       "outputs": [
         "support/index.html"
-      ]
+      ],
+      "e2eCategory": "informational"
     },
     {
       "template": "terms/index.html",
       "outputs": [
         "terms/index.html"
-      ]
+      ],
+      "e2eCategory": "informational"
     },
     {
       "template": "trades/index.html",
       "outputs": [
         "trades/index.html"
-      ]
+      ],
+      "e2eCategory": "critical"
     },
     {
       "template": "trades/new/index.html",
       "outputs": [
         "trades/new/index.html"
-      ]
+      ],
+      "e2eCategory": "critical"
     },
     {
       "template": "verify-email/index.html",
       "outputs": [
         "verify-email/index.html"
-      ]
+      ],
+      "e2eCategory": "critical"
     },
     {
       "template": "wallet/index.html",
       "outputs": [
         "wallet/index.html"
-      ]
+      ],
+      "e2eCategory": "critical"
     },
     {
       "template": "blog/index.html",
       "outputs": [
         "blog/index.html"
-      ]
+      ],
+      "e2eCategory": "informational"
     },
     {
       "template": "blog/what-is-trading-journal/index.html",
@@ -154,13 +178,15 @@
         "en": [
           "blog/what-is-a-trading-journal/index.html"
         ]
-      }
+      },
+      "e2eCategory": "informational"
     },
     {
       "template": "blog/forex-trading-journal/index.html",
       "outputs": [
         "blog/forex-trading-journal/index.html"
-      ]
+      ],
+      "e2eCategory": "informational"
     },
     {
       "template": "blog/why-traders-need-journal/index.html",
@@ -171,7 +197,8 @@
         "en": [
           "blog/why-traders-need-a-journal/index.html"
         ]
-      }
+      },
+      "e2eCategory": "informational"
     },
     {
       "template": "blog/risk-management-trading/index.html",
@@ -182,13 +209,15 @@
         "en": [
           "blog/risk-management-in-trading/index.html"
         ]
-      }
+      },
+      "e2eCategory": "informational"
     },
     {
       "template": "blog/mt4-mt5-trading-journal/index.html",
       "outputs": [
         "blog/mt4-mt5-trading-journal/index.html"
-      ]
+      ],
+      "e2eCategory": "informational"
     }
   ]
 }

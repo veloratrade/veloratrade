@@ -111,6 +111,7 @@
 | P3 | [`01_SECURITY_CHECKLIST.md`](./01_SECURITY_CHECKLIST.md) | ممیزی امنیتی دائمی (۳۹ حوزه) | قبل از هر Release |
 | P4 | [`04_STRUCTURE_COMPLIANCE_CHECKLIST.md`](./04_STRUCTURE_COMPLIANCE_CHECKLIST.md) | راستی‌آزمایی انطباق ساختار | پس از تغییرات ساختاری |
 | P5 | [`05_BILINGUAL_CHECKLIST.md`](./05_BILINGUAL_CHECKLIST.md) | چک‌لیست دوزبانهٔ fa/en — کامل‌بودن، RTL/LTR، کاتالوگ، فیچرهای جدید، SEO | قبل از هر Release و هر فیچر دارای متن کاربری |
+| P6 | [`06_MERGE_REVIEW_POLICY.md`](./06_MERGE_REVIEW_POLICY.md) | توصیه‌نامهٔ بازبینی انسانی پیش از merge (فقط سند — بدون تغییر تنظیمات GitHub) | مرجع پیش از هر تصمیم دربارهٔ required reviewers |
 | — | `pdf/` | نسخ منبع امضاشده با SHA-256 (غیرقابل ویرایش) | مرجع اختلاف |
 
 > **قرارداد بستهٔ انتشار (Release Package Contract) — از `Structure.pdf` §6:**
