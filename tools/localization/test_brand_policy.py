@@ -20,10 +20,10 @@ assert default_token(POLICY) == "VELORA"
 assert message_token(POLICY, "fa", next(iter(FA_KEYS))) == "ولورا"
 assert message_token(POLICY, "en", next(iter(FA_KEYS))) == "VELORA"
 assert message_token(POLICY, "fa", "common.velora.2e043621") == "VELORA"
-assert not invalid_display_brand("© ۲۰۲۶ ولورا.", "ولورا")
-assert invalid_display_brand("© ۲۰۲۶ VELORA.", "ولورا")
-assert invalid_display_brand("نام ولورا", "VELORA")
-assert not invalid_display_brand("نام VELORA", "VELORA")
+assert not invalid_display_brand("© ۲۰۲۶ ولورا.", POLICY, "ولورا")
+assert invalid_display_brand("© ۲۰۲۶ VELORA.", POLICY, "ولورا")
+assert invalid_display_brand("نام ولورا", POLICY, "VELORA")
+assert not invalid_display_brand("نام VELORA", POLICY, "VELORA")
 
 for locale in ("fa", "en"):
     messages = json.loads((ROOT / f"public/locales/{locale}.json").read_text(encoding="utf-8"))["messages"]
