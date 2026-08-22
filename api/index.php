@@ -68,6 +68,9 @@ $router->post('/api/v1/auth/change-password', [AuthController::class, 'changePas
 $router->get('/api/v1/auth/email-preferences', [AuthController::class, 'getEmailPreferences'], $auth);
 $router->put('/api/v1/auth/email-preferences', [AuthController::class, 'updateEmailPreferences'], $auth);
 
+// PR-04: persist the signed-in user's language preference (users.locale).
+$router->add('PATCH', '/api/v1/auth/me/preferences', [AuthController::class, 'updatePreferences'], $auth);
+
 $router->get('/api/v1/trades', [TradeController::class, 'index'], $auth);
 $router->post('/api/v1/trades', [TradeController::class, 'store'], $auth);
 $router->get('/api/v1/trades/symbols', [TradeController::class, 'symbols'], $auth);
