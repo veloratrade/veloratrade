@@ -51,18 +51,24 @@ final class PasswordService
         // باطل‌کردن همه نشست‌های قبلی (امنیت)
         (new SessionRepository())->revokeAllForUser((int) $user['id']);
 
-        // ارسال ایمیل تغییر موفق رمز عبور
+        // ارسال ایمیل تغییر موفق رمز عبور — زبان از ترجیح ذخیره‌شدهٔ کاربر (users.locale)
+        // گرفته می‌شود و notificationLocale فقط fallback است.
+        $emailLocale = NotificationService::resolveEmailLocale(
+            $user['locale'] ?? null,
+            trim((string) ($data['notificationLocale'] ?? '')) ?: null,
+        );
         NotificationService::sendPasswordChangedEmail(
             $user['email'],
             $user['full_name'] ?: $user['email'],
-            (int) $user['id']
+            (int) $user['id'],
+            $emailLocale,
         );
     }
 
     /**
      * فراموشی رمز: ساخت توکن و ارسال لینک به ایمیل.
      */
-    public function forgotPassword(string $email): void
+    public function forgotPassword(string $email, ?string $notificationLocale = null): void
     {
         $user = $this->users->findByEmail(mb_strtolower(trim($email)));
         if ($user === null) {
@@ -99,7 +105,8 @@ final class PasswordService
             $user['email'],
             $user['full_name'] ?: $user['email'],
             $resetUrl,
-            $userId
+            $userId,
+            NotificationService::resolveEmailLocale($user['locale'] ?? null, $notificationLocale),
         );
     }
 
@@ -144,11 +151,17 @@ final class PasswordService
         // خروج از همه نشست‌ها
         (new SessionRepository())->revokeAllForUser((int) $reset['user_id']);
 
-        // ارسال ایمیل موفقیت بازنشانی رمز عبور
+        // ارسال ایمیل موفقیت بازنشانی رمز عبور — زبان از ترجیح ذخیره‌شدهٔ کاربر
+        // گرفته می‌شود و notificationLocale فقط fallback است.
+        $emailLocale = NotificationService::resolveEmailLocale(
+            $user['locale'] ?? null,
+            trim((string) ($data['notificationLocale'] ?? '')) ?: null,
+        );
         NotificationService::sendPasswordChangedEmail(
             $user['email'],
             $user['full_name'] ?: $user['email'],
-            (int) $reset['user_id']
+            (int) $reset['user_id'],
+            $emailLocale,
         );
     }
 

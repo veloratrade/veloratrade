@@ -7,6 +7,11 @@ namespace Velora\Core;
 /**
  * سرویس جامع ارسال اعلان‌ها و ایمیل‌های VELORA.
  * طراحی‌شده به‌صورت کاملاً سبک، خوانا و سریع بدون هیچ‌گونه تصویر یا لوگوی خارجی در ایمیل‌ها (مناسب برای تمامی کلاینت‌ها).
+ *
+ * PR-05: تمام ایمیل‌های تراکنشی از catalog موجود (public/locales/{fa,en}.json)
+ * محلی‌سازی می‌شوند. منبع اولیهٔ زبان، ترجیح ذخیره‌شدهٔ کاربر (users.locale) است؛
+ * notificationLocale فقط به‌عنوان fallback برای مسیرهای بدون کاربرِ ذخیره‌شده
+ * (ثبت‌نام تازه یا مسیرهای ضد-enumeration) به‌کار می‌رود.
  */
 final class NotificationService
 {
@@ -48,13 +53,32 @@ final class NotificationService
     }
 
     /**
-     * استخراج نام تمیز کاربر؛ در صورتی که نام خالی باشد یا همان آدرس ایمیل باشد، عبارت «کاربر گرامی» برمی‌گردد.
+     * PR-05: حل زبان ایمیل. ترجیح ذخیره‌شدهٔ کاربر (users.locale) منبع اولیه است و
+     * hint درخواست (notificationLocale) فقط وقتی استفاده می‌شود که کاربرِ ذخیره‌شده
+     * در دسترس نباشد. اگر هیچ‌کدام قابل استفاده نباشند null برمی‌گردد تا فراخواننده
+     * به پیش‌فرض manifest (LocaleManager::getLanguage) بیفتد.
      */
-    private static function formatName(string $fullName, string $email): string
+    public static function resolveEmailLocale(?string $savedLocale, ?string $clientLocale): ?string
+    {
+        $i18n = \Velora\Core\Locale\LocaleManager::getInstance();
+        foreach ([$savedLocale, $clientLocale] as $candidate) {
+            $candidate = trim((string) $candidate);
+            if ($candidate !== '' && $i18n->supports($candidate)) {
+                return $i18n->resolve($candidate);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * استخراج نام تمیز کاربر؛ اگر نام خالی باشد یا همان آدرس ایمیل باشد، از عنوان
+     * محلی‌سازی‌شدهٔ «دریافت‌کننده» (email.common.recipient) استفاده می‌شود.
+     */
+    private static function formatName(string $fullName, string $email, string $locale): string
     {
         $name = trim($fullName);
         if ($name === '' || mb_strtolower($name) === mb_strtolower(trim($email))) {
-            return 'کاربر گرامی';
+            return \Velora\Core\Locale\LocaleManager::getInstance()->translateFor($locale, 'email.common.recipient');
         }
         return $name;
     }
@@ -64,14 +88,12 @@ final class NotificationService
      */
     public static function sendVerificationEmail(string $email, string $fullName, string $verifyUrl, ?int $userId = null, ?string $notificationLocale = null): bool
     {
-        $nameSafe = htmlspecialchars(self::formatName($fullName, $email), ENT_QUOTES, 'UTF-8');
-        $emailSafe = htmlspecialchars($email, ENT_QUOTES, 'UTF-8');
-
-        // BUG-A6: متن ایمیل از catalog محلی‌سازی و بر اساس locale کاربر ساخته می‌شود
-        // (ترجمهٔ موجود استفاده می‌شود؛ هیچ ترجمهٔ جدیدی تکرار/اختراع نمی‌شود).
         $i18n = \Velora\Core\Locale\LocaleManager::getInstance();
         $lang = $notificationLocale ?? $i18n->getLanguage();
         $t = static fn (string $key, array $params = []): string => $i18n->translateFor($lang, $key, $params);
+
+        $nameSafe = htmlspecialchars(self::formatName($fullName, $email, $lang), ENT_QUOTES, 'UTF-8');
+        $emailSafe = htmlspecialchars($email, ENT_QUOTES, 'UTF-8');
 
         $subject = $t('email.verification.subject');
 
@@ -99,7 +121,7 @@ final class NotificationService
     /**
      * ۲. ایمیل خوش‌آمدگویی (حاوی باکس اختصاصی ایمیل کاربر)
      */
-    public static function sendWelcomeEmail(string $email, string $fullName, string $dashboardUrl, ?int $userId = null): bool
+    public static function sendWelcomeEmail(string $email, string $fullName, string $dashboardUrl, ?int $userId = null, ?string $notificationLocale = null): bool
     {
         // BUG-A8: ایمیل خوش‌آمدگویی (غیرامنیتی) به ترجیح اعلان کاربر احترام می‌گذارد.
         // سیاست پیش‌فرض: در نبود رکورد ترجیح، ارسال مجاز است (رفتار فعلی repository).
@@ -107,26 +129,30 @@ final class NotificationService
             return false;
         }
 
-        $nameSafe = htmlspecialchars(self::formatName($fullName, $email), ENT_QUOTES, 'UTF-8');
+        $i18n = \Velora\Core\Locale\LocaleManager::getInstance();
+        $lang = $notificationLocale ?? $i18n->getLanguage();
+        $t = static fn (string $key, array $params = []): string => $i18n->translateFor($lang, $key, $params);
+
+        $nameSafe = htmlspecialchars(self::formatName($fullName, $email, $lang), ENT_QUOTES, 'UTF-8');
         $emailSafe = htmlspecialchars($email, ENT_QUOTES, 'UTF-8');
-        $subject = 'VELORA TRADE | Welcome (خوش‌آمدید)';
+        $subject = $t('email.welcome.subject');
 
         $html = EmailTemplate::render(
-            'حساب شما آماده است',
-            'به VELORA TRADE خوش آمدید',
-            '<p style="margin:0 0 14px;color:#ffffff;font-size:16px;font-weight:bold;">سلام ' . $nameSafe . '،</p>' .
-            '<p style="margin:0 0 14px;color:#f3f4f6;">حساب کاربری شما با ایمیل زیر با موفقیت فعال شد:</p>' .
+            $t('email.welcome.badge'),
+            $t('email.welcome.title'),
+            '<p style="margin:0 0 14px;color:#ffffff;font-size:16px;font-weight:bold;">' . $t('email.common.greeting', ['name' => $nameSafe]) . '</p>' .
+            '<p style="margin:0 0 14px;color:#f3f4f6;">' . $t('email.welcome.intro') . '</p>' .
             '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0;background:#141f32;border:1px solid #d4af37;border-radius:10px;box-shadow:0 4px 15px rgba(212,175,55,0.18);">' .
             '<tr><td align="center" style="padding:14px 20px;font-family:Tahoma,Arial,sans-serif;font-size:16px;font-weight:bold;color:#d4af37;letter-spacing:0.5px;direction:ltr;">' . $emailSafe . '</td></tr>' .
             '</table>' .
-            '<p style="margin:0 0 14px;color:#f3f4f6;">اکنون آماده ثبت معاملات، مدیریت ریسک و تحلیل حرفه‌ای عملکرد خود در پلتفرم VELORA TRADE هستید.</p>',
-            'ورود به داشبورد',
+            '<p style="margin:0 0 14px;color:#f3f4f6;">' . $t('email.welcome.after') . '</p>',
+            $t('email.welcome.cta'),
             $dashboardUrl,
-            'شروع مسیر حرفه‌ای معامله‌گری شما از همین‌جا است.',
-            'TRADE · SMART ANALYTICS PLATFORM',
-            null,
+            $t('email.welcome.notice'),
+            $t('email.common.subtitleAnalytics'),
+            $notificationLocale,
             'welcome',
-            'خوش‌آمدگویی'
+            $t('email.welcome.badge')
         );
 
         return self::sendWithIcon($email, $subject, $html, 'welcome', 'WELCOME_EMAIL', $userId);
@@ -135,28 +161,32 @@ final class NotificationService
     /**
      * ۳. ایمیل لینک بازیابی رمز عبور (Forgot Password)
      */
-    public static function sendPasswordResetTokenEmail(string $email, string $fullName, string $resetUrl, ?int $userId = null): bool
+    public static function sendPasswordResetTokenEmail(string $email, string $fullName, string $resetUrl, ?int $userId = null, ?string $notificationLocale = null): bool
     {
-        $nameSafe = htmlspecialchars(self::formatName($fullName, $email), ENT_QUOTES, 'UTF-8');
+        $i18n = \Velora\Core\Locale\LocaleManager::getInstance();
+        $lang = $notificationLocale ?? $i18n->getLanguage();
+        $t = static fn (string $key, array $params = []): string => $i18n->translateFor($lang, $key, $params);
+
+        $nameSafe = htmlspecialchars(self::formatName($fullName, $email, $lang), ENT_QUOTES, 'UTF-8');
         $emailSafe = htmlspecialchars($email, ENT_QUOTES, 'UTF-8');
-        $subject = 'VELORA TRADE | Password reset';
+        $subject = $t('email.passwordReset.subject');
 
         $html = EmailTemplate::render(
-            'بازیابی رمز عبور',
-            'تغییر رمز عبور VELORA',
-            '<p style="margin:0 0 14px;color:#ffffff;font-size:16px;font-weight:bold;">سلام ' . $nameSafe . '،</p>' .
-            '<p style="margin:0 0 14px;color:#f3f4f6;">درخواست بازیابی رمز عبور برای حساب کاربری زیر دریافت شد:</p>' .
+            $t('email.passwordReset.badge'),
+            $t('email.passwordReset.title'),
+            '<p style="margin:0 0 14px;color:#ffffff;font-size:16px;font-weight:bold;">' . $t('email.common.greeting', ['name' => $nameSafe]) . '</p>' .
+            '<p style="margin:0 0 14px;color:#f3f4f6;">' . $t('email.passwordReset.intro') . '</p>' .
             '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0;background:#141f32;border:1px solid #d4af37;border-radius:10px;box-shadow:0 4px 15px rgba(212,175,55,0.15);">' .
             '<tr><td align="center" style="padding:14px 20px;font-family:Tahoma,Arial,sans-serif;font-size:16px;font-weight:bold;color:#d4af37;letter-spacing:0.5px;direction:ltr;">' . $emailSafe . '</td></tr>' .
             '</table>' .
-            '<p style="margin:0 0 14px;color:#f3f4f6;">برای انتخاب رمز عبور جدید و ورود به حساب، روی دکمه زیر کلیک کنید:</p>',
-            'تغییر رمز عبور',
+            '<p style="margin:0 0 14px;color:#f3f4f6;">' . $t('email.passwordReset.after') . '</p>',
+            $t('email.passwordReset.cta'),
             $resetUrl,
-            'این لینک تا یک ساعت معتبر است. اگر این درخواست را شما ثبت نکرده‌اید، این ایمیل را نادیده بگیرید.',
-            'TRADE · ACCOUNT SECURITY',
-            null,
+            $t('email.passwordReset.notice'),
+            $t('email.common.subtitleSecurity'),
+            $notificationLocale,
             'password-reset',
-            'بازیابی رمز عبور'
+            $t('email.passwordReset.badge')
         );
 
         return self::sendWithIcon($email, $subject, $html, 'password-reset', 'PASSWORD_RESET_LINK', $userId);
@@ -165,28 +195,32 @@ final class NotificationService
     /**
      * ۴. ایمیل تغییر موفق رمز عبور (Password Changed Success)
      */
-    public static function sendPasswordChangedEmail(string $email, string $fullName, ?int $userId = null): bool
+    public static function sendPasswordChangedEmail(string $email, string $fullName, ?int $userId = null, ?string $notificationLocale = null): bool
     {
-        $nameSafe = htmlspecialchars(self::formatName($fullName, $email), ENT_QUOTES, 'UTF-8');
+        $i18n = \Velora\Core\Locale\LocaleManager::getInstance();
+        $lang = $notificationLocale ?? $i18n->getLanguage();
+        $t = static fn (string $key, array $params = []): string => $i18n->translateFor($lang, $key, $params);
+
+        $nameSafe = htmlspecialchars(self::formatName($fullName, $email, $lang), ENT_QUOTES, 'UTF-8');
         $emailSafe = htmlspecialchars($email, ENT_QUOTES, 'UTF-8');
-        $subject = 'تغییر رمز عبور | VELORA TRADE';
+        $subject = $t('email.passwordChanged.subject');
 
         $html = EmailTemplate::render(
-            'امنیت حساب',
-            'رمز عبور شما تغییر کرد',
-            '<p style="margin:0 0 14px;color:#ffffff;font-size:16px;font-weight:bold;">سلام ' . $nameSafe . '،</p>' .
-            '<p style="margin:0 0 14px;color:#f3f4f6;">رمز عبور حساب کاربری زیر با موفقیت تغییر یافت:</p>' .
+            $t('email.passwordChanged.badge'),
+            $t('email.passwordChanged.title'),
+            '<p style="margin:0 0 14px;color:#ffffff;font-size:16px;font-weight:bold;">' . $t('email.common.greeting', ['name' => $nameSafe]) . '</p>' .
+            '<p style="margin:0 0 14px;color:#f3f4f6;">' . $t('email.passwordChanged.intro') . '</p>' .
             '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0;background:#141f32;border:1px solid #10b981;border-radius:10px;box-shadow:0 4px 15px rgba(16,185,129,0.15);">' .
             '<tr><td align="center" style="padding:14px 20px;font-family:Tahoma,Arial,sans-serif;font-size:16px;font-weight:bold;color:#10b981;letter-spacing:0.5px;direction:ltr;">' . $emailSafe . '</td></tr>' .
             '</table>' .
-            '<p style="margin:0 0 14px;color:#f3f4f6;">اگر این تغییر توسط شما انجام نشده است، لطفاً فوراً با تیم پشتیبانی تماس بگیرید و رمز عبور خود را بازنشانی کنید.</p>',
+            '<p style="margin:0 0 14px;color:#f3f4f6;">' . $t('email.passwordChanged.after') . '</p>',
             null,
             null,
-            'در جهت حفظ حداکثر امنیت حساب کاربری، تمامی نشست‌های فعال قبلی شما باطل شد.',
-            'TRADE · ACCOUNT SECURITY',
-            null,
+            $t('email.passwordChanged.notice'),
+            $t('email.common.subtitleSecurity'),
+            $notificationLocale,
             'password-changed',
-            'تغییر رمز عبور'
+            $t('email.passwordChanged.badge')
         );
 
         return self::sendWithIcon($email, $subject, $html, 'password-changed', 'PASSWORD_CHANGED', $userId);
@@ -201,39 +235,44 @@ final class NotificationService
         string $ip,
         string $userAgent,
         string $time,
-        ?int $userId = null
+        ?int $userId = null,
+        ?string $notificationLocale = null
     ): bool {
         if ($userId !== null && !(new EmailPreferenceRepository())->canSend($userId, 'security')) {
             return false;
         }
 
-        $nameSafe = htmlspecialchars(self::formatName($fullName, $email), ENT_QUOTES, 'UTF-8');
+        $i18n = \Velora\Core\Locale\LocaleManager::getInstance();
+        $lang = $notificationLocale ?? $i18n->getLanguage();
+        $t = static fn (string $key, array $params = []): string => $i18n->translateFor($lang, $key, $params);
+
+        $nameSafe = htmlspecialchars(self::formatName($fullName, $email, $lang), ENT_QUOTES, 'UTF-8');
         $ipSafe = htmlspecialchars($ip !== '' ? $ip : '0.0.0.0', ENT_QUOTES, 'UTF-8');
-        $uaSafe = htmlspecialchars($userAgent !== '' ? $userAgent : 'دستگاه ناشناخته', ENT_QUOTES, 'UTF-8');
+        $uaSafe = htmlspecialchars($userAgent !== '' ? $userAgent : $t('email.common.unknownDevice'), ENT_QUOTES, 'UTF-8');
         $timeSafe = htmlspecialchars($time, ENT_QUOTES, 'UTF-8');
 
-        $subject = 'هشدار ورود جدید | VELORA TRADE';
+        $subject = $t('email.newDevice.subject');
         $profileUrl = rtrim((string) Config::get('frontend_url', 'https://veloratrade.ir'), '/') . '/profile';
 
         $html = EmailTemplate::render(
-            'هشدار ورود جدید',
-            'ورود از دستگاه جدید',
-            '<p style="margin:0 0 14px;color:#ffffff;font-size:16px;font-weight:bold;">سلام ' . $nameSafe . '،</p>' .
-            '<p style="margin:0 0 14px;color:#f3f4f6;">یک ورود جدید به حساب کاربری شما در VELORA TRADE شناسایی شد:</p>' .
+            $t('email.newDevice.badge'),
+            $t('email.newDevice.title'),
+            '<p style="margin:0 0 14px;color:#ffffff;font-size:16px;font-weight:bold;">' . $t('email.common.greeting', ['name' => $nameSafe]) . '</p>' .
+            '<p style="margin:0 0 14px;color:#f3f4f6;">' . $t('email.newDevice.intro') . '</p>' .
             '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0;background:#141f32;border-radius:10px;border:1px solid #d4af37;box-shadow:0 4px 15px rgba(212,175,55,0.15);">' .
             '<tr><td style="padding:16px 20px;color:#e2e8f0;font-size:14px;line-height:2.2;">' .
-            '<strong style="color:#d4af37;">آی‌پی (IP):</strong> <span style="color:#ffffff;font-weight:bold;direction:ltr;display:inline-block;">' . $ipSafe . '</span><br>' .
-            '<strong style="color:#d4af37;">دستگاه / مرورگر:</strong> <span style="color:#ffffff;">' . $uaSafe . '</span><br>' .
-            '<strong style="color:#d4af37;">زمان ورود:</strong> <span style="color:#ffffff;direction:ltr;display:inline-block;">' . $timeSafe . '</span>' .
+            '<strong style="color:#d4af37;">' . $t('email.newDevice.ip') . ':</strong> <span style="color:#ffffff;font-weight:bold;direction:ltr;display:inline-block;">' . $ipSafe . '</span><br>' .
+            '<strong style="color:#d4af37;">' . $t('email.newDevice.device') . ':</strong> <span style="color:#ffffff;">' . $uaSafe . '</span><br>' .
+            '<strong style="color:#d4af37;">' . $t('email.newDevice.time') . ':</strong> <span style="color:#ffffff;direction:ltr;display:inline-block;">' . $timeSafe . '</span>' .
             '</td></tr></table>' .
-            '<p style="margin:0 0 14px;color:#f3f4f6;">اگر این ورود توسط شما انجام شده است، نیازی به هیچ اقدامی نیست.</p>',
-            'بررسی امنیت حساب',
+            '<p style="margin:0 0 14px;color:#f3f4f6;">' . $t('email.newDevice.after') . '</p>',
+            $t('email.newDevice.cta'),
             $profileUrl,
-            'اگر شما وارد نشده‌اید، لطفاً فوراً رمز عبور خود را تغییر داده و نشست‌های فعال را لغو کنید.',
-            'TRADE · ACCOUNT SECURITY',
-            null,
+            $t('email.newDevice.notice'),
+            $t('email.common.subtitleSecurity'),
+            $notificationLocale,
             'security',
-            'هشدار امنیتی'
+            $t('email.newDevice.badge')
         );
 
         return self::sendWithIcon($email, $subject, $html, 'security', 'NEW_DEVICE_DETECTED', $userId);
@@ -248,36 +287,41 @@ final class NotificationService
         string $symbol,
         string $direction,
         string $dashboardUrl,
-        ?int $userId = null
+        ?int $userId = null,
+        ?string $notificationLocale = null
     ): bool {
         if ($userId !== null && !(new EmailPreferenceRepository())->canSend($userId, 'trades')) {
             return false;
         }
 
-        $nameSafe = htmlspecialchars(self::formatName($fullName, $email), ENT_QUOTES, 'UTF-8');
-        $symbolSafe = htmlspecialchars($symbol, ENT_QUOTES, 'UTF-8');
-        $dirLabel = strtolower($direction) === 'buy' ? 'خرید (BUY)' : 'فروش (SELL)';
+        $i18n = \Velora\Core\Locale\LocaleManager::getInstance();
+        $lang = $notificationLocale ?? $i18n->getLanguage();
+        $t = static fn (string $key, array $params = []): string => $i18n->translateFor($lang, $key, $params);
 
-        $subject = 'اولین معامله | VELORA TRADE';
+        $nameSafe = htmlspecialchars(self::formatName($fullName, $email, $lang), ENT_QUOTES, 'UTF-8');
+        $symbolSafe = htmlspecialchars($symbol, ENT_QUOTES, 'UTF-8');
+        $dirLabel = strtolower($direction) === 'buy' ? $t('email.firstTrade.buy') : $t('email.firstTrade.sell');
+
+        $subject = $t('email.firstTrade.subject');
 
         $html = EmailTemplate::render(
-            'ثبت اولین معامله',
-            'اولین معامله شما در VELORA ثبت شد',
-            '<p style="margin:0 0 14px;color:#ffffff;font-size:16px;font-weight:bold;">سلام ' . $nameSafe . '،</p>' .
-            '<p style="margin:0 0 14px;color:#f3f4f6;">تبریک می‌گوییم! اولین معامله شما با موفقیت در ژورنال معاملاتی VELORA ثبت شد:</p>' .
+            $t('email.firstTrade.badge'),
+            $t('email.firstTrade.title'),
+            '<p style="margin:0 0 14px;color:#ffffff;font-size:16px;font-weight:bold;">' . $t('email.common.greeting', ['name' => $nameSafe]) . '</p>' .
+            '<p style="margin:0 0 14px;color:#f3f4f6;">' . $t('email.firstTrade.intro') . '</p>' .
             '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0;background:#141f32;border-radius:10px;border:1px solid #d4af37;box-shadow:0 4px 15px rgba(212,175,55,0.15);">' .
             '<tr><td style="padding:16px 20px;color:#e2e8f0;font-size:14px;line-height:2.2;text-align:center;">' .
             '<div style="font-size:18px;font-weight:bold;color:#d4af37;margin-bottom:8px;">' . $symbolSafe . ' &nbsp;•&nbsp; ' . $dirLabel . '</div>' .
-            '<div style="color:#ffffff;font-size:13px;">وضعیت: ثبت موفق در ژورنال معاملاتی</div>' .
+            '<div style="color:#ffffff;font-size:13px;">' . $t('email.firstTrade.status') . '</div>' .
             '</td></tr></table>' .
-            '<p style="margin:0 0 14px;color:#f3f4f6;">ثبت دقیق و منظم معاملات، اولین قدم در تحلیل حرفه‌ای عملکرد، بهبود مستمر استراتژی‌ها و کاهش ریسک معاملاتی است.</p>',
-            'مشاهده تحلیل عملکرد',
+            '<p style="margin:0 0 14px;color:#f3f4f6;">' . $t('email.firstTrade.after') . '</p>',
+            $t('email.firstTrade.cta'),
             $dashboardUrl,
-            'برای دریافت دقیق‌ترین شاخص‌ها و آمار معاملاتی، تمامی معاملات سودده و زیان‌ده خود را ثبت کنید.',
-            'TRADE · SMART ANALYTICS PLATFORM',
-            null,
+            $t('email.firstTrade.notice'),
+            $t('email.common.subtitleAnalytics'),
+            $notificationLocale,
             'first-trade',
-            'اولین معامله'
+            $t('email.firstTrade.badge')
         );
 
         return self::sendWithIcon($email, $subject, $html, 'first-trade', 'FIRST_TRADE_RECORDED', $userId);
@@ -299,30 +343,34 @@ final class NotificationService
             return false;
         }
 
-        $nameSafe = htmlspecialchars(self::formatName($fullName, $email), ENT_QUOTES, 'UTF-8');
+        $i18n = \Velora\Core\Locale\LocaleManager::getInstance();
+        $lang = $notificationLocale ?? $i18n->getLanguage();
+        $t = static fn (string $key, array $params = []): string => $i18n->translateFor($lang, $key, $params);
+
+        $nameSafe = htmlspecialchars(self::formatName($fullName, $email, $lang), ENT_QUOTES, 'UTF-8');
         $titleSafe = htmlspecialchars(self::localizeCopy($achievementTitle, $notificationLocale, 'email.achievement.title'), ENT_QUOTES, 'UTF-8');
         $descSafe = htmlspecialchars(self::localizeCopy($achievementDesc, $notificationLocale, 'email.achievement.notice'), ENT_QUOTES, 'UTF-8');
 
-        $subject = 'دستاورد جدید | VELORA TRADE';
+        $subject = $t('email.achievement.subject');
 
         $html = EmailTemplate::render(
-            'دستاورد جدید',
-            'دستاورد جدید باز شد!',
-            '<p style="margin:0 0 14px;color:#ffffff;font-size:16px;font-weight:bold;">سلام ' . $nameSafe . '،</p>' .
-            '<p style="margin:0 0 14px;color:#f3f4f6;">شما یک دستاورد جدید در مسیر حرفه‌ای معامله‌گری خود در پلتفرم VELORA TRADE کسب کردید:</p>' .
+            $t('email.achievement.badge'),
+            $t('email.achievement.title'),
+            '<p style="margin:0 0 14px;color:#ffffff;font-size:16px;font-weight:bold;">' . $t('email.common.greeting', ['name' => $nameSafe]) . '</p>' .
+            '<p style="margin:0 0 14px;color:#f3f4f6;">' . $t('email.achievement.intro') . '</p>' .
             '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0;background:#141f32;border-radius:10px;border:1px solid #d4af37;box-shadow:0 4px 15px rgba(212,175,55,0.18);">' .
             '<tr><td style="padding:18px 20px;text-align:center;">' .
             '<div style="font-size:18px;font-weight:bold;color:#d4af37;margin-bottom:8px;">' . $titleSafe . '</div>' .
             '<div style="color:#ffffff;font-size:14px;line-height:1.9;">' . $descSafe . '</div>' .
             '</td></tr></table>' .
-            '<p style="margin:0 0 14px;color:#f3f4f6;">با ادامه ثبت معاملات و بهبود شاخص‌های معاملاتی، دستاوردهای بیشتری را در پنل کاربری خود آزاد کنید.</p>',
-            'مشاهده دستاوردها',
+            '<p style="margin:0 0 14px;color:#f3f4f6;">' . $t('email.achievement.after') . '</p>',
+            $t('email.achievement.cta'),
             $profileUrl,
-            'دستاوردهای شما نشان‌دهنده میزان انضباط، استمرار و رشد مهارت معاملاتی شما در VELORA است.',
-            'TRADE · SMART ANALYTICS PLATFORM',
+            $t('email.achievement.notice'),
+            $t('email.common.subtitleAnalytics'),
             $notificationLocale,
             'achievement',
-            'دستاورد جدید'
+            $t('email.achievement.badge')
         );
 
         return self::sendWithIcon($email, $subject, $html, 'achievement', 'ACHIEVEMENT_UNLOCKED', $userId);
