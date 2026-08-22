@@ -144,6 +144,11 @@ def update_route_seo(
         default_alternate["href"] = "https://veloratrade.ir" + alternate_urls[fallback_locale]
         soup.head.append(default_alternate)
 
+    og_title = soup.find("meta", attrs={"property": "og:title"})
+    og_description = soup.find("meta", attrs={"property": "og:description"})
+    localized_headline = og_title.get("content") if og_title else None
+    localized_description = og_description.get("content") if og_description else None
+
     for script in soup.find_all("script", attrs={"type": "application/ld+json"}):
         if not script.string:
             continue
@@ -151,8 +156,27 @@ def update_route_seo(
             data = json.loads(script.string)
         except json.JSONDecodeError:
             continue
-        if isinstance(data, dict) and "url" in data:
+        if not isinstance(data, dict):
+            continue
+        changed = False
+        if "url" in data:
             data["url"] = absolute
+            changed = True
+        if "mainEntityOfPage" in data:
+            data["mainEntityOfPage"] = absolute
+            changed = True
+        # Structured-data headline/description must track the page's own
+        # locale. og:title/og:description are already localized at this
+        # point (render_html applies data-i18n substitution before calling
+        # update_route_seo), so they are the single source of truth here —
+        # no separate catalog key is introduced.
+        if "headline" in data and localized_headline:
+            data["headline"] = localized_headline
+            changed = True
+        if "description" in data and localized_description:
+            data["description"] = localized_description
+            changed = True
+        if changed:
             script.string = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
 
 
