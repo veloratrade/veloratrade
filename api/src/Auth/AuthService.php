@@ -398,6 +398,7 @@ final class AuthService
             'fullName' => $user['full_name'],
             'role' => $user['role'],
             'timezone' => $user['timezone'],
+            'locale' => $user['locale'] ?? 'fa',
             'createdAt' => $user['created_at'],
         ];
     }
