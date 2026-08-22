@@ -66,18 +66,26 @@ class VeloraStatusContractTest(unittest.TestCase):
         self.assertIn("هیچ درخواست شبکه‌ای انجام نمی‌شود", result.stdout)
 
     def test_workspace_footprint_guard_is_wired(self) -> None:
-        """AGENTS.md §13.1 guard: non-sparse bulky checkouts must be detectable.
+        """AGENTS.md §13.1 / OC-13 guard.
 
-        The guard must exist in the script, use the canonical violation id,
-        increment context_errors (so --check turns red), and stay silent in CI
-        where a full checkout is legitimate.
+        Full/deep clones and credential leaks must be detectable INDEPENDENTLY of
+        the sparse flag (you cannot satisfy the guard by sparse-checking a full
+        clone). A HARD violation must still increment context_errors (so --check
+        turns red) AND suppress the VELORA-RUN proof code. The guard stays silent
+        in CI where a full checkout is legitimate.
         """
         source = SCRIPT.read_text(encoding="utf-8")
-        self.assertIn("WORKSPACE-FOOTPRINT-VIOLATION", source)
+        # HARD violations — canonical ids, independent of the sparse flag
+        self.assertIn("FULL-CLONE-VIOLATION", source)
+        self.assertIn("CREDENTIAL-IN-CONFIG", source)
         self.assertIn("core.sparseCheckout", source)
         self.assertIn("GITHUB_ACTIONS", source)
-        guard_block = source.split("WORKSPACE-FOOTPRINT-VIOLATION")[1]
+        # a HARD violation still increments context_errors → --check turns red
+        guard_block = source.split("FULL-CLONE-VIOLATION")[1]
         self.assertIn("context_errors", guard_block)
+        # proof code is gated on a clean self-check (cannot be printed in violation)
+        self.assertIn("_fp_hard", source)
+        self.assertIn("VELORA-RUN suppressed", source)
 
     def test_context_artifacts_are_generated_and_ignored(self) -> None:
         result = run("--context", "--offline")
