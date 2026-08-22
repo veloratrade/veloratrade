@@ -155,17 +155,9 @@ require dirname(__DIR__, 2) . '/api/src/Core/NotificationService.php';
             $payload = CurlMock::takeLastPayload();
             $html = (string) ($payload['html'] ?? '');
 
-            // Logo: exactly one absolute HTTPS logo reference per email.
-            preg_match_all('/src="([^"]+)"/', $html, $srcs);
-            $httpSrcs = array_values(array_filter($srcs[1], static fn ($s) => !str_starts_with($s, 'cid:')));
-            $expect($httpSrcs !== [], "[{$locale}/{$name}] logo must be present");
-            foreach ($httpSrcs as $src) {
-                $expect(str_starts_with($src, 'https://'), "[{$locale}/{$name}] logo URL must be absolute HTTPS: {$src}");
-                $expect(!str_contains($src, 'localhost') && !str_contains($src, '127.0.0.1'), "[{$locale}/{$name}] logo URL must not point at localhost/127.0.0.1");
-                $expect(str_ends_with($src, '.png'), "[{$locale}/{$name}] logo URL must reference a PNG asset");
-                $path = parse_url($src, PHP_URL_PATH);
-                $expect(is_string($path) && !str_starts_with($path, '/assets/'), "[{$locale}/{$name}] logo must not use the legacy /assets relative route");
-            }
+            // Logo: embedded as a CID inline image (cid:velora-logo), not a remote URL.
+            $expect(str_contains($html, 'src="cid:velora-logo"'), "[{$locale}/{$name}] logo must be embedded as cid:velora-logo");
+            $expect(!str_contains($html, 'velora-email-logo.png'), "[{$locale}/{$name}] logo must not depend on a remote URL");
 
             // No broken schemes anywhere in the HTML body.
             $expect(!preg_match('/(?:src|href)="http:\/\//', $html), "[{$locale}/{$name}] no insecure http:// resource");
@@ -180,7 +172,10 @@ require dirname(__DIR__, 2) . '/api/src/Core/NotificationService.php';
             }
             foreach (array_unique($cids[1]) as $cid) {
                 $expect(isset($attachments[$cid]), "[{$locale}/{$name}] cid '{$cid}' must have a matching attachment");
-                $pngPath = $repoRoot . '/public/assets/email-icons/' . substr($cid, strlen('velora-')) . '.png';
+                $cidBase = substr($cid, strlen('velora-'));
+                $pngPath = $cidBase === 'logo'
+                    ? $repoRoot . '/public/assets/velora-email-logo.png'
+                    : $repoRoot . '/public/assets/email-icons/' . $cidBase . '.png';
                 if (isset($attachments[$cid]) && is_file($pngPath)) {
                     $expect($attachments[$cid] === file_get_contents($pngPath), "[{$locale}/{$name}] attachment bytes for '{$cid}' must match the on-disk PNG");
                 }
