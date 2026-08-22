@@ -167,8 +167,8 @@ foreach (CurlMock::payloads() as $payload) {
     );
 
     $check(
-        str_contains($html, "https://{$envHost}/public/assets/velora-email-logo.png"),
-        "[{$subject}] logo URL must remain environment-aware (control, must stay green)",
+        str_contains($html, 'src="cid:velora-logo"'),
+        "[{$subject}] logo must be embedded as cid:velora-logo (inline, not an environment-specific remote URL)",
     );
 }
 
