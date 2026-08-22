@@ -71,13 +71,17 @@ final class AuthService
                 $verifyUrl = rtrim((string) Config::get('frontend_url', 'https://veloratrade.ir'), '/') . '/verify-email#token=' . rawurlencode($token);
 
                 $fn = trim((string) ($existing['full_name'] ?? ''));
+                $emailLocale = NotificationService::resolveEmailLocale(
+                    $existing['locale'] ?? null,
+                    $notificationLocale,
+                );
                 try {
                     NotificationService::sendVerificationEmail(
                         $email,
                         $fn !== '' ? $fn : $email,
                         $verifyUrl,
                         $uid,
-                        $notificationLocale,
+                        $emailLocale,
                     );
                 } catch (\Throwable $e) {}
 
@@ -114,7 +118,7 @@ final class AuthService
                 $fullName !== '' ? $fullName : $email,
                 $verifyUrl,
                 $userId,
-                $notificationLocale,
+                NotificationService::resolveEmailLocale(null, $notificationLocale),
             );
         } catch (\Throwable $e) {}
 
@@ -167,13 +171,17 @@ final class AuthService
         if ($user !== null) {
             $dashboardUrl = rtrim((string) Config::get('frontend_url', 'https://veloratrade.ir'), '/') . '/dashboard';
             $profileUrl = rtrim((string) Config::get('frontend_url', 'https://veloratrade.ir'), '/') . '/profile';
+            $emailLocale = NotificationService::resolveEmailLocale(
+                $user['locale'] ?? null,
+                $notificationLocale,
+            );
 
             NotificationService::sendWelcomeEmail(
                 $user['email'],
                 $user['full_name'] ?: $user['email'],
                 $dashboardUrl,
                 (int) $user['id'],
-                $notificationLocale,
+                $emailLocale,
             );
 
             $achievementTitleKey = 'achievements.emailVerified.title';
@@ -191,7 +199,7 @@ final class AuthService
                     $achievementDescriptionKey,
                     $profileUrl,
                     (int) $user['id'],
-                    $notificationLocale,
+                    $emailLocale,
                 );
             }
         }
@@ -273,7 +281,7 @@ final class AuthService
                 $fullName !== '' ? $fullName : $email,
                 $verifyUrl,
                 $userId,
-                $notificationLocale,
+                NotificationService::resolveEmailLocale($user['locale'] ?? null, $notificationLocale),
             );
         } catch (\Throwable $e) {}
 
@@ -316,7 +324,7 @@ final class AuthService
                 $userAgent ?? '',
                 gmdate('Y-m-d H:i:s') . ' UTC',
                 $userId,
-                $notificationLocale,
+                NotificationService::resolveEmailLocale($user['locale'] ?? null, $notificationLocale),
             );
         }
 
