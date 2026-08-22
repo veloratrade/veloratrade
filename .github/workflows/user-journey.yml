@@ -277,25 +277,26 @@ jobs:
           esac
           echo "| ۹ | refresh پس از logout | ✅ | $code |" >> $GITHUB_STEP_SUMMARY
 
-          # ── F-A12: بررسی افشای اسکریپت‌های تستی ──────────────────────────────
-      - name: 'F-A12 — اسکریپت‌های تستی نباید عمومی باشند'
+          # ── F-A12 (PR-06): اسکریپت‌های تشخیصی حذف شدند — نباید 200 بدهند ──────
+      - name: 'F-A12 — اسکریپت‌های تشخیصی حذف‌شده نباید در دسترس باشند'
         run: |
           set -uo pipefail
           fail=0
           for p in api/test-verify-email.php api/mail-test.php \
-                   api/mail-test-simple.php api/mail-setup.php; do
+                   api/mail-test-simple.php api/mail-setup.php \
+                   api/test-resend-verification.php; do
             code=$(curl -s --max-time 20 -o /dev/null -w '%{http_code}' "$BASE/$p")
             if [ "$code" = "200" ]; then
-              echo "::error::🔴 $p در دسترس عمومی است (200)"
-              echo "| F-A12 | $p | ❌ | 200 افشا |" >> $GITHUB_STEP_SUMMARY
+              echo "::error::🔴 $p همچنان در دسترس عمومی است (200)"
+              echo "| F-A12 | $p | ❌ | 200 در دسترس |" >> $GITHUB_STEP_SUMMARY
               fail=1
             else
-              echo "✅ $p مسدود است ($code)"
+              echo "✅ $p حذف شده و در دسترس نیست ($code)"
               echo "| F-A12 | $p | ✅ | $code |" >> $GITHUB_STEP_SUMMARY
             fi
           done
-          [ "$fail" = "1" ] && { echo "::error::اسکریپت تستی روی استیجینگ افشا شده"; exit 1; }
-          echo "✅ هیچ اسکریپت تستی افشا نشده است"
+          [ "$fail" = "1" ] && { echo "::error::اسکریپت تشخیصی حذف‌شده هنوز افشا شده"; exit 1; }
+          echo "✅ هیچ اسکریپت تشخیصی افشا نشده است"
 
       # اگر هر گامی پیش از logout شکست بخورد، نشست باز می‌ماند.
       # این گام تضمین می‌کند نشست تست هرگز روی استیجینگ زنده نماند.
