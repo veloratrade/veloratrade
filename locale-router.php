@@ -5,9 +5,11 @@ declare(strict_types=1);
  * VELORA localized HTML front controller for cPanel/LiteSpeed.
  *
  * Locale contract: an explicit supported locale URL prefix is authoritative; for
- * ordinary unprefixed navigation, readable manual-choice cookie -> primary
- * Accept-Language -> default. Unsupported browser languages use the manifest
- * fallback (English). Assets and APIs never pass here.
+ * ordinary unprefixed navigation, a signed-in user's saved preference
+ * (users.locale) -> readable manual-choice cookie -> primary Accept-Language ->
+ * default. First-visit browser detection: a Persian browser/device locale
+ * resolves to fa; any other, unknown, or unsupported browser locale resolves to
+ * the manifest fallback (English). Assets and APIs never pass here.
  */
 
 $root = __DIR__;
@@ -51,12 +53,64 @@ $normalize = static function (?string $candidate) use ($enabled): ?string {
 $cookieKey = (string) ($manifest['cookieKey'] ?? 'velora_locale');
 $cookieLocale = isset($_COOKIE[$cookieKey]) ? $normalize((string) $_COOKIE[$cookieKey]) : null;
 $acceptLanguage = trim((string) ($_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? ''));
-$browserLocale = null;
+$primaryTag = '';
 if ($acceptLanguage !== '') {
     $primaryRange = trim(explode(',', $acceptLanguage, 2)[0]);
     $primaryTag = trim(explode(';', $primaryRange, 2)[0]);
-    if ($primaryTag !== '' && $primaryTag !== '*') {
-        $browserLocale = $normalize($primaryTag) ?? $fallback;
+}
+// PR-04 first-visit detection: a Persian browser/device locale resolves to fa;
+// any other locale (en, de, fr, ar, ...) or an unknown/unsupported/missing
+// browser locale resolves to the manifest fallback (English). This only fills
+// the browser tier — an explicit URL prefix, the signed-in user's saved locale,
+// and the manual-choice cookie all still outrank it below.
+$browserLocale = ($primaryTag !== '' && $primaryTag !== '*')
+    ? ($normalize($primaryTag) ?? $fallback)
+    : $fallback;
+
+// PR-04: a signed-in user's saved language preference (users.locale) outranks
+// the anonymous cookie/browser choice, but never an explicit locale prefix.
+// The lookup is guarded by the refresh cookie so anonymous requests keep the
+// zero-database fast path; any database failure falls back to the previous
+// cookie -> browser -> default behavior. The same lookup also proves the
+// session for the protected-route check below (no second validity query), and
+// the locale read is kept separate and tolerant so a not-yet-migrated users
+// table degrades to cookie/browser instead of breaking the session check.
+$savedLocale = null;
+$sessionIsValid = null;
+$refreshToken = $_COOKIE['__Host-velora_refresh'] ?? null;
+if (is_string($refreshToken) && $refreshToken !== '' && strlen($refreshToken) <= 128) {
+    try {
+        require_once $root . '/api/src/bootstrap.php';
+        $pdo = \Velora\Core\Database::connection();
+        $stmt = $pdo->prepare(
+            'SELECT s.id, u.id AS user_id
+               FROM user_sessions s INNER JOIN users u ON u.id = s.user_id
+              WHERE s.refresh_token_hash = :hash
+                AND s.revoked_at IS NULL AND s.expires_at > :now AND u.status = :status
+              LIMIT 1'
+        );
+        $stmt->execute([
+            'hash' => hash('sha256', $refreshToken),
+            'now' => gmdate('Y-m-d H:i:s'),
+            'status' => 'active',
+        ]);
+        $session = $stmt->fetch();
+        $sessionIsValid = $session !== false;
+        if ($sessionIsValid) {
+            try {
+                $localeStmt = $pdo->prepare('SELECT locale FROM users WHERE id = :id LIMIT 1');
+                $localeStmt->execute(['id' => (int) $session['user_id']]);
+                $savedLocale = $normalize((string) $localeStmt->fetchColumn());
+            } catch (\Throwable) {
+                // Locale column not yet migrated (or read failed): degrade to
+                // cookie/browser without failing the session check.
+                $savedLocale = null;
+            }
+        }
+    } catch (\Throwable) {
+        // Fail closed for protected HTML; public pages keep cookie/browser locale.
+        $sessionIsValid = false;
+        $savedLocale = null;
     }
 }
 
@@ -92,8 +146,17 @@ if ($declaredRouteLocale !== null) {
         ]);
     }
 } else {
-    $locale = $cookieLocale ?? $browserLocale ?? $default;
+    $locale = $savedLocale ?? $cookieLocale ?? $browserLocale ?? $default;
     $relative = $requestRelative;
+    // PR-04: keep the client bootstrap in sync with the saved preference so the
+    // paint-ready locale matches the server decision on unprefixed URLs.
+    if ($savedLocale !== null && $cookieLocale !== $savedLocale && !headers_sent()) {
+        setcookie($cookieKey, $savedLocale, [
+            'expires' => time() + 31536000,
+            'path' => '/',
+            'samesite' => 'Lax',
+        ]);
+    }
 }
 
 if ($relative === '') {
@@ -137,28 +200,10 @@ $protectedRoutes = [
     'trades/index.html', 'trades/new/index.html', 'wallet/index.html',
 ];
 if ($found && in_array($relativeFile, $protectedRoutes, true)) {
-    $refreshToken = $_COOKIE['__Host-velora_refresh'] ?? null;
-    $sessionIsValid = false;
-    if (is_string($refreshToken) && $refreshToken !== '' && strlen($refreshToken) <= 128) {
-        try {
-            require_once $root . '/api/src/bootstrap.php';
-            $pdo = \Velora\Core\Database::connection();
-            $stmt = $pdo->prepare(
-                'SELECT s.id FROM user_sessions s INNER JOIN users u ON u.id = s.user_id
-                 WHERE s.refresh_token_hash = :hash
-                   AND s.revoked_at IS NULL AND s.expires_at > :now AND u.status = :status
-                 LIMIT 1'
-            );
-            $stmt->execute([
-                'hash' => hash('sha256', $refreshToken),
-                'now' => gmdate('Y-m-d H:i:s'),
-                'status' => 'active',
-            ]);
-            $sessionIsValid = $stmt->fetchColumn() !== false;
-        } catch (\Throwable) {
-            // Fail closed: a config/database problem must not expose protected HTML.
-            $sessionIsValid = false;
-        }
+    // PR-04: the session was already validated during locale resolution when the
+    // refresh cookie was present; without one it can never be valid here.
+    if ($sessionIsValid !== true) {
+        $sessionIsValid = false;
     }
     if (!$sessionIsValid) {
         header('Cache-Control: no-store');

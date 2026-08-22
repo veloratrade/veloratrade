@@ -221,6 +221,38 @@ final class AuthController
         ]);
     }
 
+    // ==================== ترجیح زبان کاربر (PR-04) ====================
+
+    /**
+     * Persist the authenticated user's UI language preference. The locale must
+     * be one of the enabled manifest locales; the canonical code is stored with
+     * provenance 'user'. Anonymous visitors still resolve via cookie/browser.
+     */
+    public function updatePreferences(Request $request): never
+    {
+        Validation::assert($request->body, [
+            'locale' => 'required|string|max:35',
+        ]);
+
+        $locale = strtolower(trim((string) $request->body['locale']));
+        $i18n = \Velora\Core\Locale\LocaleManager::getInstance();
+        if (!$i18n->supports($locale)) {
+            Response::error('Unsupported locale.', 422, 'UNSUPPORTED_LOCALE');
+        }
+        $canonical = $i18n->resolve($locale);
+
+        (new UserRepository())->updateLocalePreference(
+            (int) $request->attributes['user_id'],
+            $canonical,
+            'user',
+        );
+
+        Response::json([
+            'updated' => true,
+            'locale' => $canonical,
+        ]);
+    }
+
     public function resetPassword(Request $request): never
     {
         Validation::assert($request->body, [
