@@ -167,6 +167,10 @@ final class TradeService
                 if ($user !== null) {
                     $dashboardUrl = rtrim((string) \Velora\Core\Config::get('frontend_url', 'https://veloratrade.ir'), '/') . '/dashboard';
                     $profileUrl = rtrim((string) \Velora\Core\Config::get('frontend_url', 'https://veloratrade.ir'), '/') . '/profile';
+                    $emailLocale = \Velora\Core\NotificationService::resolveEmailLocale(
+                        $user['locale'] ?? null,
+                        null,
+                    );
 
                     \Velora\Core\NotificationService::sendFirstTradeEmail(
                         $user['email'],
@@ -174,7 +178,8 @@ final class TradeService
                         $created['symbol'],
                         $created['direction'],
                         $dashboardUrl,
-                        $userId
+                        $userId,
+                        $emailLocale,
                     );
 
                     $achievementTitleKey = 'achievements.firstTrade.title';
@@ -192,6 +197,7 @@ final class TradeService
                             $achievementDescriptionKey,
                             $profileUrl,
                             $userId,
+                            $emailLocale,
                         );
                     }
                 }
