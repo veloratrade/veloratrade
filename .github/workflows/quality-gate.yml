@@ -94,6 +94,12 @@ jobs:
       - name: i18n catalog anomaly report (PR-01 V-7, report-only)
         run: python tools/localization/report_catalog_anomalies.py
 
+      - name: i18n orphan catalog-key report (PR-09, report-only)
+        run: python tools/localization/report_orphan_catalog_keys.py
+
+      - name: Orphan catalog-key report unit tests
+        run: python -m unittest tools.localization.test_report_orphan_catalog_keys -v
+
       - name: CID icon assets (PNG integrity)
         run: python tools/tests/test_notification_email_icons.py
 
@@ -102,6 +108,12 @@ jobs:
 
       - name: Route contract unit tests
         run: python -m unittest tools.localization.test_route_contract -v
+
+      - name: Route E2E coverage contract (PR-09, critical-route Playwright gate)
+        run: python -m tools.localization.route_e2e_contract
+
+      - name: Route E2E coverage contract unit tests
+        run: python -m unittest tools.localization.test_route_e2e_contract -v
 
       - name: Brand policy regression (display-brand exception)
         run: python3 test_brand_policy.py
