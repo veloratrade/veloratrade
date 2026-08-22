@@ -35,7 +35,7 @@ final class EmailTemplate
         $titleSafe = self::escape($title);
         $subtitleSafe = self::escape($subtitle ?? $t('email.common.subtitleSecurity'));
         $frontendBase = rtrim((string) Config::get('frontend_url', 'https://veloratrade.ir'), '/');
-        $logoUrlSafe = self::escape($frontendBase . '/public/assets/velora-email-logo.png');
+        $logoUrlSafe = 'cid:velora-logo';
 
         $iconHtml = '';
         if ($iconName !== null && preg_match('/^[a-z0-9-]+$/', $iconName) === 1) {
