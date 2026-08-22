@@ -8,6 +8,52 @@
 
 AS-IS VERIFIED BASELINE • READ-ONLY • APPROVAL REQUIRED BEFORE CHANGE
 
+## 0. Machine-Readable Structure Index (script-maintained)
+
+> این بلوک توسطِ `tools/structure_sync.py` خوانده و به‌روز می‌شود و آینهٔ ساختارِ
+> سطحِ بالای پروژه برای آشکارسازیِ خودکارِ drift (OC-14) است. **منبعِ اصلیِ
+> انسانی همچنان `Structure.pdf` (هر نسخه) است**؛ این بلوک فقط نسخهٔ کارکردیِ
+> ماشین است. دستی ویرایش نکنید — اسکریپت را اجرا کنید (`--report` / `--update`).
+
+<!-- VELORA_STRUCTURE_INDEX_BEGIN -->
+```json
+{
+  "top_level_dirs": [
+    ".github",
+    "404",
+    "_database",
+    "_next",
+    "accounts",
+    "admin",
+    "api",
+    "blog",
+    "checkout",
+    "dashboard",
+    "docs",
+    "en",
+    "forgot-password",
+    "intelligence",
+    "localized",
+    "login",
+    "markets",
+    "news",
+    "performance",
+    "privacy",
+    "profile",
+    "public",
+    "register",
+    "reset-password",
+    "support",
+    "terms",
+    "tools",
+    "trades",
+    "verify-email",
+    "wallet"
+  ]
+}
+```
+<!-- VELORA_STRUCTURE_INDEX_END -->
+
 | | |
 |---|---|
 | Audit date | 2026-08-14 |
