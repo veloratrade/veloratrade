@@ -99,5 +99,7 @@ A1→TEST-01 · A2→TEST-11 · A3→TEST-06 · A4→TEST-07 · A5→TEST-12 · 
 
 **PR-01 i18n freeze baseline:** 265 hardcoded Persian literals across 25 files (shared JS + inline scripts in generated localized HTML) and 879 frozen hashed catalog keys. The earlier hand-audit estimated ~227 violations; the delta is from tokenizer accuracy (distinct string+regex literals, comments stripped via the `build_localized_static.py` tokenizer) plus newly discovered sources — `emotion-icons.js` and Persian JSON-LD meta strings in 13 localized blog pages.
 
+**Human-side bilingual governance:** [`docs/05_BILINGUAL_CHECKLIST.md`](./05_BILINGUAL_CHECKLIST.md) is the manual counterpart to the automated localization gates — run §1–§5 for every release and every new user-facing feature.
+
 ---
 *Document created in Phase 3.1 (test engineering). Gates wired in Phase 3.2. Audit bugs A1–A12 closed in Phases 4.1–4.7. Refreshed in Phase 3.4 (documentation only — no production code, schema, env, test, or workflow was modified).*
