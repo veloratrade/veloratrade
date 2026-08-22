@@ -311,6 +311,7 @@ echo; hr; echo "۸. تازگی اسناد، تعارض‌ها و Drift"; hr
 snapshot_commit=$(python3 -c "import json; print(json.load(open('docs/PROJECT_STATE.json'))['_meta'].get('generated_from_commit',''))" 2>/dev/null || true)
 session_commit=$(python3 -c "import json; print(json.load(open('docs/SESSION_STATE.json'))['_meta'].get('based_on_commit',''))" 2>/dev/null || true)
 context_errors=0
+_fp_hard=0   # نقضِ سختِ ردپا (کلون کامل/عمیق یا نشت credential) ⟹ کد VELORA-RUN چاپ نمی‌شود
 
 # یک snapshot نمی‌تواند hash کامیتی را که خودش داخل آن commit می‌شود از پیش بداند.
 # بنابراین اختلافی که فقط از فایل خود snapshot/handoff تشکیل شده، تازه محسوب می‌شود.
@@ -363,13 +364,37 @@ fi
 
 # گارد ردپای Workspace (AGENTS.md بند ۱۳) — فقط خارج از CI معنا دارد؛
 # checkout کامل در GitHub Actions طبیعی است و نقض محسوب نمی‌شود.
+#   HARD = کلون کامل/عمیق یا نشت credential  ⟹ کد VELORA-RUN چاپ نمی‌شود (درس OC-13)
+#   WARN = working tree غیر-sparse                  ⟹ فقط توصیه (clone shallowِ scoped مجاز است)
 if [ -z "${GITHUB_ACTIONS:-}" ] && [ -z "${CI:-}" ]; then
   _wt_files=$(find . -type f -not -path './.git/*' 2>/dev/null | wc -l | tr -d ' ')
   _sparse=$(git config --get core.sparseCheckout 2>/dev/null || echo false)
+  _shallow=$(git rev-parse --is-shallow-repository 2>/dev/null || echo false)
+  _commits=$(git rev-list --count HEAD 2>/dev/null || echo 0)
+  _git_kb=$(du -sk .git 2>/dev/null | cut -f1 || echo 0)
+  # credential در .git/config (مثلاً PAT داخل remote.origin.url) — NP-2/§8
+  _cred=$(grep -rqE '(github_pat_|gh[pousr]_)[A-Za-z0-9]{10,}|://[^/@[:space:]]+@' .git/config 2>/dev/null && echo yes || echo no)
+
+  # (HARD) کلونِ کامل/عمیق — مستقل از پرچم sparse (sparse روی کلون کامل را نمی‌پذیرد)
+  if [ "$_shallow" != "true" ] && [ "$_commits" -gt 5 ]; then
+    echo "  🔴 FULL-CLONE-VIOLATION: checkout غیر-shallow با $_commits کامیت — نقض بند ۱۳.۱ AGENTS.md"
+    echo "      رفع: حذفِ کلون + git clone --depth 1 --filter=blob:none --sparse"
+    _fp_hard=1; context_errors=$((context_errors+1))
+  fi
+  # (HARD) حجمِ .git با تاریخچهٔ کامل
+  if [ "$_shallow" != "true" ] && [ "$_git_kb" -gt 5120 ]; then
+    echo "  🔴 FULL-CLONE-VIOLATION: حجم .git بیش از ۵مگ با تاریخچهٔ کامل — نقض بند ۱۳.۱"
+    _fp_hard=1; context_errors=$((context_errors+1))
+  fi
+  # (HARD) نشتِ credential در .git/config
+  if [ "$_cred" = yes ]; then
+    echo "  🔴 CREDENTIAL-IN-CONFIG: credential داخل .git/config یافت شد — نقض NP-2/§8"
+    echo "      رفع: git remote set-url origin https://github.com/<repo>.git (بدون credential)"
+    _fp_hard=1; context_errors=$((context_errors+1))
+  fi
+  # (WARN) working tree غیر-sparse — cloneِ shallowِ scoped همچنان مجاز است
   if [ "$_sparse" != "true" ] && [ "$_wt_files" -gt 50 ]; then
-    echo "  🔴 WORKSPACE-FOOTPRINT-VIOLATION: checkout غیر sparse با $_wt_files فایل — نقض بند ۱۳.۱ AGENTS.md"
-    echo "      رفع: git sparse-checkout محدود به فایل‌های مأموریت + حذف فایل‌های غیرضروری در همین لحظه"
-    context_errors=$((context_errors+1))
+    echo "  ⚠️  WORKSPACE-FOOTPRINT-WARN: checkout غیر-sparse با $_wt_files فایل — توصیه: sparse-checkout محدود به مأموریت"
   fi
 fi
 
@@ -403,7 +428,12 @@ echo
 hr
 echo "۱۰. توکن اثبات اجرا (SESSION PROOF)"
 hr
-echo "  VELORA-RUN-$_sess"
+if [ "${_fp_hard:-0}" = 1 ]; then
+  echo "  ⛔ VELORA-RUN suppressed: compliance self-check failed (کلون کامل/عمیق یا نشت credential)"
+  echo "     گواهیِ اجرا در حالِ نقض چاپ نمی‌شود — ابتدا ردپای Workspace را پاک کن (AGENTS.md §13)."
+else
+  echo "  VELORA-RUN-$_sess"
+fi
 echo "  Context HEAD: $head_short | branch: $branch | dirty: $dirty | errors: $context_errors"
 echo
 echo "  ⚠️ این کد را در اولین پیام به مالک بنویس."
