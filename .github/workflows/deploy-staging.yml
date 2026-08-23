@@ -130,8 +130,22 @@ jobs:
           set -uo pipefail
           sudo apt-get install -y -q lftp > /dev/null
 
-          # هاست اتصال‌ها را وسط کار reset می‌کند؛ mirror با تکرار بیرونی
-          # ادامه می‌دهد (--ignore-time: همه فایل‌ها byte-fresh آپلود می‌شوند — Artifact Integrity §4)
+          # هاست اتصال‌ها را وسط کار reset می‌کند؛ تکرار بیرونی (retry loop) با
+          # آپلود کامل مجدد ادامه می‌دهد (نه --continue داخلی lftp).
+          #
+          # نکته مهم (رفع‌شده Aug 2026، پیگیری اصلاح اول): --continue و
+          # --transfer-all را نباید همزمان استفاده کرد. --continue یک بررسی
+          # «آیا مقصد از قبل کامل است؟» مستقل انجام می‌دهد (بر پایه SIZE) که
+          # --transfer-all آن را override نمی‌کند — تأیید شده با تست مستقیم
+          # روی سرور FTP آزمایشی: با هر دو فلگ با هم، lftp پیام
+          # «destination file is already complete» می‌دهد و فایل واقعاً
+          # آپلود نمی‌شود، حتی وقتی محتوا متفاوت است. بنابراین اینجا فقط
+          # --transfer-all (بدون --continue) استفاده می‌شود تا آپلود واقعاً
+          # اجباری بماند؛ هزینه‌اش این است که یک قطعی وسط کار باعث آپلود
+          # مجدد کامل بسته می‌شود (نه ادامه از همان بایت) — این هزینه با
+          # اندازه فعلی بسته (~30 مگابایت) قابل قبول است و توسط همین حلقه
+          # تکرار بیرونی (۱۲ تلاش) پوشش داده می‌شود.
+          # (--ignore-time: همه فایل‌ها byte-fresh آپلود می‌شوند — Artifact Integrity §4)
           attempt=0
           until [ $attempt -ge 12 ]; do
             attempt=$((attempt+1))
@@ -144,7 +158,7 @@ jobs:
           set net:timeout 30
           set ftp:passive-mode on
           set mirror:parallel-transfer-count 1
-          mirror -R --continue --ignore-time --transfer-all --no-perms --no-symlinks \
+          mirror -R --ignore-time --transfer-all --no-perms --no-symlinks \
                  --exclude-glob .git* \
                  staging-build/ public_html/staging.veloratrade.ir/
           bye
