@@ -1,10 +1,10 @@
 {
   "algorithm": "sha256",
-  "commitSha": "c89e7772ee11815df15c3a9be272418da172cebf",
+  "commitSha": "39e7f9115d50d378942acb7adcedd7d152f46483",
   "localizationVersion": "2026.08.22.1",
   "policyVersion": 2,
-  "releaseHtmlSha256": "17210d765d988c262fd4b5819adb87e025a6dd30068775160d7733718984f7a8",
-  "releaseId": "2026.08.23.1",
+  "releaseHtmlSha256": "580f3655da2cf5f2787e8d256cc68cdbf0d7c784c09e7daee0f3ab91aa71a7d5",
+  "releaseId": "2026.08.24.1",
   "routeCount": 61,
   "routeManifestSha256": "77c267b42c509fae6a9f070298df1548d94a669176ed74999d28945504bdc251",
   "routes": {
@@ -409,11 +409,11 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/index.html",
-      "htmlSha256": "81c8f63ad92e2ed696b953f8f8e37f0d10b1b276c4c100c26884e8a90396a830",
+      "htmlSha256": "7c0248c926bf079210258637e021c3f1d2bf72b7f015de2952962535ecbf7483",
       "inlineScriptCount": 3,
       "inlineScriptHashes": [
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
-        "sha256-FbXJKTQLXcDJcVTzdeQBMx2gOYXfGy8qssur18rh6os=",
+        "sha256-OdO27oI4QhFu8P6qtny/Yovx05yUgIkVRsZOB8dHzOQ=",
         "sha256-VVSQj8uRcSoK3TViPfAjMxzXKy/AftAJIr3gt3bG4Pg="
       ],
       "inlineStyleCount": 4,
@@ -1314,11 +1314,11 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "fa/index.html",
-      "htmlSha256": "0f0eb4d0e521839b180a48f1d27781d72f945226e3a4b5e9255b434146191d74",
+      "htmlSha256": "020bba55067a395c4caf8be29559916f31d617ebd611d32cbd679e707009ddcd",
       "inlineScriptCount": 3,
       "inlineScriptHashes": [
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
-        "sha256-FbXJKTQLXcDJcVTzdeQBMx2gOYXfGy8qssur18rh6os=",
+        "sha256-OdO27oI4QhFu8P6qtny/Yovx05yUgIkVRsZOB8dHzOQ=",
         "sha256-VVSQj8uRcSoK3TViPfAjMxzXKy/AftAJIr3gt3bG4Pg="
       ],
       "inlineStyleCount": 4,
@@ -1879,5 +1879,5 @@
       ]
     }
   },
-  "sourceDigest": "789611c63aec7eeb1aefe2517246e32e46db7feec27aa4e99acd1ce7f2f197bd"
+  "sourceDigest": "9a9b2faadf16919e437438cdc7e789f9795419649902e942ec6ec92672aa0799"
 }
