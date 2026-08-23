@@ -116,6 +116,9 @@
   }
 
   function setMode(mode) {
+    if (mode === 'ai') {
+      shots = []; merged = {}; conflicts = []; conf = {}; editing = false;
+    }
     var wrap = document.getElementById('vsiWrap');
     if (!wrap) return;
     wrap.classList.remove('ai', 'review');
@@ -330,15 +333,9 @@
     showScanning();
     var texts = [];
     try {
-      var native = await readNative(shots[0].dataUrl);
-      if (native && looksLikeTrade(native)) texts.push(native);
-    } catch (e1) {}
-    if (!texts.length) {
-      try {
-        prog(t('خواندن روی سرور…', 'Reading on server…'));
-        texts = await ocrServer(shots.map(function (s) { return s.dataUrl; }));
-      } catch (e2) { texts = []; }
-    }
+      prog(t('خواندن روی سرور…', 'Reading on server…'));
+      texts = await ocrServer(shots.map(function (s) { return s.dataUrl; }));
+    } catch (e2) { texts = []; }
     if (!texts.some(looksLikeTrade)) {
       try {
         prog(t('خواندن در مرورگر… ممکن است چند ثانیه طول بکشد.', 'Reading in the browser… this can take a few seconds.'));
