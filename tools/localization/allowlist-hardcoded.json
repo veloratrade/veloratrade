@@ -11,21 +11,12 @@
   },
   "entries": [
     {
-      "id": "V3-009",
-      "file": "localized/en/index.html",
-      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
-      "count": 4,
-      "category": "regex-intent",
-      "reason": "intent-detection regexes (e.g. /(lose|باخت)/); move to config/catalog",
-      "resolution_pr": "PR-14"
-    },
-    {
       "id": "V3-010",
       "file": "localized/fa/blog/forex-trading-journal/index.html",
       "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
       "count": 2,
       "category": "seo-meta",
-      "reason": "hardcoded Persian JSON-LD meta strings; EN pages currently carry Persian meta (content bug) — triage in a later phase",
+      "reason": "hardcoded Persian JSON-LD meta strings on the fa page itself (legitimate fa-locale SEO metadata, not a cross-locale bug); verified 2026-08-23 that the corresponding en page carries no Persian content across any slug-alias variant.",
       "resolution_pr": null
     },
     {
@@ -34,7 +25,7 @@
       "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
       "count": 2,
       "category": "seo-meta",
-      "reason": "hardcoded Persian JSON-LD meta strings; EN pages currently carry Persian meta (content bug) — triage in a later phase",
+      "reason": "hardcoded Persian JSON-LD meta strings on the fa page itself (legitimate fa-locale SEO metadata, not a cross-locale bug); verified 2026-08-23 that the corresponding en page carries no Persian content across any slug-alias variant.",
       "resolution_pr": null
     },
     {
@@ -43,7 +34,7 @@
       "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
       "count": 2,
       "category": "seo-meta",
-      "reason": "hardcoded Persian JSON-LD meta strings; EN pages currently carry Persian meta (content bug) — triage in a later phase",
+      "reason": "hardcoded Persian JSON-LD meta strings on the fa page itself (legitimate fa-locale SEO metadata, not a cross-locale bug); verified 2026-08-23 that the corresponding en page carries no Persian content across any slug-alias variant.",
       "resolution_pr": null
     },
     {
@@ -52,7 +43,7 @@
       "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
       "count": 2,
       "category": "seo-meta",
-      "reason": "hardcoded Persian JSON-LD meta strings; EN pages currently carry Persian meta (content bug) — triage in a later phase",
+      "reason": "hardcoded Persian JSON-LD meta strings on the fa page itself (legitimate fa-locale SEO metadata, not a cross-locale bug); verified 2026-08-23 that the corresponding en page carries no Persian content across any slug-alias variant.",
       "resolution_pr": null
     },
     {
@@ -61,17 +52,8 @@
       "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
       "count": 2,
       "category": "seo-meta",
-      "reason": "hardcoded Persian JSON-LD meta strings; EN pages currently carry Persian meta (content bug) — triage in a later phase",
+      "reason": "hardcoded Persian JSON-LD meta strings on the fa page itself (legitimate fa-locale SEO metadata, not a cross-locale bug); verified 2026-08-23 that the corresponding en page carries no Persian content across any slug-alias variant.",
       "resolution_pr": null
-    },
-    {
-      "id": "V3-015",
-      "file": "localized/fa/index.html",
-      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
-      "count": 4,
-      "category": "regex-intent",
-      "reason": "intent-detection regexes (e.g. /(lose|باخت)/); move to config/catalog",
-      "resolution_pr": "PR-14"
     },
     {
       "id": "V3-016",

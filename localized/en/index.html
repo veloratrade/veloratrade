@@ -2447,12 +2447,26 @@ if(nf) nf.addEventListener('submit',e=>{
     return VeloraLocale.t(QUESTION_KEYS[kind] || '', null, '…');
   }
 
+  
+  var INTENT_KEYS = {
+    lose: 'landing.ai.intent.lose',
+    revenge: 'landing.ai.intent.revenge',
+    edge: 'landing.ai.intent.edge',
+    setup: 'landing.ai.intent.setup'
+  };
+  function intentKeywords(kind){
+    var raw = VeloraLocale.t(INTENT_KEYS[kind], null, '');
+    return raw ? raw.split(',').map(function(w){ return w.trim().toLowerCase(); }).filter(Boolean) : [];
+  }
   function matchQ(t){
     t = t.toLowerCase();
-    if(/(lose|loss|lost|باخت|ضرر)/.test(t)) return 'lose';
-    if(/(revenge|انتقام|اورترید|overtrad)/.test(t)) return 'revenge';
-    if(/(edge|برتری|سودده|برتر)/.test(t)) return 'edge';
-    if(/(setup|ستاپ|بگیرم|بردارم)/.test(t)) return 'setup';
+    var kinds = ['lose', 'revenge', 'edge', 'setup'];
+    for(var i = 0; i < kinds.length; i++){
+      var words = intentKeywords(kinds[i]);
+      for(var j = 0; j < words.length; j++){
+        if(t.indexOf(words[j]) !== -1) return kinds[i];
+      }
+    }
     return 'default';
   }
   function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
