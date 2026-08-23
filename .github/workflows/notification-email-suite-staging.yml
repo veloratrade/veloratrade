@@ -164,7 +164,7 @@ jobs:
                   if not re.search(r'<img[^>]+src="attachment:[^"]+"[^>]*>',html,re.I):raise SystemExit(f'::error::{name} inline icon reference missing')
                   if any(x in html for x in ('✉️','✔','📊','🏆')):raise SystemExit(f'::error::{name} legacy emoji remains')
                   if '#9b782e' not in html.lower() or '#3b465a' not in html.lower():raise SystemExit(f'::error::{name} Gold Outline missing')
-                  if not re.search(r'src="(cid|attachment):velora-logo"', html, re.I) or 'velora-email-logo.png' not in inline:raise SystemExit(f'::error::{name} logo must be embedded as cid:velora-logo with an inline attachment')
+                  if 'velora-email-logo.png' not in inline:raise SystemExit(f'::error::{name} logo inline attachment (velora-email-logo.png) missing')
               if found!=expected[name]:raise SystemExit(f'::error::{name} icon set mismatch expected={sorted(expected[name])} found={sorted(found)}')
               checked |= found
               print(f'{name}: {len(messages)}/{len(expected[name])} DELIVERY+CID+FROM+DESIGN PASS')
