@@ -22,7 +22,6 @@ AS-IS VERIFIED BASELINE • READ-ONLY • APPROVAL REQUIRED BEFORE CHANGE
     ".github",
     "404",
     "_database",
-    "_next",
     "accounts",
     "admin",
     "api",
