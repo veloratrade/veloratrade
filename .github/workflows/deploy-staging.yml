@@ -144,7 +144,7 @@ jobs:
           set net:timeout 30
           set ftp:passive-mode on
           set mirror:parallel-transfer-count 1
-          mirror -R --continue --ignore-time --no-perms --no-symlinks \
+          mirror -R --continue --ignore-time --transfer-all --no-perms --no-symlinks \
                  --exclude-glob .git* \
                  staging-build/ public_html/staging.veloratrade.ir/
           bye
@@ -170,22 +170,83 @@ jobs:
           FTP_PASSWORD: ${{ secrets.STAGING_FTP_PASSWORD }}
         run: |
           set -uo pipefail
+          # هر دو فایل حیاتی provenance را از سرور می‌گیریم — نه فقط
+          # .csp-release.json. مشکل رفع‌شده Aug 2026: lftp mirror ممکن است
+          # فایلی را که اندازه‌اش با نسخه قبلی یکی است (byte-for-byte هم‌اندازه
+          # ولی محتوای متفاوت) رد کند و به‌روزرسانی نکند. برای رفع دائمی این
+          # آسیب‌پذیری هر دو فایل روی سرور با نسخه‌ی بسته منتشرشده مقایسه
+          # می‌شوند تا drift جزئی (فقط یکی از دو فایل به‌روز شود) قابل تشخیص باشد.
           lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" <<LFTP
           set ftp:ssl-allow no
           set net:timeout 30
           cd public_html/staging.veloratrade.ir
           get localized/.csp-release.json -o /tmp/server-csp-release.json
+          get public/locales/csp-manifest.json -o /tmp/server-csp-manifest.json
           bye
           LFTP
           python3 - <<'PY'
-          import json, pathlib
-          repo = json.loads(pathlib.Path("localized/.csp-release.json").read_text(encoding="utf-8"))
-          server = json.loads(pathlib.Path("/tmp/server-csp-release.json").read_text(encoding="utf-8"))
+          import hashlib
+          import json
+          import pathlib
+
+          repo_release = json.loads(pathlib.Path("localized/.csp-release.json").read_text(encoding="utf-8"))
+          server_release = json.loads(pathlib.Path("/tmp/server-csp-release.json").read_text(encoding="utf-8"))
           for k in ("releaseId", "commitSha", "sourceDigest", "releaseHtmlSha256", "cspManifestSha256"):
-              if repo.get(k) != server.get(k):
-                  raise SystemExit(f"provenance روی سرور با آرتیفکت تأییدشده نمی‌خواند: {k} repo={repo.get(k)} server={server.get(k)}")
-          print("✅ آرتیفکت روی سرور با آرتیفکت تأییدشده CI برابر است")
+              if repo_release.get(k) != server_release.get(k):
+                  raise SystemExit(
+                      f"provenance روی سرور (.csp-release.json) با آرتیفکت تأییدشده نمی‌خواند: "
+                      f"{k} repo={repo_release.get(k)} server={server_release.get(k)}"
+                  )
+          print("✅ localized/.csp-release.json روی سرور با آرتیفکت تأییدشده CI برابر است")
+
+          repo_manifest_bytes = pathlib.Path("public/locales/csp-manifest.json").read_bytes()
+          server_manifest_bytes = pathlib.Path("/tmp/server-csp-manifest.json").read_bytes()
+          repo_manifest_sha256 = hashlib.sha256(repo_manifest_bytes).hexdigest()
+          server_manifest_sha256 = hashlib.sha256(server_manifest_bytes).hexdigest()
+          if repo_manifest_sha256 != server_manifest_sha256:
+              raise SystemExit(
+                  "provenance روی سرور (public/locales/csp-manifest.json) با آرتیفکت تأییدشده "
+                  f"نمی‌خواند: sha256 repo={repo_manifest_sha256} server={server_manifest_sha256}"
+              )
+          if server_manifest_sha256 != server_release.get("cspManifestSha256"):
+              raise SystemExit(
+                  "ناهماهنگی داخلی روی سرور: sha256 واقعیِ public/locales/csp-manifest.json با "
+                  f"cspManifestSha256 ثبت‌شده در localized/.csp-release.json یکی نیست "
+                  f"(actual={server_manifest_sha256} recorded={server_release.get('cspManifestSha256')})"
+              )
+          print("✅ public/locales/csp-manifest.json روی سرور با آرتیفکت تأییدشده CI برابر است")
           PY
+
+      - name: بررسی سلامت نهایی staging (HTTP)
+        run: |
+          set -uo pipefail
+          # آخرین و مهم‌ترین گیت: نتیجه‌ای که کاربر واقعی می‌بیند را بررسی
+          # می‌کند، نه فقط فایل‌های روی دیسک سرور. اگر provenance فایل‌ها
+          # درست باشد ولی اپ همچنان به هر دلیلی (مثلاً کش CDN، یا خطای دیگر)
+          # 503/"Security policy unavailable" برگرداند، دیپلوی fail می‌شود.
+          url="https://staging.veloratrade.ir/en/"
+          attempt=0
+          max_attempts=6
+          until [ $attempt -ge $max_attempts ]; do
+            attempt=$((attempt+1))
+            echo "===== بررسی سلامت — تلاش $attempt/$max_attempts ====="
+            response="$(curl -s -o /tmp/staging-health-body.txt -w '%{http_code}' --max-time 20 "$url" || echo "000")"
+            echo "HTTP status: $response"
+            if [ "$response" = "200" ]; then
+              if grep -qi "security policy unavailable" /tmp/staging-health-body.txt; then
+                echo "⚠️ HTTP 200 ولی بدنه حاوی پیام خطای CSP است — سلامت واقعی رد شد."
+              else
+                echo "✅ staging سالم است (HTTP 200، بدون پیام خطای CSP)"
+                exit 0
+              fi
+            fi
+            echo "سلامت هنوز تأیید نشد؛ ۱۰ ثانیه صبر و تلاش دوباره..."
+            sleep 10
+          done
+          echo "❌ FAIL: staging پس از $max_attempts تلاش سالم نشد (آخرین HTTP status: $response)"
+          echo "--- بدنه پاسخ آخر ---"
+          cat /tmp/staging-health-body.txt || true
+          exit 1
 
       - name: خلاصه
         run: |
