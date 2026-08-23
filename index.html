@@ -2458,12 +2458,32 @@ if(nf) nf.addEventListener('submit',e=>{
     return VeloraLocale.t(QUESTION_KEYS[kind] || '', null, '…');
   }
 
+  /* PR-14: intent keywords come from the locale catalog (landing.ai.intent.*),
+     not from a hard-coded bilingual literal in this shared script — the
+     English-facing build must not embed Persian source text. Each catalog
+     value is a comma-separated keyword list; matching stays case-insensitive
+     and substring-based, same behavior as the previous inline regexes.
+     Keys are referenced as explicit literals (mirrors ANSWER_KEYS /
+     QUESTION_KEYS above) so the static localization scanners see real usage. */
+  var INTENT_KEYS = {
+    lose: 'landing.ai.intent.lose',
+    revenge: 'landing.ai.intent.revenge',
+    edge: 'landing.ai.intent.edge',
+    setup: 'landing.ai.intent.setup'
+  };
+  function intentKeywords(kind){
+    var raw = VeloraLocale.t(INTENT_KEYS[kind], null, '');
+    return raw ? raw.split(',').map(function(w){ return w.trim().toLowerCase(); }).filter(Boolean) : [];
+  }
   function matchQ(t){
     t = t.toLowerCase();
-    if(/(lose|loss|lost|باخت|ضرر)/.test(t)) return 'lose';
-    if(/(revenge|انتقام|اورترید|overtrad)/.test(t)) return 'revenge';
-    if(/(edge|برتری|سودده|برتر)/.test(t)) return 'edge';
-    if(/(setup|ستاپ|بگیرم|بردارم)/.test(t)) return 'setup';
+    var kinds = ['lose', 'revenge', 'edge', 'setup'];
+    for(var i = 0; i < kinds.length; i++){
+      var words = intentKeywords(kinds[i]);
+      for(var j = 0; j < words.length; j++){
+        if(t.indexOf(words[j]) !== -1) return kinds[i];
+      }
+    }
     return 'default';
   }
   function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
