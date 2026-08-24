@@ -11,9 +11,13 @@ const bootstrap = fs.readFileSync(path.join(ROOT, 'public/assets/velora-locale-b
 const registry = JSON.parse(fs.readFileSync(path.join(ROOT, 'public/locales/manifest.json'), 'utf8'));
 
 function resolve(options = {}) {
+  // Server-generated HTML always sets data-route-locale and
+  // data-velora-prelocalized to the same locale; a test that overrides only
+  // one of them is modeling a state the build never produces.
+  const declared = options.declaredRoute !== undefined ? options.declaredRoute : (options.prelocalized || 'fa');
   const attributes = {
-    'data-route-locale': options.declaredRoute === undefined ? 'fa' : options.declaredRoute,
-    'data-velora-prelocalized': options.prelocalized || ''
+    'data-route-locale': declared,
+    'data-velora-prelocalized': options.prelocalized || declared
   };
   const classes = new Set();
   const root = {
@@ -67,9 +71,19 @@ expect('Primary browser language is authoritative', { language: 'de-DE', languag
 expect('Cookie choice wins over browser and storage', { cookie: 'en', stored: 'fa', language: 'fa-IR', prelocalized: 'en' }, {
   locale: 'en', dir: 'ltr', booting: false
 });
-expect('Migrated localStorage choice wins when cookie absent', { stored: 'fa', language: 'de-DE', prelocalized: 'en' }, {
-  locale: 'fa', dir: 'rtl', booting: true
-});
+/* R2: when the server-declared route locale is present, a stale localStorage
+   value must never override it (this was the original dashboard bug). */
+expect('R2: declared route beats migrated localStorage choice when cookie absent',
+  { stored: 'fa', language: 'de-DE', declaredRoute: 'en', prelocalized: 'en' },
+  { locale: 'en', dir: 'ltr', booting: false });
+expect('R2: declared Persian route beats stale English storage',
+  { stored: 'en', language: 'en-GB', declaredRoute: 'fa', prelocalized: 'fa' },
+  { locale: 'fa', dir: 'rtl', booting: false });
+/* Legacy: when no route locale is declared (e.g. standalone dev shell),
+   localStorage still migrates the user's choice. */
+expect('Migrated localStorage choice wins when cookie absent and no declared route',
+  { stored: 'fa', language: 'de-DE', declaredRoute: '', prelocalized: '' },
+  { locale: 'fa', dir: 'rtl', booting: true });
 expect('Server-declared locale is used without browser preference', { language: '', languages: [], declaredRoute: 'en', prelocalized: 'en' }, {
   locale: 'en', dir: 'ltr', booting: false
 });
@@ -77,6 +91,26 @@ expect('Explicit locale URL wins over persisted and browser choices', {
   pathname: '/en/dashboard/', cookie: 'fa', stored: 'fa', language: 'fa-IR', declaredRoute: 'en', prelocalized: 'en'
 }, {
   locale: 'en', dir: 'ltr', booting: false
+});
+
+/* R2 regression: the server-declared route locale (which already incorporates
+   users.locale for signed-in requests) must win over a stale localStorage
+   value on unprefixed URLs. Previously localStorage outranked declaredRoute,
+   so an English dashboard delivered by the server could still boot Persian. */
+expect('R2: declared route locale beats stale localStorage on unprefixed URL', {
+  pathname: '/dashboard/', stored: 'fa', language: 'fa-IR', declaredRoute: 'en', prelocalized: 'en'
+}, {
+  locale: 'en', dir: 'ltr', booting: false
+});
+expect('R2: declared route locale beats stale cookie and storage', {
+  pathname: '/dashboard/', cookie: 'fa', stored: 'fa', language: 'fa-IR', declaredRoute: 'en', prelocalized: 'en'
+}, {
+  locale: 'en', dir: 'ltr', booting: false
+});
+expect('R2: Persian declared route beats English storage', {
+  pathname: '/dashboard/', stored: 'en', language: 'en-GB', declaredRoute: 'fa', prelocalized: 'fa'
+}, {
+  locale: 'fa', dir: 'rtl', booting: false
 });
 
 /* F-03 regression: [data-velora-localized-href] anchors are rewritten with the
@@ -137,7 +171,7 @@ expectAnchors('English page rewrites checkout CTA to /en/', { pathname: '/en/', 
   ['/checkout/?plan=professional'], ['/en/checkout/?plan=professional']);
 expectAnchors('Persian page rewrites checkout CTA to /fa/', { pathname: '/fa/', declaredRoute: 'fa', prelocalized: 'fa', language: 'en-GB' },
   ['/checkout/?plan=professional'], ['/fa/checkout/?plan=professional']);
-expectAnchors('Cookie locale drives rewrite on unprefixed page', { cookie: 'en', prelocalized: 'en', language: 'fa-IR' },
+expectAnchors('Cookie locale drives rewrite on unprefixed page', { cookie: 'en', declaredRoute: 'en', prelocalized: 'en', language: 'fa-IR' },
   ['/checkout/'], ['/en/checkout/']);
 expectAnchors('Already-prefixed, root, and external links are preserved', { pathname: '/en/', declaredRoute: 'en', prelocalized: 'en' },
   ['/en/checkout/', '/', 'https://example.com/x', '//cdn.example.com/y'],

@@ -33,6 +33,9 @@ $cases = [
     ['/fa/dashboard/', 'en-GB,en;q=0.9', ['velora_locale' => 'en'], 'fa', 'rtl'],
     ['/en/dashboard/', 'fa-IR,fa;q=0.9', ['velora_locale' => 'fa'], 'en', 'ltr'],
     ['/en/blog/what-is-a-trading-journal/', 'fa-IR,fa;q=0.9', [], 'en', 'ltr'],
+    // R2: a manually chosen English cookie must not be overridden by a Persian
+    // browser when no user session/DB is present (uses a public route).
+    ['/support/', 'fa-IR,fa;q=0.9', ['velora_locale' => 'en'], 'en', 'ltr'],
 ];
 foreach ($cases as $case) {
     [$path, $accept, $cookies, $expectedLocale, $expectedDirection] = $case;
