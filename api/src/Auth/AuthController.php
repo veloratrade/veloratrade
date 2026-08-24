@@ -32,6 +32,7 @@ final class AuthController
             'full_name' => 'string|max:120',
             'fullName' => 'string|max:120',
             'timezone' => 'string|max:64',
+            'locale' => 'string|max:35',
             'notificationLocale' => 'string|max:35',
         ]);
 

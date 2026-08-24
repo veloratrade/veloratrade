@@ -36,6 +36,19 @@ final class AuthService
         $timezone = trim((string) ($data['timezone'] ?? 'UTC'));
         $notificationLocale = trim((string) ($data['notificationLocale'] ?? '')) ?: null;
 
+        // R4: capture the UI locale the user registered under so their saved
+        // preference is correct on first login instead of defaulting to 'fa'.
+        $uiLocale = trim((string) ($data['locale'] ?? '')) ?: null;
+        $i18n = \Velora\Core\Locale\LocaleManager::getInstance();
+        if ($uiLocale !== null) {
+            $uiLocale = $i18n->supports($uiLocale) ? $i18n->resolve($uiLocale) : null;
+        }
+        if ($uiLocale === null && $notificationLocale !== null) {
+            $uiLocale = $i18n->supports($notificationLocale)
+                ? $i18n->resolve($notificationLocale)
+                : null;
+        }
+
         if ($this->users->emailExists($email)) {
             $existing = $this->users->findByEmail($email);
             if ($existing !== null && $existing['email_verified_at'] !== null) {
@@ -100,12 +113,17 @@ final class AuthService
 
         $passwordHash = password_hash($data['password'], PASSWORD_BCRYPT, ['cost' => $cost]);
 
-        $userId = $this->users->create([
+        $createData = [
             'email' => $email,
             'password_hash' => $passwordHash,
             'full_name' => $fullName,
             'timezone' => $timezone,
-        ]);
+        ];
+        if ($uiLocale !== null) {
+            $createData['locale'] = $uiLocale;
+            $createData['locale_source'] = 'user';
+        }
+        $userId = $this->users->create($createData);
 
         $token = bin2hex(random_bytes(32));
         $this->verifications->invalidateAllForUser($userId);

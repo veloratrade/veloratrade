@@ -45,6 +45,20 @@
     } catch (_) {}
   }
 
+  function emitUserLocale(user) {
+    /* R2: broadcast the server-side saved preference so the localization layer
+       can adopt it after login/refresh. Only fires when the user object carries
+       a supported-looking locale; velora-localization.js validates and applies. */
+    try {
+      var locale = user && user.locale ? String(user.locale) : '';
+      if (locale && /^[a-z]{2}(-[A-Za-z]{2})?$/.test(locale)) {
+        global.dispatchEvent(new CustomEvent('velora:user-locale', {
+          detail: { locale: locale.toLowerCase() }
+        }));
+      }
+    } catch (_) {}
+  }
+
   function setSession(tokens) {
     if (tokens && Object.prototype.hasOwnProperty.call(tokens, 'refreshToken')) {
       throw new ApiError('Refresh credentials are not accepted by browser JavaScript', { status: 500, code: 'UNSAFE_AUTH_RESPONSE', messageKey: 'errors.api' });
@@ -56,6 +70,7 @@
     currentUser = tokens.user || currentUser || null;
     sessionReady = Promise.resolve(currentUser);
     emitSession();
+    if (currentUser) emitUserLocale(currentUser);
     return accessToken;
   }
 

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 
-<html data-route-locale="fa" dir="rtl" lang="fa">
+<html>
 <head>
 <meta charset="utf-8"/><script src="/public/assets/velora-locale-registry.js?v=2026.08.22.1"></script>
 <script src="/public/assets/velora-latin-digits.js?v=2026.08.14.17"></script><script src="/public/assets/velora-locale-bootstrap.js?v=2026.08.22.1"></script><link href="/public/assets/velora-localization.css?v=2026.08.22.1" rel="stylesheet"/><script src="/public/assets/velora-localization.js?v=2026.08.22.1"></script><script src="/public/assets/velora-data.js?v=2026.08.22.1"></script><script defer="" src="/public/assets/velora-dynamic-content.js?v=2026.08.22.1"></script>
@@ -873,16 +873,27 @@ function toggleMobileSidebar() {
   var errBox = document.getElementById('errorBox');
   var t = VeloraLocale.t;
 
+  /* R1: authenticated navigation must stay inside the active locale. The server
+     would re-negotiate an unprefixed /dashboard via users.locale/cookie, which
+     can race a just-persisted preference; prefixing is deterministic. */
+  function dashboardUrl() {
+    var loc = (window.VeloraLocale && VeloraLocale.locale) || 'fa';
+    return '/' + loc + '/dashboard/';
+  }
+
   document.getElementById('togglePass').addEventListener('click', function () {
     passEl.type = passEl.type === 'password' ? 'text' : 'password';
   });
 
   VeloraData.ready().then(function (user) {
-    if (user && VeloraData.getAccessToken()) window.location.replace('/dashboard');
+    if (user && VeloraData.getAccessToken()) window.location.replace(dashboardUrl());
   }).catch(function () {});
 
   (document.getElementById('clearSessionBtn') || { addEventListener: function () {} }).addEventListener('click', function () {
-    VeloraData.logout().finally(function () { window.location.replace('/login'); });
+    VeloraData.logout().finally(function () {
+      var loc = (window.VeloraLocale && VeloraLocale.locale) || 'fa';
+      window.location.replace('/' + loc + '/login/');
+    });
   });
 
   function showError(message) {
@@ -907,7 +918,16 @@ function toggleMobileSidebar() {
       var tokens = payload && payload.tokens;
       VeloraData.setSession(tokens);
       btn.textContent = t('auth.loginSuccess');
-      window.location.replace('/dashboard');
+      /* R3: wait for the locale preference to land server-side before the
+         locale-prefixed navigation so users.locale matches the URL. The
+         cookie/localStorage are already set synchronously by setLocale, so a
+         persistence failure degrades to cookie resolution, not a hard stop. */
+      try {
+        if (window.VeloraLocale && typeof VeloraLocale.whenPersisted === 'function') {
+          await VeloraLocale.whenPersisted();
+        }
+      } catch (_) {}
+      window.location.replace(dashboardUrl());
     } catch (error) {
       showError(t(error.code === 'EMAIL_NOT_VERIFIED' ? 'auth.verifyEmail' : (error.messageKey || 'errors.api')));
       btn.disabled = false;

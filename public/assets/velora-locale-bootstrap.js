@@ -49,13 +49,23 @@
     return normalize(document.documentElement.getAttribute('data-route-locale'));
   }
 
-  /* Contract shared with locale-router.php: explicit locale URL, persisted manual
-     choice, primary browser language, then route/default. */
+  /* Contract shared with locale-router.php:
+     1. explicit URL prefix (/en/..., /fa/...) — authoritative navigation intent
+     2. server-declared route locale (<html data-route-locale>) — the HTML was
+        already resolved server-side, including users.locale for signed-in users;
+        a stale localStorage value must never fight it (R2 regression)
+     3. manual-choice cookie (shared with the server, refreshed on every request)
+     4. localStorage (legacy/migrated preference; can be stale across devices)
+     5. primary browser language
+     6. manifest default
+     Note: the signed-in user's saved locale is applied by the server to the
+     delivered HTML (data-route-locale) and additionally re-synced post-paint by
+     velora-data.js via the 'velora:user-locale' event; bootstrap stays synchronous. */
   var resolved = explicitRouteLocale()
+    || declaredRouteLocale()
     || cookieLocale()
     || storedLocale()
     || browserLocale()
-    || declaredRouteLocale()
     || normalize(registry.defaultLocale)
     || Object.keys(localeIndex)[0];
   var meta = localeIndex[resolved] || localeIndex[registry.fallbackLocale] || { intlLocale: resolved, direction: 'ltr' };
