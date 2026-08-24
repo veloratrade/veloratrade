@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""PR-01 (V-7) — Catalog anomaly report (REPORT-ONLY).
+"""PR-01 (V-7) — Catalog anomaly report with optional blocking groups.
 
-Prints a human-readable inventory of catalog quality anomalies. This is NOT a
-blocking check in PR-01: it always exits 0 unless --fail is passed. The
-anomalies become blocking rules in a later phase (P6) after triage.
+Prints a human-readable inventory of catalog quality anomalies. By default it
+remains report-only and exits 0. When ``--fail`` is passed, callers may promote
+all or selected groups into blocking checks. An exact-key allowlist may be
+provided so the current repository baseline can be tolerated while CI blocks any
+new anomalies beyond that approved set.
 
 Reported groups (definitions):
   1. en.empty         — EN value is an empty string.
@@ -20,11 +22,16 @@ import re
 import sys
 from collections import defaultdict
 from pathlib import Path
+from typing import Iterable
 
 PERSIAN_RE = re.compile('[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]')
 
 DEFAULT_REPO_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_ALLOWLIST = DEFAULT_REPO_ROOT / 'tools' / 'localization' / 'catalog-quality-allowlist.json'
 CATALOG_RELS = (('public', 'locales', 'fa.json'), ('public', 'locales', 'en.json'))
+LIST_GROUPS = ('en.empty', 'fa.no-persian', 'fa.en.identical')
+DICT_GROUPS = ('fa.duplicates', 'en.multi-fa')
+ALL_GROUPS = LIST_GROUPS + DICT_GROUPS
 
 
 def _load(root: Path) -> dict:
@@ -78,34 +85,105 @@ def _print(title: str, items, limit: int) -> None:
         print(f"   {item}")
 
 
+def _load_allowlist(path: Path | None) -> dict[str, set[str]]:
+    if path is None:
+        return {}
+    payload = json.loads(path.read_text(encoding='utf-8'))
+    section = payload.get('catalogAnomalies', {})
+    if not isinstance(section, dict):
+        raise ValueError(f"{path}: catalogAnomalies must be an object")
+    result: dict[str, set[str]] = {}
+    for group, items in section.items():
+        if group not in LIST_GROUPS:
+            raise ValueError(f"{path}: unsupported anomaly allowlist group: {group}")
+        if not isinstance(items, list) or any(not isinstance(item, str) for item in items):
+            raise ValueError(f"{path}: catalogAnomalies.{group} must be an array of strings")
+        result[group] = set(items)
+    return result
+
+
+def _allowed_current(group_name: str, current: Iterable[str], allowlist: dict[str, set[str]]) -> tuple[list[str], list[str]]:
+    current_set = set(current)
+    allowed = allowlist.get(group_name, set())
+    stale = sorted(allowed - current_set)
+    blocking = sorted(current_set - allowed)
+    return blocking, stale
+
+
 def run(argv) -> int:
-    parser = argparse.ArgumentParser(description="Catalog anomaly report (report-only, PR-01 V-7)")
+    parser = argparse.ArgumentParser(description="Catalog anomaly report (report-only by default)")
     parser.add_argument('--root', help="repo root (default: derive from script location)")
     parser.add_argument('--limit', type=int, default=15, help="max examples printed per group (default 15)")
-    parser.add_argument('--fail', action='store_true', help="exit 1 if any anomaly group is non-empty (off by default in PR-01)")
+    parser.add_argument('--fail', action='store_true', help="exit 1 if selected anomaly groups remain after allowlisting")
+    parser.add_argument(
+        '--fail-group',
+        action='append',
+        choices=ALL_GROUPS,
+        default=[],
+        help='anomaly group(s) to make blocking under --fail; repeatable; default = all groups',
+    )
+    parser.add_argument(
+        '--allowlist',
+        help='JSON file with catalogAnomalies allowlist (default: none)',
+    )
     args = parser.parse_args(argv)
 
     root = (Path(args.root) if args.root else DEFAULT_REPO_ROOT).resolve()
+    allowlist_path = Path(args.allowlist).resolve() if args.allowlist else None
+    allowlist = _load_allowlist(allowlist_path)
     g = report(root, args.limit)
 
-    print("VELORA catalog anomaly report (report-only)")
-    _print("en.empty (EN empty strings)", g['en.empty'], args.limit)
-    _print("fa.no-persian (FA values without Persian script)", g['fa.no-persian'], args.limit)
-    _print("fa.en.identical (FA == EN)", g['fa.en.identical'], args.limit)
+    print("VELORA catalog anomaly report")
+
+    blocking_groups = set(args.fail_group) if args.fail_group else set(ALL_GROUPS)
+    blocking_hits: list[str] = []
+
+    for group in LIST_GROUPS:
+        blocking, stale = _allowed_current(group, g[group], allowlist)
+        allowlisted_count = len(g[group]) - len(blocking)
+        label = {
+            'en.empty': 'en.empty (EN empty strings)',
+            'fa.no-persian': 'fa.no-persian (FA values without Persian script)',
+            'fa.en.identical': 'fa.en.identical (FA == EN)',
+        }[group]
+        print(
+            f"\n## {label} — total={len(g[group])} allowlisted={allowlisted_count} blocking={len(blocking)}"
+        )
+        for item in blocking[:args.limit]:
+            print(f"   {item}")
+        for item in stale[:args.limit]:
+            print(f"   STALE_ALLOWLIST {item}")
+        if args.fail and group in blocking_groups and (blocking or stale):
+            if blocking:
+                blocking_hits.append(f"{group}: {len(blocking)} blocking item(s)")
+            if stale:
+                blocking_hits.append(f"{group}: {len(stale)} stale allowlist item(s)")
+
     print(f"\n## fa.duplicates (FA value reused by >1 key) — {len(g['fa.duplicates'])} values")
     for v, ks in list(g['fa.duplicates'].items())[:args.limit]:
         print(f"   [{len(ks)} keys] {v[:60]!r} -> {ks[:3]}")
+    if args.fail and 'fa.duplicates' in blocking_groups and g['fa.duplicates']:
+        blocking_hits.append(f"fa.duplicates: {len(g['fa.duplicates'])} value(s)")
+
     print(f"\n## en.multi-fa (EN value from >1 distinct FA) — {len(g['en.multi-fa'])} values")
     for v, srcs in list(g['en.multi-fa'].items())[:args.limit]:
         print(f"   {v[:60]!r} <- {srcs[:3]}")
+    if args.fail and 'en.multi-fa' in blocking_groups and g['en.multi-fa']:
+        blocking_hits.append(f"en.multi-fa: {len(g['en.multi-fa'])} value(s)")
 
     nonempty = sum(1 for grp in (g['en.empty'], g['fa.no-persian'], g['fa.en.identical'], g['fa.duplicates'], g['en.multi-fa']) if grp)
-    print(f"\nSummary: {nonempty}/5 anomaly groups non-empty (report-only, not blocking).")
-    if args.fail and nonempty:
-        print("--fail requested and anomalies present.", file=sys.stderr)
+    mode = 'blocking' if args.fail else 'report-only'
+    print(f"\nSummary: {nonempty}/5 anomaly groups non-empty ({mode}).")
+    if args.fail and blocking_hits:
+        for hit in blocking_hits:
+            print(f"BLOCKING: {hit}", file=sys.stderr)
         return 1
     return 0
 
 
+def main(argv: list[str] | None = None) -> int:
+    return run(argv)
+
+
 if __name__ == '__main__':
-    sys.exit(run(sys.argv[1:]))
+    sys.exit(main(sys.argv[1:]))
