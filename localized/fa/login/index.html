@@ -861,16 +861,25 @@ function toggleMobileSidebar() {
   var errBox = document.getElementById('errorBox');
   var t = VeloraLocale.t;
 
+  
+  function dashboardUrl() {
+    var loc = (window.VeloraLocale && VeloraLocale.locale) || 'fa';
+    return '/' + loc + '/dashboard/';
+  }
+
   document.getElementById('togglePass').addEventListener('click', function () {
     passEl.type = passEl.type === 'password' ? 'text' : 'password';
   });
 
   VeloraData.ready().then(function (user) {
-    if (user && VeloraData.getAccessToken()) window.location.replace('/dashboard');
+    if (user && VeloraData.getAccessToken()) window.location.replace(dashboardUrl());
   }).catch(function () {});
 
   (document.getElementById('clearSessionBtn') || { addEventListener: function () {} }).addEventListener('click', function () {
-    VeloraData.logout().finally(function () { window.location.replace('/login'); });
+    VeloraData.logout().finally(function () {
+      var loc = (window.VeloraLocale && VeloraLocale.locale) || 'fa';
+      window.location.replace('/' + loc + '/login/');
+    });
   });
 
   function showError(message) {
@@ -895,7 +904,13 @@ function toggleMobileSidebar() {
       var tokens = payload && payload.tokens;
       VeloraData.setSession(tokens);
       btn.textContent = t('auth.loginSuccess');
-      window.location.replace('/dashboard');
+      
+      try {
+        if (window.VeloraLocale && typeof VeloraLocale.whenPersisted === 'function') {
+          await VeloraLocale.whenPersisted();
+        }
+      } catch (_) {}
+      window.location.replace(dashboardUrl());
     } catch (error) {
       showError(t(error.code === 'EMAIL_NOT_VERIFIED' ? 'auth.verifyEmail' : (error.messageKey || 'errors.api')));
       btn.disabled = false;

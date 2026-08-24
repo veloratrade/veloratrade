@@ -1,10 +1,10 @@
 {
   "algorithm": "sha256",
-  "commitSha": "39e7f9115d50d378942acb7adcedd7d152f46483",
+  "commitSha": "155a4da0829a4fb87e97230fcd5dd671732b8e94",
   "localizationVersion": "2026.08.22.1",
   "policyVersion": 2,
-  "releaseHtmlSha256": "580f3655da2cf5f2787e8d256cc68cdbf0d7c784c09e7daee0f3ab91aa71a7d5",
-  "releaseId": "2026.08.24.1",
+  "releaseHtmlSha256": "1453fd42f82c20809e82a540e5faf520595973dd2a64d772d8da9c3c510d1aeb",
+  "releaseId": "2026.08.24.2",
   "routeCount": 61,
   "routeManifestSha256": "77c267b42c509fae6a9f070298df1548d94a669176ed74999d28945504bdc251",
   "routes": {
@@ -516,11 +516,11 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/login/index.html",
-      "htmlSha256": "1171458e247b5bf710fe250620a3601a7b0a4c0fa9d143bd44b2936acf40363b",
+      "htmlSha256": "75180034f532fd60bd118204e625d43c85dba0a1400e63d045cefc714ab1b752",
       "inlineScriptCount": 3,
       "inlineScriptHashes": [
+        "sha256-2Afb8O4Mf5Qkqpfcr+3ka5U1K86ZwbXDJIGpStBRYrk=",
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
-        "sha256-REK+R7LylbYjF9RwesoGTeOjrs7FRXbZL7H6aWJf1qY=",
         "sha256-VVSQj8uRcSoK3TViPfAjMxzXKy/AftAJIr3gt3bG4Pg="
       ],
       "inlineStyleCount": 4,
@@ -730,12 +730,12 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/register/index.html",
-      "htmlSha256": "d3ad8423319fb4b4d515cc43f81bce0207a5a3d7186973de5da0387bf10dc02e",
+      "htmlSha256": "b9d34320cc879e5de70c744114bb6d6ee98e2144b0cd69db77ea6b9e9b1bb0f6",
       "inlineScriptCount": 3,
       "inlineScriptHashes": [
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
         "sha256-VVSQj8uRcSoK3TViPfAjMxzXKy/AftAJIr3gt3bG4Pg=",
-        "sha256-W8fO0wqlfNsEQ3jXy2IF95xUF1zuckApSVxQZQVcCUs="
+        "sha256-bfRK1bikaE117/WrnV3Th2oM3vUMwdl0drnbB8yUSSw="
       ],
       "inlineStyleCount": 4,
       "inlineStyleHashes": [
@@ -1421,11 +1421,11 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "fa/login/index.html",
-      "htmlSha256": "ad7b487ad516d96d046291d0d36e8c95c8c8cef7b47289bbc78fc775f1befc87",
+      "htmlSha256": "588a13a319ef011d59b407cabf90899dbfd306747ce435c01d851d6cc0827b83",
       "inlineScriptCount": 3,
       "inlineScriptHashes": [
+        "sha256-2Afb8O4Mf5Qkqpfcr+3ka5U1K86ZwbXDJIGpStBRYrk=",
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
-        "sha256-REK+R7LylbYjF9RwesoGTeOjrs7FRXbZL7H6aWJf1qY=",
         "sha256-VVSQj8uRcSoK3TViPfAjMxzXKy/AftAJIr3gt3bG4Pg="
       ],
       "inlineStyleCount": 4,
@@ -1635,12 +1635,12 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "fa/register/index.html",
-      "htmlSha256": "5b32c80315d5a2eb2807bc3e14e276bfc26f86849f5a7f345975961399dcdd65",
+      "htmlSha256": "7d126eab19bf1eac308e2c76d7fe97e8571f5f14ab09cad23e93d6d40743c3cd",
       "inlineScriptCount": 3,
       "inlineScriptHashes": [
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
         "sha256-VVSQj8uRcSoK3TViPfAjMxzXKy/AftAJIr3gt3bG4Pg=",
-        "sha256-W8fO0wqlfNsEQ3jXy2IF95xUF1zuckApSVxQZQVcCUs="
+        "sha256-bfRK1bikaE117/WrnV3Th2oM3vUMwdl0drnbB8yUSSw="
       ],
       "inlineStyleCount": 4,
       "inlineStyleHashes": [
@@ -1879,5 +1879,5 @@
       ]
     }
   },
-  "sourceDigest": "9a9b2faadf16919e437438cdc7e789f9795419649902e942ec6ec92672aa0799"
+  "sourceDigest": "0925bdab27232ca5bfa219fd62b681c93971dd76af8a483aec38c8f585499fb8"
 }

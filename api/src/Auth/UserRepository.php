@@ -43,20 +43,23 @@ final class UserRepository
     }
 
     /**
-     * @param array{email:string, password_hash:string, full_name:string, timezone:string, locale?:string} $data
+     * @param array{email:string, password_hash:string, full_name:string, timezone:string, locale?:string, locale_source?:string} $data
      */
     public function create(array $data): int
     {
+        $locale = $data['locale'] ?? 'fa';
+        $source = $data['locale_source'] ?? 'default';
         $stmt = Database::connection()->prepare(
-            'INSERT INTO users (email, password_hash, full_name, timezone, locale)
-             VALUES (:email, :password_hash, :full_name, :timezone, :locale)'
+            'INSERT INTO users (email, password_hash, full_name, timezone, locale, locale_source)
+             VALUES (:email, :password_hash, :full_name, :timezone, :locale, :source)'
         );
         $stmt->execute([
             'email' => $data['email'],
             'password_hash' => $data['password_hash'],
             'full_name' => $data['full_name'],
             'timezone' => $data['timezone'],
-            'locale' => $data['locale'] ?? 'fa',
+            'locale' => $locale,
+            'source' => $source,
         ]);
         return (int) Database::connection()->lastInsertId();
     }
