@@ -50,7 +50,7 @@ def make_ui_fixture() -> tuple:
     )
     (root / 'public' / 'assets' / 'clean.js').write_text("const x = 'hello';", encoding='utf-8')
     (root / 'localized' / 'fa' / 'index.html').write_text(
-        '<html><body><script>const r = /(lose|\u0628\u0627\u062e\u062a)/;</script></body></html>',
+        '<html><body><script>const r = "\u0628\u0627\u062e\u062a";</script></body></html>',
         encoding='utf-8',
     )
     (root / 'localized' / 'en' / 'index.html').write_text(
@@ -59,10 +59,30 @@ def make_ui_fixture() -> tuple:
     )
 
     allowlist = {
-        "version": 1,
+        "version": 2,
         "generated_at": "t",
         "scope_note": "t",
-        "categories": {"legacy-dictionary": "x", "regex-intent": "y"},
+        "categories": {"legacy-dictionary": "x", "regex-intent": "y", "runtime-fallback": "z"},
+        "literal_allowlist": {
+            "categories": {
+                "url": "u",
+                "brand-name": "b",
+                "api-name": "a",
+                "technical-identifier": "t",
+                "css-class": "c",
+                "file-path": "f"
+            },
+            "rules": [
+                {"id": "LIT-001", "kind": "regex", "category": "url", "pattern": "^(?:https?:|/)[^\\s]*$"},
+                {"id": "LIT-002", "kind": "regex", "category": "css-class", "pattern": "^(?=.*[-_])(?:[A-Za-z0-9_-]+)(?:\\s+[A-Za-z0-9_-]+)*$"},
+                {"id": "LIT-003", "kind": "exact", "category": "technical-identifier", "value": "DOMContentLoaded"},
+                {"id": "LIT-004", "kind": "exact", "category": "technical-identifier", "value": "Enter"},
+                {"id": "LIT-005", "kind": "exact", "category": "technical-identifier", "value": "Escape"},
+                {"id": "LIT-006", "kind": "exact", "category": "brand-name", "value": "VELORA"},
+                {"id": "LIT-007", "kind": "exact", "category": "api-name", "value": "MetaApi"},
+                {"id": "LIT-008", "kind": "exact", "category": "file-path", "value": "public/assets/app.js"}
+            ]
+        },
         "entries": [
             {"id": "V3-001", "file": "public/assets/known.js", "pattern": "x", "count": 2,
              "category": "legacy-dictionary", "reason": "", "resolution_pr": None},
@@ -99,6 +119,29 @@ def test_ui_new_file_literal_fails() -> None:
     (root / 'public' / 'assets' / 'new.js').write_text("const z = '\u062c\u062f\u06cc\u062f';", encoding='utf-8')
     p = run_cmd(UI_CHECKER, ['--root', str(root), '--allowlist', str(al)])
     check('ui new-file Persian literal fails', p.returncode == 1 and 'NEW VIOLATION' in p.stderr, p.stderr)
+
+
+def test_ui_new_file_english_literal_fails() -> None:
+    root, al = make_ui_fixture()
+    (root / 'public' / 'assets' / 'new-en.js').write_text("const z = 'Cancel';", encoding='utf-8')
+    p = run_cmd(UI_CHECKER, ['--root', str(root), '--allowlist', str(al)])
+    check('ui new-file English literal fails', p.returncode == 1 and 'NEW VIOLATION' in p.stderr, p.stderr)
+
+
+def test_ui_allowed_technical_literals_pass() -> None:
+    root, al = make_ui_fixture()
+    (root / 'public' / 'assets' / 'tech.js').write_text(
+        "const url = 'https://veloratrade.ir';\n"
+        "const brand = 'VELORA';\n"
+        "const api = 'MetaApi';\n"
+        "const evt = 'DOMContentLoaded';\n"
+        "const key = 'Enter';\n"
+        "const cls = 'btn-primary state-open';\n"
+        "const path = 'public/assets/app.js';\n",
+        encoding='utf-8',
+    )
+    p = run_cmd(UI_CHECKER, ['--root', str(root), '--allowlist', str(al)])
+    check('ui allowed technical literals pass', p.returncode == 0, p.stdout + p.stderr)
 
 
 def test_ui_added_literal_in_allowlisted_file_fails() -> None:
@@ -179,6 +222,8 @@ def main() -> int:
     tests = [
         test_ui_positive,
         test_ui_new_file_literal_fails,
+        test_ui_new_file_english_literal_fails,
+        test_ui_allowed_technical_literals_pass,
         test_ui_added_literal_in_allowlisted_file_fails,
         test_ui_orphan_allowlist_fails,
         test_ui_stale_allowlist_fails,

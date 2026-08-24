@@ -1,15 +1,370 @@
 {
-  "version": 1,
-  "generated_at": "2026-08-21T23:32:49+00:00",
-  "scope_note": "PR-01 freeze baseline. Each entry documents one known hardcoded Persian-script literal source in shared JS or inline scripts of generated localized HTML. Counting = distinct string/regex literals containing Persian script, after stripping JS comments (tokenizer identical to build_localized_static.py). Resolve an entry via its resolution_pr; the entry must be removed in the same change that eliminates its violations. Categories: see 'categories' map.",
+  "version": 2,
+  "generated_at": "2026-08-24T19:26:37+00:00",
+  "scope_note": "PR-01 freeze baseline. Each entry documents one known hardcoded UI literal source in shared JS or inline scripts of generated localized HTML. Counting = distinct candidate literals after stripping JS comments and filtering exact/regex-approved technical literals via literal_allowlist. Scope includes Persian-script literals and probable English UI literals. Resolve an entry via its resolution_pr; the entry must be removed in the same change that eliminates its violations.",
   "categories": {
     "legacy-dead": "file is scheduled for deletion",
     "legacy-dictionary": "inline dictionary scheduled for catalog migration",
     "regex-intent": "intent-detection regex, not user-facing copy",
     "seo-meta": "JSON-LD/SEO meta string hardcoded in a localized page",
-    "meta": "legitimate metadata token (e.g. nativeName)"
+    "meta": "legitimate metadata token (e.g. nativeName)",
+    "runtime-fallback": "shared runtime JS contains inline fallback/error copy that must eventually move to the catalog"
+  },
+  "literal_allowlist": {
+    "categories": {
+      "url": "URLs, endpoints, anchors, mailto/tel/data/blob URLs, and route-like paths",
+      "brand-name": "approved product, vendor, broker, platform, or language names that remain literal",
+      "api-name": "HTTP/API/library/schema tokens that are technical rather than user-facing copy",
+      "technical-identifier": "technical identifiers, event names, keyboard tokens, config keys, or machine-oriented literals",
+      "css-class": "CSS selectors, classes, utility tokens, and style-only literals",
+      "file-path": "file paths and asset names"
+    },
+    "rules": [
+      {
+        "id": "LIT-001",
+        "kind": "regex",
+        "category": "url",
+        "pattern": "^(?:https?:|mailto:|tel:|data:|blob:|/|\\.\\.?/|#)[^\\s]*$"
+      },
+      {
+        "id": "LIT-002",
+        "kind": "regex",
+        "category": "file-path",
+        "pattern": "^(?:[A-Za-z0-9_.-]+/)*[A-Za-z0-9_.-]+\\.(?:js|css|json|html|php|png|jpg|jpeg|svg|webp|gif|ico|txt|md)$"
+      },
+      {
+        "id": "LIT-003",
+        "kind": "regex",
+        "category": "css-class",
+        "pattern": "^(?=.*[-_])(?:[A-Za-z0-9_-]+)(?:\\s+[A-Za-z0-9_-]+)*$"
+      },
+      {
+        "id": "LIT-004",
+        "kind": "regex",
+        "category": "css-class",
+        "pattern": "^[#.\\[][A-Za-z0-9_\\-\\[\\]=\"\\'\\s>:,*+~()#.]+$"
+      },
+      {
+        "id": "LIT-005",
+        "kind": "exact",
+        "category": "technical-identifier",
+        "value": "use strict"
+      },
+      {
+        "id": "LIT-006",
+        "kind": "exact",
+        "category": "technical-identifier",
+        "value": "DOMContentLoaded"
+      },
+      {
+        "id": "LIT-007",
+        "kind": "exact",
+        "category": "technical-identifier",
+        "value": "IntersectionObserver"
+      },
+      {
+        "id": "LIT-008",
+        "kind": "exact",
+        "category": "technical-identifier",
+        "value": "Enter"
+      },
+      {
+        "id": "LIT-009",
+        "kind": "exact",
+        "category": "technical-identifier",
+        "value": "Escape"
+      },
+      {
+        "id": "LIT-010",
+        "kind": "exact",
+        "category": "api-name",
+        "value": "Authorization"
+      },
+      {
+        "id": "LIT-011",
+        "kind": "exact",
+        "category": "api-name",
+        "value": "Content-Type"
+      },
+      {
+        "id": "LIT-012",
+        "kind": "exact",
+        "category": "api-name",
+        "value": "Bearer"
+      },
+      {
+        "id": "LIT-013",
+        "kind": "exact",
+        "category": "api-name",
+        "value": "DateTimeFormat"
+      },
+      {
+        "id": "LIT-014",
+        "kind": "exact",
+        "category": "api-name",
+        "value": "NumberFormat"
+      },
+      {
+        "id": "LIT-015",
+        "kind": "exact",
+        "category": "api-name",
+        "value": "Language"
+      },
+      {
+        "id": "LIT-016",
+        "kind": "exact",
+        "category": "api-name",
+        "value": "Article"
+      },
+      {
+        "id": "LIT-017",
+        "kind": "exact",
+        "category": "api-name",
+        "value": "Organization"
+      },
+      {
+        "id": "LIT-018",
+        "kind": "exact",
+        "category": "brand-name",
+        "value": "VELORA"
+      },
+      {
+        "id": "LIT-019",
+        "kind": "exact",
+        "category": "brand-name",
+        "value": "Velora"
+      },
+      {
+        "id": "LIT-020",
+        "kind": "exact",
+        "category": "brand-name",
+        "value": "MetaApi"
+      },
+      {
+        "id": "LIT-021",
+        "kind": "exact",
+        "category": "brand-name",
+        "value": "MetaAPI"
+      },
+      {
+        "id": "LIT-022",
+        "kind": "exact",
+        "category": "brand-name",
+        "value": "MetaTrader"
+      },
+      {
+        "id": "LIT-023",
+        "kind": "exact",
+        "category": "brand-name",
+        "value": "Stripe"
+      },
+      {
+        "id": "LIT-024",
+        "kind": "exact",
+        "category": "brand-name",
+        "value": "OpenAI"
+      },
+      {
+        "id": "LIT-025",
+        "kind": "exact",
+        "category": "brand-name",
+        "value": "Google"
+      },
+      {
+        "id": "LIT-026",
+        "kind": "exact",
+        "category": "brand-name",
+        "value": "Cloudflare"
+      },
+      {
+        "id": "LIT-027",
+        "kind": "exact",
+        "category": "brand-name",
+        "value": "Resend"
+      },
+      {
+        "id": "LIT-028",
+        "kind": "exact",
+        "category": "brand-name",
+        "value": "Alpari-Demo"
+      },
+      {
+        "id": "LIT-029",
+        "kind": "exact",
+        "category": "brand-name",
+        "value": "Alpari-Live"
+      },
+      {
+        "id": "LIT-030",
+        "kind": "exact",
+        "category": "brand-name",
+        "value": "Alpari-MT5"
+      },
+      {
+        "id": "LIT-031",
+        "kind": "exact",
+        "category": "technical-identifier",
+        "value": "English"
+      },
+      {
+        "id": "LIT-032",
+        "kind": "exact",
+        "category": "technical-identifier",
+        "value": "Persian"
+      },
+      {
+        "id": "LIT-033",
+        "kind": "exact",
+        "category": "technical-identifier",
+        "value": "Arab"
+      },
+      {
+        "id": "LIT-034",
+        "kind": "exact",
+        "category": "technical-identifier",
+        "value": "Latn"
+      },
+      {
+        "id": "LIT-035",
+        "kind": "exact",
+        "category": "technical-identifier",
+        "value": "errors.http."
+      },
+      {
+        "id": "LIT-036",
+        "kind": "exact",
+        "category": "api-name",
+        "value": "DELETE"
+      },
+      {
+        "id": "LIT-037",
+        "kind": "exact",
+        "category": "api-name",
+        "value": "PATCH"
+      },
+      {
+        "id": "LIT-038",
+        "kind": "exact",
+        "category": "api-name",
+        "value": "RelativeTimeFormat"
+      },
+      {
+        "id": "LIT-039",
+        "kind": "exact",
+        "category": "technical-identifier",
+        "value": "INPUT"
+      },
+      {
+        "id": "LIT-040",
+        "kind": "exact",
+        "category": "technical-identifier",
+        "value": "SELECT"
+      },
+      {
+        "id": "LIT-041",
+        "kind": "exact",
+        "category": "technical-identifier",
+        "value": "TEXTAREA"
+      },
+      {
+        "id": "LIT-042",
+        "kind": "exact",
+        "category": "technical-identifier",
+        "value": "VELORA locale registry must load before bootstrap."
+      },
+      {
+        "id": "LIT-043",
+        "kind": "exact",
+        "category": "technical-identifier",
+        "value": "VELORA locale registry must load before velora-localization.js"
+      },
+      {
+        "id": "LIT-044",
+        "kind": "exact",
+        "category": "technical-identifier",
+        "value": "ApiError"
+      },
+      {
+        "id": "LIT-045",
+        "kind": "exact",
+        "category": "technical-identifier",
+        "value": "UNAUTHORIZED"
+      }
+    ]
   },
   "entries": [
+    {
+      "id": "V3-026",
+      "file": "localized/en/blog/forex-trading-journal/index.html",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 2,
+      "category": "seo-meta",
+      "reason": "hardcoded English JSON-LD meta strings on the en page itself (legitimate en-locale SEO metadata, not a cross-locale bug); keep under freeze until SEO metadata is fully sourced through the localization catalog/build path.",
+      "resolution_pr": null
+    },
+    {
+      "id": "V3-027",
+      "file": "localized/en/blog/mt4-mt5-trading-journal/index.html",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 2,
+      "category": "seo-meta",
+      "reason": "hardcoded English JSON-LD meta strings on the en page itself (legitimate en-locale SEO metadata, not a cross-locale bug); keep under freeze until SEO metadata is fully sourced through the localization catalog/build path.",
+      "resolution_pr": null
+    },
+    {
+      "id": "V3-028",
+      "file": "localized/en/blog/risk-management-in-trading/index.html",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 2,
+      "category": "seo-meta",
+      "reason": "hardcoded English JSON-LD meta strings on the en page itself (legitimate en-locale SEO metadata, not a cross-locale bug); keep under freeze until SEO metadata is fully sourced through the localization catalog/build path.",
+      "resolution_pr": null
+    },
+    {
+      "id": "V3-029",
+      "file": "localized/en/blog/risk-management-trading/index.html",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 2,
+      "category": "seo-meta",
+      "reason": "hardcoded English JSON-LD meta strings on the en page itself (legitimate en-locale SEO metadata, not a cross-locale bug); keep under freeze until SEO metadata is fully sourced through the localization catalog/build path.",
+      "resolution_pr": null
+    },
+    {
+      "id": "V3-030",
+      "file": "localized/en/blog/what-is-a-trading-journal/index.html",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 2,
+      "category": "seo-meta",
+      "reason": "hardcoded English JSON-LD meta strings on the en page itself (legitimate en-locale SEO metadata, not a cross-locale bug); keep under freeze until SEO metadata is fully sourced through the localization catalog/build path.",
+      "resolution_pr": null
+    },
+    {
+      "id": "V3-031",
+      "file": "localized/en/blog/what-is-trading-journal/index.html",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 2,
+      "category": "seo-meta",
+      "reason": "hardcoded English JSON-LD meta strings on the en page itself (legitimate en-locale SEO metadata, not a cross-locale bug); keep under freeze until SEO metadata is fully sourced through the localization catalog/build path.",
+      "resolution_pr": null
+    },
+    {
+      "id": "V3-032",
+      "file": "localized/en/blog/why-traders-need-a-journal/index.html",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 2,
+      "category": "seo-meta",
+      "reason": "hardcoded English JSON-LD meta strings on the en page itself (legitimate en-locale SEO metadata, not a cross-locale bug); keep under freeze until SEO metadata is fully sourced through the localization catalog/build path.",
+      "resolution_pr": null
+    },
+    {
+      "id": "V3-033",
+      "file": "localized/en/blog/why-traders-need-journal/index.html",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 2,
+      "category": "seo-meta",
+      "reason": "hardcoded English JSON-LD meta strings on the en page itself (legitimate en-locale SEO metadata, not a cross-locale bug); keep under freeze until SEO metadata is fully sourced through the localization catalog/build path.",
+      "resolution_pr": null
+    },
     {
       "id": "V3-010",
       "file": "localized/fa/blog/forex-trading-journal/index.html",
@@ -68,16 +423,25 @@
       "id": "V3-017",
       "file": "public/assets/symbol-icons.js",
       "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
-      "count": 30,
+      "count": 63,
       "category": "legacy-dictionary",
       "reason": "inline Persian labels; migrate to central catalog",
       "resolution_pr": "PR-08a"
     },
     {
+      "id": "V3-034",
+      "file": "public/assets/velora-data.js",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 3,
+      "category": "runtime-fallback",
+      "reason": "shared runtime JS still contains inline English fallback/error copy for auth/API flows; keep frozen and migrate user-facing copy to the central catalog instead of adding more literals.",
+      "resolution_pr": "PR-10a"
+    },
+    {
       "id": "V3-018",
       "file": "public/assets/velora-dialog.js",
       "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
-      "count": 6,
+      "count": 11,
       "category": "legacy-dictionary",
       "reason": "bilingual copy object keyed off document.documentElement.lang; migrate to central catalog",
       "resolution_pr": "PR-08b"
@@ -86,7 +450,7 @@
       "id": "V3-019",
       "file": "public/assets/velora-how-modals.js",
       "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
-      "count": 35,
+      "count": 70,
       "category": "legacy-dictionary",
       "reason": "t() fallback labels + Persian OCR regexes; migrate to central catalog",
       "resolution_pr": "PR-08c"
@@ -95,7 +459,7 @@
       "id": "V3-020",
       "file": "public/assets/velora-i18n.js",
       "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
-      "count": 81,
+      "count": 153,
       "category": "legacy-dead",
       "reason": "legacy auto-translate module (translate.googleapis.com), zero references; delete the file",
       "resolution_pr": "PR-07"
@@ -110,10 +474,19 @@
       "resolution_pr": null
     },
     {
+      "id": "V3-035",
+      "file": "public/assets/velora-localization.js",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 6,
+      "category": "runtime-fallback",
+      "reason": "shared localization runtime still contains inline fallback/error copy; keep frozen and migrate user-facing fallback strings to the central catalog instead of adding more literals.",
+      "resolution_pr": "PR-10b"
+    },
+    {
       "id": "V3-022",
       "file": "public/assets/velora-premium-footer.js",
       "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
-      "count": 16,
+      "count": 31,
       "category": "legacy-dictionary",
       "reason": "bilingual copy object keyed off document.documentElement.lang; migrate to central catalog",
       "resolution_pr": "PR-08b"
@@ -122,7 +495,7 @@
       "id": "V3-023",
       "file": "public/assets/velora-product-gallery.js",
       "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
-      "count": 18,
+      "count": 38,
       "category": "legacy-dictionary",
       "reason": "bilingual copy object keyed off document.documentElement.lang; migrate to central catalog",
       "resolution_pr": "PR-08b"
@@ -131,7 +504,7 @@
       "id": "V3-024",
       "file": "public/assets/velora-smart-import-dash.js",
       "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
-      "count": 1,
+      "count": 2,
       "category": "legacy-dictionary",
       "reason": "inline Persian labels; migrate to central catalog",
       "resolution_pr": "PR-08a"
@@ -140,7 +513,7 @@
       "id": "V3-025",
       "file": "public/assets/velora-smart-import.js",
       "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
-      "count": 38,
+      "count": 26,
       "category": "legacy-dictionary",
       "reason": "t() fallback labels + Persian OCR regexes; migrate to central catalog",
       "resolution_pr": "PR-08c"
@@ -148,8 +521,8 @@
   ],
   "baseline": {
     "files": 25,
-    "literals": 265,
+    "literals": 435,
     "frozen_hashed_keys": 879,
-    "note": "Earlier hand-audit estimated ~227 violations (223 shared-JS + 4 inline-script). Actual baseline is 265 distinct literals: the tokenizer counts string AND regex literals after comment-stripping (same tokenizer as build_localized_static.py), and two sources were newly discovered — public/assets/emotion-icons.js and Persian JSON-LD meta strings in 13 localized blog pages."
+    "note": "Baseline after bilingual hardening of check_hardcoded_ui.py: counts now include Persian-script literals plus probable English UI literals, after filtering allowlisted technical strings (URLs, brand/API names, technical identifiers, CSS selectors/classes, and file paths). Any new hardcoded UI literal outside this exact baseline fails CI."
   }
 }
