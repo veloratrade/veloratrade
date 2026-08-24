@@ -598,7 +598,8 @@ function toggleMobileSidebar() {
   border-radius: 14px !important;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9) !important;
   z-index: 8000 !important;
-  max-height: min(58vh, 420px) !important;
+  
+  max-height: min(58vh, 420px);
   display: none !important;
   flex-direction: column !important;
   overflow: hidden !important;
@@ -872,6 +873,19 @@ function toggleMobileSidebar() {
     }
 
     var allSymbols = [];
+    
+    
+    
+    
+    
+    var GROUP_TITLE = {
+      starred: t('pages.trades.new.p05.group_starred'), recent: t('pages.trades.new.p05.group_recent'),
+      crypto: t('pages.trades.new.p05.group_crypto'), forex: t('pages.trades.new.p05.group_forex'),
+      metal: t('pages.trades.new.p05.group_metal'), commodity: t('pages.trades.new.p05.group_commodity'),
+      index: t('pages.trades.new.p05.group_index'), other: t('pages.trades.new.p05.group_other')
+    };
+    var GROUP_ORDER = ['starred', 'recent', 'metal', 'forex', 'crypto', 'commodity', 'index', 'other'];
+    var DEFAULT_STARS = ['XAU/USD', 'XAG/USD', 'EUR/USD', 'GBP/USD', 'USD/JPY', 'NAS100'];
     if (window.VeloraSymbols && VeloraSymbols.load) {
       VeloraSymbols.load().then(function () { renderSymbolList(allSymbols); }).catch(function () {});
     }
@@ -908,14 +922,6 @@ function toggleMobileSidebar() {
       if (/^[A-Z]{6}$/.test(u)) return 'forex';
       return 'other';
     }
-    var GROUP_TITLE = {
-      starred: t('pages.trades.new.p05.group_starred'), recent: t('pages.trades.new.p05.group_recent'),
-      crypto: t('pages.trades.new.p05.group_crypto'), forex: t('pages.trades.new.p05.group_forex'),
-      metal: t('pages.trades.new.p05.group_metal'), commodity: t('pages.trades.new.p05.group_commodity'),
-      index: t('pages.trades.new.p05.group_index'), other: t('pages.trades.new.p05.group_other')
-    };
-    var GROUP_ORDER = ['starred', 'recent', 'metal', 'forex', 'crypto', 'commodity', 'index', 'other'];
-    var DEFAULT_STARS = ['XAU/USD', 'XAG/USD', 'EUR/USD', 'GBP/USD', 'USD/JPY', 'NAS100'];
     function readRecents() {
       try {
         var raw = JSON.parse(localStorage.getItem('velora_recent_symbols') || '[]');
@@ -970,6 +976,8 @@ function toggleMobileSidebar() {
     function renderSymbolList(list) {
       var box = byId('symList');
       if (!box) return;
+      
+      if (!Array.isArray(GROUP_ORDER) || !GROUP_TITLE || !Array.isArray(DEFAULT_STARS)) return;
       if (!list.length) { if (byId('symEmpty')) byId('symEmpty').style.display = 'block'; box.innerHTML = ''; return; }
       if (byId('symEmpty')) byId('symEmpty').style.display = 'none';
       var buckets = {};
@@ -1199,7 +1207,7 @@ function toggleMobileSidebar() {
 </script>
 <script src="/public/assets/velora-ui-sound.js?v=2026.08.13.2"></script>
 <script src="/public/assets/velora-dialog.js?v=2026.08.22.1"></script>
-<script src="/public/assets/velora-sym-picker.js?v=2026.08.13.47"></script>
+<script src="/public/assets/velora-sym-picker.js?v=2026.08.25.1"></script>
 <script src="/public/assets/velora-smart-import.js?v=2026.08.22.1"></script>
 </body>
 </html>
