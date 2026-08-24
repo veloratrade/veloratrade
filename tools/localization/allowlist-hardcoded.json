@@ -161,7 +161,6 @@
           "public/assets/velora-premium-footer.js",
           "public/assets/velora-product-gallery.js",
           "public/assets/velora-sidebar-icons.js",
-          "public/assets/velora-smart-import-dash.js",
           "public/assets/velora-sym-picker.js"
         ],
         "match_count": 1
@@ -861,15 +860,6 @@
       "category": "legacy-dictionary",
       "reason": "bilingual copy object keyed off document.documentElement.lang; migrate to central catalog",
       "resolution_pr": "PR-08b"
-    },
-    {
-      "id": "V3-024",
-      "file": "public/assets/velora-smart-import-dash.js",
-      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
-      "count": 2,
-      "category": "legacy-dictionary",
-      "reason": "inline Persian labels; migrate to central catalog",
-      "resolution_pr": "PR-08a"
     },
     {
       "id": "V3-025",
