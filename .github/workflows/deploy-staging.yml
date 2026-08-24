@@ -121,7 +121,7 @@ jobs:
           print(f"✅ provenance بسته تأیید شد: releaseId={pkg.get('releaseId')} commitSha={sha[:12]}")
           PY
 
-      - name: انتقال با lftp به staging (مقاوم در برابر قطعی هاست)
+      - name: انتقال فایل‌های عادی با lftp mirror (بهینه، بدون فایل‌های حیاتی)
         env:
           FTP_SERVER:   ${{ secrets.STAGING_FTP_SERVER }}
           FTP_USERNAME: ${{ secrets.STAGING_FTP_USERNAME }}
@@ -129,28 +129,41 @@ jobs:
         run: |
           set -uo pipefail
           sudo apt-get install -y -q lftp > /dev/null
+          source .github/deploy/critical-deploy-files.sh
 
-          # هاست اتصال‌ها را وسط کار reset می‌کند؛ تکرار بیرونی (retry loop) با
-          # آپلود کامل مجدد ادامه می‌دهد (نه --continue داخلی lftp).
+          # معماری Hybrid Critical Files (جایگزین --transfer-all سراسری):
           #
-          # نکته مهم (رفع‌شده Aug 2026، پیگیری اصلاح اول): --continue و
-          # --transfer-all را نباید همزمان استفاده کرد. --continue یک بررسی
-          # «آیا مقصد از قبل کامل است؟» مستقل انجام می‌دهد (بر پایه SIZE) که
-          # --transfer-all آن را override نمی‌کند — تأیید شده با تست مستقیم
-          # روی سرور FTP آزمایشی: با هر دو فلگ با هم، lftp پیام
-          # «destination file is already complete» می‌دهد و فایل واقعاً
-          # آپلود نمی‌شود، حتی وقتی محتوا متفاوت است. بنابراین اینجا فقط
-          # --transfer-all (بدون --continue) استفاده می‌شود تا آپلود واقعاً
-          # اجباری بماند؛ هزینه‌اش این است که یک قطعی وسط کار باعث آپلود
-          # مجدد کامل بسته می‌شود (نه ادامه از همان بایت) — این هزینه با
-          # اندازه فعلی بسته (~30 مگابایت) قابل قبول است و توسط همین حلقه
-          # تکرار بیرونی (۱۲ تلاش) پوشش داده می‌شود.
-          # (--ignore-time: همه فایل‌ها byte-fresh آپلود می‌شوند — Artifact Integrity §4)
+          # ریشه حادثه Aug 2026: lftp mirror با --ignore-time تصمیم skip/transfer
+          # را فقط بر اساس اندازه فایل می‌گیرد؛ یک فایل هم‌اندازه با محتوای
+          # متفاوت (مثل localized/.csp-release.json، ۳۸۶ بایت در هر دو نسخه)
+          # به‌اشتباه skip می‌شد. راه‌حل اول (--transfer-all) در PR #38/#39 کار
+          # کرد اما هزینه‌اش این بود که هر ۷۱۷ فایل بسته (~۳۰ مگابایت) در *هر*
+          # دیپلوی، حتی بدون تغییر، دوباره کامل آپلود شوند — با رشد Velora این
+          # هزینه فقط بزرگ‌تر می‌شود.
+          #
+          # راه‌حل این PR: فایل‌های امنیتی-حیاتی (آرایه CRITICAL_DEPLOY_FILES در
+          # .github/deploy/critical-deploy-files.sh) کاملاً از این mirror
+          # --exclude می‌شوند — یعنی هرگز مشمول هیوریستیک skip نمی‌شوند، چون
+          # اصلاً وارد این تصمیم‌گیری نمی‌شوند. آپلود واقعی آن‌ها در مرحله بعد،
+          # با put صریح (بدون منطق skip)، انجام می‌شود.
+          #
+          # برای بقیه‌ی ۷۱۵ فایل عادی، بهینه‌سازی --continue بازگردانده شده
+          # (بدون --transfer-all): تست شد که --continue برای فایل‌های واقعاً
+          # بدون تغییر skip صحیح انجام می‌دهد و برای یک قطعی وسط انتقال یک
+          # فایل بزرگ، resume از همان بایت (نه شروع از صفر) را انجام می‌دهد —
+          # این دقیقاً رفتاری است که تکرار بیرونی روی کل بسته دیگر لازم نیست
+          # به‌صورت full-resend جبران کند.
+          EXCLUDE_ARGS=()
+          for f in "${CRITICAL_DEPLOY_FILES[@]}"; do
+            escaped="$(printf '%s' "$f" | sed -e 's/[.]/\\./g')"
+            EXCLUDE_ARGS+=(--exclude "^${escaped}\$")
+          done
+
           attempt=0
           until [ $attempt -ge 12 ]; do
             attempt=$((attempt+1))
-            echo "===== تلاش $attempt ====="
-            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" <<'LFTP' && break
+            echo "===== تلاش $attempt (mirror عادی) ====="
+            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" -e "
           set ftp:ssl-allow no
           set net:max-retries 2
           set net:reconnect-interval-base 5
@@ -158,14 +171,52 @@ jobs:
           set net:timeout 30
           set ftp:passive-mode on
           set mirror:parallel-transfer-count 1
-          mirror -R --ignore-time --transfer-all --no-perms --no-symlinks \
-                 --exclude-glob .git* \
-                 staging-build/ public_html/staging.veloratrade.ir/
+          mirror -R --continue --ignore-time --no-perms --no-symlinks --exclude-glob .git* ${EXCLUDE_ARGS[*]} staging-build/ public_html/staging.veloratrade.ir/
           bye
-          LFTP
+          " && break
             echo "قطع شد — ادامه از همان نقطه پس از 10 ثانیه..."
             sleep 10
           done
+
+      - name: آپلود اجباری فایل‌های حیاتی (بدون تکیه بر منطق mirror)
+        env:
+          FTP_SERVER:   ${{ secrets.STAGING_FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.STAGING_FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.STAGING_FTP_PASSWORD }}
+        run: |
+          set -uo pipefail
+          source .github/deploy/critical-deploy-files.sh
+
+          # این فایل‌ها هرگز از mirror عبور نمی‌کنند؛ اینجا با put صریح
+          # آپلود می‌شوند. put هیچ منطق «آیا مقصد از قبل کامل/هم‌اندازه است؟»
+          # ندارد — همیشه محتوا را کامل ارسال و جایگزین می‌کند، مستقل از
+          # اندازه یا زمان فایل مقصد. این دقیقاً همان تضمینی است که در حادثه
+          # Aug 2026 غایب بود.
+          for f in "${CRITICAL_DEPLOY_FILES[@]}"; do
+            echo "===== آپلود اجباری فایل حیاتی: $f ====="
+            attempt=0
+            until [ $attempt -ge 6 ]; do
+              attempt=$((attempt+1))
+              echo "  تلاش $attempt"
+              lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" -e "
+          set ftp:ssl-allow no
+          set net:max-retries 2
+          set net:reconnect-interval-base 3
+          set net:reconnect-interval-max 10
+          set net:timeout 30
+          set ftp:passive-mode on
+          put staging-build/$f -o public_html/staging.veloratrade.ir/$f
+          bye
+          " && break
+              echo "  قطع شد؛ ۱۰ ثانیه صبر و تلاش دوباره..."
+              sleep 10
+            done
+            if [ $attempt -ge 6 ]; then
+              echo "❌ FAIL: آپلود فایل حیاتی $f پس از ۶ تلاش ناموفق بود"
+              exit 1
+            fi
+          done
+          echo "✅ همه فایل‌های حیاتی با موفقیت (اجباری) آپلود شدند"
 
           echo "===== راستی‌آزمایی نهایی: فایل‌های کلیدی روی سرور ====="
           lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" <<'LFTP'
@@ -187,9 +238,13 @@ jobs:
           # هر دو فایل حیاتی provenance را از سرور می‌گیریم — نه فقط
           # .csp-release.json. مشکل رفع‌شده Aug 2026: lftp mirror ممکن است
           # فایلی را که اندازه‌اش با نسخه قبلی یکی است (byte-for-byte هم‌اندازه
-          # ولی محتوای متفاوت) رد کند و به‌روزرسانی نکند. برای رفع دائمی این
-          # آسیب‌پذیری هر دو فایل روی سرور با نسخه‌ی بسته منتشرشده مقایسه
-          # می‌شوند تا drift جزئی (فقط یکی از دو فایل به‌روز شود) قابل تشخیص باشد.
+          # ولی محتوای متفاوت) رد کند و به‌روزرسانی نکند. با معماری Hybrid
+          # Critical Files این دو فایل دیگر اصلاً از مسیر mirror عبور
+          # نمی‌کنند (به مرحله قبل، «آپلود اجباری فایل‌های حیاتی»، مراجعه
+          # کنید)، اما این مرحله verification مستقل و read-only باقی می‌ماند
+          # تا هر drift احتمالی (شبکه، رفتار سرور، و غیره) در آپلود اجباری هم
+          # قابل تشخیص باشد — دفاع در عمق (defense in depth)، نه اعتماد کورکورانه
+          # به موفقیت مرحله put.
           lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" <<LFTP
           set ftp:ssl-allow no
           set net:timeout 30
@@ -229,6 +284,22 @@ jobs:
                   f"(actual={server_manifest_sha256} recorded={server_release.get('cspManifestSha256')})"
               )
           print("✅ public/locales/csp-manifest.json روی سرور با آرتیفکت تأییدشده CI برابر است")
+
+          # راستی‌آزمایی سازگاری داخلی اضافه (routeCount / policyVersion): این دو
+          # مقدار در .csp-release.json نیز ذخیره می‌شوند و باید با مقادیر واقعیِ
+          # منیفست منتشرشده روی سرور یکی باشند — یک drift جزئی دیگر (مثلاً
+          # منیفست به‌روز شود ولی releaseId/routeCount بسته قدیمی بماند) را
+          # مستقل از بررسی‌های بالا آشکار می‌کند.
+          server_manifest = json.loads(server_manifest_bytes)
+          for k in ("routeCount", "policyVersion"):
+              release_val = server_release.get(k)
+              manifest_val = server_manifest.get(k)
+              if release_val != manifest_val:
+                  raise SystemExit(
+                      f"ناهماهنگی داخلی روی سرور: {k} در .csp-release.json={release_val} "
+                      f"با {k} در csp-manifest.json={manifest_val} یکی نیست"
+                  )
+          print("✅ routeCount/policyVersion بین دو فایل حیاتی روی سرور سازگار است")
           PY
 
       - name: بررسی سلامت نهایی staging (HTTP)
