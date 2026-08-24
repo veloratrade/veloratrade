@@ -34,6 +34,11 @@ class OrphanCatalogKeysTestCase(unittest.TestCase):
     def write_asset(self, name: str, content: str) -> None:
         (self.root / "public" / "assets" / name).write_text(content, encoding="utf-8")
 
+    def write_allowlist(self, keys: list[str]) -> Path:
+        path = self.root / "allowlist.json"
+        path.write_text(json.dumps({"orphanKeys": keys}), encoding="utf-8")
+        return path
+
     def test_referenced_key_via_data_i18n_attribute_is_not_orphan(self) -> None:
         self.write_catalog("en", {"common.cancel": "Cancel"})
         self.write_catalog("fa", {"common.cancel": "\u0627\u0646\u0635\u0631\u0627\u0641"})
@@ -158,6 +163,35 @@ class OrphanCatalogKeysTestCase(unittest.TestCase):
 
         self.assertIn("dashboard.chunkOnlyKey", orphans["en"])
         self.assertIn("dashboard.chunkOnlyKey", orphans["fa"])
+
+    def test_allowlisted_orphan_passes_fail_mode(self) -> None:
+        self.write_catalog("en", {"common.trulyUnused": "Unused"})
+        self.write_catalog("fa", {"common.trulyUnused": "x"})
+        allowlist = self.write_allowlist(["common.trulyUnused"])
+
+        exit_code = main(["--root", str(self.root), "--allowlist", str(allowlist), "--fail"])
+
+        self.assertEqual(exit_code, 0)
+
+    def test_unallowlisted_orphan_fails_even_with_allowlist(self) -> None:
+        self.write_catalog("en", {"common.trulyUnused": "Unused"})
+        self.write_catalog("fa", {"common.trulyUnused": "x"})
+        allowlist = self.write_allowlist(["common.someOtherKey"])
+
+        exit_code = main(["--root", str(self.root), "--allowlist", str(allowlist), "--fail"])
+
+        self.assertEqual(exit_code, 1)
+
+    def test_stale_orphan_allowlist_fails(self) -> None:
+        self.write_catalog("en", {"common.cancel": "Cancel"})
+        self.write_catalog("fa", {"common.cancel": "x"})
+        self.write_html("en/index.html", '<button data-i18n="common.cancel">Cancel</button>')
+        self.write_html("fa/index.html", '<button data-i18n="common.cancel">x</button>')
+        allowlist = self.write_allowlist(["common.cancel"])
+
+        exit_code = main(["--root", str(self.root), "--allowlist", str(allowlist), "--fail"])
+
+        self.assertEqual(exit_code, 1)
 
     # -- real repository smoke test (does not assert a specific count,
     # only that the scan runs cleanly end-to-end against real data) -----
