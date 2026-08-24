@@ -81,7 +81,6 @@ KNOWN_MISSING_CRITICAL_SPECS = frozenset(
         "verify-email/index.html",
         "dashboard/index.html",
         "trades/index.html",
-        "trades/new/index.html",
         "wallet/index.html",
         "profile/index.html",
         "accounts/connect/index.html",
