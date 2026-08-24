@@ -296,6 +296,9 @@ jobs:
       - name: Verify-email page behavior (Node)
         run: node tools/tests/test_verify_email_browser.js
 
+      - name: Trades/new initializer order (regression)
+        run: python tools/tests/test_trades_new_init_order.py
+
   # ── gate-e2e: فقط main — کنترل هزینهٔ Playwright ────────────────────
   # روی PR تست e2e داشبورد یک‌بار در ci.yml (جاب dashboard) اجرا می‌شود؛
   # اینجا فقط روی main/dispatch اجرا می‌شود تا اجرای تکراری-pr نداشته باشیم.
@@ -326,6 +329,9 @@ jobs:
           npm install --no-save playwright > /dev/null 2>&1
           npx playwright install --with-deps chromium > /dev/null 2>&1
           echo "Playwright ready."
+
+      - name: Trades/new symbol picker spec (regression, self-contained)
+        run: node tools/e2e/trades-new.spec.js
 
       - name: Prepare private runtime root
         run: |

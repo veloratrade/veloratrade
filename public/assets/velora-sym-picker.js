@@ -16,7 +16,13 @@
     drop.style.width = Math.round(r.width) + 'px';
     drop.style.right = 'auto';
     drop.style.zIndex = '8000';
-    drop.style.maxHeight = Math.min(420, Math.max(220, window.innerHeight - r.bottom - 24)) + 'px';
+    // Viewport-aware cap: prefer visualViewport so the on-screen keyboard
+    // (mobile) shrinks the dropdown too; plain vh/innerHeight ignores it.
+    var vh = (window.visualViewport && isFinite(window.visualViewport.height)) ? window.visualViewport.height : window.innerHeight;
+    var avail = vh - r.bottom - 24;
+    var maxH = Math.min(420, Math.max(120, avail));
+    if (avail > 0) maxH = Math.min(maxH, avail); // never overflow a short/keyboard viewport
+    drop.style.maxHeight = maxH + 'px';
     drop.style.display = 'flex';
     drop.style.flexDirection = 'column';
   }
@@ -56,6 +62,10 @@
     });
     window.addEventListener('resize', place);
     window.addEventListener('scroll', place, true);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', place);
+      window.visualViewport.addEventListener('scroll', place);
+    }
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind);
