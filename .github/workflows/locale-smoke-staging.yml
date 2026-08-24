@@ -31,7 +31,11 @@ jobs:
           if '${{ github.event.inputs.confirm }}' != 'RUN':
               print('confirm!=RUN — aborting'); sys.exit(2)
 
-          def http(method, path, data=None, headers=None, jar=None):
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, *a, **k):
+                  return None
+
+          def http(method, path, data=None, headers=None, jar=None, follow=True):
               url = path if path.startswith('http') else BASE + path
               hdrs = {'Origin': BASE, 'Accept': 'application/json', 'User-Agent': 'velora-locale-smoke/1.0'}
               if headers: hdrs.update(headers)
@@ -40,7 +44,10 @@ jobs:
                   body = json.dumps(data).encode()
                   hdrs['Content-Type'] = 'application/json'
               req = urllib.request.Request(url, data=body, method=method, headers=hdrs)
-              opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar)) if jar else urllib.request.build_opener()
+              handlers = []
+              if jar: handlers.append(urllib.request.HTTPCookieProcessor(jar))
+              if not follow: handlers.append(NoRedirect)
+              opener = urllib.request.build_opener(*handlers) if handlers else urllib.request.build_opener()
               try:
                   with opener.open(req, timeout=25) as r:
                       return r.status, r.read().decode('utf-8','replace'), dict(r.headers)
@@ -62,12 +69,12 @@ jobs:
           report('2 GET /fa/ returns Persian HTML', ok, f'HTTP {st}')
 
           # --- 3. Anonymous /dashboard (unprefixed) redirects to /fa/login/ when browser=fa ---
-          st, body, h = http('GET', '/dashboard/', headers={'Accept-Language':'fa-IR,fa;q=0.9'})
+          st, body, h = http('GET', '/dashboard/', headers={'Accept-Language':'fa-IR,fa;q=0.9'}, follow=False)
           loc = h.get('Location','')
           ok = st in (301,302,303,307,308) and loc.rstrip('/').endswith('/fa/login')
           report('3 anon /dashboard/ with fa browser → /fa/login/', ok, f'HTTP {st} Location={loc}')
           # --- 4. Anonymous /dashboard with en cookie → /en/login/ ---
-          st, body, h = http('GET', '/dashboard/', headers={'Accept-Language':'fa-IR','Cookie':'velora_locale=en'})
+          st, body, h = http('GET', '/dashboard/', headers={'Accept-Language':'fa-IR','Cookie':'velora_locale=en'}, follow=False)
           loc = h.get('Location','')
           ok = st in (301,302,303,307,308) and loc.rstrip('/').endswith('/en/login')
           report('4 anon /dashboard/ with cookie=en → /en/login/', ok, f'HTTP {st} Location={loc}')
