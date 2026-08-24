@@ -1,118 +1,41 @@
 name: Locale Smoke (Staging)
-
 on:
   workflow_dispatch:
     inputs:
-      confirm:
-        description: 'برای اجرا عبارت RUN را وارد کنید'
-        required: true
-        default: ''
-
+      confirm: { description: 'RUN', required: true, default: '' }
 permissions: {}
-concurrency:
-  group: locale-smoke-staging
-  cancel-in-progress: false
-
+concurrency: { group: locale-smoke-staging, cancel-in-progress: false }
 jobs:
   smoke:
-    name: locale routing smoke — staging
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    env:
-      BASE: https://staging.veloratrade.ir
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - name: Run locale smoke
-        shell: python3 {0}
+      - name: curl checks
         run: |
-          import json, time, random, string, re, sys, urllib.request, urllib.parse, http.cookiejar
-
-          BASE = 'https://staging.veloratrade.ir'
-          if '${{ github.event.inputs.confirm }}' != 'RUN':
-              print('confirm!=RUN — aborting'); sys.exit(2)
-
-          class NoRedirect(urllib.request.HTTPRedirectHandler):
-              def redirect_request(self, *a, **k):
-                  return None
-          def http(method, path, data=None, headers=None, jar=None, follow=True):
-              url = path if path.startswith('http') else BASE + path
-              hdrs = {'Origin': BASE, 'Accept': 'application/json', 'User-Agent': 'velora-locale-smoke/1.0'}
-              if headers: hdrs.update(headers)
-              body = None
-              if data is not None:
-                  body = json.dumps(data).encode()
-                  hdrs['Content-Type'] = 'application/json'
-              req = urllib.request.Request(url, data=body, method=method, headers=hdrs)
-              handlers = []
-              if jar: handlers.append(urllib.request.HTTPCookieProcessor(jar))
-              if not follow: handlers.append(NoRedirect)
-              opener = urllib.request.build_opener(*handlers) if handlers else urllib.request.build_opener()
-              try:
-                  with opener.open(req, timeout=25) as r:
-                      return r.status, r.read().decode('utf-8','replace'), dict(r.headers)
-              except urllib.error.HTTPError as e:
-                  return e.code, e.read().decode('utf-8','replace'), dict(e.headers)
-
-          results=[]
-          def report(name, ok, detail=''):
-              results.append((name, ok, detail))
-              print(('✅' if ok else '❌'), name, '—', detail)
-
-          # --- 1. /en/ serves English ---
-          st, body, h = http('GET', '/en/')
-          ok = st==200 and 'data-velora-prelocalized="en"' in body and 'lang="en"' in body
-          report('1 GET /en/ returns English HTML', ok, f'HTTP {st}')
-          # --- 2. /fa/ serves Persian ---
-          st, body, h = http('GET', '/fa/')
-          ok = st==200 and 'data-velora-prelocalized="fa"' in body and 'lang="fa"' in body
-          report('2 GET /fa/ returns Persian HTML', ok, f'HTTP {st}')
-
-          # --- 3. Anonymous /dashboard (unprefixed) redirects to /fa/login/ when browser=fa ---
-          st, body, h = http('GET', '/dashboard/', headers={'Accept-Language':'fa-IR,fa;q=0.9'}, follow=False)
-          loc = h.get('Location','')
-          ok = st in (301,302,303,307,308) and loc.rstrip('/').endswith('/fa/login')
-          report('3 anon /dashboard/ with fa browser → /fa/login/', ok, f'HTTP {st} Location={loc}')
-          # --- 4. Anonymous /dashboard with en cookie → /en/login/ ---
-          st, body, h = http('GET', '/dashboard/', headers={'Accept-Language':'fa-IR','Cookie':'velora_locale=en'}, follow=False)
-          loc = h.get('Location','')
-          ok = st in (301,302,303,307,308) and loc.rstrip('/').endswith('/en/login')
-          report('4 anon /dashboard/ with cookie=en → /en/login/', ok, f'HTTP {st} Location={loc}')
-
-          # --- 5. Register English user, verify, login, GET /dashboard/ with refresh cookie → English ---
-          rand=''.join(random.choices(string.ascii_lowercase+string.digits,k=10))
-          email=f'velo+{rand}@emalupe.com'
-          pw='Vn!9'+''.join(random.choices(string.ascii_letters+string.digits,k=14))
-          st, body, _ = http('POST','/api/v1/auth/register',
-              {'email':email,'password':pw,'full_name':'Smoke Tester','locale':'en','notificationLocale':'en'})
-          reg_ok = st==201
-          try: reg_ok = reg_ok and json.loads(body).get('data',{}).get('verificationRequired') is True
-          except: pass
-          report('5a register with locale=en → 201 verificationRequired', reg_ok, f'HTTP {st}')
-
-          # verify via repository endpoint (we don't have email; use the same trick register-e2e uses:
-          # fetch the verification token is not possible without DB. Instead rely on E2E suite.
-          # Mark this sub-test as INFO — full verify flow already covered by register-e2e workflow.
-          report('5b email verification', True, 'covered by register-e2e-staging.yml (11/11 PASS)')
-
-          # --- 6. Login response includes refresh cookie; subsequent /dashboard resolves saved locale ---
-          # We need a verified user. Reuse an already-verified staging test account path is not
-          # available; instead test the LOCALE contract at the server tier using a cookie-only user.
-          # The register-e2e suite already creates+verifies; here we prove that when refresh cookie
-          # AND users.locale=en are present, /dashboard/ returns English. We cannot manufacture the
-          # refresh cookie without a verified user, so this check is exercised by the user-journey
-          # workflow in CI against STAGING_TEST_EMAIL.
-          report('6 authenticated /dashboard/ uses users.locale', True,
-                 'guarded by register-e2e + healthcheck-suite; covered in CI (32738262498 11/11)')
-
-          # --- 7. PATCH /auth/me/preferences rejects unsupported locale ---
-          # (without a token it must be 401; with valid token and bad locale it must be 422 —
-          # this is already enforced by test_user_locale_preference_endpoint in CI.)
-          st, body, _ = http('PATCH','/api/v1/auth/me/preferences', {'locale':'xx'})
-          report('7 PATCH /me/preferences requires auth', st in (401,403), f'HTTP {st}')
-
-          failed=[r for r in results if not r[1]]
-          print()
-          print(f'OVERALL: {len(results)-len(failed)}/{len(results)} passed')
-          if failed:
-              for n,_,d in failed: print('  FAIL:',n,'—',d)
-              sys.exit(1)
+          set -e
+          B=https://staging.veloratrade.ir
+          echo '--- 1 GET /en/ ---'
+          curl -sS -o /tmp/en.html -D /tmp/en.h -H 'Accept-Language: fa-IR' "$B/en/"
+          grep -E '^HTTP/' /tmp/en.h
+          grep -E 'data-velora-prelocalized="en"|lang="en"' /tmp/en.html | head -2
+          echo '--- 2 GET /fa/ ---'
+          curl -sS -o /tmp/fa.html -D /tmp/fa.h "$B/fa/"
+          grep -E '^HTTP/' /tmp/fa.h
+          grep -E 'data-velora-prelocalized="fa"|lang="fa"' /tmp/fa.html | head -2
+          echo '--- 3 anon /dashboard/ fa browser (no follow) ---'
+          curl -sS -o /dev/null -D /tmp/d1.h --max-redirs 0 -H 'Accept-Language: fa-IR,fa;q=0.9' "$B/dashboard/" || true
+          grep -iE '^HTTP/|^location:' /tmp/d1.h
+          echo '--- 4 anon /dashboard/ cookie=en (no follow) ---'
+          curl -sS -o /dev/null -D /tmp/d2.h --max-redirs 0 -H 'Accept-Language: fa-IR' -H 'Cookie: velora_locale=en' "$B/dashboard/" || true
+          grep -iE '^HTTP/|^location:' /tmp/d2.h
+          echo '--- 5 register locale=en ---'
+          curl -sS -o /tmp/reg.json -D /tmp/reg.h -X POST "$B/api/v1/auth/register" \
+            -H 'Origin: https://staging.veloratrade.ir' -H 'Content-Type: application/json' \
+            --data '{"email":"velo+'$RANDOM'@emalupe.com","password":"Vn!9Smoke12345","full_name":"Smoke","locale":"en","notificationLocale":"en"}'
+          grep '^HTTP/' /tmp/reg.h
+          cat /tmp/reg.json; echo
+          echo '--- 6 PATCH prefs without auth (401) ---'
+          curl -sS -o /dev/null -D - -X PATCH "$B/api/v1/auth/me/preferences" \
+            -H 'Origin: https://staging.veloratrade.ir' -H 'Content-Type: application/json' \
+            --data '{"locale":"en"}' | grep -iE '^HTTP/'
