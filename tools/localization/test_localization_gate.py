@@ -62,6 +62,24 @@ class LocalizationGateTestCase(unittest.TestCase):
         finally:
             asset_path.write_text(original, encoding="utf-8")
 
+    def test_gate_fails_when_new_hardcoded_english_literal_is_introduced(self) -> None:
+        root = Path(__file__).resolve().parents[2]
+        asset_path = root / "public" / "assets" / "velora-i18n.js"
+        original = asset_path.read_text(encoding="utf-8")
+        try:
+            asset_path.write_text(
+                original + "\nvar __gateEnglishLiteral = 'Workspace Sentinel';\n",
+                encoding="utf-8",
+            )
+            ok, messages = run_gate(root)
+            self.assertFalse(ok)
+            self.assertTrue(
+                any("HARDCODED-UI CHECK FAILED" in m for m in messages),
+                msg="\n".join(messages),
+            )
+        finally:
+            asset_path.write_text(original, encoding="utf-8")
+
 
 if __name__ == "__main__":
     unittest.main()

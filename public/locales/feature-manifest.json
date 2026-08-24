@@ -30,15 +30,15 @@
       },
       "common": {
         "path": "fa/common.json",
-        "messages": 68,
-        "bytes": 3284,
-        "sha256": "94d4438797e2d20627664d2d440e5da28298f84dbd587ce973ff65306729ed80"
+        "messages": 69,
+        "bytes": 3344,
+        "sha256": "ddecf4cbd1ea7b66915e40fe3b3a39bff2f941eeb1d47d1e1d1337329e5ac46f"
       },
       "dashboard": {
         "path": "fa/dashboard.json",
-        "messages": 47,
-        "bytes": 4305,
-        "sha256": "5096c8bee6599f9073c9eaf84a5de27c9fbed91e47ea99974e3477b734567f01"
+        "messages": 59,
+        "bytes": 5772,
+        "sha256": "3794cabb55fa51e4dccad781f6d60c2e37064a7908cf5fec5df79f2ee256cbbd"
       },
       "errors": {
         "path": "fa/errors.json",
@@ -48,9 +48,9 @@
       },
       "intelligence": {
         "path": "fa/intelligence.json",
-        "messages": 28,
-        "bytes": 3735,
-        "sha256": "1f08bd7f5a15db9454596422b270a37df4a3554122c881ddf0f0407c24029d84"
+        "messages": 27,
+        "bytes": 3675,
+        "sha256": "2204b2814fd4e59fa29cf3dff991e42259f6dc504a1f998aca4d122beb8e2b98"
       },
       "landing": {
         "path": "fa/landing.json",
@@ -140,15 +140,15 @@
       },
       "common": {
         "path": "en/common.json",
-        "messages": 68,
-        "bytes": 2700,
-        "sha256": "10fb5ce7be1e2d27c77237da5523af23e7b0e00c5aa77005b56953289461c7d4"
+        "messages": 69,
+        "bytes": 2734,
+        "sha256": "6dfe24a865e6706d5a14ee18b2985979396817d66a4811cd8d73ebd3b3688bf3"
       },
       "dashboard": {
         "path": "en/dashboard.json",
-        "messages": 47,
-        "bytes": 3501,
-        "sha256": "b6d515d89dea01bbafe541e55252d3587d7ffa381304e2d5c0d301c5fa654804"
+        "messages": 59,
+        "bytes": 4441,
+        "sha256": "a1437957b75c916b871518cd8c908ab0f0fc4d96cb3dab1f0af87782fb622487"
       },
       "errors": {
         "path": "en/errors.json",
@@ -158,9 +158,9 @@
       },
       "intelligence": {
         "path": "en/intelligence.json",
-        "messages": 28,
-        "bytes": 2944,
-        "sha256": "2955522be8ca9407b8d723ada18255861682b5c3d7415c138b2d97a005a9a5a4"
+        "messages": 27,
+        "bytes": 2910,
+        "sha256": "9379616ae49c38e5e9bdf3f0d9685e4219307592dbba8ea5a3b39dfb2fd8f859"
       },
       "landing": {
         "path": "en/landing.json",

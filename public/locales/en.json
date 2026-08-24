@@ -1460,6 +1460,18 @@
     "pages.trades.new.p05.session_outside": "Outside the main sessions",
     "pages.trades.new.p05.star": "Star",
     "pages.trades.new.p05.session_note_prefix": "Session",
-    "errors.bad_request": "Bad request."
+    "errors.bad_request": "Bad request.",
+    "dashboard.aiInsights.tabTitle": "AI Insights",
+    "dashboard.aiInsights.sectionTitle": "AI Trade Insights",
+    "dashboard.aiInsights.sectionDescription": "Check whether your journal is ready for AI-generated trade insights and continue in Trading Intelligence.",
+    "dashboard.aiInsights.emptyTitle": "No AI insights are available yet",
+    "dashboard.aiInsights.emptyDescription": "Connect an account and record trades to generate your first AI insight.",
+    "dashboard.aiInsights.readyTitle": "AI insights are ready to review",
+    "dashboard.aiInsights.readyDescription": "Your journal has enough activity to review AI-generated insights in Trading Intelligence.",
+    "dashboard.aiInsights.loading": "Loading AI insights…",
+    "dashboard.aiInsights.error": "AI insights could not be loaded right now.",
+    "dashboard.aiInsights.actionGenerate": "Generate AI Insights",
+    "dashboard.aiInsights.actionView": "View AI Insights",
+    "dashboard.aiInsights.tabListAriaLabel": "Dashboard sections"
   }
 }
