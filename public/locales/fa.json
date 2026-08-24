@@ -1460,6 +1460,18 @@
     "pages.trades.new.p05.session_outside": "خارج از سشن اصلی",
     "pages.trades.new.p05.star": "ستاره",
     "pages.trades.new.p05.session_note_prefix": "سشن",
-    "errors.bad_request": "درخواست نامعتبر است."
+    "errors.bad_request": "درخواست نامعتبر است.",
+    "dashboard.aiInsights.tabTitle": "بینش‌های هوش مصنوعی",
+    "dashboard.aiInsights.sectionTitle": "بینش‌های معاملاتی هوش مصنوعی",
+    "dashboard.aiInsights.sectionDescription": "آمادگی ژورنال شما برای بینش‌های معاملاتیِ هوش مصنوعی را بررسی کنید و برای ادامه وارد بخش هوشمندی معاملات شوید.",
+    "dashboard.aiInsights.emptyTitle": "هنوز بینش هوش مصنوعی در دسترس نیست",
+    "dashboard.aiInsights.emptyDescription": "برای تولید اولین بینش هوش مصنوعی، حساب متصل کنید و چند معامله ثبت کنید.",
+    "dashboard.aiInsights.readyTitle": "بینش‌های هوش مصنوعی آمادهٔ بررسی است",
+    "dashboard.aiInsights.readyDescription": "ژورنال شما دادهٔ کافی دارد تا در بخش هوشمندی معاملات، بینش‌های هوش مصنوعی را مشاهده کنید.",
+    "dashboard.aiInsights.loading": "در حال بارگذاری بینش‌های هوش مصنوعی…",
+    "dashboard.aiInsights.error": "در حال حاضر دریافت بینش‌های هوش مصنوعی ممکن نیست.",
+    "dashboard.aiInsights.actionGenerate": "تولید بینش‌های هوش مصنوعی",
+    "dashboard.aiInsights.actionView": "مشاهده بینش‌های هوش مصنوعی",
+    "dashboard.aiInsights.tabListAriaLabel": "بخش‌های داشبورد"
   }
 }
