@@ -112,6 +112,33 @@
   .toast.err{border-color:rgba(239,68,68,.5);color:#FCA5A5;}
   .toast.show{display:block;}
 </style>
+<style id="velora-hero-boot-css">
+  
+  html.velora-hero-boot main .panel > .form-grid,
+  html.velora-hero-boot main .panel > .pnl-box,
+  html.velora-hero-boot main .panel > #submitBtn { display: none; }
+</style>
+<script data-velora-hero-boot="1">
+  (function () {
+    if (/mode=manual/.test(location.search)) return;
+    document.documentElement.classList.add('velora-hero-boot');
+    var t0 = Date.now();
+    (function handover() {
+      var panel = document.querySelector('main .panel');
+      if (window.__veloraSmartImport && panel &&
+          (document.getElementById('vsiWrap') || /vsi-(hero|manual|journal)/.test(panel.className))) {
+        document.documentElement.classList.remove('velora-hero-boot');
+        return;
+      }
+      if (Date.now() - t0 > 2000) {
+        
+        document.documentElement.classList.remove('velora-hero-boot');
+        return;
+      }
+      setTimeout(handover, 200);
+    })();
+  })();
+</script>
 <script src="/public/assets/symbol-icons.js?v=2026.08.13.36"></script>
 <script src="/public/assets/emotion-icons.js?v=2026.08.13.47"></script>
 <style id="velora-unified-luxury-sidebar-css">

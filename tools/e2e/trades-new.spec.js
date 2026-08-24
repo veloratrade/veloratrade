@@ -231,6 +231,78 @@ async function runLocale(browser, base, label, pagePath) {
   step(`${label}: no uncaught JS error across all scenarios`, pageErrors.length === 0, pageErrors.join(' | ') || 'clean');
 }
 
+/** Default mode: hero active, manual form hidden (no flash), boot handover done. */
+async function runDefaultMode(browser, base, label, pagePath) {
+  console.log(`\n== ${label} default mode / anti-flash (${pagePath})`);
+  const pageErrors = [];
+  const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  page.on('pageerror', (e) => pageErrors.push(String(e).slice(0, 160)));
+  await stubApi(page, []);
+  await page.goto(`${base}${pagePath}`, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(1400);
+  const state = await page.evaluate(() => ({
+    bootClass: document.documentElement.classList.contains('velora-hero-boot'),
+    panelClass: (document.querySelector('main .panel') || {}).className || '',
+    heroVisible: !!document.getElementById('vsiDrop'),
+    formDisplay: getComputedStyle(document.querySelector('.form-grid')).display,
+  }));
+  step(`${label}: default = screenshot hero active`, state.heroVisible && /vsi-hero/.test(state.panelClass), JSON.stringify(state.panelClass));
+  step(`${label}: manual form hidden after load (no flash)`, state.formDisplay === 'none', `display=${state.formDisplay}`);
+  step(`${label}: boot class handed over`, state.bootClass === false);
+  // manual entry remains one click away
+  await page.click('#vsiToManual');
+  await page.waitForTimeout(350);
+  const manualBack = await page.evaluate(() => ({
+    formDisplay: getComputedStyle(document.querySelector('.form-grid')).display,
+    backLink: !!document.getElementById('vsiBackHero'),
+  }));
+  step(`${label}: manual entry reachable from hero`, manualBack.formDisplay !== 'none' && manualBack.backLink, JSON.stringify(manualBack));
+  await page.close();
+  step(`${label}: default mode produced no JS errors`, pageErrors.length === 0, pageErrors.join(' | ') || 'clean');
+}
+
+/** Smart import blocked: boot hides the form, watchdog restores it (fallback). */
+async function runBootFallback(browser, base, label, pagePath) {
+  console.log(`\n== ${label} boot fallback / smart import blocked (${pagePath})`);
+  const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  await stubApi(page, []);
+  await page.route('**/velora-smart-import.js*', (route) => route.abort());
+  await page.goto(`${base}${pagePath}`, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(500);
+  const duringBoot = await page.evaluate(() => ({
+    bootClass: document.documentElement.classList.contains('velora-hero-boot'),
+    formDisplay: getComputedStyle(document.querySelector('.form-grid')).display,
+  }));
+  step(`${label}: form hidden during boot window`, duringBoot.bootClass && duringBoot.formDisplay === 'none', JSON.stringify(duringBoot));
+  await page.waitForTimeout(2200);
+  const afterWatchdog = await page.evaluate(() => ({
+    bootClass: document.documentElement.classList.contains('velora-hero-boot'),
+    formDisplay: getComputedStyle(document.querySelector('.form-grid')).display,
+  }));
+  step(`${label}: watchdog restores manual form`, afterWatchdog.bootClass === false && afterWatchdog.formDisplay !== 'none', JSON.stringify(afterWatchdog));
+  await page.close();
+}
+
+/** Dashboard/trades headers: photo-trade entry point removed; single Add Trade remains. */
+async function runHeaderEntryPoints(browser, base, label, pagePath) {
+  console.log(`\n== ${label} header entry points (${pagePath})`);
+  const pageErrors = [];
+  const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  page.on('pageerror', (e) => pageErrors.push(String(e).slice(0, 160)));
+  await stubApi(page, []);
+  await page.goto(`${base}${pagePath}`, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(1400); // dash-injector retries were at 200/800ms
+  const header = await page.evaluate(() => ({
+    injectedPhotoBtn: !!document.getElementById('vsiDashLink'),
+    vsiDashFlag: typeof window.__vsiDashLink !== 'undefined',
+    addTrade: (() => { const a = document.querySelector('.velora-nav-right a.btn-gold, a.velora-btn-back[href*="/trades/new"]'); return a ? a.getAttribute('href') : null; })(),
+  }));
+  step(`${label}: injected photo-trade button removed`, !header.injectedPhotoBtn && !header.vsiDashFlag);
+  step(`${label}: Add Trade entry point present`, !!header.addTrade, header.addTrade || 'not found');
+  await page.close();
+  step(`${label}: header page produced no JS errors`, pageErrors.length === 0, pageErrors.join(' | ') || 'clean');
+}
+
 (async () => {
   const { server, base } = await startServer();
   const browser = await chromium.launch();
@@ -238,6 +310,12 @@ async function runLocale(browser, base, label, pagePath) {
   try {
     await runLocale(browser, base, 'FA', '/trades/new/index.html');
     await runLocale(browser, base, 'EN', '/localized/en/trades/new/index.html');
+    await runDefaultMode(browser, base, 'FA', '/trades/new/index.html');
+    await runDefaultMode(browser, base, 'EN', '/localized/en/trades/new/index.html');
+    await runBootFallback(browser, base, 'FA', '/trades/new/index.html');
+    await runHeaderEntryPoints(browser, base, 'FA', '/dashboard/index.html');
+    await runHeaderEntryPoints(browser, base, 'FA', '/trades/index.html');
+    await runHeaderEntryPoints(browser, base, 'EN', '/localized/en/dashboard/index.html');
   } catch (e) {
     crashed = true;
     console.error('SPEC CRASHED:', e.message);
