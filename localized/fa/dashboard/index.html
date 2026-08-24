@@ -280,6 +280,60 @@
   
   .empty { text-align:center; padding:40px 20px; color:var(--faint); font-size:13px; }
   .empty svg { width:40px; height:40px; margin-bottom:12px; opacity:.4; }
+  .dashboard-tabs {
+    display:flex; gap:10px; flex-wrap:wrap; margin:0 0 18px;
+  }
+  .dashboard-tab {
+    display:inline-flex; align-items:center; justify-content:center;
+    min-height:40px; padding:9px 14px; border-radius:11px;
+    border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.04);
+    color:var(--muted); font:700 12px Vazirmatn, Arial, sans-serif; cursor:pointer; transition:.2s;
+  }
+  .dashboard-tab:hover { color:#fff; border-color:rgba(212,175,55,0.35); }
+  .dashboard-tab.active {
+    color:var(--gold-l); border-color:rgba(212,175,55,0.55);
+    background:linear-gradient(135deg, rgba(212,175,55,0.14), rgba(255,255,255,0.04));
+    box-shadow:inset 0 1px rgba(255,255,255,0.12);
+  }
+  [data-dashboard-panel][hidden] { display:none !important; }
+  .dashboard-ai-section { margin-bottom:18px; }
+  .ai-insights-panel { min-height:320px; display:flex; flex-direction:column; }
+  .ai-insights-badge {
+    display:inline-flex; align-items:center; gap:6px; padding:3px 10px;
+    border-radius:999px; border:1px solid rgba(76,211,154,0.25);
+    background:rgba(76,211,154,0.12); color:#4CD39A;
+    font:800 10px Arial, sans-serif; letter-spacing:.08em;
+  }
+  .ai-insights-intro { margin:2px 0 0; color:var(--faint); font-size:12.5px; line-height:1.8; }
+  .ai-insights-state {
+    margin-top:18px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; gap:10px; flex:1; padding:30px 20px;
+    border:1px dashed rgba(212,175,55,0.22); border-radius:16px;
+    background:linear-gradient(135deg, rgba(255,255,255,0.04), rgba(212,175,55,0.04));
+  }
+  .ai-insights-state.is-error {
+    border-style:solid; border-color:rgba(255,142,152,0.28);
+    background:linear-gradient(135deg, rgba(255,142,152,0.08), rgba(255,255,255,0.03));
+  }
+  .ai-insights-state.is-ready {
+    border-style:solid; border-color:rgba(76,211,154,0.22);
+    background:linear-gradient(135deg, rgba(76,211,154,0.08), rgba(255,255,255,0.03));
+  }
+  .ai-insights-ico {
+    width:52px; height:52px; display:grid; place-items:center; border-radius:16px;
+    color:var(--gold-l); background:rgba(212,175,55,0.12);
+    border:1px solid rgba(212,175,55,0.22); font-size:24px; line-height:1;
+  }
+  .ai-insights-title { color:#fff; font-size:15px; font-weight:800; line-height:1.6; }
+  .ai-insights-copy { max-width:560px; color:var(--faint); font-size:12.5px; line-height:1.85; }
+  .ai-insights-action {
+    display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:42px;
+    padding:10px 16px; border-radius:11px; border:1px solid rgba(212,175,55,0.55);
+    background:linear-gradient(135deg, rgba(255,255,255,0.10), rgba(209,168,56,0.16));
+    color:#fff0bd; text-decoration:none; font:800 12px Vazirmatn, Arial, sans-serif;
+    box-shadow:inset 0 1px rgba(255,255,255,0.25),0 8px 20px rgba(0,0,0,0.2);
+  }
+  .ai-insights-action:hover { transform:translateY(-1px); }
 
   
   .mobile-top { display:none; }
@@ -847,6 +901,15 @@ function toggleMobileSidebar() {
 </button>
 </div>
 </div>
+<div aria-label="بخش‌های داشبورد" class="dashboard-tabs" data-i18n-aria-label="dashboard.aiInsights.tabListAriaLabel" role="tablist">
+<button aria-controls="dashboardOverviewPanel" aria-selected="true" class="dashboard-tab active" data-dashboard-tab="overview" role="tab" type="button">
+<span data-i18n="common.dashboard.2aea7aaf">داشبورد</span>
+</button>
+<button aria-controls="dashboardAiInsightsPanel" aria-selected="false" class="dashboard-tab" data-dashboard-tab="ai-insights" role="tab" type="button">
+<span data-i18n="dashboard.aiInsights.tabTitle">بینش‌های هوش مصنوعی</span>
+</button>
+</div>
+<section data-dashboard-panel="overview" id="dashboardOverviewPanel" role="tabpanel">
 
 <div class="kpi-grid" id="kpiGrid">
 <div class="kpi"><div class="lbl"><svg fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24"><rect height="9" rx="1.5" width="7" x="3" y="3"></rect><rect height="5" rx="1.5" width="7" x="14" y="3"></rect></svg> <span data-i18n="common.trades.5aa84041">معاملات</span></div><div class="val" id="kpiTrades">—</div></div>
@@ -920,6 +983,20 @@ function toggleMobileSidebar() {
 </div>
 </div>
 </div>
+</section>
+<section class="dashboard-ai-section" data-dashboard-panel="ai-insights" hidden="" id="dashboardAiInsightsPanel" role="tabpanel">
+<div class="panel ai-insights-panel">
+<div class="panel-head">
+<div class="t"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" viewbox="0 0 24 24"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"></path></svg> <span data-i18n="dashboard.aiInsights.sectionTitle">بینش‌های معاملاتی هوش مصنوعی</span></div>
+<span class="ai-insights-badge" data-i18n="common.aiInsights">بینش‌های هوش مصنوعی</span>
+</div>
+<p class="ai-insights-intro" data-i18n="dashboard.aiInsights.sectionDescription">آمادگی ژورنال شما برای بینش‌های معاملاتیِ هوش مصنوعی را بررسی کنید و برای ادامه وارد بخش هوشمندی معاملات شوید.</p>
+<div class="ai-insights-state is-loading" id="aiInsightsState">
+<div aria-hidden="true" class="ai-insights-ico">✦</div>
+<div class="ai-insights-title" data-i18n="dashboard.aiInsights.loading">در حال بارگذاری بینش‌های هوش مصنوعی…</div>
+</div>
+</div>
+</section>
 </main>
 </div>
 
@@ -941,7 +1018,65 @@ function toggleMobileSidebar() {
   var user = null;
   var accountsById = {};
   var toastTimer = null;
+  var dashboardState = {
+    summary: null,
+    trades: [],
+    strategies: [],
+    error: null,
+    activeTab: 'overview'
+  };
   function notify(message) { var el = $('veloraToast'); if (!el) return; el.textContent = message; el.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 3200); }
+
+  function setDashboardTab(tab) {
+    dashboardState.activeTab = tab;
+    document.querySelectorAll('[data-dashboard-tab]').forEach(function(button) {
+      var isActive = button.getAttribute('data-dashboard-tab') === tab;
+      button.classList.toggle('active', isActive);
+      button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+    document.querySelectorAll('[data-dashboard-panel]').forEach(function(panel) {
+      panel.hidden = panel.getAttribute('data-dashboard-panel') !== tab;
+    });
+  }
+
+  function aiInsightsAction(labelKey) {
+    return '<a class="ai-insights-action" href="/intelligence/index.html">' + esc(tr(labelKey)) + '</a>';
+  }
+
+  function renderAiInsights() {
+    var box = $('aiInsightsState');
+    if (!box) return;
+    if (dashboardState.error) {
+      box.className = 'ai-insights-state is-error';
+      box.innerHTML = '<div class="ai-insights-ico" aria-hidden="true">!</div>'
+        + '<div class="ai-insights-title">' + esc(tr('dashboard.aiInsights.error')) + '</div>'
+        + '<div class="ai-insights-copy">' + esc(VeloraLocale.errorMessage(dashboardState.error, 'errors.api')) + '</div>'
+        + aiInsightsAction('dashboard.aiInsights.actionView');
+      return;
+    }
+    var tradeCount = Number((dashboardState.summary && dashboardState.summary.tradeCount) || dashboardState.trades.length || 0);
+    var hasInsightData = tradeCount > 0 || (dashboardState.strategies || []).length > 0;
+    if (!hasInsightData) {
+      box.className = 'ai-insights-state';
+      box.innerHTML = '<div class="ai-insights-ico" aria-hidden="true">✦</div>'
+        + '<div class="ai-insights-title">' + esc(tr('dashboard.aiInsights.emptyTitle')) + '</div>'
+        + '<div class="ai-insights-copy">' + esc(tr('dashboard.aiInsights.emptyDescription')) + '</div>'
+        + aiInsightsAction('dashboard.aiInsights.actionGenerate');
+      return;
+    }
+    box.className = 'ai-insights-state is-ready';
+    box.innerHTML = '<div class="ai-insights-ico" aria-hidden="true">✦</div>'
+      + '<div class="ai-insights-title">' + esc(tr('dashboard.aiInsights.readyTitle')) + '</div>'
+      + '<div class="ai-insights-copy">' + esc(tr('dashboard.aiInsights.readyDescription')) + '</div>'
+      + aiInsightsAction('dashboard.aiInsights.actionView');
+  }
+
+  document.querySelectorAll('[data-dashboard-tab]').forEach(function(button) {
+    button.addEventListener('click', function() {
+      setDashboardTab(button.getAttribute('data-dashboard-tab'));
+    });
+  });
+  setDashboardTab('overview');
 
   
   async function init() {
@@ -961,10 +1096,13 @@ function toggleMobileSidebar() {
     if($('greetName')) $('greetName').textContent = uname.split(' ')[0] || tr('common.trader');
 
     try {
+      dashboardState.error = null;
       await Promise.all([loadSummary(), loadTrades(), loadStrategies(), loadAccounts()]);
     } catch(e) {
+      dashboardState.error = e;
       console.error('dashboard-load-failed', e);
     }
+    renderAiInsights();
     var ld = $('loading');
     if (ld) ld.style.display = 'none';
   }
@@ -978,6 +1116,7 @@ function toggleMobileSidebar() {
   async function loadSummary() {
     var d = await api('/api/v1/dashboard/summary');
     var s = d.summary || {};
+    dashboardState.summary = s;
     $('kpiTrades').textContent = fmt(s.tradeCount||0, 0);
     var wr = (Number(s.winRate||0) * 100);
     $('kpiWin').textContent = VeloraLocale.percent(wr / 100, { maximumFractionDigits: 1 });
@@ -1068,6 +1207,7 @@ function toggleMobileSidebar() {
   async function loadTrades() {
     var d = await api('/api/v1/trades?limit=6');
     var items = (d.items || []).map(VeloraData.normalize.trade);
+    dashboardState.trades = items;
     var body = $('tradesBody');
     if (!items.length) {
       body.innerHTML = '<tr><td colspan="6"><div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 15l4-6 4 3 5-8"/><path d="M3 3v18h18"/></svg>' + tr('trades.empty') + '<br>' + tr('dashboard.firstTrade') + '</div></td></tr>';
@@ -1093,6 +1233,7 @@ function toggleMobileSidebar() {
   async function loadStrategies() {
     var d = await api('/api/v1/dashboard/strategies');
     var list = d.strategies || [];
+    dashboardState.strategies = list;
     var box = $('stratList');
     if (!list.length) {
       box.innerHTML = '<div class="empty">' + tr('dashboard.empty') + '</div>';
@@ -1187,7 +1328,19 @@ function toggleMobileSidebar() {
 
   
   if($('refreshBtn')) $('refreshBtn').addEventListener('click', function() {
-    Promise.all([loadSummary(), loadTrades(), loadStrategies(), loadAccounts()]).catch(function(){});
+    var box = $('aiInsightsState');
+    if (box) {
+      box.className = 'ai-insights-state is-loading';
+      box.innerHTML = '<div class="ai-insights-ico" aria-hidden="true">✦</div>'
+        + '<div class="ai-insights-title">' + esc(tr('dashboard.aiInsights.loading')) + '</div>';
+    }
+    dashboardState.error = null;
+    Promise.all([loadSummary(), loadTrades(), loadStrategies(), loadAccounts()]).then(function() {
+      renderAiInsights();
+    }).catch(function(error) {
+      dashboardState.error = error;
+      renderAiInsights();
+    });
   });
 
   init();
