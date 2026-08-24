@@ -231,3 +231,37 @@ jobs:
           echo "مخزن : $b"
           [ "$a" = "$b" ] || { echo "::error::منیفست هاست با مخزن فرق دارد — انتشار ناقص بوده"; exit 1; }
           echo "✅ هاست و مخزن هم‌نسخه‌اند"
+
+      # نکته مهم: localized/.csp-release.json عمداً از طریق HTTP در
+      # دسترس نیست — .htaccess صراحتاً مسیر localized/ را ۴۰۳ می‌کند
+      # (RewriteRule ^(?:api/...|tools|localized)(?:/|$) - [F,L,NC]؛
+      # تأیید شد با curl مستقیم روی veloratrade.ir/localized/.csp-release.json
+      # → 403 — این رفتار درست و امنیتی است، نه یک باگ). بنابراین بررسی
+      # routeCount/policyVersion از طریق HTTP اینجا ممکن نیست؛ آن بررسی
+      # از قبل، به‌درستی، در مرحلهٔ «راستی‌آزمایی provenance روی سرور»ِ
+      # داخل deploy.yml از طریق FTP (که به .csp-release.json دسترسی
+      # مستقیم دارد) انجام می‌شود — همان‌جایی که برای staging هم در
+      # PR #40 اضافه شد. اینجا فقط می‌توانیم چیزی را که واقعاً از طریق
+      # HTTP در دسترس است (خودِ csp-manifest.json) بررسی کنیم، که همان
+      # بررسی «منیفست روی هاست باید با مخزن یکی باشد» بالا از قبل انجام
+      # می‌دهد. برای همین این مرحله عمداً به یک بررسی routeCount/
+      # policyVersion *درون خودِ منیفست* (بدون نیاز به .csp-release.json)
+      # محدود شده — فقط برای شناسایی یک منیفست ناقص/بددسته‌بندی، مستقل
+      # از هر مقایسه با .csp-release.json.
+      - name: سازگاری داخلی منیفست روی هاست تولید (routeCount/policyVersion موجود و غیرصفر)
+        if: inputs.environment_name == 'production'
+        run: |
+          python3 - <<'PY'
+          import json
+          import pathlib
+
+          live_manifest = json.loads(pathlib.Path("/tmp/live.json").read_bytes())
+          for k in ("routeCount", "policyVersion"):
+              v = live_manifest.get(k)
+              if not v:
+                  raise SystemExit(f"❌ منیفست روی هاست تولید فاقد {k} معتبر است (مقدار: {v!r})")
+          print(
+              f"✅ منیفست روی هاست تولید دارای routeCount={live_manifest.get('routeCount')} "
+              f"و policyVersion={live_manifest.get('policyVersion')} است"
+          )
+          PY

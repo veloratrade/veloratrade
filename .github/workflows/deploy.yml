@@ -243,21 +243,48 @@ jobs:
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
         run: |
           set -uo pipefail
+          source .github/deploy/critical-deploy-files.sh
           echo "🔍 DRY-RUN — هیچ بایتی روی تولید نوشته نمی‌شود"
-          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" <<LFTP | tee /tmp/dry.txt
+
+          # از Aug 2026 به بعد، معماری واقعی (غیر dry-run) این ورک‌فلو
+          # Hybrid Critical Files است (همان معماری اثبات‌شده در PR #40
+          # روی staging): فایل‌های حیاتی از mirror اصلی --exclude
+          # می‌شوند و جداگانه با put اجباری آپلود می‌شوند. برای این‌که
+          # خروجی DRY-RUN واقعاً نمایانگر آنچه در اجرای واقعی رخ می‌دهد
+          # باشد، همین exclude را اینجا هم اعمال می‌کنیم و آپلود اجباری
+          # فایل‌های حیاتی را جداگانه (هرچند فقط با --dry-run) نشان می‌دهیم.
+          EXCLUDE_ARGS=()
+          for f in "${CRITICAL_DEPLOY_FILES[@]}"; do
+            escaped="$(printf '%s' "$f" | sed -e 's/[.]/\\./g')"
+            EXCLUDE_ARGS+=(--exclude "^${escaped}\$")
+          done
+
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" -e "
           set ftp:ssl-allow no
           set net:timeout 30
           set ftp:passive-mode on
-          mirror -R --dry-run --continue --ignore-time --no-perms --no-symlinks \
-                 --exclude-glob .git* \
-                 production-build/ ${{ env.PROD_DOCROOT }}
+          mirror -R --dry-run --continue --ignore-time --no-perms --no-symlinks --exclude-glob .git* ${EXCLUDE_ARGS[*]} production-build/ ${{ env.PROD_DOCROOT }}
           bye
-          LFTP
+          " | tee /tmp/dry.txt
+
+          # توجه: دستور put در lftp گزینه --dry-run ندارد (فقط mirror دارد)،
+          # بنابراین برای فایل‌های حیاتی فقط لیست/اندازه/hash محلی را گزارش
+          # می‌کنیم — هیچ اتصال نوشتاری‌ای برای آن‌ها برقرار نمی‌شود؛ این
+          # مرحله فقط با inputs.dry_run اجرا می‌شود و مرحله put واقعی در
+          # ادامه، تحت شرط !inputs.dry_run، اصلاً اجرا نخواهد شد.
+          echo "----- فایل‌های حیاتی (در اجرای واقعی همیشه به‌صورت اجباری put می‌شوند؛ اینجا فقط گزارش، بدون اتصال نوشتاری) -----" | tee -a /tmp/dry.txt
+          for f in "${CRITICAL_DEPLOY_FILES[@]}"; do
+            sha=$(sha256sum "production-build/$f" | cut -d' ' -f1)
+            size=$(wc -c < "production-build/$f")
+            echo "put (اجباری، خارج از mirror): $f  →  ${{ env.PROD_DOCROOT }}$f  |  sha256=$sha  |  $size بایت" | tee -a /tmp/dry.txt
+          done
+
           echo "### 🔍 نتیجه DRY-RUN" >> $GITHUB_STEP_SUMMARY
           echo "عملیاتی که *قرار بود* انجام شود: $(grep -c . /tmp/dry.txt) خط" >> $GITHUB_STEP_SUMMARY
+          echo "شامل ${#CRITICAL_DEPLOY_FILES[@]} فایل حیاتی که همیشه به‌صورت اجباری put می‌شوند (بدون بستگی به mirror)." >> $GITHUB_STEP_SUMMARY
           echo "**هیچ فایلی روی تولید نوشته نشد.**" >> $GITHUB_STEP_SUMMARY
 
-      - name: انتقال با lftp (مقاوم در برابر قطعی هاست — OC-2)
+      - name: انتقال فایل‌های عادی با lftp mirror (بهینه، بدون فایل‌های حیاتی — OC-2)
         if: ${{ !inputs.dry_run }}
         env:
           FTP_SERVER:   ${{ secrets.FTP_SERVER }}
@@ -265,11 +292,33 @@ jobs:
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
         run: |
           set -uo pipefail
+          source .github/deploy/critical-deploy-files.sh
+
+          # معماری Hybrid Critical Files — همان معماری اثبات‌شده در PR #40
+          # (staging)، اینجا برای Production با مقصد hardcode شدهٔ C-2
+          # (${{ env.PROD_DOCROOT }} — هرگز پارامتری نمی‌شود). فایل‌های
+          # امنیتی-حیاتی (آرایه CRITICAL_DEPLOY_FILES در
+          # .github/deploy/critical-deploy-files.sh، مشترک با staging) از
+          # این mirror --exclude می‌شوند تا هرگز مشمول هیوریستیک skip
+          # بر پایه اندازه/زمان lftp نشوند — همان ریشهٔ حادثهٔ Aug 2026
+          # در staging که پیش از این تولید هم به آن آسیب‌پذیر بود. آپلود
+          # واقعی فایل‌های حیاتی در مرحله بعد، با put صریح، انجام می‌شود.
+          #
+          # برای بقیهٔ فایل‌های عادی، --continue (بهینه‌سازی resume/skip)
+          # حفظ شده — این رفتار بدون تغییر نسبت به نسخهٔ قبلی این ورک‌فلو،
+          # با تنها تفاوت این‌که فایل‌های حیاتی دیگر وارد تصمیم‌گیری
+          # skip/transfer نمی‌شوند.
+          EXCLUDE_ARGS=()
+          for f in "${CRITICAL_DEPLOY_FILES[@]}"; do
+            escaped="$(printf '%s' "$f" | sed -e 's/[.]/\\./g')"
+            EXCLUDE_ARGS+=(--exclude "^${escaped}\$")
+          done
+
           attempt=0
           until [ $attempt -ge 12 ]; do
             attempt=$((attempt+1))
-            echo "===== تلاش $attempt ====="
-            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" <<LFTP && break
+            echo "===== تلاش $attempt (mirror عادی) ====="
+            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" -e "
           set ftp:ssl-allow no
           set net:max-retries 2
           set net:reconnect-interval-base 5
@@ -277,14 +326,54 @@ jobs:
           set net:timeout 30
           set ftp:passive-mode on
           set mirror:parallel-transfer-count 1
-          mirror -R --continue --ignore-time --no-perms --no-symlinks \
-                 --exclude-glob .git* \
-                 production-build/ ${{ env.PROD_DOCROOT }}
+          mirror -R --continue --ignore-time --no-perms --no-symlinks --exclude-glob .git* ${EXCLUDE_ARGS[*]} production-build/ ${{ env.PROD_DOCROOT }}
           bye
-          LFTP
+          " && break
             echo "قطع شد — ادامه از همان نقطه پس از 10 ثانیه..."
             sleep 10
           done
+
+      - name: آپلود اجباری فایل‌های حیاتی (بدون تکیه بر منطق mirror)
+        if: ${{ !inputs.dry_run }}
+        env:
+          FTP_SERVER:   ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        run: |
+          set -uo pipefail
+          source .github/deploy/critical-deploy-files.sh
+
+          # این فایل‌ها هرگز از mirror عبور نمی‌کنند (مرحله قبل exclude
+          # کرد)؛ اینجا با put صریح آپلود می‌شوند. put هیچ منطق «آیا مقصد
+          # از قبل کامل/هم‌اندازه است؟» ندارد — همیشه محتوا را کامل ارسال
+          # و جایگزین می‌کند، مستقل از اندازه یا زمان فایل مقصد. مقصد،
+          # مطابق C-2، همان ${{ env.PROD_DOCROOT }} هاردکد است — هرگز از
+          # مسیر staging یا هیچ ورودی dispatch گرفته نمی‌شود.
+          for f in "${CRITICAL_DEPLOY_FILES[@]}"; do
+            echo "===== آپلود اجباری فایل حیاتی: $f ====="
+            attempt=0
+            until [ $attempt -ge 6 ]; do
+              attempt=$((attempt+1))
+              echo "  تلاش $attempt"
+              lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" -e "
+          set ftp:ssl-allow no
+          set net:max-retries 2
+          set net:reconnect-interval-base 3
+          set net:reconnect-interval-max 10
+          set net:timeout 30
+          set ftp:passive-mode on
+          put production-build/$f -o ${{ env.PROD_DOCROOT }}$f
+          bye
+          " && break
+              echo "  قطع شد؛ ۱۰ ثانیه صبر و تلاش دوباره..."
+              sleep 10
+            done
+            if [ $attempt -ge 6 ]; then
+              echo "❌ FAIL: آپلود فایل حیاتی $f پس از ۶ تلاش ناموفق بود"
+              exit 1
+            fi
+          done
+          echo "✅ همه فایل‌های حیاتی با موفقیت (اجباری) آپلود شدند"
 
       - name: راستی‌آزمایی provenance روی سرور (read-only)
         if: ${{ !inputs.dry_run }}
@@ -294,21 +383,63 @@ jobs:
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
         run: |
           set -uo pipefail
+          # هر دو فایل حیاتی provenance را از سرور می‌گیریم — نه فقط
+          # .csp-release.json — دقیقاً همان رفعِ مشکلی که در PR #38 برای
+          # staging انجام شد و پیش از این PR روی Production اعمال
+          # نشده بود؛ Production تا این PR فقط .csp-release.json را
+          # راستی‌آزمایی می‌کرد و csp-manifest.json را مستقل بررسی نمی‌کرد.
           lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" <<LFTP
           set ftp:ssl-allow no
           set net:timeout 30
           cd public_html
           get localized/.csp-release.json -o /tmp/server-csp-release.json
+          get public/locales/csp-manifest.json -o /tmp/server-csp-manifest.json
           bye
           LFTP
           python3 - <<'PY'
-          import json, pathlib
-          repo = json.loads(pathlib.Path("localized/.csp-release.json").read_text(encoding="utf-8"))
-          server = json.loads(pathlib.Path("/tmp/server-csp-release.json").read_text(encoding="utf-8"))
+          import hashlib
+          import json
+          import pathlib
+
+          repo_release = json.loads(pathlib.Path("localized/.csp-release.json").read_text(encoding="utf-8"))
+          server_release = json.loads(pathlib.Path("/tmp/server-csp-release.json").read_text(encoding="utf-8"))
           for k in ("releaseId", "commitSha", "sourceDigest", "releaseHtmlSha256", "cspManifestSha256"):
-              if repo.get(k) != server.get(k):
-                  raise SystemExit(f"provenance روی سرور با آرتیفکت تأییدشده نمی‌خواند: {k} repo={repo.get(k)} server={server.get(k)}")
-          print("✅ آرتیفکت روی سرور با آرتیفکت تأییدشده CI برابر است")
+              if repo_release.get(k) != server_release.get(k):
+                  raise SystemExit(
+                      f"provenance روی سرور (.csp-release.json) با آرتیفکت تأییدشده نمی‌خواند: "
+                      f"{k} repo={repo_release.get(k)} server={server_release.get(k)}"
+                  )
+          print("✅ localized/.csp-release.json روی سرور با آرتیفکت تأییدشده CI برابر است")
+
+          repo_manifest_bytes = pathlib.Path("public/locales/csp-manifest.json").read_bytes()
+          server_manifest_bytes = pathlib.Path("/tmp/server-csp-manifest.json").read_bytes()
+          repo_manifest_sha256 = hashlib.sha256(repo_manifest_bytes).hexdigest()
+          server_manifest_sha256 = hashlib.sha256(server_manifest_bytes).hexdigest()
+          if repo_manifest_sha256 != server_manifest_sha256:
+              raise SystemExit(
+                  "provenance روی سرور (public/locales/csp-manifest.json) با آرتیفکت تأییدشده "
+                  f"نمی‌خواند: sha256 repo={repo_manifest_sha256} server={server_manifest_sha256}"
+              )
+          if server_manifest_sha256 != server_release.get("cspManifestSha256"):
+              raise SystemExit(
+                  "ناهماهنگی داخلی روی سرور: sha256 واقعیِ public/locales/csp-manifest.json با "
+                  f"cspManifestSha256 ثبت‌شده در localized/.csp-release.json یکی نیست "
+                  f"(actual={server_manifest_sha256} recorded={server_release.get('cspManifestSha256')})"
+              )
+          print("✅ public/locales/csp-manifest.json روی سرور با آرتیفکت تأییدشده CI برابر است")
+
+          # راستی‌آزمایی سازگاری داخلی اضافه (routeCount / policyVersion) —
+          # همان بررسی اضافه‌شده در PR #40 برای staging.
+          server_manifest = json.loads(server_manifest_bytes)
+          for k in ("routeCount", "policyVersion"):
+              release_val = server_release.get(k)
+              manifest_val = server_manifest.get(k)
+              if release_val != manifest_val:
+                  raise SystemExit(
+                      f"ناهماهنگی داخلی روی سرور: {k} در .csp-release.json={release_val} "
+                      f"با {k} در csp-manifest.json={manifest_val} یکی نیست"
+                  )
+          print("✅ routeCount/policyVersion بین دو فایل حیاتی روی سرور سازگار است")
           PY
 
       - name: خلاصه
