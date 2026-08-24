@@ -22,6 +22,59 @@
   var observer = null;
   var queuedRoots = new Set();
   var applyScheduled = false;
+  /* R3: tracks the in-flight or last server-side preference persistence so that
+     locale-dependent navigation can await it instead of racing the PATCH.
+     Null means "no write in flight and none queued"; a resolved promise means
+     the last write settled (success or failure — failure is non-fatal because
+     the cookie/localStorage choice still drives server resolution). */
+  var pendingPersist = null;
+
+  function persistPreference(locale) {
+    if (pendingPersist) return pendingPersist;
+    try {
+      var veloraData = global.VeloraData;
+      var veloraAccessToken = veloraData && typeof veloraData.getAccessToken === 'function'
+        ? veloraData.getAccessToken() : null;
+      if (!veloraAccessToken || typeof global.fetch !== 'function') {
+        pendingPersist = Promise.resolve({ persisted: false, reason: 'no-session' });
+        return pendingPersist;
+      }
+      var controller = (typeof global.AbortController === 'function') ? new global.AbortController() : null;
+      var timeoutId = controller ? global.setTimeout(function () {
+        try { controller.abort(); } catch (_) {}
+      }, 4000) : null;
+      pendingPersist = global.fetch('/api/v1/auth/me/preferences', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + veloraAccessToken },
+        body: JSON.stringify({ locale: locale }),
+        signal: controller ? controller.signal : undefined,
+        credentials: 'same-origin'
+      }).then(function (response) {
+        if (timeoutId) global.clearTimeout(timeoutId);
+        if (!response.ok) {
+          var err = new Error('Locale preference PATCH HTTP ' + response.status);
+          document.dispatchEvent(new CustomEvent('velora:locale-persist-failed', {
+            detail: { locale: locale, status: response.status, error: err }
+          }));
+          return { persisted: false, reason: 'http-' + response.status };
+        }
+        return { persisted: true, locale: locale };
+      }).catch(function (error) {
+        if (timeoutId) global.clearTimeout(timeoutId);
+        /* Do not silently swallow: announce so callers/UI can react, but never
+           break the client-side locale switch — cookie/localStorage already hold
+           the choice and will drive the next server render. */
+        document.dispatchEvent(new CustomEvent('velora:locale-persist-failed', {
+          detail: { locale: locale, error: error }
+        }));
+        return { persisted: false, reason: 'network' };
+      });
+      return pendingPersist;
+    } catch (error) {
+      pendingPersist = Promise.resolve({ persisted: false, reason: 'unavailable' });
+      return pendingPersist;
+    }
+  }
 
   function enabled(code) {
     return !!localeIndex[code];
@@ -224,21 +277,13 @@
         document.cookie = encodeURIComponent(registry.cookieKey || 'velora_locale') + '=' + encodeURIComponent(locale)
           + '; Path=/; Max-Age=31536000; SameSite=Lax';
       } catch (_) {}
-      /* PR-04: persist the manual choice server-side when signed in so the saved
-         preference follows the account across devices. Fire-and-forget — the UI
-         switch must never block on the network. */
-      try {
-        var veloraData = global.VeloraData;
-        var veloraAccessToken = veloraData && typeof veloraData.getAccessToken === 'function'
-          ? veloraData.getAccessToken() : null;
-        if (veloraAccessToken && typeof global.fetch === 'function') {
-          global.fetch('/api/v1/auth/me/preferences', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + veloraAccessToken },
-            body: JSON.stringify({ locale: locale })
-          }).catch(function () {});
-        }
-      } catch (_) {}
+      /* PR-04/R3: persist the manual choice server-side when signed in so the
+         saved preference follows the account across devices. The PATCH is now
+         tracked by pendingPersist and can be awaited via whenPersisted() before
+         locale-dependent navigation. It never blocks the UI switch itself — the
+         cookie/localStorage choice is written synchronously above. */
+      pendingPersist = null;
+      persistPreference(locale);
       var routeLocale = explicitPathLocale();
       if (routeLocale && routeLocale !== locale && global.location && typeof global.location.assign === 'function') {
         var links = document.querySelectorAll('link[rel~="alternate"][hreflang]');
@@ -451,6 +496,7 @@
     loadFeature: loadFeature,
     loadFeatures: function (features, locale) { return load(locale || current, features); },
     setLocale: setLocale,
+    whenPersisted: function () { return pendingPersist || Promise.resolve({ persisted: false, reason: 'idle' }); },
     t: t,
     apply: apply,
     number: number,
@@ -463,6 +509,23 @@
     errorMessage: errorMessage,
     status: function (code) { return t('status.' + String(code || 'unknown').toLowerCase(), null, String(code || '—')); }
   };
+
+  /* R2: when the authenticated session reports a server-side user.locale that
+     differs from the current client locale, adopt it. The data layer emits
+     'velora:user-locale' from setSession/refresh so a preference changed on
+     another device is honored on this browser. We do not persist again (that
+     would loop); we only re-apply catalogs and document direction. */
+  if (global.addEventListener) {
+    global.addEventListener('velora:user-locale', function (event) {
+      var detail = event && event.detail ? event.detail : {};
+      var desired = normalize(detail.locale);
+      if (!desired || desired === current) return;
+      /* Explicit URL prefix still wins — a user deliberately viewing /fa/...
+         must not be bounced to English by a stale event. */
+      if (explicitPathLocale()) return;
+      setLocale(desired, { persist: false }).catch(function () {});
+    });
+  }
 
   global.VeloraLocale = global.I18n = api;
   observe();
