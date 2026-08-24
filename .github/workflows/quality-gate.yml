@@ -91,11 +91,14 @@ jobs:
       - name: i18n freeze — frozen hash keys (PR-01 V-4)
         run: python tools/localization/check_frozen_hash_keys.py
 
-      - name: i18n catalog anomaly report (PR-01 V-7, report-only)
-        run: python tools/localization/report_catalog_anomalies.py
+      - name: i18n catalog anomaly gate (PR-01 V-7 hardening)
+        run: python tools/localization/report_catalog_anomalies.py --allowlist tools/localization/catalog-quality-allowlist.json --fail --fail-group en.empty --fail-group fa.en.identical
 
-      - name: i18n orphan catalog-key report (PR-09, report-only)
-        run: python tools/localization/report_orphan_catalog_keys.py
+      - name: i18n orphan catalog-key gate (PR-09 hardening)
+        run: python tools/localization/report_orphan_catalog_keys.py --allowlist tools/localization/catalog-quality-allowlist.json --fail
+
+      - name: Catalog anomaly report unit tests
+        run: python -m unittest tools.localization.test_report_catalog_anomalies -v
 
       - name: Orphan catalog-key report unit tests
         run: python -m unittest tools.localization.test_report_orphan_catalog_keys -v

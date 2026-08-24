@@ -1,20 +1,16 @@
 #!/usr/bin/env python3
-"""PR-09 (chunk validation gap) — orphan catalog-key report (REPORT-ONLY).
+"""PR-09 — orphan catalog-key report with optional blocking allowlist.
 
 Problem this closes: ``validate_localization.py`` already detects *missing*
-keys (a template/script references a catalog key that does not exist) but
-has no inverse check — a key that exists in ``public/locales/{fa,en}.json``
-and/or a feature chunk under ``public/locales/chunks/{fa,en}/*.json`` but is
-never referenced by any template, script, or PHP source is invisible today.
+keys (a template/script references a catalog key that does not exist) but has
+no inverse check — a key that exists in ``public/locales/{fa,en}.json`` and/or
+in a feature chunk under ``public/locales/chunks/{fa,en}/*.json`` but is never
+referenced by any template, script, or PHP source is otherwise invisible.
 
-This script reports such orphan keys. It deliberately follows the same
-posture as the existing ``report_catalog_anomalies.py`` (PR-01 V-7):
-report-only, always exits 0 unless ``--fail`` is passed. Orphan detection
-is inherently more prone to false positives than missing-key detection
-(dynamic key construction, keys used only from contexts this scanner does
-not walk, etc.), so it is intentionally NOT wired as a hard-blocking gate
-in this change — it can be promoted to blocking later, after a triage
-pass, exactly like V-7 was designed to be.
+By default this script remains report-only and exits 0. When ``--fail`` is
+passed, callers may provide an exact-key allowlist representing approved
+baseline orphan debt; any *new* orphan key beyond that list, or any stale
+allowlist entry that no longer needs to be exempted, fails the command.
 
 Scanned reference sources (mirrors validate_localization.py's own scan,
 kept intentionally simpler/self-contained to avoid coupling to that
@@ -33,8 +29,8 @@ the en catalog's reference set, so a key used only in one locale's HTML
 (e.g. locale-specific copy variants) is not a false positive.
 
 Exit codes:
-  0  PASS (report printed; no orphans, or --fail not requested)
-  1  FAIL (--fail requested and at least one orphan key found)
+  0  PASS (report printed; no unexpected/stale orphans, or --fail not requested)
+  1  FAIL (--fail requested and at least one unexpected/stale orphan key found)
   2  usage or input error
 """
 from __future__ import annotations
@@ -46,6 +42,7 @@ import sys
 from pathlib import Path
 
 DEFAULT_REPO_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_ALLOWLIST = DEFAULT_REPO_ROOT / 'tools' / 'localization' / 'catalog-quality-allowlist.json'
 
 # Mirrors validate_localization.py's own reference-scanning patterns
 # exactly, so orphan detection agrees with that module's "missing key"
@@ -69,6 +66,16 @@ def _load_messages(path: Path) -> dict[str, str]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     messages = payload.get("messages", {})
     return messages if isinstance(messages, dict) else {}
+
+
+def _load_allowlist(path: Path | None) -> set[str]:
+    if path is None:
+        return set()
+    payload = json.loads(path.read_text(encoding='utf-8'))
+    items = payload.get('orphanKeys', [])
+    if not isinstance(items, list) or any(not isinstance(item, str) for item in items):
+        raise ValueError(f"{path}: orphanKeys must be an array of strings")
+    return set(items)
 
 
 def _collect_all_keys(root: Path) -> dict[str, set[str]]:
@@ -171,7 +178,11 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument(
         "--fail",
         action="store_true",
-        help="exit 1 if any orphan key is found (off by default, report-only)",
+        help="exit 1 if any non-allowlisted or stale orphan key is found",
+    )
+    parser.add_argument(
+        "--allowlist",
+        help="JSON file with orphanKeys allowlist (default: none)",
     )
     return parser.parse_args(argv)
 
@@ -179,23 +190,47 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
     root = (Path(args.root) if args.root else DEFAULT_REPO_ROOT).resolve()
+    allowlist_path = Path(args.allowlist).resolve() if args.allowlist else None
+    allowlist = _load_allowlist(allowlist_path)
 
     orphans = find_orphan_keys(root)
+    union = set().union(*(set(keys) for keys in orphans.values()))
+    stale = sorted(allowlist - union)
 
-    print("VELORA orphan catalog-key report (report-only)")
+    print("VELORA orphan catalog-key report")
     total = 0
+    unexpected_total = 0
+    allowlisted_total = 0
     for locale in sorted(orphans):
         keys = orphans[locale]
         total += len(keys)
-        print(f"\n## {locale} — {len(keys)} orphan key(s) (defined, never referenced)")
-        for key in keys[: args.limit]:
+        unexpected = [key for key in keys if key not in allowlist]
+        allowlisted = len(keys) - len(unexpected)
+        unexpected_total += len(unexpected)
+        allowlisted_total += allowlisted
+        print(
+            f"\n## {locale} — total={len(keys)} allowlisted={allowlisted} blocking={len(unexpected)} orphan key(s)"
+        )
+        for key in unexpected[: args.limit]:
             print(f"   {key}")
-        if len(keys) > args.limit:
-            print(f"   ... and {len(keys) - args.limit} more")
+        if len(unexpected) > args.limit:
+            print(f"   ... and {len(unexpected) - args.limit} more")
 
-    print(f"\nSummary: {total} total orphan key(s) across all locales (report-only, not blocking).")
-    if args.fail and total:
-        print("--fail requested and orphan keys present.", file=sys.stderr)
+    if stale:
+        print(f"\n## stale allowlist entries — {len(stale)}")
+        for key in stale[: args.limit]:
+            print(f"   {key}")
+        if len(stale) > args.limit:
+            print(f"   ... and {len(stale) - args.limit} more")
+
+    print(
+        f"\nSummary: total={total} allowlisted={allowlisted_total} blocking={unexpected_total} stale_allowlist={len(stale)}"
+    )
+    if args.fail and (unexpected_total or stale):
+        if unexpected_total:
+            print(f"BLOCKING: {unexpected_total} orphan key(s) are not allowlisted.", file=sys.stderr)
+        if stale:
+            print(f"BLOCKING: {len(stale)} allowlist key(s) are stale.", file=sys.stderr)
         return 1
     return 0
 
