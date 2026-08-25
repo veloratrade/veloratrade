@@ -1,0 +1,212 @@
+name: AI Migration Verification (Staging)
+
+# Verifies and applies AI foundation migrations v0.4-v0.8 on staging only
+# Uses one-use PHP probe pattern like email-status-staging.yml — no secrets in logs
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Mode: check or apply'
+        required: true
+        default: 'check'
+      confirm:
+        description: 'Type APPLY-AI-MIGRATION to confirm apply mode'
+        required: false
+        default: ''
+
+permissions: {}
+
+concurrency:
+  group: ai-migration-staging
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: AI migration check/apply on staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      FTP_SERVER: ${{ secrets.STAGING_FTP_SERVER }}
+      FTP_USERNAME: ${{ secrets.STAGING_FTP_USERNAME }}
+      FTP_PASSWORD: ${{ secrets.STAGING_FTP_PASSWORD }}
+      BASE: https://staging.veloratrade.ir
+      INPUT_MODE: ${{ github.event.inputs.mode }}
+      INPUT_CONFIRM: ${{ github.event.inputs.confirm }}
+    steps:
+      - name: Create, upload, execute, and remove one-use probe
+        run: |
+          set -euo pipefail
+          if [ "$INPUT_MODE" = "apply" ]; then
+            [ "$INPUT_CONFIRM" = "APPLY-AI-MIGRATION" ] || { echo "::error::For apply mode, confirm must be APPLY-AI-MIGRATION"; exit 1; }
+          fi
+          sudo apt-get update -qq
+          sudo apt-get install -y -q lftp >/dev/null
+          NAME="_velora_ai_mig_$(openssl rand -hex 8).php"
+          TOKEN="$(openssl rand -hex 32)"
+          HASH="$(printf '%s' "$TOKEN" | sha256sum | awk '{print $1}')"
+          echo "::add-mask::$NAME"; echo "::add-mask::$TOKEN"; echo "::add-mask::$HASH"
+          export NAME TOKEN HASH
+
+          python3 <<'PY'
+          import os
+          template = r'''<?php
+          declare(strict_types=1);
+          $expected = '__HASH__';
+          $provided = (string) ($_SERVER['HTTP_X_VELORA_DIAG'] ?? '');
+          if ($provided === '' || !hash_equals($expected, hash('sha256', $provided))) {
+              http_response_code(404); exit('Not found');
+          }
+          @unlink(__FILE__);
+          require dirname(__DIR__) . '/api/src/bootstrap.php';
+          use Velora\Core\Database;
+
+          function tableExists(PDO $pdo, string $table): bool {
+              $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+              if ($driver === 'sqlite') {
+                  $stmt = $pdo->prepare("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=:table");
+                  $stmt->execute(['table'=>$table]);
+                  return (int)$stmt->fetchColumn()===1;
+              }
+              $stmt = $pdo->prepare('SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=:table');
+              $stmt->execute(['table'=>$table]);
+              return (int)$stmt->fetchColumn()===1;
+          }
+
+          function columnExists(PDO $pdo, string $table, string $column): bool {
+              $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+              if ($driver === 'sqlite') {
+                  try {
+                      $pdo->query("SELECT $column FROM $table LIMIT 1");
+                      return true;
+                  } catch (Throwable $e) { return false; }
+              }
+              $stmt = $pdo->prepare('SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=:table AND COLUMN_NAME=:column');
+              $stmt->execute(['table'=>$table,'column'=>$column]);
+              return (int)$stmt->fetchColumn()===1;
+          }
+
+          $pdo = Database::connection();
+          $mode = '__MODE__'; // check or apply
+          $expectedTables = ['ai_extractions','ai_provider_quotas','ai_provider_logs','ai_requests','ai_feature_flags','ai_audit_logs','ai_feedback','ai_jobs','ai_reports','ai_analysis'];
+
+          $result = ['mode'=>$mode, 'tables'=>[], 'users_ai_consent_at'=>false, 'feature_flags'=>[]];
+
+          foreach ($expectedTables as $t) {
+              $result['tables'][$t] = tableExists($pdo, $t);
+          }
+          $result['users_ai_consent_at'] = columnExists($pdo, 'users', 'ai_consent_at');
+
+          if ($mode === 'check') {
+              // Read feature flags
+              try {
+                  if (tableExists($pdo, 'ai_feature_flags')) {
+                      $stmt = $pdo->query('SELECT feature_name, enabled, rollout_percentage FROM ai_feature_flags ORDER BY feature_name');
+                      $result['feature_flags'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                  }
+              } catch (Throwable $e) {}
+              header('Content-Type: application/json; charset=utf-8');
+              header('Cache-Control: no-store');
+              echo json_encode($result, JSON_UNESCAPED_SLASHES);
+              exit(0);
+          }
+
+          // Apply mode — execute migrations v0.4-v0.8 if missing
+          $migrations = [
+              'v0.4' => dirname(__DIR__) . '/api/database/migrations/v0.4_ai_foundation.sql',
+              'v0.5' => dirname(__DIR__) . '/api/database/migrations/v0.5_ai_requests.sql',
+              'v0.6' => dirname(__DIR__) . '/api/database/migrations/v0.6_ai_privacy.sql',
+              'v0.7' => dirname(__DIR__) . '/api/database/migrations/v0.7_ai_jobs.sql',
+              'v0.8' => dirname(__DIR__) . '/api/database/migrations/v0.8_ai_reports.sql',
+          ];
+
+          $applied = [];
+          foreach ($migrations as $ver => $file) {
+              if (!is_file($file)) continue;
+              // Only apply if any of its tables missing
+              $need = false;
+              if ($ver === 'v0.4') $need = !$result['tables']['ai_extractions'] || !$result['tables']['ai_provider_quotas'] || !$result['tables']['ai_provider_logs'];
+              if ($ver === 'v0.5') $need = !$result['tables']['ai_requests'] || !$result['tables']['ai_feature_flags'] || !$result['tables']['ai_audit_logs'] || !$result['tables']['ai_feedback'];
+              if ($ver === 'v0.6') $need = !$result['users_ai_consent_at'];
+              if ($ver === 'v0.7') $need = !$result['tables']['ai_jobs'];
+              if ($ver === 'v0.8') $need = !$result['tables']['ai_reports'] || !$result['tables']['ai_analysis'];
+              if (!$need) continue;
+
+              $sql = file_get_contents($file);
+              if ($sql === false) continue;
+              try {
+                  $pdo->exec($sql);
+                  $applied[] = $ver;
+              } catch (Throwable $e) {
+                  // Log safe error
+                  error_log('[VELORA_AI_MIGRATION] ' . $ver . ' failed: ' . $e->getMessage());
+                  $result['error'] = $ver . ':' . $e->getMessage();
+              }
+          }
+
+          // Re-check after apply
+          foreach ($expectedTables as $t) {
+              $result['tables'][$t] = tableExists($pdo, $t);
+          }
+          $result['users_ai_consent_at'] = columnExists($pdo, 'users', 'ai_consent_at');
+          $result['applied'] = $applied;
+
+          try {
+              if (tableExists($pdo, 'ai_feature_flags')) {
+                  $stmt = $pdo->query('SELECT feature_name, enabled, rollout_percentage FROM ai_feature_flags ORDER BY feature_name');
+                  $result['feature_flags'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+              }
+          } catch (Throwable $e) {}
+
+          header('Content-Type: application/json; charset=utf-8');
+          header('Cache-Control: no-store');
+          echo json_encode($result, JSON_UNESCAPED_SLASHES);
+          '''
+          open('/tmp/probe.php','w',encoding='utf-8').write(template.replace('__HASH__', os.environ['HASH']).replace('__MODE__', os.environ['INPUT_MODE']))
+          PY
+
+          cleanup() {
+            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+              -e "set ftp:ssl-allow no; set net:max-retries 1; set net:timeout 20; rm -f public_html/staging.veloratrade.ir/public/$NAME; bye" >/dev/null 2>&1 || true
+            shred -u /tmp/probe.php /tmp/status.json 2>/dev/null || rm -f /tmp/probe.php /tmp/status.json
+          }
+          trap cleanup EXIT
+
+          uploaded=0
+          for attempt in $(seq 1 15); do
+            if lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+              -e "set ftp:ssl-allow no; set net:max-retries 2; set net:timeout 30; glob -a rm -f public_html/staging.veloratrade.ir/public/_velora_ai_mig_*.php; put /tmp/probe.php -o public_html/staging.veloratrade.ir/public/$NAME; bye"; then
+              uploaded=1; break
+            fi
+            sleep 5
+          done
+          [ "$uploaded" = 1 ] || { echo "::error::probe upload failed"; exit 1; }
+
+          code=$(curl -sS -o /tmp/status.json -w '%{http_code}' --max-time 40 -H "X-Velora-Diag: $TOKEN" "$BASE/public/$NAME")
+          [ "$code" = 200 ] || { echo "::error::probe HTTP $code"; cat /tmp/status.json; exit 1; }
+
+          python3 <<'PY'
+          import json, pathlib
+          data=json.loads(pathlib.Path('/tmp/status.json').read_text())
+          print("=== AI Migration Verification ===")
+          print(f"Mode: {data.get('mode')}")
+          tables=data.get('tables',{})
+          for t, exists in tables.items():
+              print(f"  Table {t}: {'EXISTS' if exists else 'MISSING'}")
+          print(f"users.ai_consent_at: {'EXISTS' if data.get('users_ai_consent_at') else 'MISSING'}")
+          print("Feature flags:")
+          for flag in data.get('feature_flags',[]):
+              print(f"  {flag.get('feature_name')}: enabled={flag.get('enabled')} rollout={flag.get('rollout_percentage')}")
+          if 'applied' in data:
+              print(f"Applied migrations: {data.get('applied')}")
+          if 'error' in data:
+              print(f"Error: {data.get('error')}")
+          # Determine pass/fail
+          missing = [t for t, exists in tables.items() if not exists]
+          if not data.get('users_ai_consent_at'):
+              missing.append('users.ai_consent_at')
+          if missing:
+              print(f"FAIL: Missing {missing}")
+          else:
+              print("PASS: All AI tables exist")
+          PY
