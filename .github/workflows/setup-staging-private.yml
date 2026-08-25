@@ -30,6 +30,8 @@ jobs:
           FTP_PASSWORD:   ${{ secrets.STAGING_FTP_PASSWORD }}
           VELORA_ENV:     ${{ secrets.STAGING_VELORA_ENV }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
         run: |
           set -euo pipefail
           sudo apt-get install -y -q lftp > /dev/null
@@ -37,6 +39,8 @@ jobs:
           [ -n "$VELORA_ENV" ] || { echo "::error::STAGING_VELORA_ENV خالی است"; exit 1; }
           [ -n "$RESEND_API_KEY" ] || { echo "::error::RESEND_API_KEY خالی است"; exit 1; }
           echo "::add-mask::$RESEND_API_KEY"
+          if [ -n "${GEMINI_API_KEY:-}" ]; then echo "::add-mask::$GEMINI_API_KEY"; fi
+          if [ -n "${GEMINI_MODEL:-}" ]; then echo "::add-mask::$GEMINI_MODEL"; fi
 
           mkdir -p private/config private/data private/logs
           printf '%s' "$VELORA_ENV" > private/config/velora.env
@@ -51,7 +55,11 @@ jobs:
               'RESEND_API_KEY': os.environ['RESEND_API_KEY'],
               'MAIL_FROM': 'no-reply@veloratrade.ir',
               'MAIL_FROM_NAME': 'VELORA TRADE',
+              'GEMINI_API_KEY': os.environ.get('GEMINI_API_KEY', ''),
+              'GEMINI_MODEL': os.environ.get('GEMINI_MODEL', 'gemini-1.5-flash'),
           }
+          # Remove empty GEMINI keys if not provided (keep fallback to Tesseract)
+          updates = {k: v for k, v in updates.items() if v != ''}
           source = open(path, encoding='utf-8-sig').read().splitlines()
           output, written = [], set()
           for line in source:
