@@ -1,0 +1,334 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Velora\AI\Services;
+
+use Velora\AI\DTOs\AIRequestDTO;
+use Velora\AI\DTOs\AIResponseDTO;
+use Velora\AI\Exceptions\AIConsentRequiredException;
+use Velora\AI\Exceptions\AIException;
+use Velora\AI\Exceptions\AIProviderException;
+use Velora\AI\Exceptions\AIQuotaExhaustedException;
+use Velora\AI\Exceptions\AITimeoutException;
+use Velora\AI\Exceptions\AIValidationException;
+use Velora\AI\Extraction\ExtractedTradeData;
+use Velora\AI\Providers\AIProviderInterface;
+use Velora\AI\Providers\GeminiProvider;
+use Velora\AI\Providers\TesseractProvider;
+use Velora\AI\Repositories\AIProviderLogRepository;
+use Velora\AI\Repositories\AIProviderQuotaRepository;
+use Velora\AI\Repositories\AIRequestRepository;
+use Velora\AI\Security\ImageAnonymizer;
+use Velora\Core\Database;
+
+/**
+ * Hardened failover manager — atomic quota reservation.
+ * Priority: Gemini -> Tesseract.
+ * No Redis, simple DB-based quota + logging.
+ */
+final class AIManager
+{
+    /** @var AIProviderInterface[] */
+    private array $providers;
+    private AIProviderQuotaRepository $quotaRepo;
+    private AIProviderLogRepository $logRepo;
+    private AIRequestRepository $requestRepo;
+
+    public function __construct(?array $providers = null, ?AIProviderQuotaRepository $quotaRepo = null, ?AIProviderLogRepository $logRepo = null, ?AIRequestRepository $requestRepo = null)
+    {
+        if ($providers === null) {
+            // Use registry instead of hardcoded list
+            $registry = new AIProviderRegistry();
+            $this->providers = $registry->loadEnabledProviders();
+        } else {
+            $this->providers = $providers;
+        }
+        $this->quotaRepo = $quotaRepo ?? new AIProviderQuotaRepository();
+        $this->logRepo = $logRepo ?? new AIProviderLogRepository();
+        $this->requestRepo = $requestRepo ?? new AIRequestRepository();
+    }
+
+    /**
+     * Generic generate with atomic quota reservation + consent check + anonymization.
+     */
+    public function generate(string $prompt, array $context = [], array $options = []): AIResponseDTO
+    {
+        $deadline = $options['deadline'] ?? (microtime(true) + 10);
+        $feature = $options['feature'] ?? $context['feature'] ?? 'generic';
+        $userId = $options['user_id'] ?? $context['user_id'] ?? 0;
+
+        $lastException = null;
+        $tried = [];
+
+        foreach ($this->providers as $provider) {
+            $name = $provider->getName();
+            $costTier = $provider->getCostTier();
+
+            $requiredCap = $options['capability'] ?? null;
+            if ($requiredCap !== null && !in_array($requiredCap, $provider->getCapabilities(), true)) {
+                $tried[] = $name . ':unsupported_capability';
+                continue;
+            }
+
+            if (!$provider->isAvailable()) {
+                $tried[] = $name . ':not_available';
+                $this->logRepo->log($name, 'failed', 0, 'NOT_AVAILABLE');
+                continue;
+            }
+
+            if (microtime(true) >= $deadline) {
+                throw new AITimeoutException('Global deadline exceeded', 'manager');
+            }
+
+            // Privacy: consent check for external providers (not tesseract)
+            if ($name !== 'tesseract' && $userId > 0) {
+                if (!$this->hasAIConsent((int) $userId)) {
+                    throw new AIConsentRequiredException('AI consent required for external provider ' . $name);
+                }
+            }
+
+            // Atomic reservation BEFORE external call — fixes race condition
+            $reserved = $this->quotaRepo->tryReserveQuota($name);
+            if (!$reserved) {
+                if (!$this->quotaRepo->hasQuota($name, $costTier)) {
+                    $tried[] = $name . ':quota_exhausted';
+                    $this->logRepo->log($name, 'quota_exhausted', 0, 'QUOTA_EXHAUSTED');
+                    $lastException = new AIQuotaExhaustedException('Quota exhausted for ' . $name, $name);
+                    continue;
+                }
+                $tried[] = $name . ':quota_race_exhausted';
+                $this->logRepo->log($name, 'quota_exhausted', 0, 'QUOTA_RACE');
+                $lastException = new AIQuotaExhaustedException('Quota race exhausted for ' . $name, $name);
+                continue;
+            }
+
+            // Privacy: anonymize image before external call
+            if ($name !== 'tesseract' && isset($context['imageRaw']) && is_string($context['imageRaw'])) {
+                if (ImageAnonymizer::shouldAnonymize($context['imageRaw'])) {
+                    $context['imageRaw'] = ImageAnonymizer::anonymize($context['imageRaw']);
+                }
+            }
+
+            $start = microtime(true);
+            try {
+                $response = $provider->generate($prompt, $context, $options);
+                $latency = (int) ((microtime(true) - $start) * 1000);
+
+                $this->logRepo->log($name, 'success', $latency, null);
+
+                // Track request for audit/cost
+                try {
+                    $reqDto = new AIRequestDTO(
+                        userId: (int) $userId,
+                        feature: $feature,
+                        provider: $name,
+                        model: $response->model,
+                        prompt: $prompt,
+                        promptHash: hash('sha256', $prompt),
+                        context: $context,
+                        options: $options,
+                    );
+                    $this->requestRepo->logRequest($reqDto, $response);
+                } catch (\Throwable $e) {
+                }
+
+                return $response;
+            } catch (AIQuotaExhaustedException $e) {
+                $latency = (int) ((microtime(true) - $start) * 1000);
+                $tried[] = $name . ':quota_exhausted';
+                $this->logRepo->log($name, 'quota_exhausted', $latency, $e->errorCode());
+                $lastException = $e;
+                // Quota was already reserved, but we keep it reserved (counts as attempt) — intentional to prevent retry storm
+                continue;
+            } catch (AITimeoutException $e) {
+                $latency = (int) ((microtime(true) - $start) * 1000);
+                $tried[] = $name . ':timeout';
+                $this->logRepo->log($name, 'timeout', $latency, $e->errorCode());
+                $lastException = $e;
+                continue;
+            } catch (AIException $e) {
+                $latency = (int) ((microtime(true) - $start) * 1000);
+                $tried[] = $name . ':' . strtolower($e->errorCode() ?? 'failed');
+                $this->logRepo->log($name, 'failed', $latency, $e->errorCode());
+                $lastException = $e;
+                continue;
+            }
+        }
+
+        if ($lastException !== null) {
+            throw $lastException;
+        }
+
+        throw new AIProviderException('All providers failed: ' . implode(', ', $tried), 'manager');
+    }
+
+    /**
+     * Extract with atomic quota reservation + consent + anonymization — backward compatible.
+     */
+    public function extract(string $imageRaw, float $deadline, int $userId = 0): ExtractedTradeData
+    {
+        $lastException = null;
+        $triedProviders = [];
+
+        foreach ($this->providers as $provider) {
+            $name = $provider->getName();
+            $costTier = $provider->getCostTier();
+
+            if (!$provider->isAvailable()) {
+                $triedProviders[] = $name . ':not_available';
+                $this->logRepo->log($name, 'failed', 0, 'NOT_AVAILABLE');
+                continue;
+            }
+
+            if (microtime(true) >= $deadline) {
+                throw new AITimeoutException('Global deadline exceeded before provider.', 'manager');
+            }
+
+            // Privacy: consent check for external providers
+            if ($name !== 'tesseract' && $userId > 0) {
+                if (!$this->hasAIConsent($userId)) {
+                    throw new AIConsentRequiredException('AI consent required for external provider ' . $name);
+                }
+            }
+
+            // Atomic reservation
+            $reserved = $this->quotaRepo->tryReserveQuota($name);
+            if (!$reserved) {
+                if (!$this->quotaRepo->hasQuota($name, $costTier)) {
+                    $triedProviders[] = $name . ':quota_exhausted';
+                    $this->logRepo->log($name, 'quota_exhausted', 0, 'QUOTA_EXHAUSTED');
+                    $lastException = new AIQuotaExhaustedException('Quota exhausted for ' . $name, $name);
+                    continue;
+                }
+                $triedProviders[] = $name . ':quota_race_exhausted';
+                $this->logRepo->log($name, 'quota_exhausted', 0, 'QUOTA_RACE');
+                $lastException = new AIQuotaExhaustedException('Quota race exhausted for ' . $name, $name);
+                continue;
+            }
+
+            // Privacy: anonymize for external providers
+            $imageToSend = $imageRaw;
+            if ($name !== 'tesseract' && ImageAnonymizer::shouldAnonymize($imageRaw)) {
+                $imageToSend = ImageAnonymizer::anonymize($imageRaw);
+            }
+
+            $start = microtime(true);
+            try {
+                $result = $provider->extract($imageToSend, $deadline);
+                $latency = (int) ((microtime(true) - $start) * 1000);
+
+                if ($result->confidence < 0.2 && $name !== 'tesseract') {
+                    $triedProviders[] = $name . ':low_confidence';
+                    $this->logRepo->log($name, 'failed', $latency, 'LOW_CONFIDENCE');
+                    $lastException = new AIValidationException('Low confidence from ' . $name);
+                    continue;
+                }
+
+                $this->logRepo->log($name, 'success', $latency, null);
+                return $result;
+            } catch (AIQuotaExhaustedException $e) {
+                $latency = (int) ((microtime(true) - $start) * 1000);
+                $triedProviders[] = $name . ':quota_exhausted';
+                $this->logRepo->log($name, 'quota_exhausted', $latency, $e->errorCode());
+                $lastException = $e;
+                continue;
+            } catch (AITimeoutException $e) {
+                $latency = (int) ((microtime(true) - $start) * 1000);
+                $triedProviders[] = $name . ':timeout';
+                $this->logRepo->log($name, 'timeout', $latency, $e->errorCode());
+                $lastException = $e;
+                continue;
+            } catch (AIValidationException $e) {
+                $latency = (int) ((microtime(true) - $start) * 1000);
+                $triedProviders[] = $name . ':validation_failed';
+                $this->logRepo->log($name, 'failed', $latency, $e->errorCode());
+                $lastException = $e;
+                continue;
+            } catch (AIProviderException $e) {
+                $latency = (int) ((microtime(true) - $start) * 1000);
+                $triedProviders[] = $name . ':provider_error';
+                $this->logRepo->log($name, 'failed', $latency, $e->errorCode());
+                $lastException = $e;
+                continue;
+            } catch (AIException $e) {
+                $latency = (int) ((microtime(true) - $start) * 1000);
+                $triedProviders[] = $name . ':ai_error';
+                $this->logRepo->log($name, 'failed', $latency, $e->errorCode());
+                $lastException = $e;
+                continue;
+            }
+        }
+
+        if ($lastException !== null) {
+            throw $lastException;
+        }
+
+        throw new AIProviderException(
+            'All AI providers failed. Tried: ' . implode(', ', $triedProviders),
+            'manager',
+            ['tried' => $triedProviders],
+        );
+    }
+
+    public function getProvider(string $name): ?AIProviderInterface
+    {
+        foreach ($this->providers as $p) {
+            if ($p->getName() === $name) {
+                return $p;
+            }
+        }
+        return null;
+    }
+
+    public function getProviderNames(): array
+    {
+        return array_map(fn(AIProviderInterface $p) => $p->getName(), $this->providers);
+    }
+
+    /**
+     * Check if user has given AI consent (ai_consent_at not null).
+     * Fail open if column/table missing (backward compat until v0.6 applied).
+     */
+    /**
+     * Check if user has given AI consent (ai_consent_at not null).
+     * After v0.6 exists: fail-closed for external providers if column missing.
+     * Tesseract/local may remain available.
+     */
+    private function hasAIConsent(int $userId): bool
+    {
+        try {
+            $pdo = Database::connection();
+            $driver = $pdo->getAttribute(\PDO::ATTR_DRIVER_NAME);
+            if ($driver === 'mysql') {
+                $stmt = $pdo->prepare(
+                    'SELECT ai_consent_at FROM users WHERE id = :id LIMIT 1'
+                );
+                $stmt->execute(['id' => $userId]);
+                $row = $stmt->fetch();
+                if ($row === false) {
+                    return false;
+                }
+                return $row['ai_consent_at'] !== null && $row['ai_consent_at'] !== '';
+            }
+
+            // SQLite fallback for tests
+            $stmt = $pdo->prepare('SELECT ai_consent_at FROM users WHERE id = :id LIMIT 1');
+            $stmt->execute(['id' => $userId]);
+            $row = $stmt->fetch();
+            if ($row === false) {
+                return false;
+            }
+            return isset($row['ai_consent_at']) && $row['ai_consent_at'] !== null && $row['ai_consent_at'] !== '';
+        } catch (\Throwable $e) {
+            // After v0.6: if consent column missing, external AI must reject (fail-closed)
+            if (stripos($e->getMessage(), 'ai_consent_at') !== false || stripos($e->getMessage(), 'Unknown column') !== false) {
+                error_log('[VELORA_AI_CONSENT] column missing, fail-closed for external AI');
+                return false;
+            }
+            // Other DB errors — fail-closed for external AI to avoid privacy violation
+            error_log('[VELORA_AI_CONSENT] check failed, fail-closed: ' . $e->getMessage());
+            return false;
+        }
+    }
+}
