@@ -73,7 +73,7 @@ jobs:
           B64=$(base64 -w 0 "$SAMPLE_PATH")
           echo "$B64" > /tmp/b64.txt
           echo "Sample image size: $(wc -c < "$SAMPLE_PATH") bytes, base64 length: ${#B64}"
-          export B64
+          unset B64
 
           # Test extraction with staging JWT if available
           if [ -n "$JWT" ]; then
