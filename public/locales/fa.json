@@ -1473,5 +1473,26 @@
     "dashboard.aiInsights.actionGenerate": "تولید بینش‌های هوش مصنوعی",
     "dashboard.aiInsights.actionView": "مشاهده بینش‌های هوش مصنوعی",
     "dashboard.aiInsights.tabListAriaLabel": "بخش‌های داشبورد"
-  }
+  },
+  "errors.ai.consentRequired": "برای پردازش خارجی هوش مصنوعی، رضایت شما لازم است. لطفاً در تنظیمات رضایت را فعال کنید.",
+  "errors.ai.featureDisabled": "این قابلیت هوش مصنوعی در حال حاضر غیرفعال است.",
+  "errors.ai.generic": "سرویس هوش مصنوعی موقتاً در دسترس نیست.",
+  "errors.ai.provider": "ارائه‌دهنده هوش مصنوعی نتوانست درخواست را پردازش کند.",
+  "errors.ai.quota": "سهمیه ارائه‌دهنده هوش مصنوعی تمام شده. لطفاً بعداً تلاش کنید.",
+  "errors.ai.timeout": "زمان پردازش هوش مصنوعی به پایان رسید.",
+  "errors.ai.validation": "اعتبارسنجی استخراج هوش مصنوعی ناموفق بود.",
+  "errors.ai.validation.datetime": "فرمت تاریخ/زمان نامعتبر است.",
+  "errors.ai.validation.empty": "هیچ داده معامله‌ای استخراج نشد.",
+  "errors.ai.validation.fieldNotAllowed": "این فیلد برای اصلاح مجاز نیست.",
+  "errors.ai.validation.numeric": "مقدار عددی نامعتبر است.",
+  "errors.ai.validation.side": "جهت معامله نامعتبر است، باید buy یا sell باشد.",
+  "errors.ai.validation.symbol": "فرمت نماد نامعتبر است.",
+  "errors.ai.validation.tooManyTrades": "تعداد معاملات برای تحلیل هوش مصنوعی بیش از حد است.",
+  "errors.ai.validation.invalid": "داده هوش مصنوعی نامعتبر است.",
+  "errors.ai.validation.missing": "پاسخ هوش مصنوعی فاقد داده ضروری است.",
+  "errors.ai.validation.malformed": "هوش مصنوعی داده نادرست برگرداند.",
+  "errors.ai.validation.provider": "ارائه‌دهنده هوش مصنوعی درخواست را رد کرد.",
+  "errors.ai.validation.json": "JSON نامعتبر از ارائه‌دهنده هوش مصنوعی.",
+  "errors.ai.validation.image": "داده تصویر نامعتبر است.",
+  "ai.feedbackStored": "بازخورد با موفقیت ذخیره شد."
 }

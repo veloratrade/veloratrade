@@ -52,32 +52,29 @@ for ($i = 0; $i < $max; $i++) {
     echo sprintf("Processing job %d type=%s user=%d attempt=%d\n", $jobId, $type, $userId, $job['attempts'] ?? 1);
 
     try {
-        $result = match ($type) {
-            'analysis', 'trade_analysis' => (function () use ($userId, $payload): array {
-                $service = new TradeAnalyzerService();
-                $trades = $payload['trades'] ?? [];
-                $response = $service->analyze($userId, $trades, [
-                    'locale' => $payload['locale'] ?? 'en',
-                    'timeframe' => $payload['timeframe'] ?? 'last_100',
-                ]);
-                return ['analysis' => json_decode($response->content, true) ?: $response->content];
-            })(),
-            'report', 'weekly_report' => (function () use ($userId, $payload): array {
-                $service = new WeeklyReportService();
-                $trades = $payload['trades'] ?? [];
-                $weekStart = $payload['period_start'] ?? $payload['week_start'] ?? gmdate('Y-m-d', strtotime('last monday'));
-                $response = $service->generateWeekly($userId, $weekStart, [
-                    'locale' => $payload['locale'] ?? 'en',
-                    'trades' => $trades,
-                ]);
-                return ['report' => json_decode($response->content, true) ?: $response->content];
-            })(),
-            'extraction', 'screenshot_extraction' => (function () use ($userId, $payload): array {
-                // For future: async screenshot extraction
-                return ['extraction' => 'async extraction not yet fully implemented, use sync endpoint'];
-            })(),
-            default => ['handled' => true, 'type' => $type, 'note' => 'generic job'],
-        };
+        $result = [];
+        if ($type === 'analysis' || $type === 'trade_analysis') {
+            $service = new TradeAnalyzerService();
+            $trades = $payload['trades'] ?? [];
+            $response = $service->analyze($userId, $trades, [
+                'locale' => $payload['locale'] ?? 'en',
+                'timeframe' => $payload['timeframe'] ?? 'last_100',
+            ]);
+            $result = ['analysis' => json_decode($response->content, true) ?: $response->content];
+        } elseif ($type === 'report' || $type === 'weekly_report') {
+            $service = new WeeklyReportService();
+            $trades = $payload['trades'] ?? [];
+            $weekStart = $payload['period_start'] ?? $payload['week_start'] ?? gmdate('Y-m-d', strtotime('last monday'));
+            $response = $service->generateWeekly($userId, $weekStart, [
+                'locale' => $payload['locale'] ?? 'en',
+                'trades' => $trades,
+            ]);
+            $result = ['report' => json_decode($response->content, true) ?: $response->content];
+        } elseif ($type === 'extraction' || $type === 'screenshot_extraction') {
+            $result = ['extraction' => 'async extraction not yet fully implemented, use sync endpoint'];
+        } else {
+            $result = ['handled' => true, 'type' => $type, 'note' => 'generic job'];
+        }
 
         $repository->completeJob($jobId, $result);
         $completed++;
@@ -87,7 +84,6 @@ for ($i = 0; $i < $max; $i++) {
         $failed++;
         $processed++;
         $errorCode = $e instanceof \Velora\AI\Exceptions\AIException ? $e->errorCode() : 'FAILED';
-        // Retry with delay 60s * attempts
         $delay = 60 * (int) ($job['attempts'] ?? 1);
         $repository->failJob($jobId, $errorCode, $delay);
         fwrite(STDERR, '[' . gmdate('c') . "] Job $jobId failed: " . $e->getMessage() . "\n");

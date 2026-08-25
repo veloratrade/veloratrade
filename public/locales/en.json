@@ -1473,5 +1473,26 @@
     "dashboard.aiInsights.actionGenerate": "Generate AI Insights",
     "dashboard.aiInsights.actionView": "View AI Insights",
     "dashboard.aiInsights.tabListAriaLabel": "Dashboard sections"
-  }
+  },
+  "errors.ai.consentRequired": "AI consent is required for external processing. Please enable AI consent in preferences.",
+  "errors.ai.featureDisabled": "This AI feature is currently disabled.",
+  "errors.ai.generic": "AI service temporarily unavailable.",
+  "errors.ai.provider": "AI provider failed to process request.",
+  "errors.ai.quota": "AI provider quota exhausted. Please try again later.",
+  "errors.ai.timeout": "AI provider timed out.",
+  "errors.ai.validation": "AI extraction validation failed.",
+  "errors.ai.validation.datetime": "Invalid date/time format.",
+  "errors.ai.validation.empty": "No trade data could be extracted.",
+  "errors.ai.validation.fieldNotAllowed": "This field is not allowed for correction.",
+  "errors.ai.validation.numeric": "Invalid numeric value.",
+  "errors.ai.validation.side": "Invalid trade side, must be buy or sell.",
+  "errors.ai.validation.symbol": "Invalid symbol format.",
+  "errors.ai.validation.tooManyTrades": "Too many trades for AI analysis.",
+  "errors.ai.validation.invalid": "Invalid AI data.",
+  "errors.ai.validation.missing": "AI response missing required data.",
+  "errors.ai.validation.malformed": "AI returned malformed data.",
+  "errors.ai.validation.provider": "AI provider rejected request.",
+  "errors.ai.validation.json": "Invalid JSON from AI provider.",
+  "errors.ai.validation.image": "Invalid image data.",
+  "ai.feedbackStored": "Feedback stored successfully."
 }
