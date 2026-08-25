@@ -10,7 +10,7 @@ declare(strict_types=1);
  *   php api/workers/ai_job_worker.php --max=10
  *   php api/workers/ai_job_worker.php --max=20 --type=analysis
  *
- * Cron: */5 * * * * php /path/to/api/workers/ai_job_worker.php --max=10 >> /path/to/logs/ai_jobs.log 2>&1
+ * Cron: 0 2 * * * (daily 02:00) php /path/to/api/workers/ai_job_worker.php --max=10 >> /path/to/logs/ai_jobs.log 2>&1
  */
 
 if (PHP_SAPI !== 'cli') {
