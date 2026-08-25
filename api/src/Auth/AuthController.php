@@ -234,9 +234,24 @@ final class AuthController
      * Locale must be one of enabled manifest locales.
      * ai_consent bool sets users.ai_consent_at = NOW() or NULL.
      */
+    /**
+     * Persist the authenticated user's UI language preference and AI consent.
+     * Locale must be one of enabled manifest locales.
+     * ai_consent bool sets users.ai_consent_at = NOW() or NULL.
+     * Preserves backward compatibility with existing locale endpoint tests.
+     */
     public function updatePreferences(Request $request): never
     {
         $userId = (int) $request->attributes['user_id'];
+
+        // Backward compat: if neither locale nor ai_consent present, trigger required validation for locale
+        // This keeps existing test test_user_locale_preference_endpoint.php passing (expects RuntimeException for missing locale)
+        if (!array_key_exists('locale', $request->body) && !array_key_exists('ai_consent', $request->body)) {
+            Validation::assert($request->body, [
+                'locale' => 'required|string|max:35',
+            ]);
+        }
+
         $responseData = ['updated' => true];
         $hasUpdate = false;
 
@@ -247,18 +262,20 @@ final class AuthController
             ]);
 
             $locale = strtolower(trim((string) $request->body['locale']));
-            $i18n = \Velora\Core\Locale\LocaleManager::getInstance();
-            if (!$i18n->supports($locale)) {
-                Response::error('Unsupported locale.', 422, 'UNSUPPORTED_LOCALE');
-            }
-            $canonical = $i18n->resolve($locale);
+            if ($locale !== '') {
+                $i18n = \Velora\Core\Locale\LocaleManager::getInstance();
+                if (!$i18n->supports($locale)) {
+                    Response::error('Unsupported locale.', 422, 'UNSUPPORTED_LOCALE');
+                }
+                $canonical = $i18n->resolve($locale);
 
-            (new UserRepository())->updateLocalePreference(
-                $userId,
-                $canonical,
-                'user',
-            );
-            $responseData['locale'] = $canonical;
+                (new UserRepository())->updateLocalePreference(
+                    $userId,
+                    $canonical,
+                    'user',
+                );
+                $responseData['locale'] = $canonical;
+            }
             $hasUpdate = true;
         }
 
@@ -269,7 +286,6 @@ final class AuthController
                 Response::error('ai_consent must be boolean.', 422, 'VALIDATION_FAILED');
             }
 
-            // Use AI module repository to avoid modifying Auth core logic
             $consentRepo = new \Velora\AI\Repositories\UserAIConsentRepository();
             $consentRepo->setConsent($userId, $aiConsent);
 
