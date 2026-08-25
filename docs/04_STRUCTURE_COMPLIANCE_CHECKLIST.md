@@ -116,21 +116,32 @@ Also probe after every deploy: `/backup/`, `/logs/`, `/private/`, `/database/`.
 
 ## 2. Directory Contract
 
-Root directories verified present (29):
+Root-level directories are enumerated **once** — in the machine-readable index at
+`03_PROJECT_STRUCTURE_BASELINE.md` §0, between the `VELORA_STRUCTURE_INDEX_BEGIN` /
+`VELORA_STRUCTURE_INDEX_END` markers. That index is maintained by
+`tools/structure_sync.py` and enforced in CI by `.github/workflows/quality-gate.yml`
+(step *"Structure index drift guard (OC-14)"*).
 
+**This checklist deliberately does not restate that list.** A second, hand-maintained
+copy drifts silently, because nothing in CI compares it to the repository — which is
+exactly how this section came to list a directory that no longer exists while omitting
+one that does. Verify live instead:
+
+```bash
+python tools/structure_sync.py --report   # read-only, always exit 0
+python tools/structure_sync.py --check    # CI mode, non-zero on drift
 ```
-.github  404  _database  _next  accounts  admin  api  blog  checkout
-dashboard  en  forgot-password  intelligence  localized  login  markets
-news  performance  privacy  profile  public  register  reset-password
-support  terms  tools  trades  verify-email  wallet
-```
+
+The tool defines drift as a directory present in the repo but not indexed (`NEW`), or
+indexed but no longer present in the repo (`REMOVED`). On drift, run
+`python tools/structure_sync.py --update` and commit the regenerated index block.
 
 ### Checks
 
+- [ ] `python tools/structure_sync.py --check` exits 0 — **authoritative structure validation**
 - [ ] No new root-level directory without an approved baseline amendment
 - [ ] `localized/` is builder-owned — never hand-edited
-- [ ] `tools/` is excluded from the production package
-- [ ] `_next/` remains a legacy artifact and is excluded from deployment
+- [ ] `tools/` and `docs/` are excluded from the production package (see §4)
 - [ ] `api/storage/` exists on the host but is never committed
 - [ ] The `MANIFEST.json` / `manifest.json` case-fold collision is not duplicated elsewhere
 
@@ -214,19 +225,44 @@ Nothing governance-related stays loose in the root directory.
 veloratrade/veloratrade
 └── docs/
     ├── 01_SECURITY_CHECKLIST.md              ← from Security Checklist.pdf
-    ├── 02_ROADMAP.md                         ← from Roadmap.pdf
+    ├── 02_ROADMAP.md                         ← RESERVED-ABSENT — locked by B-6
     ├── 03_PROJECT_STRUCTURE_BASELINE.md      ← from Structure.pdf
     ├── 04_STRUCTURE_COMPLIANCE_CHECKLIST.md  ← this document
+    ├── 05_BILINGUAL_CHECKLIST.md             ← fa/en governance
+    ├── 06_MERGE_REVIEW_POLICY.md             ← merge-time review (advisory)
+    ├── README.md                             ← operations handbook — entry point
+    ├── QUALITY_GATE_MATRIX.md                ← gate ↔ bug ↔ test registry
+    ├── RELEASE_CHECKLIST.md                  ← human release surface
+    ├── STAGING_ENVIRONMENT.md                ← P2 environment policy
+    ├── LOCALIZATION_CLOSURE_CHECKLIST.md
+    ├── ARTIFACT_INTEGRITY_CHECKLIST.md
+    ├── REAL_HOST_LOCALIZATION_VALIDATION.md
+    ├── PROJECT_STATE.json                    ← snapshot — not governance
+    ├── SESSION_STATE.json                    ← session handoff — not governance
+    ├── incidents/
+    │   └── 2026-08-csp-deployment-incident.md
     └── pdf/
+        ├── Roadmap.pdf                       ← LOCKED / DO NOT USE (B-6)
         ├── Security Checklist.pdf
-        ├── Roadmap.pdf
         └── Structure.pdf                     ← signed originals, read-only
 ```
 
+> Verify with `git ls-files docs`. This tree must match that output exactly; if it
+> does not, the tree is wrong — not the repository.
+
 ### Rules
 
-- **Numbered prefixes are permanent.** `01`–`04` are assigned; a new governance
-  document takes `05`, never a reused number.
+- **Numbered prefixes are permanent once assigned and are never reused.**
+  Assigned: `01`, `03`, `04`, `05`, `06`.
+  **`02` is RESERVED and intentionally absent** — it belongs to the roadmap, which is
+  locked under B-6 in `docs/README.md`. Do not allocate `02` to anything else, and do
+  not renumber existing documents to close the gap.
+  **Next available governance document number: `07`.** Confirm a number is free before
+  allocating it: `ls docs/[0-9][0-9]_*.md`.
+- **Unnumbered documents are permitted** for operational handbooks, matrices and
+  checklists (`README.md`, `QUALITY_GATE_MATRIX.md`, `RELEASE_CHECKLIST.md` and
+  similar). A document takes a number when it is a standing governance contract with
+  its own identifiers, phases, or gates.
 - **Markdown is the working copy.** Diffs and review happen on the `.md` files.
 - **`docs/pdf/` holds the signed originals.** They are historical records and
   are never edited in place — a superseded PDF is replaced only alongside a
@@ -264,6 +300,13 @@ No move is proposed here. Relocating them requires its own approval.
 | `02_ROADMAP` | Phase changes that add directories require a baseline amendment first |
 | `.github/workflows/csp-guard.yml` | Automates §3 and §5 |
 | `.github/workflows/healthcheck-production.yml` | Automates §1 probes and §4 post-deploy verification |
+| `05_BILINGUAL_CHECKLIST` | Owns fa/en governance; every new user-facing surface runs its §1–§5 |
+| `06_MERGE_REVIEW_POLICY` | Advisory merge-time review; flags `api/**` for human review |
+| `README` (operations handbook) | Owns the `NP-` / `OC-` / `B-` / `RB-` registers and the session bootstrap protocol |
+| `QUALITY_GATE_MATRIX` | Registry of gate ↔ bug ↔ test; new release-blocking gates are recorded there |
+| `RELEASE_CHECKLIST` | Human-facing release surface; mirrors the automated gates |
+| **`tools/structure_sync.py`** | **Owns the top-level directory index** (`03` §0). §2 delegates to it and does not restate the list |
+| `.github/workflows/quality-gate.yml` | Automates §2 — runs `structure_sync.py --check` (step "Structure index drift guard (OC-14)") |
 
 ---
 
@@ -278,3 +321,4 @@ These are **reported, not applied** — approval required.
 | A-3 | 630 files / 159 directories | 735 files / 169 directories (2026-08-21; interim 809 count was pre-cleanup) | Re-run the walk and amend |
 | A-4 | 35 API endpoints + `/health` | 37 + `/health` (2026-08-21) — added `GET`/`PUT /api/v1/auth/email-preferences` (BUG-A9 fix, TEST-15) | Verify, then amend if changed |
 | A-5 | No CI/CD in the structure map | `.github/workflows/` now holds 20 workflows (see `docs/QUALITY_GATE_MATRIX.md`) | Add a CI/CD layer to the map |
+| A-6 | **This checklist**, §2, restated the root-directory list by hand and drifted: it listed `_next/` (absent from the repo — 0 tracked files) and omitted `docs/` (present). The stated count "29" was correct only by coincidence, so a count-only review passed. §6's numbering rule likewise named `05` as next while `05`/`06` already existed | The authoritative list is the script-maintained index in `03` §0; `python tools/structure_sync.py --check` exits 0 with `NEW none / REMOVED none`. No baseline change is required — the baseline was already correct | **Resolved 2026-08-25 by R-1…R-5 in this checklist**: §2 now delegates to `structure_sync.py` instead of restating the list, the obsolete `_next/` check is removed, §6's numbering rule and document tree match the repository, and §7 names the index owner |
