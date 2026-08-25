@@ -85,20 +85,15 @@ jobs:
               -H "Authorization: Bearer $JWT" \
               -d @/tmp/consent.json | jq -c '{updated, ai_consent, ai_consent_at}' || true
 
-            # Write extraction payload to file to avoid Argument list too long
+            # Write extraction payload to file to avoid Argument list too long — use file to avoid arg length
             python3 <<'PY2'
           import json, pathlib
-          b64 = pathlib.Path('/tmp/b64.txt').read_text() if pathlib.Path('/tmp/b64.txt').exists() else ''
-          # Actually B64 is in env var, we need to get from file
-          PY2
-            # Use python to create JSON file with base64
-            python3 -c "
-          import os, json
-          b64 = pathlib.Path('/tmp/b64.txt').read_text().strip() if pathlib.Path('/tmp/b64.txt').exists() else os.environ.get('B64','')
+          b64_path = pathlib.Path('/tmp/b64.txt')
+          b64 = b64_path.read_text().strip() if b64_path.exists() else ''
           data = {'images': [f'data:image/png;base64,{b64}']}
-          open('/tmp/extract_payload.json','w').write(json.dumps(data))
+          pathlib.Path('/tmp/extract_payload.json').write_text(json.dumps(data))
           print(f"Payload file created: {len(b64)} base64 chars")
-          "
+          PY2
             EXTRACT_RESP=$(curl -sS --max-time 90 -X POST "$BASE/api/v1/trades/extract-screenshot" \
               -H "Content-Type: application/json" \
               -H "Authorization: Bearer $JWT" \
