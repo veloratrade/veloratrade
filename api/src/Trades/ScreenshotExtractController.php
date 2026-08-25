@@ -4,33 +4,52 @@ declare(strict_types=1);
 
 namespace Velora\Trades;
 
+use Velora\AI\Exceptions\AIConsentRequiredException;
+use Velora\AI\Exceptions\AIException;
+use Velora\AI\Extraction\ExtractedTradeData;
+use Velora\AI\Extraction\ScreenshotExtractor;
+use Velora\AI\Providers\TesseractProvider;
+use Velora\AI\Repositories\AIAuditLogRepository;
+use Velora\AI\Repositories\AIExtractionRepository;
+use Velora\AI\Repositories\AIFeatureFlagRepository;
+use Velora\AI\Services\AIManager;
 use Velora\Core\RateLimiter;
 use Velora\Core\Request;
 use Velora\Core\Response;
 
+/**
+ * Screenshot extraction controller — now uses AI module with Tesseract fallback.
+ * Keeps existing rate limiter, file validation, security checks, timeout limits.
+ * Backward compatible: returns engine, texts, times plus new extraction field.
+ */
 final class ScreenshotExtractController
 {
     private const MAX_IMAGES = 4;
     private const MAX_IMAGE_BYTES = 8_388_608;
     private const MAX_TOTAL_BYTES = 16_777_216;
     private const MAX_PIXELS = 12_000_000;
-    private const PROCESS_TIMEOUT_SECONDS = 8.0;
     private const REQUEST_DEADLINE_SECONDS = 30.0;
-    private const MAX_PROCESS_OUTPUT = 262_144;
 
     private float $deadline = 0.0;
 
     public function extract(Request $request): never
     {
-        $bin = $this->tesseractBin();
-        if ($bin === null || !function_exists('proc_open')) {
-            Response::error('OCR engine is not available on this host.', 501, 'OCR_UNAVAILABLE');
-        }
-
-        // Fail closed: if the limiter storage is unavailable, this endpoint must
-        // not fall through to resource-intensive OCR work.
+        // Keep existing rate limiter — fail closed
         $userId = (int) ($request->attributes['user_id'] ?? 0);
         RateLimiter::hit('screenshot-ocr-user-' . $userId, 8, 300);
+
+        // TASK GROUP 2: Enforce feature flag for screenshot extraction
+        try {
+            $flagRepo = new AIFeatureFlagRepository();
+            if (!$flagRepo->isEnabled('ai_screenshot_extraction', $userId)) {
+                Response::error('AI screenshot extraction is disabled.', 403, 'AI_FEATURE_DISABLED', null, 'errors.ai.featureDisabled');
+            }
+        } catch (\Velora\Core\Exceptions\ApiException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            // If flag table missing, fail open for extraction (backward compat) — log only
+            error_log('[VELORA_AI_FLAGS] check failed, fail-open for extraction: ' . $e->getMessage());
+        }
 
         $images = $request->body['images'] ?? null;
         if (!is_array($images) || $images === []) {
@@ -55,21 +74,152 @@ final class ScreenshotExtractController
         }
 
         $this->deadline = microtime(true) + self::REQUEST_DEADLINE_SECONDS;
-        $texts = [];
-        foreach ($decoded as $raw) {
-            if (microtime(true) >= $this->deadline) {
-                Response::error('OCR processing timed out.', 503, 'OCR_TIMEOUT');
+
+        // Image hash for dedup cache (first image)
+        $imageHash = hash('sha256', $decoded[0]);
+
+        // Try AI extraction via new module
+        $aiManager = new AIManager();
+        $screenshotExtractor = new ScreenshotExtractor($aiManager);
+
+        $extractionData = null;
+        $providerName = 'tesseract';
+        $latencyMs = 0;
+        $status = 'success';
+        $errorCode = null;
+        $aiException = null;
+
+        $start = microtime(true);
+        try {
+            // Check dedup cache first (if table exists)
+            $cached = $this->tryFindCachedExtraction($imageHash, $userId);
+            if ($cached !== null) {
+                $extractionData = ExtractedTradeData::fromArray(
+                    json_decode($cached['final_result'] ?? '{}', true) ?: [],
+                    $cached['provider'] ?? 'cache',
+                    (float) ($cached['confidence'] ?? 0.0),
+                );
+                $providerName = $cached['provider'] ?? 'cache';
+                $status = 'success';
+            } else {
+                $extracted = $screenshotExtractor->extractMultiple($decoded, $this->deadline, $userId);
+                $extractionData = $extracted;
+                $providerName = $extracted->provider;
             }
-            $texts[] = $this->ocrOne($bin, $raw);
+        } catch (AIConsentRequiredException $e) {
+            // Privacy: consent required for external AI — try Tesseract fallback if available, else 403
+            $tesseract = new TesseractProvider();
+            if ($tesseract->isAvailable()) {
+                try {
+                    $fallback = $tesseract->extract($decoded[0], $this->deadline);
+                    $extractionData = $fallback;
+                    $providerName = 'tesseract';
+                    $status = 'fallback';
+                    $errorCode = 'AI_CONSENT_REQUIRED';
+                } catch (\Throwable $e2) {
+                    Response::error('AI consent required for external processing.', 403, 'AI_CONSENT_REQUIRED', null, 'errors.ai.consentRequired');
+                }
+            } else {
+                Response::error('AI consent required for external processing.', 403, 'AI_CONSENT_REQUIRED', null, 'errors.ai.consentRequired');
+            }
+        } catch (AIException $e) {
+            $aiException = $e;
+            $status = 'failed';
+            $errorCode = $e->errorCode();
+            // Fallback already attempted inside AIManager, if still fails, we return tesseract texts only
+            $extractionData = new ExtractedTradeData(
+                provider: 'tesseract',
+                confidence: 0.0,
+            );
+            $providerName = 'tesseract';
+        } catch (\Throwable $e) {
+            // Unexpected error — never expose details
+            error_log(sprintf('[VELORA_AI_EXTRACTION] unexpected error user=%d', $userId));
+            $status = 'failed';
+            $errorCode = 'INTERNAL_ERROR';
+            $extractionData = new ExtractedTradeData(provider: 'tesseract', confidence: 0.0);
+        }
+        $latencyMs = (int) ((microtime(true) - $start) * 1000);
+
+        // For backward compat, always produce OCR texts via TesseractProvider
+        $texts = [];
+        $times = ['openTime' => '', 'closeTime' => ''];
+        try {
+            $tesseractProvider = new TesseractProvider();
+            if ($tesseractProvider->isAvailable()) {
+                foreach ($decoded as $raw) {
+                    if (microtime(true) >= $this->deadline) {
+                        break;
+                    }
+                    $ocrData = $tesseractProvider->extract($raw, $this->deadline);
+                    $texts[] = $ocrData->rawText ?? '';
+                    // Use times from first image only
+                    if ($times['openTime'] === '' && $ocrData->rawResponse['times'] ?? null) {
+                        $times = $ocrData->rawResponse['times'];
+                    }
+                }
+                // If times still empty, try readTimesFromFirstImage via provider's internal method
+                // The TesseractProvider already includes times in rawResponse
+                if ($times['openTime'] === '' && isset($extractionData->rawResponse['times'])) {
+                    $times = $extractionData->rawResponse['times'];
+                }
+            }
+        } catch (\Throwable $e) {
+            // OCR texts failure should not fail whole request
+            $texts = array_fill(0, count($decoded), '');
         }
 
-        $times = $this->readTimesFromFirstImage($decoded[0]);
+        // Ensure texts array matches input count for backward compat
+        if (count($texts) !== count($decoded)) {
+            $texts = array_pad($texts, count($decoded), '');
+        }
 
-        Response::json([
-            'engine' => 'tesseract-system',
+        // If times still empty, try to get from extraction
+        if (($times['openTime'] === '' && $times['closeTime'] === '') && $extractionData !== null) {
+            $times = [
+                'openTime' => $extractionData->openTime ?? '',
+                'closeTime' => $extractionData->closeTime ?? '',
+            ];
+        }
+
+        // Save to ai_extractions if possible (best effort, don't fail request)
+        $this->trySaveExtraction(
+            $userId,
+            $providerName,
+            $imageHash,
+            $extractionData,
+            $latencyMs,
+            $status,
+            $errorCode,
+        );
+
+        // P0/P1: Audit logging — only image hash, never raw image
+        $this->tryAuditLog($userId, $providerName, $imageHash, 'extraction');
+
+        // Backward compatible response + new extraction field
+        $response = [
+            'engine' => $providerName === 'gemini' ? 'gemini-vision' : 'tesseract-system',
+            'provider' => $providerName,
             'texts' => $texts,
             'times' => $times,
-        ]);
+            'extraction' => $extractionData?->toArray() ?? [],
+            'data' => $extractionData?->toArray() ?? [], // alias for new clients
+            'confidence' => $extractionData?->confidence ?? 0.0,
+        ];
+
+        // If AI failed but we have fallback, still return 200 with low confidence
+        // Only return error if both AI and Tesseract failed and texts empty
+        if ($status === 'failed' && $aiException !== null) {
+            // If Tesseract also unavailable, return 501
+            $tesseract = new TesseractProvider();
+            if (!$tesseract->isAvailable()) {
+                Response::error('OCR engine is not available on this host.', 501, 'OCR_UNAVAILABLE');
+            }
+            // Otherwise return fallback result with warning status
+            $response['warning'] = 'AI provider failed, used fallback';
+        }
+
+        Response::json($response);
     }
 
     private function decodeAndValidateImage(string $dataUrl): string
@@ -111,270 +261,57 @@ final class ScreenshotExtractController
         return $raw;
     }
 
-    private function readTimesFromFirstImage(string $raw): array
+    /**
+     * Best-effort cache lookup — never throws.
+     */
+    private function tryFindCachedExtraction(string $hash, int $userId): ?array
     {
-        $empty = ['openTime' => '', 'closeTime' => ''];
-        $script = dirname(__DIR__, 2) . '/workers/read_mt5_times.py';
-        if (!is_file($script) || microtime(true) >= $this->deadline) {
-            return $empty;
-        }
-
-        $tmp = $this->temporaryPath('velora_time_');
         try {
-            if (file_put_contents($tmp, $raw, LOCK_EX) === false) {
-                return $empty;
-            }
-            @chmod($tmp, 0600);
-            $json = $this->runProcess(['python3', $script, $tmp], 65_536);
-        } finally {
-            @unlink($tmp);
+            $repo = new AIExtractionRepository();
+            return $repo->findByHash($hash, $userId);
+        } catch (\Throwable $e) {
+            return null;
         }
-
-        $data = json_decode($json, true);
-        if (!is_array($data)) {
-            return $empty;
-        }
-        return [
-            'openTime' => $this->validExtractedTime($data['openTime'] ?? null),
-            'closeTime' => $this->validExtractedTime($data['closeTime'] ?? null),
-        ];
     }
 
-    private function validExtractedTime(mixed $value): string
-    {
-        if (!is_string($value) || strlen($value) > 32) {
-            return '';
-        }
-        return preg_match('/\A20\d{2}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?\z/D', $value) ? $value : '';
-    }
-
-    private function tesseractBin(): ?string
-    {
-        foreach (['/usr/bin/tesseract', '/usr/local/bin/tesseract', '/bin/tesseract'] as $path) {
-            if (is_executable($path)) {
-                return $path;
-            }
-        }
-        return null;
-    }
-
-    private function ocrOne(string $bin, string $raw): string
-    {
-        $src = $this->temporaryPath('velora_ocr_src_');
-        $prep = $this->temporaryPath('velora_ocr_prep_');
+    /**
+     * Best-effort save — never throws, never exposes errors.
+     */
+    private function trySaveExtraction(
+        int $userId,
+        string $provider,
+        string $hash,
+        ?ExtractedTradeData $data,
+        int $latencyMs,
+        string $status,
+        ?string $errorCode,
+    ): void {
         try {
-            if (file_put_contents($src, $raw, LOCK_EX) === false) {
-                return '';
-            }
-            @chmod($src, 0600);
-            @chmod($prep, 0600);
-            $this->prepareImage($src, $prep);
-            $input = filesize($prep) > 0 ? $prep : $src;
-
-            $hasFas = is_file('/usr/share/tesseract-ocr/5/tessdata/fas.traineddata')
-                || is_file('/usr/share/tesseract-ocr/4.00/tessdata/fas.traineddata')
-                || is_file('/usr/share/tessdata/fas.traineddata');
-            $eng = $this->runTess($bin, $input, 'eng');
-            $fas = $hasFas ? $this->runTess($bin, $input, 'fas+eng') : '';
-            $dates = $this->ocrDateBands($bin, $input, $hasFas);
-            return $this->boundedUtf8(trim($eng . "\n" . $fas . "\n" . $dates), self::MAX_PROCESS_OUTPUT);
-        } finally {
-            @unlink($src);
-            @unlink($prep);
+            $repo = new AIExtractionRepository();
+            $repo->create([
+                'user_id' => $userId,
+                'provider' => $provider,
+                'image_hash' => $hash,
+                'original_result' => $data?->rawResponse ?? [],
+                'final_result' => $data?->toArray() ?? [],
+                'confidence' => $data?->confidence ?? 0.0,
+                'latency_ms' => $latencyMs,
+                'status' => $status,
+                'error_code' => $errorCode,
+            ]);
+        } catch (\Throwable $e) {
+            // Silently ignore — table may not exist yet in dev, or DB unavailable
+            error_log('[VELORA_AI] failed to save extraction: ' . $e->getMessage());
         }
     }
 
-    private function ocrDateBands(string $bin, string $input, bool $hasFas): string
+    private function tryAuditLog(int $userId, string $provider, string $hash, string $action): void
     {
-        if (!function_exists('imagecreatefromstring') || microtime(true) >= $this->deadline) {
-            return '';
-        }
-        $blob = @file_get_contents($input);
-        if ($blob === false) {
-            return '';
-        }
-        $im = @imagecreatefromstring($blob);
-        if ($im === false) {
-            return '';
-        }
-        $w = imagesx($im);
-        $h = imagesy($im);
-        $x = (int) floor($w * 0.46);
-        $crop = imagecrop($im, ['x' => $x, 'y' => 0, 'width' => max(12, $w - $x), 'height' => $h]);
-        imagedestroy($im);
-        if ($crop === false) {
-            return '';
-        }
-
-        $cw = imagesx($crop);
-        $ch = imagesy($crop);
-        $scale = min(2.0, 2200 / max(1, $cw), 3000 / max(1, $ch));
-        $nw = max(1, (int) floor($cw * $scale));
-        $nh = max(1, (int) floor($ch * $scale));
-        $big = imagecreatetruecolor($nw, $nh);
-        imagecopyresampled($big, $crop, 0, 0, 0, 0, $nw, $nh, $cw, $ch);
-        imagefilter($big, IMG_FILTER_GRAYSCALE);
-        imagefilter($big, IMG_FILTER_NEGATE);
-        imagefilter($big, IMG_FILTER_CONTRAST, -35);
-        $path = $this->temporaryPath('velora_ocr_right_');
         try {
-            imagepng($big, $path, 6);
-            @chmod($path, 0600);
-        } finally {
-            imagedestroy($crop);
-            imagedestroy($big);
+            $repo = new AIAuditLogRepository();
+            $repo->log($userId, 'extraction', $provider, $hash, $action);
+        } catch (\Throwable $e) {
+            // Best effort
         }
-        try {
-            return $this->runTessPsm($bin, $path, $hasFas ? 'fas+eng' : 'eng', 6);
-        } finally {
-            @unlink($path);
-        }
-    }
-
-    private function runTessPsm(string $bin, string $input, string $lang, int $psm): string
-    {
-        return $this->runProcess([
-            $bin, $input, 'stdout', '-l', $lang, '--psm', (string) $psm, '--oem', '1',
-        ]);
-    }
-
-    private function runTess(string $bin, string $input, string $lang): string
-    {
-        return $this->runTessPsm($bin, $input, $lang, 6);
-    }
-
-    private function prepareImage(string $src, string $dest): void
-    {
-        if (!function_exists('imagecreatefromstring')) {
-            $this->prepareWithMagick($src, $dest);
-            return;
-        }
-        $blob = @file_get_contents($src);
-        if ($blob === false) {
-            return;
-        }
-        $im = @imagecreatefromstring($blob);
-        if ($im === false) {
-            $this->prepareWithMagick($src, $dest);
-            return;
-        }
-        $w = imagesx($im);
-        $h = imagesy($im);
-        $targetW = ($w < 900 || $h < 280) ? 1800 : min(1600, $w);
-        $scale = min($targetW / max(1, $w), 2400 / max(1, $h));
-        $nw = max(1, (int) round($w * $scale));
-        $nh = max(1, (int) round($h * $scale));
-        $out = imagecreatetruecolor($nw, $nh);
-        imagecopyresampled($out, $im, 0, 0, 0, 0, $nw, $nh, $w, $h);
-        imagefilter($out, IMG_FILTER_GRAYSCALE);
-        imagefilter($out, IMG_FILTER_CONTRAST, -22);
-        imagepng($out, $dest, 6);
-        @chmod($dest, 0600);
-        imagedestroy($im);
-        imagedestroy($out);
-    }
-
-    private function prepareWithMagick(string $src, string $dest): void
-    {
-        $convert = is_executable('/usr/bin/convert') ? '/usr/bin/convert' : null;
-        if ($convert === null) {
-            return;
-        }
-        $this->runProcess([
-            $convert, $src, '-colorspace', 'Gray', '-resize', '1600x1600>',
-            '-normalize', '-contrast-stretch', '2%x2%', $dest,
-        ], 4_096);
-        if (is_file($dest)) {
-            @chmod($dest, 0600);
-        }
-    }
-
-    /** @param array<int,string> $command */
-    private function runProcess(array $command, int $maxOutput = self::MAX_PROCESS_OUTPUT): string
-    {
-        $remaining = $this->deadline - microtime(true);
-        if ($remaining <= 0.0) {
-            return '';
-        }
-        $timeout = min(self::PROCESS_TIMEOUT_SECONDS, $remaining);
-        $pipes = [];
-        $process = @proc_open(
-            $command,
-            [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
-            $pipes,
-            null,
-            null,
-            ['bypass_shell' => true]
-        );
-        if (!is_resource($process)) {
-            return '';
-        }
-
-        fclose($pipes[0]);
-        stream_set_blocking($pipes[1], false);
-        stream_set_blocking($pipes[2], false);
-        $output = '';
-        $started = microtime(true);
-        $timedOut = false;
-        do {
-            // Bound each read as well as the retained output. Without a per-read
-            // cap, a noisy child could cause an oversized transient allocation.
-            $stdout = stream_get_contents($pipes[1], 8192);
-            if (is_string($stdout) && strlen($output) < $maxOutput) {
-                $output .= substr($stdout, 0, $maxOutput - strlen($output));
-            }
-            // Drain stderr so a noisy child cannot block, but never return it.
-            stream_get_contents($pipes[2], 8192);
-            $status = proc_get_status($process);
-            if (!$status['running']) {
-                break;
-            }
-            if ((microtime(true) - $started) >= $timeout || microtime(true) >= $this->deadline) {
-                $timedOut = true;
-                proc_terminate($process);
-                usleep(100_000);
-                $status = proc_get_status($process);
-                if ($status['running']) {
-                    proc_terminate($process, 9);
-                }
-                break;
-            }
-            usleep(20_000);
-        } while (true);
-
-        // Once the child has stopped, drain any buffered output in bounded
-        // chunks. Retain at most maxOutput bytes and discard stderr.
-        do {
-            $stdout = stream_get_contents($pipes[1], 8192);
-            if (is_string($stdout) && strlen($output) < $maxOutput) {
-                $output .= substr($stdout, 0, $maxOutput - strlen($output));
-            }
-        } while (is_string($stdout) && $stdout !== '');
-        do {
-            $stderr = stream_get_contents($pipes[2], 8192);
-        } while (is_string($stderr) && $stderr !== '');
-        fclose($pipes[1]);
-        fclose($pipes[2]);
-        proc_close($process);
-
-        return $timedOut ? '' : $this->boundedUtf8(trim($output), $maxOutput);
-    }
-
-    private function temporaryPath(string $prefix): string
-    {
-        $path = tempnam(sys_get_temp_dir(), $prefix);
-        if ($path === false) {
-            throw new \RuntimeException('Unable to create secure temporary file.');
-        }
-        @chmod($path, 0600);
-        return $path;
-    }
-
-    private function boundedUtf8(string $value, int $maxBytes): string
-    {
-        if (strlen($value) <= $maxBytes) {
-            return $value;
-        }
-        return function_exists('mb_strcut') ? mb_strcut($value, 0, $maxBytes, 'UTF-8') : substr($value, 0, $maxBytes);
     }
 }

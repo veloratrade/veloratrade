@@ -229,29 +229,60 @@ final class AuthController
      * be one of the enabled manifest locales; the canonical code is stored with
      * provenance 'user'. Anonymous visitors still resolve via cookie/browser.
      */
+    /**
+     * Persist the authenticated user's UI language preference and AI consent.
+     * Locale must be one of enabled manifest locales.
+     * ai_consent bool sets users.ai_consent_at = NOW() or NULL.
+     */
     public function updatePreferences(Request $request): never
     {
-        Validation::assert($request->body, [
-            'locale' => 'required|string|max:35',
-        ]);
+        $userId = (int) $request->attributes['user_id'];
+        $responseData = ['updated' => true];
+        $hasUpdate = false;
 
-        $locale = strtolower(trim((string) $request->body['locale']));
-        $i18n = \Velora\Core\Locale\LocaleManager::getInstance();
-        if (!$i18n->supports($locale)) {
-            Response::error('Unsupported locale.', 422, 'UNSUPPORTED_LOCALE');
+        // Handle locale if present
+        if (array_key_exists('locale', $request->body)) {
+            Validation::assert($request->body, [
+                'locale' => 'string|max:35',
+            ]);
+
+            $locale = strtolower(trim((string) $request->body['locale']));
+            $i18n = \Velora\Core\Locale\LocaleManager::getInstance();
+            if (!$i18n->supports($locale)) {
+                Response::error('Unsupported locale.', 422, 'UNSUPPORTED_LOCALE');
+            }
+            $canonical = $i18n->resolve($locale);
+
+            (new UserRepository())->updateLocalePreference(
+                $userId,
+                $canonical,
+                'user',
+            );
+            $responseData['locale'] = $canonical;
+            $hasUpdate = true;
         }
-        $canonical = $i18n->resolve($locale);
 
-        (new UserRepository())->updateLocalePreference(
-            (int) $request->attributes['user_id'],
-            $canonical,
-            'user',
-        );
+        // Handle ai_consent if present — P1 privacy foundation
+        if (array_key_exists('ai_consent', $request->body)) {
+            $aiConsent = $request->body['ai_consent'];
+            if (!is_bool($aiConsent)) {
+                Response::error('ai_consent must be boolean.', 422, 'VALIDATION_FAILED');
+            }
 
-        Response::json([
-            'updated' => true,
-            'locale' => $canonical,
-        ]);
+            // Use AI module repository to avoid modifying Auth core logic
+            $consentRepo = new \Velora\AI\Repositories\UserAIConsentRepository();
+            $consentRepo->setConsent($userId, $aiConsent);
+
+            $responseData['ai_consent'] = $aiConsent;
+            $responseData['ai_consent_at'] = $consentRepo->getConsentAt($userId);
+            $hasUpdate = true;
+        }
+
+        if (!$hasUpdate) {
+            Response::error('No valid preference field provided.', 422, 'VALIDATION_FAILED');
+        }
+
+        Response::json($responseData);
     }
 
     public function resetPassword(Request $request): never

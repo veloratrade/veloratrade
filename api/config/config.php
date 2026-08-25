@@ -126,4 +126,30 @@ return [
     // Trade pagination default
     'pagination_default_limit' => 20,
     'pagination_max_limit' => 200,
+
+    // AI module configuration (v0.4-v0.5) — secrets via Config::env(), never hardcoded
+    'ai' => [
+        'gemini_api_key' => Config::env('GEMINI_API_KEY', ''),
+        'gemini_model' => Config::env('GEMINI_MODEL', 'gemini-1.5-flash'),
+        'gemini_timeout' => max(2, min(30, (int) Config::env('GEMINI_TIMEOUT', '8'))),
+        'openai_api_key' => Config::env('OPENAI_API_KEY', ''),
+        'openai_model' => Config::env('OPENAI_MODEL', 'gpt-4o-mini'),
+        'openai_timeout' => max(2, min(30, (int) Config::env('OPENAI_TIMEOUT', '10'))),
+        'enabled_providers' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', Config::env('AI_ENABLED_PROVIDERS', 'gemini,tesseract'))
+        ))),
+        'max_image_bytes' => 8_388_608,
+        'max_total_bytes' => 16_777_216,
+        // P2 hardening: image optimization
+        'image_max_dimension' => max(256, min(2048, (int) Config::env('AI_IMAGE_MAX_DIMENSION', '1024'))),
+        'image_jpeg_quality' => max(10, min(100, (int) Config::env('AI_IMAGE_JPEG_QUALITY', '80'))),
+        // P2: prompt management
+        'prompt_path' => Config::env('AI_PROMPT_PATH', dirname(__DIR__) . '/src/AI/Prompts/templates'),
+        // P0/P1: audit and feature flags + retention
+        'audit_enabled' => Config::env('AI_AUDIT_ENABLED', 'true') === 'true',
+        'request_tracking_enabled' => Config::env('AI_REQUEST_TRACKING_ENABLED', 'true') === 'true',
+        'feature_flags_enabled' => Config::env('AI_FEATURE_FLAGS_ENABLED', 'true') === 'true',
+        'retention_days' => max(7, min(365, (int) Config::env('AI_RETENTION_DAYS', '30'))),
+    ],
 ];

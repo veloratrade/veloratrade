@@ -31,6 +31,7 @@ use Velora\Trades\ScreenshotExtractController;
 use Velora\Trades\TradeController;
 use Velora\Trades\TradeExitController;
 use Velora\Webhooks\MetaApiWebhookController;
+use Velora\AI\Controllers\AIController;
 
 try {
     $request = Request::fromGlobals();
@@ -98,6 +99,11 @@ $router->get('/api/v1/dashboard/summary', [DashboardController::class, 'summary'
 $router->get('/api/v1/dashboard/equity-curve', [DashboardController::class, 'equityCurve'], $auth);
 $router->get('/api/v1/dashboard/strategies', [DashboardController::class, 'strategies'], $auth);
 
+// ---- AI P1 endpoints (bounded context, no Core changes) ----
+$router->post('/api/v1/ai/analyze-trades', [AIController::class, 'analyzeTrades'], $auth);
+$router->post('/api/v1/ai/weekly-report', [AIController::class, 'weeklyReport'], $auth);
+$router->post('/api/v1/ai/feedback', [AIController::class, 'feedback'], $auth);
+
 // ---- Admin (RBAC) ----------------------------------------------------
 $router->get('/api/v1/admin/users', [\Velora\Admin\AdminController::class, 'users'], $admin);
 
@@ -139,6 +145,15 @@ try {
                 break;
             case '/api/v1/webhooks/metaapi':
                 RateLimiter::hit('metaapi-webhook', 120, 60);
+                break;
+            case '/api/v1/ai/analyze-trades':
+                RateLimiter::hit('ai-analyze', 10, 3600);
+                break;
+            case '/api/v1/ai/weekly-report':
+                RateLimiter::hit('ai-report', 5, 3600);
+                break;
+            case '/api/v1/ai/feedback':
+                RateLimiter::hit('ai-feedback', 20, 3600);
                 break;
             default:
                 if (preg_match('~\A/api/v1/accounts/\d+/sync\z~D', $request->path) === 1) {
