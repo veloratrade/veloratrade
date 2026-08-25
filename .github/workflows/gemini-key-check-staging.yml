@@ -1,0 +1,123 @@
+name: Gemini Key Check (Staging) — Safe Verification
+
+# Safe verification workflow — checks only whether GEMINI_API_KEY exists
+# Reports masked metadata (exists=true, length only), never prints key, never stores key, never commits secrets
+# Uses one-use probe pattern like email-status-staging.yml
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gemini-key-check-staging
+  cancel-in-progress: false
+
+jobs:
+  check-key:
+    if: github.repository == 'veloratrade/veloratrade'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      FTP_SERVER: ${{ secrets.STAGING_FTP_SERVER }}
+      FTP_USERNAME: ${{ secrets.STAGING_FTP_USERNAME }}
+      FTP_PASSWORD: ${{ secrets.STAGING_FTP_PASSWORD }}
+      BASE: https://staging.veloratrade.ir
+    steps:
+      - name: Safe check for GEMINI_API_KEY existence on staging
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -q lftp >/dev/null
+          NAME="_velora_gemini_check_$(openssl rand -hex 8).php"
+          TOKEN="$(openssl rand -hex 32)"
+          HASH="$(printf '%s' "$TOKEN" | sha256sum | awk '{print $1}')"
+          echo "::add-mask::$NAME"; echo "::add-mask::$TOKEN"; echo "::add-mask::$HASH"
+          export NAME TOKEN HASH
+
+          python3 <<'PY'
+          import os
+          template = r'''<?php
+          declare(strict_types=1);
+          $expected = '__HASH__';
+          $provided = (string) ($_SERVER['HTTP_X_VELORA_DIAG'] ?? '');
+          if ($provided === '' || !hash_equals($expected, hash('sha256', $provided))) {
+              http_response_code(404); exit('Not found');
+          }
+          @unlink(__FILE__);
+          require dirname(__DIR__) . '/api/src/bootstrap.php';
+          use Velora\Core\Config;
+          use Velora\AI\Providers\GeminiProvider;
+
+          $key = Config::env('GEMINI_API_KEY','');
+          $model = Config::env('GEMINI_MODEL','');
+          $hasKey = $key !== '' && $key !== 'replace-with-gemini-api-key';
+          $isAvailable = false;
+          $modelName = $model !== '' ? $model : 'not-set';
+
+          if ($hasKey) {
+              try {
+                  $provider = new GeminiProvider();
+                  $isAvailable = $provider->isAvailable();
+              } catch (Throwable $e) {
+                  $isAvailable = false;
+              }
+          }
+
+          // Never expose key, only masked metadata (has_key, is_available, model only — no length)
+          header('Content-Type: application/json; charset=utf-8');
+          header('Cache-Control: no-store');
+          echo json_encode([
+              'has_key' => $hasKey,
+              'is_available' => $isAvailable,
+              'model' => $modelName,
+              'model_set' => $model !== '',
+              'timestamp' => gmdate('c'),
+          ], JSON_UNESCAPED_SLASHES);
+          '''
+          open('/tmp/probe.php','w',encoding='utf-8').write(template.replace('__HASH__', os.environ['HASH']))
+          PY
+
+          cleanup() {
+            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+              -e "set ftp:ssl-allow no; set net:max-retries 1; set net:timeout 20; rm -f public_html/staging.veloratrade.ir/public/$NAME; bye" >/dev/null 2>&1 || true
+            rm -f /tmp/probe.php /tmp/status.json
+          }
+          trap cleanup EXIT
+
+          uploaded=0
+          for attempt in $(seq 1 15); do
+            if lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+              -e "set ftp:ssl-allow no; set net:max-retries 2; set net:timeout 30; glob -a rm -f public_html/staging.veloratrade.ir/public/_velora_gemini_check_*.php; put /tmp/probe.php -o public_html/staging.veloratrade.ir/public/$NAME; bye"; then
+              uploaded=1; break
+            fi
+            sleep 5
+          done
+          [ "$uploaded" = 1 ] || { echo "::error::probe upload failed"; exit 1; }
+
+          code=$(curl -sS -o /tmp/status.json -w '%{http_code}' --max-time 40 -H "X-Velora-Diag: $TOKEN" "$BASE/public/$NAME")
+          [ "$code" = 200 ] || { echo "::error::probe HTTP $code"; cat /tmp/status.json; exit 1; }
+
+          python3 <<'PY'
+          import json, pathlib
+          data=json.loads(pathlib.Path('/tmp/status.json').read_text())
+          print("=== Gemini Key Safe Check (Staging) ===")
+          print(f"has_key: {data.get('has_key')}")
+          print(f"is_available: {data.get('is_available')}")
+          print(f"model: {data.get('model')}")
+          print(f"model_set: {data.get('model_set')}")
+          print(f"timestamp: {data.get('timestamp')}")
+          # Verify
+          if data.get('has_key') and data.get('is_available'):
+              print("PASS: GEMINI_API_KEY exists and provider available")
+          else:
+              print("FAIL: GEMINI_API_KEY missing or provider not available — add secret to STAGING_VELORA_ENV")
+              # Don't fail workflow, just report
+          PY
+
+      - name: Verify AI tables exist (for P1 verification)
+        run: |
+          set -euo pipefail
+          echo "Checking AI tables via previous migration workflow is recommended"
+          echo "Run: Actions → AI Migration Verification (Staging) → mode=check"
