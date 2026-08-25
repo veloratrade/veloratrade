@@ -239,6 +239,8 @@ veloratrade/veloratrade
     ├── REAL_HOST_LOCALIZATION_VALIDATION.md
     ├── PROJECT_STATE.json                    ← snapshot — not governance
     ├── SESSION_STATE.json                    ← session handoff — not governance
+    ├── ideas/                                ← archived ideas — not governance, not roadmap
+    │   └── IDEA_TELEGRAM_COMPANION_PLATFORM.md
     ├── incidents/
     │   └── 2026-08-csp-deployment-incident.md
     └── pdf/
