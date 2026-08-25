@@ -1,0 +1,223 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Velora\AI\Controllers;
+
+use Velora\AI\Analysis\TradeAnalyzerService;
+use Velora\AI\Feedback\AIFeedbackService;
+use Velora\AI\Reports\WeeklyReportService;
+use Velora\AI\Repositories\AIAuditLogRepository;
+use Velora\AI\Services\AIFeatureGuard;
+use Velora\Core\RateLimiter;
+use Velora\Core\Request;
+use Velora\Core\Response;
+use Velora\Core\Validation;
+
+/**
+ * AI Controller — P1 endpoints for analysis, reports, feedback.
+ * All endpoints: auth required, ownership validation, feature flag, audit logging, rate limiting, sanitized errors.
+ * Follows existing Controller pattern: final class, method(Request): never, Response::json()
+ */
+final class AIController
+{
+    private const MAX_TRADES_ANALYSIS = 100;
+    private const MAX_TRADES_REPORT = 200;
+
+    public function __construct(
+        private readonly TradeAnalyzerService $analyzer = new TradeAnalyzerService(),
+        private readonly WeeklyReportService $reportService = new WeeklyReportService(),
+        private readonly AIFeedbackService $feedbackService = new AIFeedbackService(),
+        private readonly AIFeatureGuard $featureGuard = new AIFeatureGuard(),
+        private readonly AIAuditLogRepository $auditRepo = new AIAuditLogRepository(),
+    ) {
+    }
+
+    /**
+     * POST /api/v1/ai/analyze-trades
+     * Body: { trades: [...], locale: en/fa, timeframe: last_100 }
+     */
+    public function analyzeTrades(Request $request): never
+    {
+        $userId = (int) ($request->attributes['user_id'] ?? 0);
+        RateLimiter::hit('ai-analyze-user-' . $userId, 10, 3600); // 10 per hour
+
+        $this->featureGuard->requireEnabled('ai_trade_analysis', $userId);
+
+        Validation::assert($request->body, [
+            'trades' => 'required|array',
+            'locale' => 'string|max:10',
+            'timeframe' => 'string|max:32',
+        ]);
+
+        $trades = $request->body['trades'];
+        if (!is_array($trades) || count($trades) === 0) {
+            Response::error('trades[] is required.', 422, 'VALIDATION_FAILED');
+        }
+        if (count($trades) > self::MAX_TRADES_ANALYSIS) {
+            Response::error('Too many trades for analysis (max 100).', 422, 'VALIDATION_FAILED');
+        }
+
+        $locale = strtolower(trim((string) ($request->body['locale'] ?? 'en')));
+        if (!in_array($locale, ['en', 'fa'], true)) {
+            $locale = 'en';
+        }
+
+        $timeframe = trim((string) ($request->body['timeframe'] ?? 'last_100'));
+        if (strlen($timeframe) > 32) {
+            $timeframe = 'last_100';
+        }
+
+        // Audit logging (no raw trades content, only count and hash)
+        try {
+            $tradesHash = hash('sha256', json_encode($trades));
+            $this->auditRepo->log($userId, 'analysis', 'gemini', $tradesHash, 'analyze_trades');
+        } catch (\Throwable $e) {
+        }
+
+        try {
+            $response = $this->analyzer->analyze($userId, $trades, [
+                'locale' => $locale,
+                'timeframe' => $timeframe,
+                'deadline' => microtime(true) + 20,
+            ]);
+
+            $data = json_decode($response->content, true);
+            if (!is_array($data)) {
+                if (preg_match('/\{.*\}/s', $response->content, $m)) {
+                    $data = json_decode($m[0], true);
+                }
+            }
+            if (!is_array($data)) {
+                $data = ['summary' => $response->content];
+            }
+
+            Response::json([
+                'analysis' => $data,
+                'provider' => $response->provider,
+                'model' => $response->model,
+                'confidence' => $response->confidence,
+                'latency_ms' => $response->latencyMs,
+            ]);
+        } catch (\Velora\AI\Exceptions\AIException $e) {
+            Response::error($e->getMessage(), $e->httpStatus(), $e->errorCode(), $e->details(), $e->messageKey(), $e->params());
+        } catch (\Throwable $e) {
+            error_log('[VELORA_AI_ANALYZE] failed user=' . $userId);
+            Response::error('AI analysis failed.', 502, 'AI_ANALYSIS_FAILED');
+        }
+    }
+
+    /**
+     * POST /api/v1/ai/weekly-report
+     * Body: { trades: [...], period_start: YYYY-MM-DD, period_end: YYYY-MM-DD, locale: en/fa }
+     */
+    public function weeklyReport(Request $request): never
+    {
+        $userId = (int) ($request->attributes['user_id'] ?? 0);
+        RateLimiter::hit('ai-report-user-' . $userId, 5, 3600); // 5 per hour
+
+        $this->featureGuard->requireEnabled('ai_weekly_report', $userId);
+
+        Validation::assert($request->body, [
+            'trades' => 'required|array',
+            'period_start' => 'required|string|max:20',
+            'locale' => 'string|max:10',
+        ]);
+
+        $trades = $request->body['trades'];
+        if (count($trades) > self::MAX_TRADES_REPORT) {
+            Response::error('Too many trades for report (max 200).', 422, 'VALIDATION_FAILED');
+        }
+
+        $periodStart = trim((string) $request->body['period_start']);
+        if (!preg_match('/\A20\d{2}-\d{2}-\d{2}\z/', $periodStart)) {
+            Response::error('Invalid period_start format YYYY-MM-DD.', 422, 'VALIDATION_FAILED');
+        }
+
+        $periodEnd = trim((string) ($request->body['period_end'] ?? date('Y-m-d', strtotime($periodStart . ' +6 days'))));
+        $locale = strtolower(trim((string) ($request->body['locale'] ?? 'en')));
+        if (!in_array($locale, ['en', 'fa'], true)) {
+            $locale = 'en';
+        }
+
+        try {
+            $tradesHash = hash('sha256', json_encode($trades));
+            $this->auditRepo->log($userId, 'weekly_report', 'gemini', $tradesHash, 'weekly_report');
+        } catch (\Throwable $e) {
+        }
+
+        try {
+            $response = $this->reportService->generateWeekly($userId, $periodStart, [
+                'trades' => $trades,
+                'period_end' => $periodEnd,
+                'locale' => $locale,
+                'deadline' => microtime(true) + 25,
+            ]);
+
+            $content = json_decode($response->content, true) ?: ['raw' => $response->content];
+
+            Response::json([
+                'report' => $content,
+                'period_start' => $periodStart,
+                'period_end' => $periodEnd,
+                'locale' => $locale,
+                'provider' => $response->provider,
+                'model' => $response->model,
+                'confidence' => $response->confidence,
+            ]);
+        } catch (\Velora\AI\Exceptions\AIException $e) {
+            Response::error($e->getMessage(), $e->httpStatus(), $e->errorCode(), $e->details(), $e->messageKey(), $e->params());
+        } catch (\Throwable $e) {
+            error_log('[VELORA_AI_REPORT] failed user=' . $userId);
+            Response::error('AI report generation failed.', 502, 'AI_REPORT_FAILED');
+        }
+    }
+
+    /**
+     * POST /api/v1/ai/feedback
+     * Body: { extraction_id: int, original: {...}, corrected: {...} }
+     */
+    public function feedback(Request $request): never
+    {
+        $userId = (int) ($request->attributes['user_id'] ?? 0);
+        RateLimiter::hit('ai-feedback-user-' . $userId, 20, 3600); // 20 per hour
+
+        // Feedback uses same flag as extraction for now
+        $this->featureGuard->requireEnabled('ai_screenshot_extraction', $userId);
+
+        Validation::assert($request->body, [
+            'extraction_id' => 'required|integer',
+            'original' => 'required|array',
+            'corrected' => 'required|array',
+        ]);
+
+        $extractionId = (int) $request->body['extraction_id'];
+        $original = $request->body['original'];
+        $corrected = $request->body['corrected'];
+
+        if (!is_array($original) || !is_array($corrected)) {
+            Response::error('original and corrected must be objects.', 422, 'VALIDATION_FAILED');
+        }
+
+        try {
+            $hash = hash('sha256', json_encode($corrected));
+            $this->auditRepo->log($userId, 'feedback', 'user', $hash, 'feedback');
+        } catch (\Throwable $e) {
+        }
+
+        try {
+            $feedbackId = $this->feedbackService->storeCorrection($userId, $extractionId, $original, $corrected);
+
+            Response::json([
+                'feedback_id' => $feedbackId,
+                'stored' => true,
+                'messageKey' => 'ai.feedbackStored',
+            ], 201);
+        } catch (\Velora\AI\Exceptions\AIException $e) {
+            Response::error($e->getMessage(), $e->httpStatus(), $e->errorCode(), $e->details(), $e->messageKey(), $e->params());
+        } catch (\Throwable $e) {
+            error_log('[VELORA_AI_FEEDBACK] failed user=' . $userId);
+            Response::error('Failed to store feedback.', 500, 'AI_FEEDBACK_FAILED');
+        }
+    }
+}
