@@ -87,6 +87,33 @@ class VeloraStatusContractTest(unittest.TestCase):
         self.assertIn("_fp_hard", source)
         self.assertIn("VELORA-RUN suppressed", source)
 
+    def test_worktree_footprint_guard_is_hard_and_shallow_independent(self) -> None:
+        """AGENTS.md §13.1/§13.5 — working-tree size guard.
+
+        Regression guard for the 2026-08-25 incident: `git sparse-checkout disable`
+        on a SHALLOW clone expands the working tree without changing shallowness, so
+        the two shallow-based FULL-CLONE checks never fire and a 54 MB checkout only
+        earned a WARN while still printing the VELORA-RUN proof code.
+
+        The working-tree guard must therefore be HARD (suppresses the proof code and
+        turns --check red) and must NOT be conditioned on the shallow flag.
+        """
+        source = SCRIPT.read_text(encoding="utf-8")
+        self.assertIn("WORKSPACE-FOOTPRINT-VIOLATION", source)
+        self.assertIn("_wt_kb", source)
+
+        # The size check must be HARD: it sets _fp_hard and increments context_errors.
+        size_block = source.split("WORKSPACE-FOOTPRINT-VIOLATION")[1]
+        self.assertIn("_fp_hard=1", size_block)
+        self.assertIn("context_errors", size_block)
+
+        # Shallow-independence: the size test must not be gated on $_shallow.
+        size_condition = source.split('if [ "$_wt_kb" -gt')[1].split("then")[0]
+        self.assertNotIn("_shallow", size_condition)
+
+        # The advisory WARN must remain reachable for small non-sparse checkouts.
+        self.assertIn("WORKSPACE-FOOTPRINT-WARN", source)
+
     def test_context_artifacts_are_generated_and_ignored(self) -> None:
         result = run("--context", "--offline")
         json_path = ROOT / ".session" / "SESSION_CONTEXT.json"
