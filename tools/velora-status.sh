@@ -364,10 +364,17 @@ fi
 
 # گارد ردپای Workspace (AGENTS.md بند ۱۳) — فقط خارج از CI معنا دارد؛
 # checkout کامل در GitHub Actions طبیعی است و نقض محسوب نمی‌شود.
-#   HARD = کلون کامل/عمیق یا نشت credential  ⟹ کد VELORA-RUN چاپ نمی‌شود (درس OC-13)
-#   WARN = working tree غیر-sparse                  ⟹ فقط توصیه (clone shallowِ scoped مجاز است)
+#   HARD = کلون کامل/عمیق، نشت credential، یا working tree حجیم
+#          ⟹ کد VELORA-RUN چاپ نمی‌شود (درس OC-13)
+#   WARN = working tree غیر-sparse در حجم کوچک ⟹ فقط توصیه (clone shallowِ scoped مجاز است)
+#
+# نکتهٔ مهم (درس ۲۰۲۶-۰۸-۲۵): بررسیِ حجمِ working tree باید **مستقل از shallow**
+# باشد. `git sparse-checkout disable` روی یک کلونِ shallow، درخت را کامل می‌کند بدون
+# اینکه shallow تغییر کند — یعنی دو بررسیِ HARDِ مبتنی بر shallow آن را نمی‌گیرند و
+# نقض فقط WARN می‌گیرد. پس حجم/تعداد فایل، معیارِ مستقلِ سوم است.
 if [ -z "${GITHUB_ACTIONS:-}" ] && [ -z "${CI:-}" ]; then
   _wt_files=$(find . -type f -not -path './.git/*' 2>/dev/null | wc -l | tr -d ' ')
+  _wt_kb=$(du -sk --exclude=.git . 2>/dev/null | cut -f1 || echo 0)
   _sparse=$(git config --get core.sparseCheckout 2>/dev/null || echo false)
   _shallow=$(git rev-parse --is-shallow-repository 2>/dev/null || echo false)
   _commits=$(git rev-list --count HEAD 2>/dev/null || echo 0)
@@ -392,8 +399,19 @@ if [ -z "${GITHUB_ACTIONS:-}" ] && [ -z "${CI:-}" ]; then
     echo "      رفع: git remote set-url origin https://github.com/<repo>.git (بدون credential)"
     _fp_hard=1; context_errors=$((context_errors+1))
   fi
-  # (WARN) working tree غیر-sparse — cloneِ shallowِ scoped همچنان مجاز است
-  if [ "$_sparse" != "true" ] && [ "$_wt_files" -gt 50 ]; then
+  # (HARD) حجم working tree — مستقل از shallow؛ `sparse-checkout disable` روی کلونِ
+  # shallow را می‌گیرد (درس ۲۰۲۶-۰۸-۲۵). آستانه ۲۰مگ: checkoutِ scopedِ مجاز ≈ ۱مگ است.
+  if [ "$_wt_kb" -gt 20480 ]; then
+    echo "  🔴 WORKSPACE-FOOTPRINT-VIOLATION: working tree ${_wt_kb}KB (بیش از ۲۰مگ) — نقض بند ۱۳.۱/۱۳.۵ AGENTS.md"
+    echo "      رفع: git sparse-checkout set <فقط مسیرهای مأموریت> — هرگز sparse-checkout disable"
+    _fp_hard=1; context_errors=$((context_errors+1))
+  # (HARD) تعداد فایل working tree — معیارِ مستقلِ دوم، باز هم بدونِ وابستگی به shallow
+  elif [ "$_wt_files" -gt 300 ]; then
+    echo "  🔴 WORKSPACE-FOOTPRINT-VIOLATION: working tree با $_wt_files فایل — نقض بند ۱۳.۱ AGENTS.md"
+    echo "      رفع: git sparse-checkout set <فقط مسیرهای مأموریت> — هرگز sparse-checkout disable"
+    _fp_hard=1; context_errors=$((context_errors+1))
+  # (WARN) working tree غیر-sparse در حجم کوچک — cloneِ shallowِ scoped همچنان مجاز است
+  elif [ "$_sparse" != "true" ] && [ "$_wt_files" -gt 50 ]; then
     echo "  ⚠️  WORKSPACE-FOOTPRINT-WARN: checkout غیر-sparse با $_wt_files فایل — توصیه: sparse-checkout محدود به مأموریت"
   fi
 fi
