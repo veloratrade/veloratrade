@@ -444,10 +444,82 @@ jobs:
           PYTHONDONTWRITEBYTECODE: '1'
         run: python tools/localization/validate_localization.py
 
+
+  # ── gate-archive: Archive Read Enforcement (WRITE gate) ────────────────
+  # اجرای الزام "خواندن آرشیو" پیش از هر WRITEِ محافظت‌شدهٔ وابسته به آرشیو.
+  # guard ثابت می‌کند محتوای canonical آرشیو واقعاً باز و خوانده شده و مدرک
+  # (ARCHIVE_READ_EVIDENCE) با فایل canonical هم‌خوانی دارد. guard جایگزین
+  # طبقه‌بندی Agent نیست؛ فقط واقعیتِ خواندن را اثبات می‌کند. fail-closed:
+  # هر تغییر محافظت‌شدهٔ بدون مدرک معتبر → قرمز. مدرک = اجازه‌ی نوشتن نیست؛
+  # قواعد مالک (§2.3) مستقل می‌ماند.
+  gate-archive:
+    name: gate-archive (archive-read WRITE gate)
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Read-guard unit tests (offline, no n8n)
+        run: python tools/n8n_archive/test_read_guard.py
+
+      - name: Snapshot schema/hash/secret regression
+        run: python tools/n8n_archive/test_validate_snapshot.py
+
+      - name: Snapshot ingest regression
+        run: python tools/n8n_archive/test_ingest.py
+
+      - name: Archive-read WRITE gate for changed protected paths
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          # Fail closed: the archive gate must NEVER pass when we cannot determine
+          # the changed-file set. No '|| true', no empty-diff success fallback.
+          if [ -z "${BASE_SHA:-}" ]; then
+            echo "::error::BASE_SHA is empty; cannot determine changed-file set"
+            exit 1
+          fi
+          if [ -z "${HEAD_SHA:-}" ]; then
+            echo "::error::HEAD_SHA is empty; cannot determine changed-file set"
+            exit 1
+          fi
+          # The base commit may not be present in a GitHub Actions PR checkout
+          # (actions/checkout does not fetch origin/main by default). Fetch the
+          # exact immutable SHA when missing, and fail if the fetch fails.
+          if ! git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
+            echo "::warning::base commit $BASE_SHA not present locally; fetching"
+            git fetch --depth=1 origin "$BASE_SHA" || {
+              echo "::error::failed to fetch base commit $BASE_SHA"
+              exit 1
+            }
+          fi
+          if ! git cat-file -e "$HEAD_SHA^{commit}" 2>/dev/null; then
+            echo "::error::head commit $HEAD_SHA not present locally; cannot determine changed-file set"
+            exit 1
+          fi
+          python tools/n8n_archive/read_guard.py gate-diff \
+            --base "$BASE_SHA" \
+            --head "$HEAD_SHA"
+
+      - name: Secret scan for archive fixtures/tools
+        run: |
+          set -e
+          if grep -rInE 'github_pat_|ghp_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----'               tools/n8n_archive content/n8n-archive 2>/dev/null; then
+            echo "::error::secret-like material found"; exit 1
+          fi
+          echo "no secret-like material found"
+
   # ── quality-gate: تجمیع‌کننده — چک اصلی Required ─────────────────────
   quality-gate:
     name: quality-gate (aggregate — release blocker)
-    needs: [gate-static, gate-contract, gate-auth, gate-security, gate-secrets, gate-browser, gate-e2e, gate-artifacts]
+    needs: [gate-static, gate-contract, gate-auth, gate-security, gate-secrets, gate-browser, gate-e2e, gate-artifacts, gate-archive]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -458,7 +530,7 @@ jobs:
         run: |
           echo "$NEEDED" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
           bad=0
-          for j in gate-static gate-contract gate-auth gate-security gate-secrets gate-browser gate-e2e gate-artifacts; do
+          for j in gate-static gate-contract gate-auth gate-security gate-secrets gate-browser gate-e2e gate-artifacts gate-archive; do
             r=$(echo "$NEEDED" | jq -r --arg j "$j" '.[$j].result')
             if [ "$r" != "success" ] && [ "$r" != "skipped" ]; then
               echo "::error::gate {$j} result={$r}"
