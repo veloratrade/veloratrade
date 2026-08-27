@@ -1,0 +1,65 @@
+{
+  "manifest_version": 1,
+  "integration": {
+    "name": "velora-n8n-integration",
+    "kind": "connection-foundation",
+    "status": "prepared-read-only",
+    "independent_of_workflow_contents": true
+  },
+  "architecture": {
+    "upstream": "cloud / chatgpt",
+    "channel": "existing-n8n-integration",
+    "downstream": "n8n instance",
+    "note": "The integration sits between Cloud/ChatGPT and a disposable n8n instance. It must not depend on the contents of any workflow and must survive instance recreation."
+  },
+  "instances": [
+    {
+      "id": "source",
+      "label": "SOURCE",
+      "base_url_env": "N8N_SOURCE_BASE_URL",
+      "api_key_env": "N8N_SOURCE_API_KEY",
+      "mode": "read_only",
+      "dynamic_ids": true
+    },
+    {
+      "id": "target",
+      "label": "TARGET",
+      "base_url_env": "N8N_TARGET_BASE_URL",
+      "api_key_env": "N8N_TARGET_API_KEY",
+      "mode": "read_only",
+      "dynamic_ids": true
+    }
+  ],
+  "capabilities": {
+    "read_workflows_list": "enabled",
+    "read_workflow_definitions": "enabled",
+    "list_data_tables": "enabled",
+    "read_table_schemas": "enabled",
+    "list_credentials_metadata": "enabled",
+    "compare_source_target": "enabled",
+    "create_workflows": "disabled",
+    "update_workflows": "disabled",
+    "create_update_data_tables": "disabled",
+    "activate_publish_execute": "disabled",
+    "webhook_management": "disabled"
+  },
+  "secrets_policy": {
+    "never_in_git": true,
+    "never_in_chat": true,
+    "source": "environment-variables",
+    "per_instance_secret_entry": "manual-in-n8n-ui"
+  },
+  "dynamic_ids": {
+    "workflow_ids": "discovered by name at runtime",
+    "data_table_ids": "discovered by name at runtime",
+    "credential_ids": "discovered by type+name at runtime",
+    "never_hardcoded": true
+  },
+  "manual_per_new_instance": [
+    "Set the instance-specific env vars: N8N_<INSTANCE>_BASE_URL and N8N_<INSTANCE>_API_KEY (these change on each recreation and are not permanent).",
+    "Create an n8n API key with the minimal READ scopes in Settings -> API (workflow:read / workflow:list, credentials:list, data table read).",
+    "Re-create credential secrets in the n8n UI: Telegram bot token, Google OAuth, OpenAI key.",
+    "Confirm Google OAuth identity / GSC property access on the new instance.",
+    "Only when migration is authorized and ready: switch Telegram webhook ownership (SOURCE off first, then TARGET on). Never leave both receiving at once."
+  ]
+}

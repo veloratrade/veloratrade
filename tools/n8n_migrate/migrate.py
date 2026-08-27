@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
-"""n8n SOURCE→TARGET migration CLI. Preparation default: inspect/compare/dry-run only."""
+"""n8n SOURCE→TARGET migration CLI.
+
+Offline commands (inspect/compare/dry-run/validate/apply) run purely on JSON
+export fixtures and are read-only / dry-run. ``apply`` is always refused.
+
+``live-inspect`` (Phase 3A) performs READ-ONLY live inspection of the real
+SOURCE and TARGET n8n instances using ``X-N8N-API-KEY`` auth read from the
+environment. It requires ``--allow-live-read`` and never writes, activates,
+publishes, executes, or registers webhooks on either instance.
+"""
 
 from __future__ import annotations
 
@@ -46,29 +55,135 @@ def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="Velora n8n instance migration (preparation).")
     p.add_argument(
         "command",
-        choices=["inspect", "compare", "dry-run", "validate", "apply"],
-        help="apply is always refused by this preparation CLI",
+        choices=["inspect", "compare", "dry-run", "validate", "apply", "live-inspect", "verify-connection"],
+        help="apply is always refused by this preparation CLI; live-inspect and verify-connection are read-only",
     )
-    p.add_argument("--source-workflow", required=True)
-    p.add_argument("--source-tables", required=True)
-    p.add_argument("--source-credentials", required=True)
+    # Offline export paths (required only for offline commands).
+    p.add_argument("--source-workflow", default=None)
+    p.add_argument("--source-tables", default=None)
+    p.add_argument("--source-credentials", default=None)
     p.add_argument("--target-workflow", default=None)
-    p.add_argument("--target-tables", required=True)
-    p.add_argument("--target-credentials", required=True)
+    p.add_argument("--target-tables", default=None)
+    p.add_argument("--target-credentials", default=None)
     p.add_argument("--source-workflow-id", default=None)
     p.add_argument("--include-rows", action="store_true")
     p.add_argument("--allow-live-read", action="store_true")
     p.add_argument("--i-understand-this-writes-to-target", action="store_true")
     p.add_argument("--owner-authorized-apply", action="store_true")
-    p.add_argument("--out", default=None, help="Write manifest JSON to this path")
+    p.add_argument("--config", default="content/n8n-integration/integration.json",
+                   help="Path to the non-secret n8n integration policy file")
+    p.add_argument("--out", default=None, help="Write manifest/report JSON to this path")
     return p
+
+
+def _run_verify_connection(args: argparse.Namespace) -> int:
+    if not args.allow_live_read:
+        print("STOP LIVE_READ_FLAG_REQUIRED: --allow-live-read is required for verify-connection")
+        return 2
+
+    from integration import LiveReadError, load_integration_config, run_verification  # noqa: E402
+
+    try:
+        config = load_integration_config(args.config)
+        report = run_verification(config)
+    except LiveReadError as exc:
+        print(f"STOP {exc.code}: {exc}")
+        return 2
+
+    if args.out:
+        Path(args.out).write_text(
+            json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+        )
+
+    print("mode=verify-connection (READ-ONLY)")
+    for inst in report["instances"]:
+        print(
+            f"instance={inst['label']} host={inst['base_url_host']} "
+            f"reachable={inst['reachable']} authenticated={inst['authenticated']} "
+            f"blocked={[c.get('code') for c in inst['findings']]}"
+        )
+        print(
+            f"  discovered workflows={len(inst['discovered_ids'].get('workflows') or [])} "
+            f"tables={len(inst['discovered_ids'].get('data_tables') or [])} "
+            f"credentials={len(inst['discovered_ids'].get('credentials') or [])}"
+        )
+    print("write_capabilities=disabled writes=[]")
+    return 0 if all(i["reachable"] and i["authenticated"] for i in report["instances"]) else 1
+
+
+def _run_live_inspect(args: argparse.Namespace) -> int:
+    if not args.allow_live_read:
+        print("STOP LIVE_READ_FLAG_REQUIRED: --allow-live-read is required for live-inspect")
+        return 2
+
+    from live_client import LiveReadClient, LiveReadError, load_config  # noqa: E402
+    from live_report import build_inventory, build_live_report  # noqa: E402
+
+    try:
+        source_cfg = load_config("SOURCE")
+        target_cfg = load_config("TARGET")
+    except LiveReadError as exc:
+        print(f"STOP {exc.code}: {exc}")
+        return 2
+
+    source_client = LiveReadClient(source_cfg, label="SOURCE")
+    target_client = LiveReadClient(target_cfg, label="TARGET")
+
+    try:
+        source_inv = build_inventory(
+            source_client, label="SOURCE", include_row_count=source_cfg.include_row_count
+        )
+        target_inv = build_inventory(
+            target_client, label="TARGET", include_row_count=target_cfg.include_row_count
+        )
+        report = build_live_report(source_inv, target_inv)
+    except LiveReadError as exc:
+        print(f"STOP {exc.code}: {exc}")
+        return 2
+
+    if args.out:
+        Path(args.out).write_text(
+            json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+        )
+
+    print("mode=live-inspect (READ-ONLY)")
+    print(f"source={report['REAL_SOURCE_INVENTORY'].get('base_url_host')} "
+          f"workflows={len(report['REAL_SOURCE_INVENTORY']['workflows'])}")
+    print(f"target={report['REAL_TARGET_INVENTORY'].get('base_url_host')} "
+          f"workflows={len(report['REAL_TARGET_INVENTORY']['workflows'])}")
+    print(f"workflow_mapping={len(report['WORKFLOW_MAPPING'])}")
+    print(f"data_table_mapping={len(report['DATA_TABLE_MAPPING'])}")
+    print(f"missing_credentials={len(report['MISSING_CREDENTIALS'])}")
+    print(f"blockers={len(report['BLOCKERS'])}")
+    for b in report["BLOCKERS"]:
+        print(f"  STOP {b}")
+    print("writes=[]")
+    return 0 if not report["BLOCKERS"] else 1
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+
+    if args.command == "live-inspect":
+        return _run_live_inspect(args)
+
+    if args.command == "verify-connection":
+        return _run_verify_connection(args)
+
     if args.allow_live_read:
         print("STOP LIVE_NETWORK_FORBIDDEN: live n8n is disabled in preparation tooling")
         refuse_live_http()
+        return 2
+
+    missing = [
+        name for name in (
+            "source_workflow", "source_tables", "source_credentials",
+            "target_tables", "target_credentials",
+        )
+        if not getattr(args, name)
+    ]
+    if missing:
+        print("ERROR: offline commands require export paths: " + ", ".join(missing))
         return 2
 
     source_bundle = _bundle_from_args("source", args)
