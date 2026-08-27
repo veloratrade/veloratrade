@@ -63,6 +63,25 @@ Later, a **separate owner order** may add a live read-only client. That client
 must still refuse SOURCE writes, TARGET writes without two apply flags, and
 all activate/publish/execute calls.
 
+### Phase 3A — live read-only client (added)
+
+`tools/n8n_migrate/live_client.py` (transport) + `tools/n8n_migrate/live_report.py`
+(report builder) implement a **strictly read-only** live inspection against the
+real instances, driven by `migrate.py live-inspect --allow-live-read`.
+
+- Uses the n8n Public REST API (`/api/v1/*`) with `X-N8N-API-KEY` from the
+  environment (`N8N_SOURCE_BASE_URL` / `N8N_SOURCE_API_KEY` /
+  `N8N_TARGET_BASE_URL` / `N8N_TARGET_API_KEY`); fails closed if missing.
+- Only `GET`/`HEAD`; refuses `POST`/`PUT`/`PATCH`/`DELETE`, activation, publish,
+  execution, and webhook registration.
+- Credentials are inspected via the **list** endpoint only (`id`/`name`/`type`);
+  secret `data` is never fetched and defensively dropped.
+- Data Tables are read via `GET /api/v1/data-tables` and
+  `GET /api/v1/data-tables/{id}/columns`; row content is never pulled into a
+  report (row counts only if `N8N_INCLUDE_ROW_COUNT=1`).
+- This is inspection only. It still performs **zero** writes and does not apply
+  any migration. Offline tests: `tools/n8n_migrate/test_live_client.py`.
+
 ## 4. Workflow migration procedure (future, not now)
 
 1. Export SOURCE workflow JSON (nodes, connections, settings). Do not export
