@@ -124,16 +124,149 @@ Agent **باید** پیش از هر تغییر، فایل `docs/N8N_ARCHIVE_AGEN
 - در غیر این صورت: هیچ صفحهٔ سایتی نساز، هیچ PR مقاله‌ای باز نکن.
 - Production را deploy نکن. PAT/JWT n8n را در Git یا چت نگذار.
 
-## 2.3 مهاجرت اینستنس n8n (SOURCE → TARGET)
+## 2.3 سیاست اتصال n8n و اینستنس‌های یکبارمصرف (n8n Connection & Disposable Instance Policy)
 
-اگر مأموریت مربوط به مهاجرت workflow یا Data Table بین اینستنس‌های n8n باشد، Agent باید `docs/N8N_INSTANCE_MIGRATION.md` را بخواند و فقط از `tools/n8n_migrate/` استفاده کند — نه از `tools/n8n_archive/`.
+اگر مأموریت مربوط به اتصال یا مهاجرت workflow یا Data Table بین اینستنس‌های n8n باشد، Agent باید `docs/N8N_INSTANCE_MIGRATION.md` را بخواند و فقط از `tools/n8n_migrate/` استفاده کند — نه از `tools/n8n_archive/`.
 
-قواعد:
+### 2.3.1 اتصال n8n
 
-- پیش‌فرض: SOURCE فقط خواندنی، TARGET فقط dry-run.
-- Secret اعتبارنامه‌ها منتقل نمی‌شود (فقط name/type و نگاشت id).
-- فعال‌سازی، publish، execute، ارسال تلگرام، حذف، و کپی `webhookId` ممنوع است.
-- اعمال واقعی مهاجرت فقط با دستور صریح بعدی مالک؛ ابزار آماده‌سازی apply را اجرا نمی‌کند.
+- اگر اتصال/integration واقعی (native) n8n در دسترس باشد، ترجیح با همان است.
+- اگر اتصال native در دسترس نباشد ولی دسترسی معتبر API به n8n پشتیبانی شود، مالک می‌تواند در زمان اجرا یک n8n API key فراهم کند.
+- API key صرفاً Secret زمان‌اجرا است.
+- هرگز API key را در GitHub، فایل‌های مخزن، سورس، workflow JSON، مستندات، منیفست‌ها، fixtures، لاگ‌ها، کامیت‌ها یا گزارش‌ها ذخیره نکن.
+- هرگز API key را چاپ یا افشا نکن.
+- هرگز API key را داخل یک workflow n8n قرار نده.
+- هرگز API key را commit یا push نکن.
+
+### 2.3.2 اینستنس‌های یکبارمصرف n8n
+
+مالک ممکن است اینستنس n8n را حذف و دوباره بسازد. بنابراین هرگز به‌صورت دائمی به اینها وابسته نباش:
+
+- workflow IDs
+- Data Table IDs
+- credential IDs
+- webhook IDs
+- هر شناسه‌ی خاصِ اینستنس
+
+منابع جاری باید پس از اتصال به اینستنس جدید، به‌صورت داینامیک کشف شوند.
+
+### 2.3.3 آنچه در GitHub می‌ماند
+
+فقط اطلاعات غیر-Secure قابل persist است:
+
+- سیاست مهاجرت، ابزار مهاجرت، مستندات
+- تعریف‌های workflow امن
+- تعریف‌های Data Table امن
+- schemaها
+- نام منابع
+- متادیتای مهاجرتِ بدون secret
+
+هرگز persist نشود:
+
+- n8n API key
+- credential secrets
+- OAuth tokens
+- Telegram bot tokens
+- OpenAI API keys
+- Google OAuth secrets
+- private keys
+- webhook secrets
+
+### 2.3.4 سیاست مهاجرت (SOURCE → TARGET)
+
+وقتی مالک صریحاً مهاجرت را مجاز کرد:
+
+**قابل انتقال:**
+
+- تعریف workflow
+- nodeها
+- connectionها
+- تنظیمات امن workflow
+- تعریف Data Table
+- schemaهای Data Table
+- rows/data تنها با مجوز صریح
+
+**هرگز قابل انتقال نیست:**
+
+- credential secret values
+- OAuth tokens/secrets
+- API keys
+- Telegram bot tokens
+- OpenAI keys
+- Google OAuth secrets
+- هر داده‌ی خصوصی credential
+
+نام/نوع credential فقط برای تعیین اینکه کدام credential باید دستی ساخته شود بازرسی می‌شود.
+
+### 2.3.5 ایمنی
+
+رفتار پیش‌فرض READ-ONLY است.
+
+پیش از مهاجرت:
+
+- SOURCE را بازرسی کن
+- TARGET را بازرسی کن
+- workflowها را مقایسه کن
+- Data Tableها و schemaها را مقایسه کن
+- IDهای جاری را کشف کن
+- credentialهای لازم را با name/type شناسایی کن
+- conflict و blocker را تشخیص بده
+- گزارش مهاجرت تولید کن
+- تا مجوز صریح مالک چیزی را اعمال نکن
+
+هنگام مهاجرت:
+
+- هرگز credential secrets را کپی نکن
+- هرگز workflowها را خودکار activate نکن
+- هرگز خودکار publish نکن
+- هرگز خودکار execute نکن
+- هرگز مالکیت Telegram webhook را خودکار تغییر نده
+- workflowهای مهاجرت‌شده را تا مجوز صریح غیرفعال نگه دار
+- روی schema mismatch توقف کن
+- روی تطبیق مبهمِ منابع توقف کن
+- هرگز برای ID قدیمی جایگزینِ حدسی نگذار
+
+### 2.3.6 بازسازی n8n
+
+وقتی مالک اینستنس جدید ساخت، ورودی‌های دستیِ مورد انتظار:
+
+- URL اینستنس جدید n8n
+- n8n API key جدید (اگر احراز API-key استفاده می‌شود)
+- credential secrets که مالک داخل UI جدید n8n دستی می‌سازد
+
+پس از دریافت اطلاعات اتصال جدید، Agent باید دوباره کشف کند:
+
+- workflowها
+- Data Tableها
+- نام/نوع credentialها
+- IDهای جاری
+- capabilities
+
+هرگز فرض نکن IDهای اینستنسِ حذف‌شده همچنان معتبرند.
+
+### 2.3.7 مدیریت Secret
+
+مالک ممکن است برای احراز زمان‌اجرا یک API key فراهم کند. Agent فقط از طریق مکانیزم امن runtimeِ پشتیبانی‌شده استفاده کند و هرگز آن را:
+
+- در مخزن ذخیره نکند
+- در GitHub ذخیره نکند
+- در workflow JSON ذخیره نکند
+- در منیفست مهاجرت وارد نکند
+- در لاگ‌ها وارد نکند
+- در test fixtures وارد نکند
+- در پاسخ چاپ نکند
+
+### 2.3.8 بدون مهاجرت خودکار credential
+
+credential secrets همیشه توسط مالک روی اینستنس جدید n8n به‌صورت دستی ساخته می‌شود.
+
+Agent فقط مجاز است گزارش دهد:
+
+- نام credential
+- نوع credential
+- وجود یا عدم وجود روی TARGET
+
+Agent هرگز نباید secret را استخراج یا مهاجرت کند.
 
 ## 3. سیاست فهم داخلی فایل‌ها
 
