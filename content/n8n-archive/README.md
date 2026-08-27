@@ -47,7 +47,36 @@ content/n8n-archive/
 ```
 
 Independent `state/<archive_id>.json` files avoid merge conflicts from a single
-shared `processed.json`.
+shared `processed.json`. Each `state/<archive_id>.json` may also carry a
+`read_evidence` block (see below).
+
+## Archive Read Guard
+
+`tools/n8n_archive/read_guard.py` enforces "read the archive before acting on
+it". Policy authority is **AGENTS.md §2.2.1**; this section documents only the
+mechanism.
+
+- `read` — opens/reads a **canonical** `content/n8n-archive/snapshots/<id>.json`,
+  derives `file_sha256` + `content_sha256` from the file, records the actual
+  `read_range` / `bytes_read` / `lines_read`, integrity-checks against the
+  snapshot's `content_sha256`, and emits `ARCHIVE_READ_EVIDENCE`.
+- `verify` — recomputes the canonical file itself and rejects missing/mismatched
+  hashes, missing/unreadable files, wrong ranges, wrong `guard_version`, malformed
+  evidence, and any evidence that does not match current content. A JSON
+  `"content_read_status":"verified"` is never proof by itself.
+- `gate` — fail-closed WRITE gate for protected paths (`blog/`, `en/blog/`,
+  `content/n8n-archive/snapshots/`, `content/n8n-archive/state/`): no valid
+  `read_evidence` for an affected `archive_id` → FAIL. Also fails on
+  unknown/ambiguous/missing classification and on an unresolved
+  archive/current-source conflict — archive is evidence, not authority (§11).
+
+Fail-closed: missing/unreadable/corrupt/hash-mismatched/secret-bearing archives
+produce **no** evidence. Evidence means the file was actually read and
+integrity-checked; it is **not** permission to write, publish, migrate or deploy,
+and it does not replace owner authorization (§2.3 / §9).
+
+In-repo limitation: the guard cannot prove the agent *understood* the content and
+does not replace human judgment — ambiguity still means STOP + owner.
 
 ## Idempotency
 
