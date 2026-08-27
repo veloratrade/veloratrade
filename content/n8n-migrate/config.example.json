@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "source": {
+    "label": "SOURCE",
+    "base_url": "https://SOURCE.example.invalid",
+    "mode": "read_only",
+    "workflow_id": "REPLACE_SOURCE_WORKFLOW_ID"
+  },
+  "target": {
+    "label": "TARGET",
+    "base_url": "https://TARGET.example.invalid",
+    "mode": "dry_run",
+    "project_id": "REPLACE_TARGET_PROJECT_ID"
+  },
+  "safety": {
+    "source_read_only": true,
+    "target_dry_run": true,
+    "never_activate": true,
+    "never_publish": true,
+    "never_execute": true,
+    "never_send_telegram": true,
+    "never_delete": true,
+    "disable_telegram_trigger_on_target": true,
+    "disable_schedule_triggers_on_target": true,
+    "strip_webhook_ids": true,
+    "strip_pin_data": true,
+    "credentials_transfer": false,
+    "allow_live_network": false
+  },
+  "datatables": {
+    "match_by": "name",
+    "include_rows": false,
+    "row_idempotency_columns": {
+      "seo_scan_snapshots": ["id"],
+      "seo_gsc_snapshots": ["id"],
+      "seo_opportunities": ["opportunity_id"],
+      "seo_run_log": ["id"],
+      "seo_article_drafts": ["draft_id"],
+      "seo_article_archive": ["archive_id"]
+    }
+  },
+  "credentials": {
+    "match_by": ["type", "name"],
+    "unmapped_is_stop_for_apply": true,
+    "unmapped_is_warn_for_dry_run": true
+  }
+}
