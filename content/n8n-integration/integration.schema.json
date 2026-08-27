@@ -1,0 +1,106 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Velora n8n Integration Foundation",
+  "type": "object",
+  "required": [
+    "manifest_version",
+    "integration",
+    "architecture",
+    "instances",
+    "capabilities",
+    "secrets_policy",
+    "dynamic_ids",
+    "manual_per_new_instance"
+  ],
+  "properties": {
+    "manifest_version": { "const": 1 },
+    "integration": {
+      "type": "object",
+      "required": ["name", "kind", "status", "independent_of_workflow_contents"],
+      "properties": {
+        "name": { "type": "string" },
+        "kind": { "const": "connection-foundation" },
+        "status": { "type": "string" },
+        "independent_of_workflow_contents": { "const": true }
+      }
+    },
+    "architecture": {
+      "type": "object",
+      "required": ["upstream", "channel", "downstream"],
+      "properties": {
+        "upstream": { "type": "string" },
+        "channel": { "type": "string" },
+        "downstream": { "type": "string" },
+        "note": { "type": "string" }
+      }
+    },
+    "instances": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "base_url_env", "api_key_env", "mode", "dynamic_ids"],
+        "properties": {
+          "id": { "type": "string" },
+          "label": { "type": "string" },
+          "base_url_env": { "type": "string" },
+          "api_key_env": { "type": "string" },
+          "mode": { "const": "read_only" },
+          "dynamic_ids": { "const": true }
+        },
+        "additionalProperties": false
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "required": [
+        "read_workflows_list",
+        "read_workflow_definitions",
+        "list_data_tables",
+        "read_table_schemas",
+        "list_credentials_metadata",
+        "compare_source_target",
+        "create_workflows",
+        "update_workflows",
+        "create_update_data_tables",
+        "activate_publish_execute",
+        "webhook_management"
+      ],
+      "properties": {
+        "read_workflows_list": { "enum": ["enabled", "disabled"] },
+        "read_workflow_definitions": { "enum": ["enabled", "disabled"] },
+        "list_data_tables": { "enum": ["enabled", "disabled"] },
+        "read_table_schemas": { "enum": ["enabled", "disabled"] },
+        "list_credentials_metadata": { "enum": ["enabled", "disabled"] },
+        "compare_source_target": { "enum": ["enabled", "disabled"] },
+        "create_workflows": { "enum": ["enabled", "disabled"] },
+        "update_workflows": { "enum": ["enabled", "disabled"] },
+        "create_update_data_tables": { "enum": ["enabled", "disabled"] },
+        "activate_publish_execute": { "enum": ["enabled", "disabled"] },
+        "webhook_management": { "enum": ["enabled", "disabled"] }
+      }
+    },
+    "secrets_policy": {
+      "type": "object",
+      "required": ["never_in_git", "never_in_chat", "source", "per_instance_secret_entry"],
+      "properties": {
+        "never_in_git": { "const": true },
+        "never_in_chat": { "const": true },
+        "source": { "enum": ["environment-variables"] },
+        "per_instance_secret_entry": { "enum": ["manual-in-n8n-ui"] }
+      }
+    },
+    "dynamic_ids": {
+      "type": "object",
+      "required": ["workflow_ids", "data_table_ids", "credential_ids", "never_hardcoded"],
+      "properties": {
+        "workflow_ids": { "type": "string" },
+        "data_table_ids": { "type": "string" },
+        "credential_ids": { "type": "string" },
+        "never_hardcoded": { "const": true }
+      }
+    },
+    "manual_per_new_instance": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": false
+}
