@@ -1,0 +1,135 @@
+{
+  "id": "TGTWF01bbbbbbbb",
+  "name": "VELORA — Test Unified",
+  "active": false,
+  "versionId": "ver-target-1",
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timezone": "Asia/Tehran"
+  },
+  "nodes": [
+    {
+      "id": "n-manual",
+      "name": "GLOBAL — Manual Run",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "parameters": {}
+    },
+    {
+      "id": "n-store",
+      "name": "P1 — Store Snapshot",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [220, 0],
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "tgtScan001",
+          "cachedResultName": "seo_scan_snapshots"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "snapshot_id": "={{ $json.snapshot_id }}"
+          },
+          "schema": [
+            {
+              "id": "snapshot_id",
+              "displayName": "snapshot_id",
+              "required": true,
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "onError": "continueErrorOutput",
+      "retryOnFail": true
+    },
+    {
+      "id": "n-tg",
+      "name": "TELEGRAM — Article Actions",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [0, 240],
+      "disabled": true,
+      "parameters": {},
+      "credentials": {
+        "telegramApi": {
+          "id": "tgtTg01",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "id": "n-gsc",
+      "name": "P2A — Fetch GSC",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 240],
+      "parameters": {
+        "url": "https://example.invalid/",
+        "authentication": "predefinedCredentialType"
+      },
+      "credentials": {
+        "googleOAuth2Api": {
+          "id": "tgtGo01",
+          "name": "Google account"
+        }
+      },
+      "onError": "continueErrorOutput",
+      "retryOnFail": true
+    },
+    {
+      "id": "n-oai",
+      "name": "Article — OpenAI Draft",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 240],
+      "disabled": true,
+      "parameters": {
+        "url": "https://api.example.invalid/v1/chat"
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "srcOai01",
+          "name": "OpenAI account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "n-sched",
+      "name": "P1 — Daily 04:00 Tehran (disabled)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 480],
+      "disabled": true,
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 4 * * *"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "connections": {
+    "GLOBAL — Manual Run": {
+      "main": [
+        [
+          {
+            "node": "P1 — Store Snapshot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

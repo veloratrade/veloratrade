@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "never": [
+    "write_to_source",
+    "extract_credential_secrets",
+    "put_github_pat_in_n8n",
+    "activate_or_publish_automatically",
+    "execute_workflows_as_part_of_migration",
+    "send_telegram_messages",
+    "enable_schedule_triggers_p1_p2a_p2b",
+    "enable_telegram_trigger_on_target_while_source_owns_webhook",
+    "copy_webhook_ids_between_instances",
+    "delete_source_or_target_resources"
+  ],
+  "stop_codes": {
+    "SOURCE_WRITE_FORBIDDEN": "Any SOURCE mutating call.",
+    "APPLY_NOT_AUTHORIZED": "TARGET write without both apply flags.",
+    "TARGET_NOT_DRY_RUN": "Non-dry-run TARGET mode outside authorized apply.",
+    "CREDENTIAL_SECRET_PRESENT": "Credential data/secret field detected in a payload.",
+    "SECRET_MATERIAL_IN_EXPORT": "PAT, JWT, bot token, or private key in export.",
+    "UNMAPPED_CREDENTIAL": "A node credential has no TARGET equivalent.",
+    "UNMAPPED_DATATABLE": "A dataTableId has no TARGET table mapping.",
+    "SCHEMA_MISMATCH": "SOURCE and TARGET table schemas differ.",
+    "TELEGRAM_TRIGGER_WOULD_ENABLE": "Prepared TARGET would enable telegramTrigger.",
+    "SCHEDULE_TRIGGER_WOULD_ENABLE": "Prepared TARGET would enable a scheduleTrigger.",
+    "WORKFLOW_WOULD_ACTIVATE": "Prepared TARGET would set active=true.",
+    "PUBLISH_OR_ACTIVATE_REQUESTED": "activate/publish/execute requested.",
+    "DUPLICATE_WORKFLOW_DRIFT": "TARGET already has the name with a different logic_sha256.",
+    "WEBHOOK_ID_COPY": "SOURCE webhookId would be copied to TARGET.",
+    "GITHUB_PAT_IN_N8N": "GitHub PAT detected in workflow parameters.",
+    "LIVE_NETWORK_FORBIDDEN": "Live n8n HTTP without --allow-live-read."
+  }
+}

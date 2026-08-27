@@ -1,0 +1,94 @@
+{
+  "manifest_version": 1,
+  "generated_at": "2026-08-27T00:00:00Z",
+  "mode": "dry-run",
+  "source": {
+    "label": "SOURCE",
+    "base_url_host": "source.example.invalid",
+    "workflow_id": "SRCWF01aaaaaaaa",
+    "workflow_name": "VELORA — Test Unified",
+    "version_id": "ver-source-1",
+    "active": true
+  },
+  "target": {
+    "label": "TARGET",
+    "base_url_host": "target.example.invalid",
+    "workflow_id": null,
+    "workflow_name": "VELORA — Test Unified",
+    "version_id": null,
+    "active": false
+  },
+  "workflow": {
+    "node_count": 6,
+    "connection_count": 1,
+    "settings": {
+      "timezone": "Asia/Tehran",
+      "executionOrder": "v1"
+    },
+    "telegram_trigger": {
+      "name": "TELEGRAM — Article Actions",
+      "source_disabled": false,
+      "target_must_disabled": true
+    },
+    "schedule_triggers": [
+      {
+        "name": "P1 — Daily 04:00 Tehran (disabled)",
+        "source_disabled": true,
+        "target_must_disabled": true
+      }
+    ]
+  },
+  "datatables": [
+    {
+      "name": "seo_scan_snapshots",
+      "source_id": "srcScan001",
+      "target_id": "tgtScan001",
+      "schema_status": "match",
+      "source_columns": 3,
+      "target_columns": 3,
+      "differences": []
+    }
+  ],
+  "credentials": [
+    {
+      "type": "telegramApi",
+      "source_id": "srcTg01",
+      "source_name": "Telegram account",
+      "target_id": "tgtTg01",
+      "target_name": "Telegram account",
+      "mapping_status": "mapped",
+      "used_by_nodes": ["TELEGRAM — Article Actions"],
+      "secret_transfer": "never"
+    },
+    {
+      "type": "openAiApi",
+      "source_id": "srcOai01",
+      "source_name": "OpenAI account",
+      "target_id": null,
+      "target_name": null,
+      "mapping_status": "missing_on_target",
+      "used_by_nodes": ["Article — OpenAI Draft"],
+      "secret_transfer": "never"
+    }
+  ],
+  "checksums": {
+    "source_logic_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "prepared_logic_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "target_logic_sha256": null
+  },
+  "migration_status": "dry_run_blocked",
+  "validation_status": "fail",
+  "differences": [
+    "credential openAiApi/OpenAI account missing on TARGET"
+  ],
+  "errors": [],
+  "blockers": ["UNMAPPED_CREDENTIAL:openAiApi/OpenAI account"],
+  "safety": {
+    "source_read_only": true,
+    "target_dry_run": true,
+    "never_activate": true,
+    "never_publish": true,
+    "credentials_transfer": false
+  },
+  "writes_performed": []
+}
