@@ -1,0 +1,26 @@
+[
+  {
+    "id": "srcScan001",
+    "name": "seo_scan_snapshots",
+    "columns": [
+      { "name": "snapshot_id", "type": "string", "required": true },
+      { "name": "captured_at", "type": "string", "required": false },
+      { "name": "workflow_failure", "type": "boolean", "required": false }
+    ],
+    "row_count": 2,
+    "rows": [
+      { "snapshot_id": "s-1", "captured_at": "2026-08-01T00:00:00Z", "workflow_failure": false },
+      { "snapshot_id": "s-2", "captured_at": "2026-08-02T00:00:00Z", "workflow_failure": false }
+    ]
+  },
+  {
+    "id": "srcOpp001",
+    "name": "seo_opportunities",
+    "columns": [
+      { "name": "opportunity_id", "type": "string", "required": true },
+      { "name": "status", "type": "string", "required": false }
+    ],
+    "row_count": 1,
+    "rows": [{ "opportunity_id": "opp-1", "status": "NEW" }]
+  }
+]

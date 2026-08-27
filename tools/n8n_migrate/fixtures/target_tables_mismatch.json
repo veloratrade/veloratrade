@@ -1,0 +1,10 @@
+[
+  {
+    "id": "tgtScan001",
+    "name": "seo_scan_snapshots",
+    "columns": [
+      { "name": "snapshot_id", "type": "number", "required": true },
+      { "name": "captured_at", "type": "string", "required": false }
+    ]
+  }
+]

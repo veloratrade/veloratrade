@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://veloratrade.ir/schemas/n8n-instance-migration-manifest.json",
+  "title": "Velora n8n SOURCE→TARGET migration manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "manifest_version",
+    "generated_at",
+    "mode",
+    "source",
+    "target",
+    "workflow",
+    "datatables",
+    "credentials",
+    "checksums",
+    "migration_status",
+    "validation_status",
+    "differences",
+    "errors",
+    "blockers",
+    "safety"
+  ],
+  "properties": {
+    "manifest_version": { "type": "integer", "const": 1 },
+    "generated_at": { "type": "string", "minLength": 10 },
+    "mode": {
+      "type": "string",
+      "enum": ["inspect", "compare", "dry-run", "validate", "apply-blocked"]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "workflow_id", "workflow_name"],
+      "properties": {
+        "label": { "type": "string" },
+        "base_url_host": { "type": "string" },
+        "workflow_id": { "type": "string" },
+        "workflow_name": { "type": "string" },
+        "version_id": { "type": ["string", "null"] },
+        "active": { "type": "boolean" }
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "workflow_id", "workflow_name"],
+      "properties": {
+        "label": { "type": "string" },
+        "base_url_host": { "type": "string" },
+        "workflow_id": { "type": ["string", "null"] },
+        "workflow_name": { "type": ["string", "null"] },
+        "version_id": { "type": ["string", "null"] },
+        "active": { "type": ["boolean", "null"] }
+      }
+    },
+    "workflow": {
+      "type": "object",
+      "required": ["node_count", "connection_count", "settings"],
+      "properties": {
+        "node_count": { "type": "integer" },
+        "connection_count": { "type": "integer" },
+        "settings": { "type": "object" },
+        "telegram_trigger": { "type": "object" },
+        "schedule_triggers": { "type": "array" }
+      }
+    },
+    "datatables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "source_id", "target_id", "schema_status"],
+        "properties": {
+          "name": { "type": "string" },
+          "source_id": { "type": ["string", "null"] },
+          "target_id": { "type": ["string", "null"] },
+          "schema_status": {
+            "type": "string",
+            "enum": ["match", "mismatch", "missing_target", "missing_source", "unmapped"]
+          },
+          "source_columns": { "type": "integer" },
+          "target_columns": { "type": "integer" },
+          "differences": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "credentials": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "source_name", "target_name", "mapping_status", "used_by_nodes"],
+        "properties": {
+          "type": { "type": "string" },
+          "source_id": { "type": ["string", "null"] },
+          "source_name": { "type": "string" },
+          "target_id": { "type": ["string", "null"] },
+          "target_name": { "type": ["string", "null"] },
+          "mapping_status": {
+            "type": "string",
+            "enum": ["mapped", "missing_on_target", "name_mismatch", "unmapped", "ambiguous"]
+          },
+          "used_by_nodes": { "type": "array", "items": { "type": "string" } },
+          "secret_transfer": { "type": "string", "const": "never" }
+        }
+      }
+    },
+    "checksums": {
+      "type": "object",
+      "required": ["source_logic_sha256"],
+      "properties": {
+        "source_logic_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "prepared_logic_sha256": { "type": ["string", "null"] },
+        "target_logic_sha256": { "type": ["string", "null"] }
+      }
+    },
+    "migration_status": {
+      "type": "string",
+      "enum": [
+        "not_started",
+        "inspected",
+        "compared",
+        "dry_run_ok",
+        "dry_run_blocked",
+        "validated_ok",
+        "validated_blocked",
+        "applied",
+        "noop",
+        "blocked"
+      ]
+    },
+    "validation_status": {
+      "type": "string",
+      "enum": ["pass", "fail", "not_run"]
+    },
+    "differences": { "type": "array", "items": { "type": "string" } },
+    "errors": { "type": "array", "items": { "type": "string" } },
+    "blockers": { "type": "array", "items": { "type": "string" } },
+    "safety": {
+      "type": "object",
+      "required": [
+        "source_read_only",
+        "target_dry_run",
+        "never_activate",
+        "never_publish",
+        "credentials_transfer"
+      ],
+      "properties": {
+        "source_read_only": { "type": "boolean" },
+        "target_dry_run": { "type": "boolean" },
+        "never_activate": { "type": "boolean" },
+        "never_publish": { "type": "boolean" },
+        "credentials_transfer": { "const": false }
+      }
+    },
+    "writes_performed": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

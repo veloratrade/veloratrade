@@ -27,6 +27,7 @@ AS-IS VERIFIED BASELINE • READ-ONLY • APPROVAL REQUIRED BEFORE CHANGE
     "api",
     "blog",
     "checkout",
+    "content",
     "dashboard",
     "docs",
     "en",
