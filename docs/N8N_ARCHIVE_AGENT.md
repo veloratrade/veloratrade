@@ -82,6 +82,88 @@ Do not infer approval from Telegram screenshots, HTML quality, or model judgment
 
 ---
 
+## 5A. Archive Read Guard — read the archive, then act
+
+Policy authority is **AGENTS.md §2.2.1** (do not duplicate it here). This section
+documents the *mechanism* that turns "read the archive before acting on it" into
+a machine-verifiable artifact.
+
+### Why it exists
+
+`tools/n8n_archive/read_guard.py` proves that a **canonical archive file was
+actually opened and read**, and that the produced evidence matches that file. It
+closes the gap where a workflow could *claim* to have read an archive without
+really reading it. The guard does **not** classify content on the Agent's behalf.
+
+### What counts as "actual reading"
+
+- The guard resolves the file to the canonical directory `content/n8n-archive/snapshots/`.
+- It opens the file, reads the bytes, parses the JSON, and derives both
+  `file_sha256` (whole file) and `content_sha256` (from `article_html`) **from the
+  file itself** — never from caller-supplied values.
+- It records the actual byte range (`read_range` start=0..end) and `bytes_read` /
+  `lines_read`, proving real content access.
+
+Listing filenames, stat-only inspection, or a caller-claimed
+`content_read_status: "verified"` are **never** accepted as proof.
+
+### What evidence means — and what it does NOT mean
+
+Evidence (`ARCHIVE_READ_EVIDENCE`) means: *the canonical file was read and
+integrity-checked at the recorded time.* It means **nothing more**:
+
+- It is **not** permission to write, publish, migrate, delete, activate or deploy.
+- It does **not** prove approval, archive eligibility, or correct classification.
+- Owner-authorization rules (§2.3, §9) remain fully independent of the read guard.
+- The Agent still performs classification/reasoning separately and labels it
+  `classification_source: "agent"`; the guard never marks Agent classification
+  as independently verified.
+
+### Evidence schema
+
+Machine-readable JSON, produced by the `read` subcommand and stored in the
+per-article ledger `content/n8n-archive/state/<archive_id>.json` under
+`read_evidence`. Verified via the `verify` subcommand, which **recomputes** the
+canonical file's hashes and range itself and confirms the evidence's
+`archive_id` matches the canonical snapshot (cross-archive reuse fails). It also
+records the agent-declared `conflict_status` (`none`/`resolved`/`unresolved`)
+regarding the archive vs the current source of truth.
+
+### Fail-closed behavior
+
+- Missing archive, unreadable file, corrupt/truncated JSON, hash mismatch,
+  empty file, or secret material detected → **no evidence is produced** and the
+  guard exits non-zero.
+- Verification rejects: missing/mismatched `content_sha256`/`file_sha256`,
+  missing archive, unreadable file, wrong `read_range` / `bytes_read`,
+  wrong `guard_version`, malformed evidence, and any evidence that does not
+  independently match current canonical content.
+- A JSON `"content_read_status": "verified"` is **never** sufficient by itself.
+
+### WRITE-gate behavior
+
+The `gate` subcommand inspects changed protected paths (`blog/`, `en/blog/`,
+`content/n8n-archive/snapshots/`, `content/n8n-archive/state/`) and requires a
+cleanly-verifying `read_evidence` for each affected `archive_id`. No valid
+evidence → **FAIL** (no WRITE). An unrelated change → passes.
+
+In addition to verifying the read evidence, the WRITE gate **fails closed** on:
+- **unknown/ambiguous/missing classification** → STOP, no protected WRITE
+  (`UNKNOWN/AMBIGUOUS + WRITE = STOP`). Uncertainty is never converted into
+  authorization.
+- **unresolved archive-vs-current-source-of-truth conflict** (`conflict_status`
+  not `none`/`resolved`) → STOP, no protected WRITE. Archive is evidence, not
+  authority; current source-of-truth precedence (§11) is preserved.
+
+### In-repo enforcement limitations
+
+The guard is a strong, fail-closed gate *inside* the repository, but it cannot
+prove the Agent actually *understood* the content, and it does not substitute for
+human/owner judgment or §2.2 / §2.3 authorization. Ambiguity about what to do with
+read content still means **STOP and ask the owner**.
+
+---
+
 ## 6. Rebuild, do not paste raw n8n HTML
 
 Before creating pages, inspect:
