@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://veloratrade.ir/schemas/n8n-archive-snapshot.json",
+  "title": "Velora n8n archive snapshot (safe public export)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "archive_id",
+    "draft_id",
+    "slug",
+    "title",
+    "language",
+    "article_html",
+    "metadata",
+    "faq",
+    "approval_status",
+    "archive_status",
+    "publication_status",
+    "content_sha256",
+    "created_at",
+    "archived_at"
+  ],
+  "properties": {
+    "archive_id": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 80,
+      "pattern": "^a-[A-Za-z0-9_-]{1,64}$"
+    },
+    "draft_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "pattern": "^[A-Za-z0-9_-]{1,80}$"
+    },
+    "slug": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 200
+    },
+    "language": {
+      "type": "string",
+      "enum": ["fa", "en"]
+    },
+    "article_html": {
+      "type": "string",
+      "minLength": 200
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["meta_title", "meta_description"],
+      "properties": {
+        "meta_title": { "type": "string", "minLength": 8, "maxLength": 70 },
+        "meta_description": { "type": "string", "minLength": 20, "maxLength": 180 },
+        "excerpt": { "type": "string", "maxLength": 500 },
+        "primary_keyword": { "type": "string", "maxLength": 80 },
+        "canonical_path": { "type": "string", "maxLength": 120 }
+      }
+    },
+    "faq": {
+      "type": "array",
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["q", "a"],
+        "properties": {
+          "q": { "type": "string", "minLength": 3, "maxLength": 200 },
+          "a": { "type": "string", "minLength": 3, "maxLength": 2000 }
+        }
+      }
+    },
+    "approval_status": {
+      "type": "string",
+      "enum": ["approved"]
+    },
+    "archive_status": {
+      "type": "string",
+      "enum": ["archived"]
+    },
+    "publication_status": {
+      "type": "string",
+      "enum": ["not_published", "published", "failed"]
+    },
+    "content_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "created_at": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 40
+    },
+    "archived_at": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 40
+    },
+    "opportunity_id": {
+      "type": "string",
+      "maxLength": 80
+    },
+    "archive_version": {
+      "type": "string",
+      "maxLength": 16
+    }
+  }
+}

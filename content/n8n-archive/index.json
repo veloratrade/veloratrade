@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "description": "Secret-free catalog of n8n archive snapshots. Process ledger lives in state/<archive_id>.json.",
+  "snapshots": []
+}
