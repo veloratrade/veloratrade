@@ -509,12 +509,15 @@ jobs:
             --head "$HEAD_SHA"
 
       - name: Secret scan for archive fixtures/tools
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
         run: |
-          set -e
-          if grep -rInE 'github_pat_|ghp_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----'               tools/n8n_archive content/n8n-archive 2>/dev/null; then
-            echo "::error::secret-like material found"; exit 1
-          fi
-          echo "no secret-like material found"
+          set -euo pipefail
+          # Fail-closed structural scanner: detects real secret VALUES while
+          # ignoring the detector's own regex definitions and synthetic
+          # all-same-character test fixtures. Exits 1 if real secret material
+          # is found. No || true, no exit-0 fallback, no continue-on-error.
+          python tools/n8n_archive/scan_archive_secrets.py tools/n8n_archive content/n8n-archive
 
   # ── quality-gate: تجمیع‌کننده — چک اصلی Required ─────────────────────
   quality-gate:
