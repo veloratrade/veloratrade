@@ -1,0 +1,21 @@
+[
+  {
+    "id": "tgtScan001",
+    "name": "seo_scan_snapshots",
+    "columns": [
+      { "name": "snapshot_id", "type": "string", "required": true },
+      { "name": "captured_at", "type": "string", "required": false },
+      { "name": "workflow_failure", "type": "boolean", "required": false }
+    ],
+    "row_count": 0
+  },
+  {
+    "id": "tgtOpp001",
+    "name": "seo_opportunities",
+    "columns": [
+      { "name": "opportunity_id", "type": "string", "required": true },
+      { "name": "status", "type": "string", "required": false }
+    ],
+    "row_count": 0
+  }
+]
