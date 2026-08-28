@@ -1487,6 +1487,8 @@
     "errors.ai.validation.side": "Invalid trade side, must be buy or sell.",
     "errors.ai.validation.symbol": "Invalid symbol format.",
     "errors.ai.validation.tooManyTrades": "Too many trades for AI analysis.",
+    "errors.ai.validation.tradeIdsRequired": "Send trade_ids[] instead of client-supplied trades.",
+    "errors.ai.validation.noOwnedTrades": "No owned trades found for the provided ids.",
     "errors.ai.validation.invalid": "Invalid AI data.",
     "errors.ai.validation.missing": "AI response missing required data.",
     "errors.ai.validation.malformed": "AI returned malformed data.",

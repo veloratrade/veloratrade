@@ -85,7 +85,9 @@ final class GeminiProvider implements AIProviderInterface
         }
 
         $model = $options['model'] ?? $this->model;
-        $url = self::API_BASE . urlencode($model) . ':generateContent?key=' . urlencode($this->apiKey);
+        // API key is sent via the x-goog-api-key header, never in the URL —
+        // query-string keys leak into proxy/CDN/access logs.
+        $url = self::API_BASE . urlencode($model) . ':generateContent';
 
         if (!str_starts_with($url, 'https://')) {
             throw new AIProviderException('Invalid Gemini API URL.', $this->getName());
@@ -106,10 +108,11 @@ final class GeminiProvider implements AIProviderInterface
             ];
         }
 
-        // Text analysis: if trades in context, append as JSON
+        // Text analysis: if trades in context, append as JSON inside a data
+        // envelope so the model treats it as DATA, never as instructions.
         if (isset($context['trades']) && is_array($context['trades'])) {
             $tradesJson = json_encode($context['trades'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-            $parts[0]['text'] .= "\n\nTrades data:\n" . $tradesJson;
+            $parts[0]['text'] .= "\n\n<velora_data>\n" . $tradesJson . "\n</velora_data>\n";
         }
 
         $payload = [
@@ -144,7 +147,11 @@ final class GeminiProvider implements AIProviderInterface
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => $timeout,
             CURLOPT_CONNECTTIMEOUT => min(3, $timeout),
-            CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Accept: application/json'],
+            CURLOPT_HTTPHEADER => [
+                'Content-Type: application/json',
+                'Accept: application/json',
+                'x-goog-api-key: ' . $this->apiKey,
+            ],
             CURLOPT_FOLLOWLOCATION => false,
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_SSL_VERIFYHOST => 2,
@@ -165,18 +172,27 @@ final class GeminiProvider implements AIProviderInterface
             throw new AIProviderException('Gemini provider communication failed.', $this->getName());
         }
 
-        if ($httpCode === 429 || $httpCode === 403) {
+        // Classify provider errors distinctly: credential, quota/rate, service, validation.
+        if ($httpCode === 429) {
+            throw new AIQuotaExhaustedException('Gemini rate limit or quota exhausted.', $this->getName());
+        }
+        if ($httpCode === 401) {
+            throw new AIProviderException('Gemini API key invalid or unauthorized.', $this->getName());
+        }
+        if ($httpCode === 403) {
             $body = is_string($response) ? $response : '';
-            if (stripos($body, 'quota') !== false || stripos($body, 'rate') !== false || $httpCode === 429) {
+            if (stripos($body, 'quota') !== false || stripos($body, 'rate') !== false) {
                 throw new AIQuotaExhaustedException('Gemini quota exhausted.', $this->getName());
             }
-            throw new AIQuotaExhaustedException('Gemini API key invalid or quota exceeded.', $this->getName());
+            throw new AIProviderException('Gemini API key lacks required permission.', $this->getName());
         }
-
+        if ($httpCode >= 500) {
+            throw new AIProviderException('Gemini service unavailable (HTTP ' . $httpCode . ').', $this->getName());
+        }
+        if ($httpCode === 400) {
+            throw new AIValidationException('Gemini rejected request.', ['provider' => ['code' => 'BAD_REQUEST']]);
+        }
         if ($httpCode < 200 || $httpCode >= 300) {
-            if ($httpCode === 400) {
-                throw new AIValidationException('Gemini rejected request.', ['provider' => ['code' => 'BAD_REQUEST']]);
-            }
             throw new AIProviderException('Gemini HTTP ' . $httpCode, $this->getName());
         }
 

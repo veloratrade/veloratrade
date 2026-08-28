@@ -13,16 +13,24 @@ use Velora\Core\RateLimiter;
 use Velora\Core\Request;
 use Velora\Core\Response;
 use Velora\Core\Validation;
+use Velora\Trades\TradeResolver;
 
 /**
  * AI Controller — P1 endpoints for analysis, reports, feedback.
- * All endpoints: auth required, ownership validation, feature flag, audit logging, rate limiting, sanitized errors.
- * Follows existing Controller pattern: final class, method(Request): never, Response::json()
+ *
+ * TRUST BOUNDARY: the controller NEVER trusts client-supplied trade objects.
+ * Clients send trade_ids[]; the controller resolves them server-side through
+ * TradeResolver (ownership enforced), then passes sanitized payloads to the
+ * analysis layer. Model output is whitelisted before it is returned/persisted.
  */
 final class AIController
 {
     private const MAX_TRADES_ANALYSIS = 100;
     private const MAX_TRADES_REPORT = 200;
+
+    /** Output whitelists — unknown model fields are dropped, never echoed. */
+    private const ANALYSIS_OUTPUT_FIELDS = ['summary', 'strengths', 'weaknesses', 'recommendations', 'risk_score', 'riskScore', 'confidence'];
+    private const REPORT_OUTPUT_FIELDS = ['summary', 'strengths', 'mistakes', 'weaknesses', 'risk_behavior', 'suggestions', 'recommendations', 'confidence'];
 
     public function __construct(
         private readonly TradeAnalyzerService $analyzer = new TradeAnalyzerService(),
@@ -30,12 +38,13 @@ final class AIController
         private readonly AIFeedbackService $feedbackService = new AIFeedbackService(),
         private readonly AIFeatureGuard $featureGuard = new AIFeatureGuard(),
         private readonly AIAuditLogRepository $auditRepo = new AIAuditLogRepository(),
+        private readonly TradeResolver $tradeResolver = new TradeResolver(),
     ) {
     }
 
     /**
      * POST /api/v1/ai/analyze-trades
-     * Body: { trades: [...], locale: en/fa, timeframe: last_100 }
+     * Body: { trade_ids: [...], locale: en/fa, timeframe: last_100 }
      */
     public function analyzeTrades(Request $request): never
     {
@@ -44,18 +53,29 @@ final class AIController
 
         $this->featureGuard->requireEnabled('ai_trade_analysis', $userId);
 
+        // Reject the insecure client-supplied trades[] contract explicitly.
+        if (array_key_exists('trades', $request->body) && !array_key_exists('trade_ids', $request->body)) {
+            Response::error('Client-supplied trades are not accepted; send trade_ids[] instead.', 422, 'VALIDATION_FAILED', null, 'errors.ai.validation.tradeIdsRequired');
+        }
+
         Validation::assert($request->body, [
-            'trades' => 'required|array',
+            'trade_ids' => 'required|array',
             'locale' => 'string|max:10',
             'timeframe' => 'string|max:32',
         ]);
 
-        $trades = $request->body['trades'];
-        if (!is_array($trades) || count($trades) === 0) {
-            Response::error('trades[] is required.', 422, 'VALIDATION_FAILED');
+        $tradeIds = $request->body['trade_ids'] ?? [];
+        if (!is_array($tradeIds) || count($tradeIds) === 0) {
+            Response::error('trade_ids[] is required.', 422, 'VALIDATION_FAILED');
         }
-        if (count($trades) > self::MAX_TRADES_ANALYSIS) {
-            Response::error('Too many trades for analysis (max 100).', 422, 'VALIDATION_FAILED');
+        if (count($tradeIds) > self::MAX_TRADES_ANALYSIS) {
+            Response::error('Too many trade ids for analysis (max 100).', 422, 'VALIDATION_FAILED');
+        }
+
+        // Resolve server-side with ownership enforcement (never trust the client).
+        $trades = $this->tradeResolver->resolveOwned($userId, $tradeIds, self::MAX_TRADES_ANALYSIS);
+        if ($trades === []) {
+            Response::error('No owned trades found for the provided ids.', 422, 'VALIDATION_FAILED', null, 'errors.ai.validation.noOwnedTrades');
         }
 
         $locale = strtolower(trim((string) ($request->body['locale'] ?? 'en')));
@@ -93,7 +113,7 @@ final class AIController
             }
 
             Response::json([
-                'analysis' => $data,
+                'analysis' => $this->whitelistOutput($data, self::ANALYSIS_OUTPUT_FIELDS),
                 'provider' => $response->provider,
                 'model' => $response->model,
                 'confidence' => $response->confidence,
@@ -109,7 +129,7 @@ final class AIController
 
     /**
      * POST /api/v1/ai/weekly-report
-     * Body: { trades: [...], period_start: YYYY-MM-DD, period_end: YYYY-MM-DD, locale: en/fa }
+     * Body: { trade_ids: [...], period_start: YYYY-MM-DD, period_end: YYYY-MM-DD, locale: en/fa }
      */
     public function weeklyReport(Request $request): never
     {
@@ -118,15 +138,24 @@ final class AIController
 
         $this->featureGuard->requireEnabled('ai_weekly_report', $userId);
 
+        if (array_key_exists('trades', $request->body) && !array_key_exists('trade_ids', $request->body)) {
+            Response::error('Client-supplied trades are not accepted; send trade_ids[] instead.', 422, 'VALIDATION_FAILED', null, 'errors.ai.validation.tradeIdsRequired');
+        }
+
         Validation::assert($request->body, [
-            'trades' => 'required|array',
+            'trade_ids' => 'required|array',
             'period_start' => 'required|string|max:20',
             'locale' => 'string|max:10',
         ]);
 
-        $trades = $request->body['trades'];
-        if (count($trades) > self::MAX_TRADES_REPORT) {
-            Response::error('Too many trades for report (max 200).', 422, 'VALIDATION_FAILED');
+        $tradeIds = $request->body['trade_ids'] ?? [];
+        if (count($tradeIds) > self::MAX_TRADES_REPORT) {
+            Response::error('Too many trade ids for report (max 200).', 422, 'VALIDATION_FAILED');
+        }
+
+        $trades = $this->tradeResolver->resolveOwned($userId, $tradeIds, self::MAX_TRADES_REPORT);
+        if ($trades === []) {
+            Response::error('No owned trades found for the provided ids.', 422, 'VALIDATION_FAILED', null, 'errors.ai.validation.noOwnedTrades');
         }
 
         $periodStart = trim((string) $request->body['period_start']);
@@ -157,7 +186,7 @@ final class AIController
             $content = json_decode($response->content, true) ?: ['raw' => $response->content];
 
             Response::json([
-                'report' => $content,
+                'report' => $this->whitelistOutput($content, self::REPORT_OUTPUT_FIELDS),
                 'period_start' => $periodStart,
                 'period_end' => $periodEnd,
                 'locale' => $locale,
@@ -219,5 +248,39 @@ final class AIController
             error_log('[VELORA_AI_FEEDBACK] failed user=' . $userId);
             Response::error('Failed to store feedback.', 500, 'AI_FEEDBACK_FAILED');
         }
+    }
+
+    /**
+     * Whitelist model output: keep only known fields (strings/arrays/numerics),
+     * drop everything else so unknown model fields never reach the client.
+     *
+     * @param array<string, mixed> $data
+     * @param string[] $allowed
+     * @return array<string, mixed>
+     */
+    private function whitelistOutput(array $data, array $allowed): array
+    {
+        $out = [];
+        foreach ($allowed as $key) {
+            if (!array_key_exists($key, $data)) {
+                continue;
+            }
+            $value = $data[$key];
+            if (is_string($value)) {
+                $out[$key] = $value;
+            } elseif (is_array($value)) {
+                // String lists only — flatten and filter to strings.
+                $list = [];
+                foreach ($value as $item) {
+                    if (is_string($item)) {
+                        $list[] = $item;
+                    }
+                }
+                $out[$key] = $list;
+            } elseif (is_int($value) || is_float($value)) {
+                $out[$key] = $value;
+            }
+        }
+        return $out;
     }
 }
