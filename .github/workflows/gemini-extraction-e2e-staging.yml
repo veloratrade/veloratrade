@@ -36,23 +36,62 @@ jobs:
           echo "::add-mask::$TEST_EMAIL"
           echo "::add-mask::$TEST_PASSWORD"
 
+          # ── envelope-aware API helper ──────────────────────────────────────
+          # Requests are made with the body taken from a file; HTTP status and
+          # Content-Type are captured and the raw response is preserved in a
+          # temp file. Extra headers come from the EXTRA_HDRS array (so a JWT
+          # never has to be interpolated into the URL/echo). Nothing prints a
+          # header value, a token, or a secret.
+          R_CODE="" ; R_CTYPE="" ; EXTRA_HDRS=()
+          # NOTE: EXTRA_HDRS must be set on its own line. `VAR=(...) cmd` would
+          # store a scalar (the literal "(...)"), which is not what we want.
+          api_post() { # $1=method $2=path $3=payload-file $4=response-file
+            method="$1" path="$2" payload="$3" out="$4"
+            body=()
+            if [ -f "$payload" ]; then body=(-d @"$payload"); fi
+            R_CODE=$(curl -sS --max-time "${MAXT:-60}" -o "$out" \
+              -w '%{http_code}\n%{content_type}' -X "$method" "$BASE$path" \
+              -H "Content-Type: application/json" "${EXTRA_HDRS[@]}" "${body[@]}")
+            R_CTYPE=$(printf '%s' "$R_CODE" | tail -1)
+            R_CODE=$(printf '%s' "$R_CODE" | head -1)
+            EXTRA_HDRS=()   # never leak an Authorization header into a later call
+          }
+          # First error code from a JSON body, or empty. Never a raw dump.
+          json_errcode() { jq -r '.error.code // empty' "$1" 2>/dev/null | head -1 || true; }
+          # Fail with a sanitized message when the API did not answer JSON —
+          # i.e. when the real failure is an infra/PHP/HTML error page.
+          api_expect_json() { # $1=code $2=ctype $3=body-file $4=context
+            code="$1" ctype="$2" body="$3" ctx="$4"
+            if [ ! -s "$body" ] || ! jq -e . "$body" >/dev/null 2>&1; then
+              err=$(json_errcode "$body")
+              echo "::error::${ctx}: expected JSON, got HTTP ${code} (content-type: ${ctype:-unknown}${err:+, error_code: ${err}}) — response body not printed"
+              exit 1
+            fi
+          }
+
           # Login to get JWT
           echo "=== Login to staging ==="
-          LOGIN_RESP=$(curl -sS --max-time 30 -X POST "$BASE/api/v1/auth/login" \
-            -H "Content-Type: application/json" \
-            -d "{\"email\":\"$TEST_EMAIL\",\"password\":\"$TEST_PASSWORD\"}")
+          printf '{"email":"%s","password":"%s"}' "$TEST_EMAIL" "$TEST_PASSWORD" > /tmp/login.json
+          MAXT=30 api_post POST /api/v1/auth/login /tmp/login.json /tmp/login.json
+          LOGIN_CODE="$R_CODE"
+          if [ "$LOGIN_CODE" != 200 ]; then
+            echo "Login HTTP $LOGIN_CODE (error_code: $(json_errcode /tmp/login.json))"
+          else
+            echo "Login HTTP $LOGIN_CODE"
+          fi
 
-          JWT=$(echo "$LOGIN_RESP" | jq -r '.data.tokens.accessToken // .data.accessToken // empty')
+          JWT=$(jq -r '.data.tokens.accessToken // .data.accessToken // empty' /tmp/login.json 2>/dev/null || true)
           if [ -z "$JWT" ]; then
             echo "Login failed, trying to register new test user for AI consent test"
             # For consent test, we need a user without consent — create fresh
             TEST_EMAIL2="ai_test_$(openssl rand -hex 4)@veloratrade.test"
             TEST_PASS="TestPass123!"
             echo "::add-mask::$TEST_EMAIL2"
-            REG_RESP=$(curl -sS --max-time 30 -X POST "$BASE/api/v1/auth/register" \
-              -H "Content-Type: application/json" \
-              -d "{\"email\":\"$TEST_EMAIL2\",\"password\":\"$TEST_PASS\",\"full_name\":\"AI Test\"}")
-            echo "Register response: $(echo "$REG_RESP" | jq -c '{status:.status, error:.error.code}')"
+            printf '{"email":"%s","password":"%s","full_name":"AI Test"}' "$TEST_EMAIL2" "$TEST_PASS" > /tmp/register.json
+            MAXT=30 api_post POST /api/v1/auth/register /tmp/register.json /tmp/register.json
+            REG_STATUS=$(jq -r '.status // empty' /tmp/register.json 2>/dev/null || true)
+            REG_ERR=$(jq -r '.error.code // empty' /tmp/register.json 2>/dev/null || true)
+            echo "Register HTTP $R_CODE status=${REG_STATUS:--} error=${REG_ERR:--}"
             # Try to verify via DB probe? For now use existing test account if login failed
             JWT=""
           fi
@@ -64,88 +103,111 @@ jobs:
             echo "No JWT — will test consent and feature flags via probe pattern"
           fi
 
-          # Prepare sample image base64 (MT5 closed trade)
+          # Prepare sample image (MT5 closed trade). The payload file is built
+          # directly from the source image below — no base64 in a shell variable
+          # (that was the "Argument list too long" failure) and no plaintext
+          # base64 copy left in /tmp.
           SAMPLE_PATH="public/samples/mt5-closed-trade.png"
           if [ ! -f "$SAMPLE_PATH" ]; then
             echo "::error::Sample image not found: $SAMPLE_PATH"
             exit 1
           fi
-          B64=$(base64 -w 0 "$SAMPLE_PATH")
-          echo "$B64" > /tmp/b64.txt
-          echo "Sample image size: $(wc -c < "$SAMPLE_PATH") bytes, base64 length: ${#B64}"
-          unset B64
+          echo "Sample image size: $(wc -c < "$SAMPLE_PATH") bytes"
 
           # Test extraction with staging JWT if available
           if [ -n "$JWT" ]; then
-            echo "=== POST /api/v1/trades/extract-screenshot (with consent) ==="
-            # First ensure consent — use file to avoid arg length issues
+            # ── 1. consent: PATCH /api/v1/auth/me/preferences ────────────────
+            # The API wraps every payload as {status,data,error,timestamp}, so
+            # the consent fields must be read from .data — reading them at the
+            # top level produced nulls and hid a 404.
+            echo "=== PATCH /api/v1/auth/me/preferences (grant AI consent) ==="
             echo '{"ai_consent": true}' > /tmp/consent.json
-            curl -sS --max-time 20 -X PATCH "$BASE/api/v1/auth/me/preferences" \
-              -H "Content-Type: application/json" \
-              -H "Authorization: Bearer $JWT" \
-              -d @/tmp/consent.json | jq -c '{updated, ai_consent, ai_consent_at}' || true
+            MAXT=20
+            EXTRA_HDRS=(-H "Authorization: Bearer $JWT")
+            api_post PATCH /api/v1/auth/me/preferences /tmp/consent.json /tmp/consent_resp.json
+            api_expect_json "$R_CODE" "$R_CTYPE" /tmp/consent_resp.json "consent PATCH"
+            if [ "$R_CODE" != 200 ]; then
+              echo "::error::consent PATCH failed: HTTP $R_CODE (error_code: $(json_errcode /tmp/consent_resp.json)) — body not printed"
+              exit 1
+            fi
+            if ! jq -e '.data.updated == true and .data.ai_consent == true' /tmp/consent_resp.json >/dev/null; then
+              echo "::error::consent not persisted by the API (.data.updated/.data.ai_consent) — error_code: $(json_errcode /tmp/consent_resp.json)"
+              exit 1
+            fi
+            echo "Consent persisted: HTTP $R_CODE, .data.updated=true, .data.ai_consent=$(jq -r '.data.ai_consent' /tmp/consent_resp.json)"
 
-            # Write extraction payload to file to avoid Argument list too long — use file to avoid arg length
+            # ── 2. extraction payload from a file (no huge shell variable) ───
             python3 <<'PY2'
-          import json, pathlib
-          b64_path = pathlib.Path('/tmp/b64.txt')
-          b64 = b64_path.read_text().strip() if b64_path.exists() else ''
-          data = {'images': [f'data:image/png;base64,{b64}']}
-          pathlib.Path('/tmp/extract_payload.json').write_text(json.dumps(data))
-          print(f"Payload file created: {len(b64)} base64 chars")
+          import base64, json, pathlib
+          raw = pathlib.Path('public/samples/mt5-closed-trade.png').read_bytes()
+          b64 = base64.b64encode(raw).decode()
+          pathlib.Path('/tmp/extract_payload.json').write_text(
+              json.dumps({'images': [f'data:image/png;base64,{b64}']}))
+          print(f"Payload file created: {len(b64)} base64 chars, {len(raw)} raw bytes")
           PY2
-            EXTRACT_RESP=$(curl -sS --max-time 90 -X POST "$BASE/api/v1/trades/extract-screenshot" \
-              -H "Content-Type: application/json" \
-              -H "Authorization: Bearer $JWT" \
-              -d @/tmp/extract_payload.json)
 
-            echo "$EXTRACT_RESP" | jq -c '{status:.status, provider:.provider, engine:.engine, confidence:.confidence, extraction:.extraction}' | head -c 500
+            # ── 3. POST /api/v1/trades/extract-screenshot ───────────────────
+            echo "=== POST /api/v1/trades/extract-screenshot (with consent) ==="
+            MAXT=120
+            EXTRA_HDRS=(-H "Authorization: Bearer $JWT")
+            api_post POST /api/v1/trades/extract-screenshot /tmp/extract_payload.json /tmp/extract.json
+            api_expect_json "$R_CODE" "$R_CTYPE" /tmp/extract.json "extract-screenshot POST"
+            echo "extract-screenshot HTTP $R_CODE content-type=$R_CTYPE envelope.status=$(jq -r '.status // empty' /tmp/extract.json)"
+            if [ "$R_CODE" != 200 ]; then
+              echo "::error::extract-screenshot failed: HTTP $R_CODE (error_code: $(json_errcode /tmp/extract.json)) — body not printed"
+              exit 1
+            fi
+
+            # Envelope-aware summary: .data carries the payload, .status the envelope.
+            jq -c '{envelope: .status, provider: .data.provider, engine: .data.engine,
+                    confidence: .data.confidence, has_extraction: (.data.extraction | type == "object")}' \
+              /tmp/extract.json | head -c 500
             echo ""
 
-            # Validate via Python without exposing secrets
-            echo "$EXTRACT_RESP" > /tmp/extract.json
+            # Validate via Python without exposing secrets or raw field values.
             python3 <<'PY'
           import json, pathlib
-          data=json.loads(pathlib.Path('/tmp/extract.json').read_text())
-          print("=== Gemini Live Extraction Validation ===")
-          provider=data.get('provider')
-          engine=data.get('engine')
-          extraction=data.get('extraction',{})
-          confidence=data.get('confidence',0)
+          resp = json.loads(pathlib.Path('/tmp/extract.json').read_text())
+          if resp.get('status') != 'success':
+              print("FAIL: envelope status is not 'success'; error_code:",
+                    (resp.get('error') or {}).get('code'))
+              raise SystemExit(1)
+          data = resp.get('data') or {}
+          extraction = data.get('extraction') or {}
+          provider = data.get('provider')
+          engine = data.get('engine')
+          confidence = data.get('confidence', 0)
+          print("=== Gemini Live Extraction Validation (fields read from .data) ===")
           print(f"provider: {provider}")
           print(f"engine: {engine}")
           print(f"confidence: {confidence}")
-          print(f"symbol: {extraction.get('symbol')}")
-          print(f"side: {extraction.get('side')}")
-          print(f"entry: {extraction.get('entry')}")
-          print(f"exit: {extraction.get('exit')}")
-          print(f"lot: {extraction.get('lot')}")
-          print(f"sl: {extraction.get('sl')}")
-          print(f"tp: {extraction.get('tp')}")
-          print(f"pnl: {extraction.get('pnl')}")
+          # Presence only — trade values are never printed.
+          for key in ('symbol', 'side', 'entry', 'exit', 'lot', 'sl', 'tp', 'pnl',
+                      'openTime', 'closeTime'):
+              print(f"  {key}: {'present' if extraction.get(key) not in (None, '') else 'not present'}")
 
-          # Checks
-          checks=[]
-          checks.append(('provider=gemini', provider=='gemini'))
-          checks.append(('engine=gemini-vision', engine=='gemini-vision'))
-          checks.append(('confidence>=0.7', confidence>=0.7))
+          checks = []
+          checks.append(('provider=gemini', provider == 'gemini'))
+          checks.append(('engine=gemini-vision', engine == 'gemini-vision'))
+          checks.append(('confidence>=0.7', float(confidence or 0) >= 0.7))
           checks.append(('symbol exists', bool(extraction.get('symbol'))))
           checks.append(('side exists', bool(extraction.get('side'))))
           # entry/exit may be null if not visible, but at least one numeric should exist
-          has_numeric = any(extraction.get(k) for k in ['entry','exit','lot','pnl'])
+          has_numeric = any(extraction.get(k) for k in ['entry', 'exit', 'lot', 'pnl'])
           checks.append(('has numeric entry/exit/lot/pnl', has_numeric))
 
           for name, ok in checks:
               print(f"{'✅' if ok else '❌'} {name}")
 
-          failed=[n for n,ok in checks if not ok]
+          failed = [n for n, ok in checks if not ok]
           if failed:
               print(f"FAIL: {failed} — may be image not clear, but provider should be gemini")
-              # Don't hard fail if provider is gemini but fields missing — still PASS for availability
-              if provider=='gemini':
+              # Don't hard fail if provider is gemini but fields are missing —
+              # availability of the real Gemini path is what this E2E proves.
+              if provider == 'gemini':
                   print("PASS: Real Gemini extraction executed (provider=gemini)")
               else:
-                  print("FAIL: Expected provider=gemini")
+                  print("FAIL: Expected provider=gemini (got %r) — Gemini path not reached" % (provider,))
                   exit(1)
           else:
               print("PASS: Real Gemini extraction successful")
@@ -250,7 +312,8 @@ jobs:
           [ "$uploaded" = 1 ] || { echo "::error::probe upload failed"; exit 1; }
 
           code=$(curl -sS -o /tmp/status.json -w '%{http_code}' --max-time 40 -H "X-Velora-Diag: $TOKEN" "$BASE/public/$NAME")
-          [ "$code" = 200 ] || { echo "::error::HTTP $code"; cat /tmp/status.json; exit 1; }
+          # Never print the probe body on failure — it carries DB rows.
+          [ "$code" = 200 ] || { echo "::error::probe HTTP $code — response body not printed"; exit 1; }
 
           python3 <<'PY'
           import json, pathlib
