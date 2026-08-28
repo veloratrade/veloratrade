@@ -16,6 +16,10 @@ without putting a GitHub PAT inside n8n and without giving Claude n8n JWT.
 
 Claude must not invent `approved`.
 
+> ⚠️ An empty `snapshots/` directory means **no exports yet** — never "no
+> archive exists". Live archive state requires a read-only read of the live
+> SOURCE n8n instance (AGENTS.md §2.4); without access: stop and ask the owner.
+
 ## Eligibility
 
 A snapshot is processable only when:
