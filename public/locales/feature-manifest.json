@@ -42,9 +42,9 @@
       },
       "errors": {
         "path": "fa/errors.json",
-        "messages": 80,
-        "bytes": 7645,
-        "sha256": "66cce1bb7b9f2ffb38aacfd3fb5f2cc40de030ae9d29c51217cdeb50fa83ba71"
+        "messages": 82,
+        "bytes": 7921,
+        "sha256": "57aad07788c738b979def7b4488fdd38d6ed3bf25af57b61b7a10e13bc2d53ff"
       },
       "intelligence": {
         "path": "fa/intelligence.json",
@@ -152,9 +152,9 @@
       },
       "errors": {
         "path": "en/errors.json",
-        "messages": 80,
-        "bytes": 5598,
-        "sha256": "e14b5720532fd80fb5a383b36fb894e927973e10ed854be8458ab083785758e6"
+        "messages": 82,
+        "bytes": 5775,
+        "sha256": "03d9f1327f0f13025ac3ec7b15388f60cb2f7fbae6119bf87267ebca652dae48"
       },
       "intelligence": {
         "path": "en/intelligence.json",
