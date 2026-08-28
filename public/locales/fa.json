@@ -1487,6 +1487,8 @@
     "errors.ai.validation.side": "جهت معامله نامعتبر است، باید buy یا sell باشد.",
     "errors.ai.validation.symbol": "فرمت نماد نامعتبر است.",
     "errors.ai.validation.tooManyTrades": "تعداد معاملات برای تحلیل هوش مصنوعی بیش از حد است.",
+    "errors.ai.validation.tradeIdsRequired": "به‌جای ارسال مستقیم معاملات، trade_ids[] ارسال کنید.",
+    "errors.ai.validation.noOwnedTrades": "معامله‌ای متعلق به شما برای شناسه‌های داده‌شده یافت نشد.",
     "errors.ai.validation.invalid": "داده هوش مصنوعی نامعتبر است.",
     "errors.ai.validation.missing": "پاسخ هوش مصنوعی فاقد داده ضروری است.",
     "errors.ai.validation.malformed": "هوش مصنوعی داده نادرست برگرداند.",

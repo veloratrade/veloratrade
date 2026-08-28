@@ -519,10 +519,45 @@ jobs:
           # is found. No || true, no exit-0 fallback, no continue-on-error.
           python tools/n8n_archive/scan_archive_secrets.py tools/n8n_archive content/n8n-archive
 
+  # ── gate-ai: رگرسیون هوش مصنوعی (static + runtime) ───────────────────
+  gate-ai:
+    name: gate-ai (AI regression: anonymization · quota · ownership · architecture)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: sqlite3, pdo_sqlite, mbstring, gd
+          coverage: none
+
+      - name: AI static regression tests
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          set -euo pipefail
+          python tools/tests/test_ai_foundation_hardening.py
+          python tools/tests/test_ai_p1_architecture.py
+          python tools/tests/test_ai_p1_features.py
+          python tools/tests/test_consent_security_p0.py
+          python tools/tests/test_quota_concurrency_p0.py
+          python tools/tests/test_ai_hardening_v2.py
+
+      - name: AI runtime tests (PHP/GD anonymization fail-closed)
+        run: |
+          set -euo pipefail
+          php tools/tests/test_ai_anonymization_fail_closed.php
+
   # ── quality-gate: تجمیع‌کننده — چک اصلی Required ─────────────────────
   quality-gate:
     name: quality-gate (aggregate — release blocker)
-    needs: [gate-static, gate-contract, gate-auth, gate-security, gate-secrets, gate-browser, gate-e2e, gate-artifacts, gate-archive]
+    needs: [gate-static, gate-contract, gate-auth, gate-security, gate-secrets, gate-browser, gate-e2e, gate-artifacts, gate-archive, gate-ai]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -533,7 +568,7 @@ jobs:
         run: |
           echo "$NEEDED" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
           bad=0
-          for j in gate-static gate-contract gate-auth gate-security gate-secrets gate-browser gate-e2e gate-artifacts gate-archive; do
+          for j in gate-static gate-contract gate-auth gate-security gate-secrets gate-browser gate-e2e gate-artifacts gate-archive gate-ai; do
             r=$(echo "$NEEDED" | jq -r --arg j "$j" '.[$j].result')
             if [ "$r" != "success" ] && [ "$r" != "skipped" ]; then
               echo "::error::gate {$j} result={$r}"

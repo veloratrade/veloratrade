@@ -92,7 +92,8 @@ final class WeeklyReportService implements ReportGeneratorInterface
             );
         }
 
-        // Sanitize trades (same as analyzer)
+        // Sanitize trades (same as analyzer) — user-controlled fields are DATA,
+        // never instructions; every field is whitelisted/coerced before the prompt.
         $sanitizedTrades = array_map(function (array $t): array {
             $symbol = $t['symbol'] ?? null;
             if (is_string($symbol)) {
@@ -108,9 +109,9 @@ final class WeeklyReportService implements ReportGeneratorInterface
             return [
                 'symbol' => $symbol,
                 'side' => $side,
-                'pnl' => $t['profit_loss'] ?? $t['pnl'] ?? null,
-                'open_time' => $t['open_time'] ?? null,
-                'close_time' => $t['close_time'] ?? null,
+                'pnl' => $this->sanitizeNumeric($t['profit_loss'] ?? $t['pnl'] ?? null),
+                'open_time' => $this->sanitizeDateTime($t['open_time'] ?? null),
+                'close_time' => $this->sanitizeDateTime($t['close_time'] ?? null),
             ];
         }, $trades);
 
@@ -191,6 +192,38 @@ final class WeeklyReportService implements ReportGeneratorInterface
     public function isEnabled(int $userId): bool
     {
         return $this->featureGuard->isEnabled('ai_weekly_report', $userId);
+    }
+
+    /**
+     * Coerce a value to a plain numeric string or null. Anything else is dropped
+     * so user-controlled fields cannot carry text into the prompt.
+     */
+    private function sanitizeNumeric(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        if (is_int($value) || is_float($value)) {
+            return (string) $value;
+        }
+        if (is_string($value)) {
+            $cleaned = preg_replace('/[^0-9\.\-]/', '', $value);
+            return is_numeric($cleaned) ? $cleaned : null;
+        }
+        return null;
+    }
+
+    /**
+     * Accept only a strict date/datetime string; drop everything else.
+     */
+    private function sanitizeDateTime(mixed $value): ?string
+    {
+        if (!is_string($value) || $value === '' || strlen($value) > 32) {
+            return null;
+        }
+        $valid = preg_match('/\A20\d{2}[- \.\/]\d{2}[- \.\/]\d{2}[ T]\d{2}:\d{2}(:\d{2})?\z/', $value)
+            || preg_match('/\A20\d{2}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?\z/', $value);
+        return $valid === 1 ? $value : null;
     }
 
     public function generateWeeklyReport(int $userId, string $weekStart, string $locale = 'en', array $trades = []): ReportDTO
