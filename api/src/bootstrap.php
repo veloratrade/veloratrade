@@ -3,6 +3,19 @@
 declare(strict_types=1);
 
 /**
+ * The standardized JSON error contract is only honoured while response headers are still
+ * sendable. On a host with display_errors enabled, any engine warning emitted earlier in the
+ * request flushes output first, which turns every later header() call into a no-op and returns
+ * text/html to the client — while leaking server paths. Engine errors are therefore logged,
+ * never displayed. CLI keeps its normal behaviour so the repository's own php tests still
+ * report diagnostics to the terminal.
+ */
+if (PHP_SAPI !== 'cli') {
+    ini_set('display_errors', '0');
+    ini_set('log_errors', '1');
+}
+
+/**
  * Exact decimal arithmetic is a startup requirement. Financial values must
  * never fall back to binary floating point when ext-bcmath is unavailable or
  * incomplete on a host.
