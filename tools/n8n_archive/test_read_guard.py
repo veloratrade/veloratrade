@@ -16,6 +16,7 @@ from read_guard import (  # noqa: E402
     MARKER,
     ReadGuardError,
     changed_files_between,
+    classify_archive_record,
     gate_check,
     gate_diff,
     read_archive,
@@ -151,6 +152,109 @@ def test_gate_diff(failed: list[str], need):
         need(ok is True, "gd_L_unrelated_change_unaffected", failed)
     except ReadGuardError:
         need(False, "gd_L_unrelated_change_unaffected", failed)
+
+
+def test_archive_record_classification(failed: list[str], need) -> None:
+    """Archive record directories hold `<archive_id>.json` records and nothing else.
+
+    Covers the false positive that made Deploy Staging fail closed on
+    `content/n8n-archive/{snapshots,state}/.gitkeep` (the tracked placeholder became
+    the archive id ".gi"), while proving the gate is NOT weakened for real records.
+    """
+    tmp = Path(tempfile.mkdtemp(prefix="rg-classify-"))
+    snaps = tmp / "content/n8n-archive/snapshots"
+    state = tmp / "content/n8n-archive/state"
+    snaps.mkdir(parents=True); state.mkdir(parents=True)
+    (snaps / ".gitkeep").write_text("", encoding="utf-8")
+    (state / ".gitkeep").write_text("", encoding="utf-8")
+
+    # 1/2. a tracked placeholder is structure, not an archive id.
+    ok, msgs = gate_check(["content/n8n-archive/snapshots/.gitkeep"], snapshots_dir=snaps, state_dir=state)
+    need(ok, "placeholder_in_snapshots_ignored", failed)
+    need(not any(".gi" in m for m in msgs), "placeholder_in_snapshots_yields_no_fake_id", failed)
+    ok, msgs = gate_check(["content/n8n-archive/state/.gitkeep"], snapshots_dir=snaps, state_dir=state)
+    need(ok, "placeholder_in_state_ignored", failed)
+    need(not any(".gi" in m for m in msgs), "placeholder_in_state_yields_no_fake_id", failed)
+    ok, msgs = gate_check(["content/n8n-archive/snapshots/.gitkeep", "content/n8n-archive/state/.gitkeep"],
+                          snapshots_dir=snaps, state_dir=state)
+    need(ok and not any("missing canonical snapshot" in m for m in msgs),
+         "placeholders_only_diff_is_clean", failed)
+
+    # 3. a real record is still validated normally: no ledger -> FAIL, valid evidence -> PASS.
+    snap = write_json(snaps, "a-classify-001.json",
+                      make_snapshot(archive_id="a-classify-001", slug="classify-001"))
+    ok, msgs = gate_check(["content/n8n-archive/snapshots/a-classify-001.json"],
+                          snapshots_dir=snaps, state_dir=state)
+    need(not ok, "real_record_without_ledger_still_fails", failed)
+    need(any("no read-evidence ledger" in m for m in msgs), "real_record_reports_missing_ledger", failed)
+    ev = read_archive(snap, classification="article", classification_source="agent",
+                      source_of_truth="n8n", decision="read_only", conflict_status="none",
+                      snapshots_dir=snaps)
+    write_json(state, "a-classify-001.json", {"read_evidence": ev})
+    ok, _ = gate_check(["content/n8n-archive/snapshots/a-classify-001.json"],
+                       snapshots_dir=snaps, state_dir=state)
+    need(ok, "real_record_with_evidence_passes", failed)
+
+    # 4. missing canonical snapshot for a real ledger id still fails, naming the id.
+    ok, msgs = gate_check(["content/n8n-archive/state/a-classify-deleted.json"],
+                          snapshots_dir=snaps, state_dir=state)
+    need(not ok, "ledger_without_snapshot_fails", failed)
+    need(any("a-classify-deleted" in m for m in msgs), "ledger_without_snapshot_names_the_id", failed)
+
+    # 5. malformed ledger json still fails appropriately.
+    write_json(snaps, "a-classify-003.json",
+               make_snapshot(archive_id="a-classify-003", slug="classify-003"))
+    (state / "a-classify-003.json").write_text("{ not valid json", encoding="utf-8")
+    ok, msgs = gate_check(["content/n8n-archive/snapshots/a-classify-003.json",
+                           "content/n8n-archive/state/a-classify-003.json"],
+                          snapshots_dir=snaps, state_dir=state)
+    need(not ok and any("unreadable" in m for m in msgs), "malformed_ledger_fails", failed)
+
+    # 6. unexpected entries in a record directory fail closed — never "nothing to gate".
+    for rogue in ("content/n8n-archive/snapshots/NOTES.txt",
+                  "content/n8n-archive/state/README.md",
+                  "content/n8n-archive/snapshots/.hidden.json",
+                  "content/n8n-archive/snapshots"):
+        ok, msgs = gate_check([rogue], snapshots_dir=snaps, state_dir=state)
+        need(not ok and any("unexpected non-archive entry" in m for m in msgs),
+             "unexpected_entry_fails_closed:" + rogue, failed)
+
+    # 7. the blog side of the protected boundary is untouched by the classifier.
+    ok, msgs = gate_check(["blog/unknown-slug/index.html"], snapshots_dir=snaps, state_dir=state)
+    need(ok and not any("unexpected non-archive entry" in m for m in msgs),
+         "blog_slug_without_snapshot_unchanged", failed)
+    ok, _ = gate_check(["blog/classify-001/index.html"], snapshots_dir=snaps, state_dir=state)
+    need(ok, "blog_slug_mapping_still_resolves_evidence", failed)
+
+    # 8. end-to-end over real commits — the exact staging situation (placeholders added,
+    #    no records touched) must now be a clean PASS instead of a bogus FAIL.
+    repo, b, h = git_repo(
+        {"content/n8n-archive/README.md": "contract"},
+        {"content/n8n-archive/README.md": "contract",
+         "content/n8n-archive/snapshots/.gitkeep": "",
+         "content/n8n-archive/state/.gitkeep": ""},
+    )
+    ok, _ = gate_diff(b, h, snapshots_dir=repo / "content/n8n-archive/snapshots",
+                      state_dir=repo / "content/n8n-archive/state", repo=repo)
+    need(ok, "gd_placeholders_only_diff_passes", failed)
+
+    # 9. ... and a real record riding along with a placeholder is still gated.
+    repo2, b2, h2 = git_repo(
+        {"content/n8n-archive/snapshots/.gitkeep": "", "content/n8n-archive/state/.gitkeep": ""},
+        {"content/n8n-archive/snapshots/.gitkeep": "", "content/n8n-archive/state/.gitkeep": "",
+         "content/n8n-archive/snapshots/a-classify-009.json": json.dumps(
+             make_snapshot(archive_id="a-classify-009", slug="classify-009"))},
+    )
+    ok, _ = gate_diff(b2, h2, snapshots_dir=repo2 / "content/n8n-archive/snapshots",
+                      state_dir=repo2 / "content/n8n-archive/state", repo=repo2)
+    need(not ok, "gd_real_record_still_gated", failed)
+
+    # 10. the classifier itself never invents ids from non-json names.
+    for name in (".gitkeep", "README.md", "notes.txt", "x.JSON", "a.json.bak"):
+        kind, value = classify_archive_record("content/n8n-archive/snapshots/" + name)
+        need(kind != "archive-id", "classifier_refuses_nonjson:" + name, failed)
+    need(classify_archive_record("content/n8n-archive/snapshots/a-ok-001.json")
+         == ("archive-id", "a-ok-001"), "classifier_accepts_canonical_record", failed)
 
 
 def main() -> int:
@@ -338,6 +442,9 @@ def main() -> int:
     write_json(state, "a-test-guard-003.json", {"read_evidence": evA})
     ok, _ = gate_check(["blog/guard-test-003/index.html"], snapshots_dir=snaps, state_dir=state)
     need(not ok, "gate_cross_archive_reuse_fails", failed)
+
+    # Archive record-directory file classification (`.gitkeep` vs real records).
+    test_archive_record_classification(failed, need)
 
     # A–L: fail-closed git-diff gate behavior.
     test_gate_diff(failed, need)
