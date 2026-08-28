@@ -193,7 +193,10 @@ final class TesseractProvider implements AIProviderInterface
     private function tesseractBin(): ?string
     {
         foreach (['/usr/bin/tesseract', '/usr/local/bin/tesseract', '/bin/tesseract'] as $path) {
-            if (is_executable($path)) {
+            // Capability probe only: hosts whose open_basedir excludes /usr/bin raise an engine
+            // warning here, and one printed warning corrupts the JSON contract of the whole
+            // response (and leaks server paths). Suppressed; a blocked stat is simply "not usable".
+            if (@\is_executable($path)) {
                 return $path;
             }
         }
@@ -213,9 +216,9 @@ final class TesseractProvider implements AIProviderInterface
             $this->prepareImage($src, $prep);
             $input = filesize($prep) > 0 ? $prep : $src;
 
-            $hasFas = is_file('/usr/share/tesseract-ocr/5/tessdata/fas.traineddata')
-                || is_file('/usr/share/tesseract-ocr/4.00/tessdata/fas.traineddata')
-                || is_file('/usr/share/tessdata/fas.traineddata');
+            $hasFas = @\is_file('/usr/share/tesseract-ocr/5/tessdata/fas.traineddata')
+                || @\is_file('/usr/share/tesseract-ocr/4.00/tessdata/fas.traineddata')
+                || @\is_file('/usr/share/tessdata/fas.traineddata');
             $eng = $this->runTess($bin, $input, 'eng', $deadline);
             $fas = $hasFas ? $this->runTess($bin, $input, 'fas+eng', $deadline) : '';
             $dates = $this->ocrDateBands($bin, $input, $hasFas, $deadline);
@@ -318,7 +321,7 @@ final class TesseractProvider implements AIProviderInterface
 
     private function prepareWithMagick(string $src, string $dest): void
     {
-        $convert = is_executable('/usr/bin/convert') ? '/usr/bin/convert' : null;
+        $convert = @\is_executable('/usr/bin/convert') ? '/usr/bin/convert' : null;
         if ($convert === null) {
             return;
         }
