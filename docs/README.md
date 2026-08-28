@@ -90,7 +90,7 @@
 | Document Control | |
 |---|---|
 | شناسه سند | `VELORA-OPS-README` |
-| نسخه | 2.4.0 |
+| نسخه | 2.5.0 |
 | وضعیت | ACTIVE |
 | آخرین به‌روزرسانی | 2026-08-28 |
 | مالک | veloratrade (Project Owner) |
@@ -444,6 +444,8 @@ git diff docs-baseline-v1..main -- docs/
 - 📘 **قاعدهٔ رفتاری BR-10 افزوده شد (۲۰۲۶-۰۸-۲۸ — جلسهٔ agent):** «وقتی سند می‌گوید مالک می‌تواند ورودی‌ای بدهد، همان‌جا صریح درخواست کن» — در AGENTS.md §2 (گام ۸) و README §8 ثبت شد. ریشه: جلسه‌ای که پس از خواندن اسناد n8n، نیاز به آدرس/کلید n8n را بلافاصله اعلام نکرد. فقط docs؛ بدون تغییر کد/محیط/Deploy.
 
 - 🛡️ **سخت‌شدن Bootstrap در برابر واکشی کامل (۲۰۲۶-۰۸-۲۸ — جلسهٔ agent):** در AGENTS.md §13.1 صریح شد که ممنوعیت Clone کامل شامل tarball/zip/اکسترکت کامل هم می‌شود (حفرهٔ «دانلود کامل درخت که git clone نیست»)؛ و در §2.1 صریح شد که هر نقض §13.1 در همان جلسه — حتی اگر حذف و گزارش شده باشد — یعنی Bootstrap ناموفق و چاپ `VELORA-RUN-*` ممنوع. فقط docs؛ بدون تغییر کد/محیط/Deploy.
+
+- 🧭 **گسترش Silent Bootstrap به اسناد n8n (۲۰۲۶-۰۸-۲۸ — جلسهٔ agent):** در AGENTS.md §2.1 صریح شد که «ایجنت بخون» باید همهٔ اسناد n8n (`docs/N8N_ARCHIVE_AGENT.md`، `N8N_ARCHIVE_INGEST.md`، `N8N_INSTANCE_MIGRATION.md`، `N8N_INTEGRATION_FOUNDATION.md`) و وضعیت آرشیو `content/n8n-archive/` را هم بخواند؛ و در چک‌لیست Bootstrap آیتم «n8n خوانده شد + درخواست ورودی لازم طبق BR-10» افزوده شد. فقط docs؛ بدون تغییر کد/محیط/Deploy.
 
 ---
 
