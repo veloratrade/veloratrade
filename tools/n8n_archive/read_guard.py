@@ -46,6 +46,21 @@ PROTECTED_ARCHIVE_PATHS = {
     "content/n8n-archive/state/",      # processing ledger (evidence lives here)
 }
 
+# Inside these two directories a file is an archive record only when it is named
+# ``<archive_id>.json`` — see ``content/n8n-archive/README.md`` §Layout and
+# ``docs/N8N_ARCHIVE_AGENT.md`` §2 ("idempotency key = filename/`archive_id`").
+SNAPSHOT_DIR_PREFIX = "content/n8n-archive/snapshots/"
+STATE_DIR_PREFIX = "content/n8n-archive/state/"
+ARCHIVE_RECORD_PREFIXES = (SNAPSHOT_DIR_PREFIX, STATE_DIR_PREFIX)
+ARCHIVE_RECORD_DIRS = tuple(d.rstrip("/") for d in ARCHIVE_RECORD_PREFIXES)
+
+# Tracked directory placeholders. ``.gitkeep`` keeps the empty archive directories
+# representable in git and was committed together with the archive contract itself,
+# so it is repository structure, never an archive id. Exempting it opens no hole:
+# every archive record is a ``<archive_id>.json`` file, and adding/removing one
+# always shows up in the diff as its own path, which is still gated below.
+ARCHIVE_DIR_PLACEHOLDERS = frozenset({".gitkeep"})
+
 SECRET_PATTERNS = [
     re.compile(r"github_pat_[A-Za-z0-9_]{10,}"),
     re.compile(r"ghp_[A-Za-z0-9]{20,}"),
@@ -290,6 +305,44 @@ def is_protected_archive_path(path: str) -> bool:
     return any(path == p.rstrip("/") or path.startswith(p) for p in PROTECTED_ARCHIVE_PATHS)
 
 
+def is_archive_record_path(path: str) -> bool:
+    """True for anything inside the two archive record directories.
+
+    The bare directory path counts too: a mode/symlink change on the directory
+    itself appears as exactly that path and could hide or replace records.
+    """
+    return path.startswith(ARCHIVE_RECORD_PREFIXES) or path in ARCHIVE_RECORD_DIRS
+
+
+def classify_archive_record(path: str) -> tuple[str, str]:
+    """Classify one changed entry inside the archive record directories.
+
+    Returns ``(kind, value)``:
+
+    - ``("archive-id", id)`` — a ``<archive_id>.json`` snapshot/ledger record with a
+      canonical id: validate it normally.
+    - ``("placeholder", name)`` — a tracked directory placeholder (``.gitkeep``):
+      not archive content, ignore it.
+    - ``("unexpected", path)`` — anything else. The caller MUST fail closed; the
+      repository contract permits no other file type in these directories, so an
+      unrecognised entry is never treated as "nothing to gate".
+    """
+    if path in ARCHIVE_RECORD_DIRS:
+        return "unexpected", path
+    name = Path(path).name
+    if name in ARCHIVE_DIR_PLACEHOLDERS:
+        return "placeholder", name
+    try:
+        # Same rule the read/verify side already enforces: an archive file must end
+        # in `.json`, and the id is exactly the filename without that suffix.
+        archive_id = extract_archive_id_from_name(Path(path))
+    except ReadGuardError:
+        return "unexpected", path
+    if not CANONICAL_ARCHIVE_ID_RE.match(archive_id):
+        return "unexpected", path
+    return "archive-id", archive_id
+
+
 def slug_to_snapshot_id(slug: str, snapshots_dir: Path = SNAPSHOT_DIR) -> str | None:
     """Map an article slug to a canonical snapshot id by reading snapshot content."""
     if not snapshots_dir.exists():
@@ -316,13 +369,23 @@ def gate_check(
     lacks a valid, self-verifying evidence record, it fails.
     """
     affected_ids: set[str] = set()
+    messages: list[str] = []
+    ok = True
     for f in changed_files:
         if not is_protected_archive_path(f):
             continue
-        if f.startswith("content/n8n-archive/snapshots/"):
-            affected_ids.add(Path(f).name[: -len(".json")])
-        elif f.startswith("content/n8n-archive/state/"):
-            affected_ids.add(Path(f).name[: -len(".json")])
+        if is_archive_record_path(f):
+            kind, value = classify_archive_record(f)
+            if kind == "placeholder":
+                continue
+            if kind == "unexpected":
+                messages.append(
+                    f"unexpected non-archive entry in a protected archive directory: {value} "
+                    "(only <archive_id>.json records and the tracked .gitkeep are permitted)"
+                )
+                ok = False
+                continue
+            affected_ids.add(value)
         else:
             # blog/<slug>/ or en/blog/<slug>/
             parts = f.split("/")
@@ -337,8 +400,6 @@ def gate_check(
                 if sid:
                     affected_ids.add(sid)
 
-    messages: list[str] = []
-    ok = True
     for aid in sorted(affected_ids):
         snap = snapshots_dir / f"{aid}.json"
         state = state_dir / f"{aid}.json"
