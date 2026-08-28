@@ -50,15 +50,16 @@ Agent باید **Silent Bootstrap Mode** را اجرا کند.
 2. `docs/README.md` را کامل برای فهم معماری، قوانین و تاریخچه بررسی کند.
 3. `docs/SESSION_STATE.json` را کامل بررسی کند.
 4. `docs/PROJECT_STATE.json` را به‌عنوان Snapshot بررسی کند.
-5. ساختار Git و فایل‌های اصلی پروژه را بررسی کند.
-6. وضعیت زنده را با خروجی Redirectشده اجرا کند:
+5. تمام اسناد n8n را کامل بخواند: `docs/N8N_ARCHIVE_AGENT.md`، `docs/N8N_ARCHIVE_INGEST.md`، `docs/N8N_INSTANCE_MIGRATION.md`، `docs/N8N_INTEGRATION_FOUNDATION.md` و وضعیت آرشیو `content/n8n-archive/` (`index.json` و `snapshots/`).
+6. ساختار Git و فایل‌های اصلی پروژه را بررسی کند.
+7. وضعیت زنده را با خروجی Redirectشده اجرا کند:
 
    ```bash
    bash tools/velora-status.sh > /tmp/velora-status.txt 2>&1
    ```
 
-7. اعتبار HEAD، sync، working tree، محیط‌ها، Actions، Drift، مأموریت و قدم بعد را داخلی راستی‌آزمایی کند.
-8. فقط کد اثبات اجرا را از فایل موقت استخراج کند.
+8. اعتبار HEAD، sync، working tree، محیط‌ها، Actions، Drift، مأموریت و قدم بعد را داخلی راستی‌آزمایی کند.
+9. فقط کد اثبات اجرا را از فایل موقت استخراج کند.
 
 ### راستی‌آزمایی داخلی پیش از اعلام آمادگی (Bootstrap Self-Verification)
 
@@ -68,6 +69,7 @@ Agent باید **Silent Bootstrap Mode** را اجرا کند.
 - [ ] `docs/README.md` **کامل** خوانده شد — هر ۸ بخش، شامل §3 (ماتریس FTP)، §6 (درس‌ها)، §7 (وضعیت جاری و backlog) و §8 (BR-1…10).
 - [ ] `docs/SESSION_STATE.json` کامل بررسی شد.
 - [ ] `docs/PROJECT_STATE.json` (به‌عنوان Snapshot) بررسی شد.
+- [ ] تمام اسناد n8n (`docs/N8N_*.md`) کامل خوانده شد و وضعیت آرشیو `content/n8n-archive/` بررسی شد؛ در صورت نیاز به بازرسی زنده، ورودی لازم (Base URL / کلید read-only) طبق BR-10 صریح درخواست شد.
 - [ ] ردپای Workspace حداقلی است: هیچ clone کامل یا فایل حجیم غیرضروری وجود ندارد (بند ۱۳).
 - [ ] در این جلسه هیچ واکشیِ کاملِ درختی (کلون عمیق یا tarball/zip/اکسترکت کامل) انجام نشد؛ اگر انجام شد، Bootstrap ناموفق است و کد چاپ نمی‌شود.
 
