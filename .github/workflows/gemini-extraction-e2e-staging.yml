@@ -33,126 +33,132 @@ jobs:
           set -euo pipefail
           sudo apt-get update -qq
           sudo apt-get install -y -q lftp jq >/dev/null
+
+          # Temp files are removed on EVERY exit path — including the early fail-closed
+          # ones — so an API response body never outlives the step.
+          E2E_TMP="/tmp/login.json /tmp/login.meta /tmp/consent.json /tmp/consent_resp.json /tmp/consent.meta /tmp/extract.json /tmp/extract.meta /tmp/extract_payload.json /tmp/probe.php /tmp/status.json"
+          rm -f $E2E_TMP
+          trap 'rm -f $E2E_TMP' EXIT
           echo "::add-mask::$TEST_EMAIL"
           echo "::add-mask::$TEST_PASSWORD"
 
-          # Login to get JWT
+          # ── Authentication is a prerequisite, not a nice-to-have ───────────────
+          # Without a JWT nothing below can prove Gemini ran, so a failed or absent
+          # login FAILS the run instead of falling through to the probe-only path
+          # (which used to print PASS with no Gemini call at all).
+          GEMINI_PROVED=0; export GEMINI_PROVED
           echo "=== Login to staging ==="
-          LOGIN_RESP=$(curl -sS --max-time 30 -X POST "$BASE/api/v1/auth/login" \
-            -H "Content-Type: application/json" \
-            -d "{\"email\":\"$TEST_EMAIL\",\"password\":\"$TEST_PASSWORD\"}")
-
-          JWT=$(echo "$LOGIN_RESP" | jq -r '.data.tokens.accessToken // .data.accessToken // empty')
-          if [ -z "$JWT" ]; then
-            echo "Login failed, trying to register new test user for AI consent test"
-            # For consent test, we need a user without consent — create fresh
-            TEST_EMAIL2="ai_test_$(openssl rand -hex 4)@veloratrade.test"
-            TEST_PASS="TestPass123!"
-            echo "::add-mask::$TEST_EMAIL2"
-            REG_RESP=$(curl -sS --max-time 30 -X POST "$BASE/api/v1/auth/register" \
-              -H "Content-Type: application/json" \
-              -d "{\"email\":\"$TEST_EMAIL2\",\"password\":\"$TEST_PASS\",\"full_name\":\"AI Test\"}")
-            echo "Register response: $(echo "$REG_RESP" | jq -c '{status:.status, error:.error.code}')"
-            # Try to verify via DB probe? For now use existing test account if login failed
-            JWT=""
+          if ! curl -sS --max-time 30 -o /tmp/login.json -w '%{http_code} %{content_type}' \
+               -X POST "$BASE/api/v1/auth/login" \
+               -H "Content-Type: application/json" \
+               -d "{\"email\":\"$TEST_EMAIL\",\"password\":\"$TEST_PASSWORD\"}" > /tmp/login.meta; then
+            echo "::error::login request did not complete — cannot run an authenticated E2E"
+            exit 1
           fi
-
-          if [ -n "$JWT" ]; then
-            echo "::add-mask::$JWT"
-            echo "Login success, JWT obtained (masked)"
-          else
-            echo "No JWT — will test consent and feature flags via probe pattern"
+          read -r LOGIN_CODE LOGIN_CTYPE < /tmp/login.meta || true
+          JWT=$(jq -r '.data.tokens.accessToken // .data.accessToken // empty' /tmp/login.json 2>/dev/null || true)
+          LOGIN_ERR=$(jq -r '.error.code // empty' /tmp/login.json 2>/dev/null || true)
+          if [ "${LOGIN_CODE:-0}" != "200" ] || [ -z "$JWT" ]; then
+            echo "::error::authentication failed (HTTP ${LOGIN_CODE:-no-response}, error_code: ${LOGIN_ERR:-unavailable}) — response body not printed"
+            exit 1
           fi
+          echo "::add-mask::$JWT"
+          echo "Authenticated: HTTP 200, JWT obtained (masked)"
 
           # Prepare sample image base64 (MT5 closed trade)
           SAMPLE_PATH="public/samples/mt5-closed-trade.png"
+          export SAMPLE_PATH
           if [ ! -f "$SAMPLE_PATH" ]; then
             echo "::error::Sample image not found: $SAMPLE_PATH"
             exit 1
           fi
-          B64=$(base64 -w 0 "$SAMPLE_PATH")
-          echo "$B64" > /tmp/b64.txt
-          echo "Sample image size: $(wc -c < "$SAMPLE_PATH") bytes, base64 length: ${#B64}"
-          unset B64
+          echo "Sample image: $(wc -c < "$SAMPLE_PATH") bytes"
 
-          # Test extraction with staging JWT if available
-          if [ -n "$JWT" ]; then
-            echo "=== POST /api/v1/trades/extract-screenshot (with consent) ==="
-            # First ensure consent — use file to avoid arg length issues
-            echo '{"ai_consent": true}' > /tmp/consent.json
-            curl -sS --max-time 20 -X PATCH "$BASE/api/v1/auth/me/preferences" \
-              -H "Content-Type: application/json" \
-              -H "Authorization: Bearer $JWT" \
-              -d @/tmp/consent.json | jq -c '{updated, ai_consent, ai_consent_at}' || true
-
-            # Write extraction payload to file to avoid Argument list too long — use file to avoid arg length
-            python3 <<'PY2'
-          import json, pathlib
-          b64_path = pathlib.Path('/tmp/b64.txt')
-          b64 = b64_path.read_text().strip() if b64_path.exists() else ''
-          data = {'images': [f'data:image/png;base64,{b64}']}
-          pathlib.Path('/tmp/extract_payload.json').write_text(json.dumps(data))
-          print(f"Payload file created: {len(b64)} base64 chars")
-          PY2
-            EXTRACT_RESP=$(curl -sS --max-time 90 -X POST "$BASE/api/v1/trades/extract-screenshot" \
-              -H "Content-Type: application/json" \
-              -H "Authorization: Bearer $JWT" \
-              -d @/tmp/extract_payload.json)
-
-            echo "$EXTRACT_RESP" | jq -c '{status:.status, provider:.provider, engine:.engine, confidence:.confidence, extraction:.extraction}' | head -c 500
-            echo ""
-
-            # Validate via Python without exposing secrets
-            echo "$EXTRACT_RESP" > /tmp/extract.json
-            python3 <<'PY'
-          import json, pathlib
-          data=json.loads(pathlib.Path('/tmp/extract.json').read_text())
-          print("=== Gemini Live Extraction Validation ===")
-          provider=data.get('provider')
-          engine=data.get('engine')
-          extraction=data.get('extraction',{})
-          confidence=data.get('confidence',0)
-          print(f"provider: {provider}")
-          print(f"engine: {engine}")
-          print(f"confidence: {confidence}")
-          print(f"symbol: {extraction.get('symbol')}")
-          print(f"side: {extraction.get('side')}")
-          print(f"entry: {extraction.get('entry')}")
-          print(f"exit: {extraction.get('exit')}")
-          print(f"lot: {extraction.get('lot')}")
-          print(f"sl: {extraction.get('sl')}")
-          print(f"tp: {extraction.get('tp')}")
-          print(f"pnl: {extraction.get('pnl')}")
-
-          # Checks
-          checks=[]
-          checks.append(('provider=gemini', provider=='gemini'))
-          checks.append(('engine=gemini-vision', engine=='gemini-vision'))
-          checks.append(('confidence>=0.7', confidence>=0.7))
-          checks.append(('symbol exists', bool(extraction.get('symbol'))))
-          checks.append(('side exists', bool(extraction.get('side'))))
-          # entry/exit may be null if not visible, but at least one numeric should exist
-          has_numeric = any(extraction.get(k) for k in ['entry','exit','lot','pnl'])
-          checks.append(('has numeric entry/exit/lot/pnl', has_numeric))
-
-          for name, ok in checks:
-              print(f"{'✅' if ok else '❌'} {name}")
-
-          failed=[n for n,ok in checks if not ok]
-          if failed:
-              print(f"FAIL: {failed} — may be image not clear, but provider should be gemini")
-              # Don't hard fail if provider is gemini but fields missing — still PASS for availability
-              if provider=='gemini':
-                  print("PASS: Real Gemini extraction executed (provider=gemini)")
-              else:
-                  print("FAIL: Expected provider=gemini")
-                  exit(1)
-          else:
-              print("PASS: Real Gemini extraction successful")
-          PY
-          else
-            echo "SKIP: No JWT, cannot test live extraction via API — will test via probe for DB persistence"
+          # ── Consent + extraction: every failure mode below FAILS the run ───────
+          echo "=== Consent (PATCH /api/v1/auth/me/preferences) ==="
+          # Consent must be CONFIRMED by the API. The previous `| jq … || true`
+          # swallowed every consent failure.
+          echo '{"ai_consent": true}' > /tmp/consent.json
+          if ! curl -sS --max-time 20 -o /tmp/consent_resp.json -w '%{http_code} %{content_type}' \
+               -X PATCH "$BASE/api/v1/auth/me/preferences" \
+               -H "Content-Type: application/json" \
+               -H "Authorization: Bearer $JWT" \
+               -d @/tmp/consent.json > /tmp/consent.meta; then
+            echo "::error::consent PATCH did not complete — cannot prove the consent path"
+            exit 1
           fi
+          read -r CONSENT_CODE CONSENT_CTYPE < /tmp/consent.meta || true
+          CONSENT_ERR=$(jq -r '.error.code // empty' /tmp/consent_resp.json 2>/dev/null || true)
+          if [ "${CONSENT_CODE:-0}" != "200" ] || ! jq -e '.data.updated == true and .data.ai_consent == true' /tmp/consent_resp.json >/dev/null 2>&1; then
+            echo "::error::consent not confirmed (HTTP ${CONSENT_CODE:-no-response}, error_code: ${CONSENT_ERR:-unavailable}) — response body not printed"
+            exit 1
+          fi
+          echo "Consent confirmed: HTTP 200, .data.updated=true, .data.ai_consent=true"
+
+          # Payload is built in-process: no /tmp/b64.txt round-trip is left behind.
+          python3 <<'PY2'
+          import base64, json, os, pathlib
+          raw = pathlib.Path(os.environ["SAMPLE_PATH"]).read_bytes()
+          b64 = base64.b64encode(raw).decode()
+          pathlib.Path('/tmp/extract_payload.json').write_text(
+              json.dumps({'images': [f'data:image/png;base64,{b64}']}))
+          print(f"Payload file created: {len(b64)} base64 chars, {len(raw)} raw bytes")
+          PY2
+
+          echo "=== POST /api/v1/trades/extract-screenshot (authenticated) ==="
+          if ! curl -sS --max-time 90 -o /tmp/extract.json -w '%{http_code} %{content_type}' \
+               -X POST "$BASE/api/v1/trades/extract-screenshot" \
+               -H "Content-Type: application/json" \
+               -H "Authorization: Bearer $JWT" \
+               -d @/tmp/extract_payload.json > /tmp/extract.meta; then
+            echo "::error::extract-screenshot request did not complete — Gemini was not reached"
+            exit 1
+          fi
+          read -r EXTRACT_CODE EXTRACT_CTYPE < /tmp/extract.meta || true
+          if [ "${EXTRACT_CODE:-0}" != "200" ]; then
+            EXTRACT_ERR=$(jq -r '.error.code // empty' /tmp/extract.json 2>/dev/null || true)
+            echo "::error::extract-screenshot failed: HTTP ${EXTRACT_CODE:-no-response} (error_code: ${EXTRACT_ERR:-unavailable}) — response body not printed"
+            exit 1
+          fi
+          case "${EXTRACT_CTYPE:-}" in
+            *json*) ;;
+            *) echo "::error::extract-screenshot returned a non-JSON response (content-type: ${EXTRACT_CTYPE:-unknown}) — response body not printed"; exit 1 ;;
+          esac
+
+          # Presence-only summary — never raw OCR text, never trade values.
+          jq -c '{envelope:.status, provider:.data.provider, engine:.data.engine, confidence:.data.confidence, has_extraction:(.data.extraction|type=="object")}' /tmp/extract.json 2>/dev/null | head -c 300 || echo "envelope: unparseable"
+          echo ""
+
+          python3 <<'PY'
+          import json, pathlib
+          def fail(msg):
+              print("FAIL: " + msg + " — response body not printed")
+              raise SystemExit(1)
+          try:
+              resp = json.loads(pathlib.Path('/tmp/extract.json').read_text())
+          except (json.JSONDecodeError, OSError):
+              fail("response body is not valid JSON")
+          if not isinstance(resp, dict) or resp.get('status') != 'success':
+              code = (resp.get('error') or {}).get('code') if isinstance(resp, dict) else None
+              fail("envelope .status is not 'success' (error_code: %s)" % (code or 'unavailable'))
+          data = resp.get('data')
+          if not isinstance(data, dict):
+              fail("envelope has no .data object")
+          provider = data.get('provider')
+          if provider != 'gemini':
+              fail("provider is %r — the real Gemini path was not reached" % (provider,))
+          extraction = data.get('extraction')
+          if not isinstance(extraction, dict) or not extraction:
+              fail(".data.extraction is missing or empty")
+          print("=== Gemini extraction proof (presence only) ===")
+          print("provider: %s" % provider)
+          print("engine: %s" % data.get('engine'))
+          print("confidence: %s" % data.get('confidence'))
+          for key in ('symbol', 'side', 'entry', 'exit', 'lot', 'sl', 'tp', 'pnl'):
+              print("  %s: %s" % (key, 'present' if extraction.get(key) not in (None, '') else 'not present'))
+          print("PASS: authenticated extraction reached provider=gemini with a non-empty .data.extraction")
+          PY
+          GEMINI_PROVED=1; export GEMINI_PROVED
 
           # Database verification via one-use probe (same pattern as ai-migration)
           echo "=== Database Verification via Probe ==="
@@ -236,7 +242,7 @@ jobs:
 
           cleanup() {
             lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" -e "set ftp:ssl-allow no; set net:max-retries 1; set net:timeout 20; rm -f public_html/staging.veloratrade.ir/public/$NAME; bye" >/dev/null 2>&1 || true
-            rm -f /tmp/probe.php /tmp/status.json /tmp/extract.json
+            rm -f $E2E_TMP
           }
           trap cleanup EXIT
 
@@ -250,10 +256,13 @@ jobs:
           [ "$uploaded" = 1 ] || { echo "::error::probe upload failed"; exit 1; }
 
           code=$(curl -sS -o /tmp/status.json -w '%{http_code}' --max-time 40 -H "X-Velora-Diag: $TOKEN" "$BASE/public/$NAME")
-          [ "$code" = 200 ] || { echo "::error::HTTP $code"; cat /tmp/status.json; exit 1; }
+          [ "$code" = 200 ] || { echo "::error::probe returned HTTP $code — response body not printed"; exit 1; }
 
           python3 <<'PY'
-          import json, pathlib
+          import json, os, pathlib
+          if os.environ.get('GEMINI_PROVED') != '1':
+              print("FAIL: this run never reached Gemini — DB rows alone cannot certify the E2E")
+              raise SystemExit(1)
           data=json.loads(pathlib.Path('/tmp/status.json').read_text())
           print("\n=== Database Verification ===")
           print("ai_requests (gemini):")
@@ -287,8 +296,11 @@ jobs:
           print(f"ai_audit_logs: {'EXISTS' if has_audit else 'MISSING'}")
           print(f"ai_extractions: {'EXISTS' if has_extractions else 'MISSING'}")
 
-          if has_logs and has_audit:
-              print("PASS: Database persistence verified (logs + audit)")
-          else:
-              print("PARTIAL: Some tables empty (may be first Gemini run) — still PASS for structure")
+          if not (has_logs and has_audit):
+              print("FAIL: PARTIAL — ai_provider_logs/ai_audit_logs empty; a partial result is not a pass")
+              raise SystemExit(1)
+          print("PASS: Database persistence verified (logs + audit)")
+          print("=== E2E verdict ===")
+          print("authenticated=HTTP 200 | consent=.data.updated=true | extraction=HTTP 200 JSON | "
+                "provider=gemini | .data.extraction=non-empty | validator=pass | db-persistence=pass")
           PY
