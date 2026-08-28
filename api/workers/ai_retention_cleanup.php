@@ -42,10 +42,17 @@ try {
     $cutoff = gmdate('Y-m-d H:i:s', time() - $retentionDays * 86400);
     echo "Cutoff: $cutoff\n";
 
+    // FK deletion order is safe: ai_feedback.extraction_id references
+    // ai_extractions with ON DELETE SET NULL, so deleting ai_extractions first
+    // simply nulls the reference; deleting ai_feedback later is independent.
     $tables = [
         'ai_requests' => "created_at < :cutoff",
         'ai_provider_logs' => "created_at < :cutoff",
         'ai_audit_logs' => "created_at < :cutoff",
+        'ai_analysis' => "created_at < :cutoff",
+        'ai_reports' => "created_at < :cutoff",
+        'ai_feedback' => "created_at < :cutoff",
+        'ai_jobs' => "created_at < :cutoff AND status IN ('completed','failed')",
         'ai_extractions' => "created_at < :cutoff",
     ];
 

@@ -103,10 +103,23 @@ final class AIManager
                 continue;
             }
 
-            // Privacy: anonymize image before external call
-            if ($name !== 'tesseract' && isset($context['imageRaw']) && is_string($context['imageRaw'])) {
+            // Privacy: anonymize image before external call — FAIL-CLOSED.
+            // If anonymization fails, the original image MUST NOT reach an
+            // external provider; skip this provider and let the local fallback
+            // (tesseract OCR) handle it instead.
+            if ($name !== 'tesseract' && isset($context['imageRaw']) && is_string($context['imageRaw']) && $context['imageRaw'] !== '') {
                 if (ImageAnonymizer::shouldAnonymize($context['imageRaw'])) {
-                    $context['imageRaw'] = ImageAnonymizer::anonymize($context['imageRaw']);
+                    $anonymized = ImageAnonymizer::anonymize($context['imageRaw']);
+                    if ($anonymized === null || $anonymized === '') {
+                        $tried[] = $name . ':anonymization_failed';
+                        $this->logRepo->log($name, 'failed', 0, 'ANONYMIZATION_FAILED');
+                        $lastException = new AIProviderException(
+                            'Image anonymization failed; refusing to send the original image to an external provider.',
+                            $name,
+                        );
+                        continue;
+                    }
+                    $context['imageRaw'] = $anonymized;
                 }
             }
 
@@ -207,10 +220,22 @@ final class AIManager
                 continue;
             }
 
-            // Privacy: anonymize for external providers
+            // Privacy: anonymize for external providers — FAIL-CLOSED.
+            // Never send the original image to an external provider if
+            // anonymization fails; skip to the local fallback instead.
             $imageToSend = $imageRaw;
             if ($name !== 'tesseract' && ImageAnonymizer::shouldAnonymize($imageRaw)) {
-                $imageToSend = ImageAnonymizer::anonymize($imageRaw);
+                $anonymized = ImageAnonymizer::anonymize($imageRaw);
+                if ($anonymized === null || $anonymized === '') {
+                    $triedProviders[] = $name . ':anonymization_failed';
+                    $this->logRepo->log($name, 'failed', 0, 'ANONYMIZATION_FAILED');
+                    $lastException = new AIProviderException(
+                        'Image anonymization failed; refusing to send the original image to an external provider.',
+                        $name,
+                    );
+                    continue;
+                }
+                $imageToSend = $anonymized;
             }
 
             $start = microtime(true);

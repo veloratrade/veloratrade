@@ -1,10 +1,10 @@
 {
   "algorithm": "sha256",
-  "commitSha": "bfa08fcfc8fb88d88ba74e5851d8b2847278411d",
+  "commitSha": "6ec25667ac3eb7ac873c2cc74bbbf3c521ff788b",
   "localizationVersion": "2026.08.22.1",
   "policyVersion": 2,
   "releaseHtmlSha256": "544d8827d26359b5fc5ea2f4c7540b601e6e320c079d0aad216b625685a0f294",
-  "releaseId": "2026.08.25.3",
+  "releaseId": "2026.08.28.1",
   "routeCount": 61,
   "routeManifestSha256": "77c267b42c509fae6a9f070298df1548d94a669176ed74999d28945504bdc251",
   "routes": {
@@ -1883,5 +1883,5 @@
       ]
     }
   },
-  "sourceDigest": "f92c15f5a10e98a4aba8dcbf983e4a5eb1624484f243cc6d2593345a61f3002e"
+  "sourceDigest": "d80aa2c027117123656f77a4fb7f6e850f14285dd250ac65ec38398b7dbd1df1"
 }
