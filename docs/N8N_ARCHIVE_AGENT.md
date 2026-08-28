@@ -9,6 +9,15 @@ GitHub is the **source of truth for the website version**.
 
 The agent must never decide that an article is approved.
 
+> **Empty snapshot folder ≠ empty n8n archive (hard rule — AGENTS.md §2.4).**
+> `content/n8n-archive/` holds only exported snapshots; the live, authoritative
+> state of the archive is the **live SOURCE n8n instance** (its Data Tables).
+> If a task needs live n8n state and the agent has no read access, it must
+> STOP — before any conclusion — and ask the owner for read-only access
+> (base URL + read-only API key). Live access is strictly read-only until
+> separately and explicitly authorized. The snapshot-based eligibility gate
+> below still governs *processing* and is unchanged by this rule.
+
 ---
 
 ## 1. Eligibility (hard gate)
