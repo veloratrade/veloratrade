@@ -26,6 +26,17 @@ on:
     branches: [ main ]
   workflow_dispatch:
   workflow_call:
+    inputs:
+      # Baseline the archive-read gate diffs against. Needed by callers that
+      # are not push/pull_request events (e.g. a manual `workflow_dispatch`
+      # deploy), where neither `github.event.pull_request.base.sha` nor
+      # `github.event.before` exists. Empty default = unchanged behaviour for
+      # push/PR events; the gate stays fail-closed when nothing resolves.
+      base_sha:
+        description: 'Full 40-char SHA treated as the currently deployed baseline. Optional; pass it from deploy callers whose event has no natural base.'
+        type: string
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -476,7 +487,7 @@ jobs:
       - name: Archive-read WRITE gate for changed protected paths
         env:
           PYTHONDONTWRITEBYTECODE: '1'
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          BASE_SHA: ${{ inputs.base_sha || github.event.pull_request.base.sha || github.event.before }}
           HEAD_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail

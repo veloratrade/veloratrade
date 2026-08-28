@@ -32,6 +32,16 @@ jobs:
   quality_gate:
     name: گیت دائمی کیفیت — پیش‌شرط staging
     uses: ./.github/workflows/quality-gate.yml
+    with:
+      # معنای baseline: نسخه‌ای که **اکنون روی استیجینگ مستقر است**، تا گیت
+      # آرشیو دقیقاً همان تغییراتی را ببیند که این استقرار روی آن محیط اعمال
+      # می‌کند. برای dispatch دستی `github.event.before` وجود ندارد (خالی است)
+      # — همان چیزی که run #42 را شکست داد؛ پس اینجا صریح پاس داده می‌شود.
+      # الزاماً SHA کامل ۴۰ کاراکتری: گیت با `git fetch --depth=1 origin <sha>`
+      # آن را می‌گیرد و گیت‌هاب نام مخفف را رد می‌کند (بازتولید محلی:
+      # «fatal: couldn't find remote ref 1d100fb»).
+      # پس از هر استقرار موفق استیجینگ، همین مقدار به SHA تازه به‌روز شود.
+      base_sha: 1d100fbdb4df10075ffe73c85385f95ebfbe108e
 
   guard:
     name: بررسی CSP پیش از staging
