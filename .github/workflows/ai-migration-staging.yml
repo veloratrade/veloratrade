@@ -271,7 +271,8 @@ jobs:
               print(f"Applied migrations: {data.get('applied')}")
           if 'error' in data:
               print(f"Error: {data.get('error')}")
-          # Sanitized read-only evidence rows (E2E window); columns are pre-filtered by the probe SELECTs
+          # Sanitized read-only evidence rows; columns are pre-filtered by the probe SELECTs
+          print(f"db_clock: {json.dumps(data.get('db_clock'), ensure_ascii=False, default=str)}")
           for key in ('provider_logs', 'extractions', 'requests'):
               rows = data.get(key) or []
               print(f"{key}: {len(rows)} row(s)")
