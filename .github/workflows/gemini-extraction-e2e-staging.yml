@@ -115,17 +115,24 @@ jobs:
             exit 1
           fi
           read -r EXTRACT_CODE EXTRACT_CTYPE < /tmp/extract.meta || true
+          # On a received-but-failed response, keep going so the DB probe below can
+          # report the stored error_code. The final verdict stays fail-closed.
+          E2E_FAILURE=""
           if [ "${EXTRACT_CODE:-0}" != "200" ]; then
             EXTRACT_ERR=$(jq -r '.error.code // empty' /tmp/extract.json 2>/dev/null || true)
-            echo "::error::extract-screenshot failed: HTTP ${EXTRACT_CODE:-no-response} (error_code: ${EXTRACT_ERR:-unavailable}) — response body not printed"
-            exit 1
+            E2E_FAILURE="extract-screenshot failed: HTTP ${EXTRACT_CODE:-no-response} (error_code: ${EXTRACT_ERR:-unavailable}) — response body not printed"
+            echo "::error::$E2E_FAILURE"
           fi
-          case "${EXTRACT_CTYPE:-}" in
-            *json*) ;;
-            *) echo "::error::extract-screenshot returned a non-JSON response (content-type: ${EXTRACT_CTYPE:-unknown}) — response body not printed"; exit 1 ;;
-          esac
+          if [ -z "$E2E_FAILURE" ]; then
+            case "${EXTRACT_CTYPE:-}" in
+              *json*) ;;
+              *) E2E_FAILURE="extract-screenshot returned a non-JSON response (content-type: ${EXTRACT_CTYPE:-unknown}) — response body not printed"; echo "::error::$E2E_FAILURE" ;;
+            esac
+          fi
+          export E2E_FAILURE
 
-          # Presence-only summary — never raw OCR text, never trade values.
+          if [ -z "$E2E_FAILURE" ]; then
+            # Presence-only summary — never raw OCR text, never trade values.
           jq -c '{envelope:.status, provider:.data.provider, engine:.data.engine, confidence:.data.confidence, has_extraction:(.data.extraction|type=="object")}' /tmp/extract.json 2>/dev/null | head -c 300 || echo "envelope: unparseable"
           echo ""
 
@@ -158,7 +165,8 @@ jobs:
               print("  %s: %s" % (key, 'present' if extraction.get(key) not in (None, '') else 'not present'))
           print("PASS: authenticated extraction reached provider=gemini with a non-empty .data.extraction")
           PY
-          GEMINI_PROVED=1; export GEMINI_PROVED
+            GEMINI_PROVED=1; export GEMINI_PROVED
+          fi
 
           # Database verification via one-use probe (same pattern as ai-migration)
           echo "=== Database Verification via Probe ==="
@@ -193,7 +201,7 @@ jobs:
           // ai_requests
           try {
               if (tableExists($pdo, 'ai_requests')) {
-                  $stmt = $pdo->query('SELECT provider, status, latency_ms, tokens_used, prompt_hash, cost FROM ai_requests WHERE provider="gemini" ORDER BY id DESC LIMIT 3');
+                  $stmt = $pdo->query('SELECT provider, model, status, latency_ms, tokens_used, prompt_hash, cost, created_at FROM ai_requests WHERE provider="gemini" ORDER BY id DESC LIMIT 3');
                   $result['ai_requests'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
                   // Check for forbidden fields
                   $result['ai_requests_forbidden_check'] = 'PASS — only prompt_hash, not raw image/base64/API key';
@@ -203,7 +211,7 @@ jobs:
           // ai_provider_logs
           try {
               if (tableExists($pdo, 'ai_provider_logs')) {
-                  $stmt = $pdo->query('SELECT provider, status, latency_ms, error_code FROM ai_provider_logs WHERE provider="gemini" ORDER BY id DESC LIMIT 3');
+                  $stmt = $pdo->query('SELECT provider, status, latency_ms, error_code, created_at FROM ai_provider_logs WHERE provider="gemini" ORDER BY id DESC LIMIT 3');
                   $result['ai_provider_logs'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
               }
           } catch (Throwable $e) {}
@@ -228,7 +236,7 @@ jobs:
           // ai_extractions
           try {
               if (tableExists($pdo, 'ai_extractions')) {
-                  $stmt = $pdo->query('SELECT provider, confidence, status, error_code, image_hash FROM ai_extractions ORDER BY id DESC LIMIT 3');
+                  $stmt = $pdo->query('SELECT provider, confidence, status, error_code, image_hash, created_at FROM ai_extractions ORDER BY id DESC LIMIT 3');
                   $result['ai_extractions'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
                   $result['ai_extractions_forbidden_check'] = 'PASS — no image data, only hash + result JSON';
               }
@@ -260,19 +268,18 @@ jobs:
 
           python3 <<'PY'
           import json, os, pathlib
-          if os.environ.get('GEMINI_PROVED') != '1':
-              print("FAIL: this run never reached Gemini — DB rows alone cannot certify the E2E")
-              raise SystemExit(1)
+          proved = os.environ.get('GEMINI_PROVED') == '1'
+          failure = os.environ.get('E2E_FAILURE', '')
           data=json.loads(pathlib.Path('/tmp/status.json').read_text())
           print("\n=== Database Verification ===")
           print("ai_requests (gemini):")
           for row in data.get('ai_requests',[])[:2]:
-              print(f"  provider={row.get('provider')} status={row.get('status')} latency={row.get('latency_ms')} tokens={row.get('tokens_used')} prompt_hash={row.get('prompt_hash','')[:12]}... cost={row.get('cost')}")
+              print(f"  provider={row.get('provider')} model={row.get('model')} status={row.get('status')} latency={row.get('latency_ms')} tokens={row.get('tokens_used')} cost={row.get('cost')} created_at={row.get('created_at')}")
           print(f"  Check: {data.get('ai_requests_forbidden_check')}")
 
           print("ai_provider_logs (gemini):")
           for row in data.get('ai_provider_logs',[])[:2]:
-              print(f"  provider={row.get('provider')} status={row.get('status')} latency={row.get('latency_ms')} error={row.get('error_code')}")
+              print(f"  provider={row.get('provider')} status={row.get('status')} latency={row.get('latency_ms')} error={row.get('error_code')} created_at={row.get('created_at')}")
 
           print("ai_audit_logs:")
           for row in data.get('ai_audit_logs',[])[:2]:
@@ -281,7 +288,7 @@ jobs:
 
           print("ai_extractions:")
           for row in data.get('ai_extractions',[])[:2]:
-              print(f"  provider={row.get('provider')} confidence={row.get('confidence')} status={row.get('status')} hash={row.get('image_hash','')[:12]}... error={row.get('error_code')}")
+              print(f"  provider={row.get('provider')} confidence={row.get('confidence')} status={row.get('status')} hash={row.get('image_hash','')[:12]}... error={row.get('error_code')} created_at={row.get('created_at')}")
           print(f"  Check: {data.get('ai_extractions_forbidden_check')}")
 
           # Determine PASS
@@ -296,6 +303,13 @@ jobs:
           print(f"ai_audit_logs: {'EXISTS' if has_audit else 'MISSING'}")
           print(f"ai_extractions: {'EXISTS' if has_extractions else 'MISSING'}")
 
+          if not proved:
+              if failure:
+                  print("FAIL: " + failure)
+              if not (has_logs and has_audit):
+                  print("FAIL: PARTIAL — ai_provider_logs/ai_audit_logs empty; no diagnostics rows either")
+              print("NOTE: DB rows above are diagnostics only — a successful probe is NOT a Gemini success (verdict stays fail-closed)")
+              raise SystemExit(1)
           if not (has_logs and has_audit):
               print("FAIL: PARTIAL — ai_provider_logs/ai_audit_logs empty; a partial result is not a pass")
               raise SystemExit(1)
