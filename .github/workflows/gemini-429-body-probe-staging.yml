@@ -1,0 +1,164 @@
+name: Gemini 429 Body Probe (Staging) — One-Use Diagnostic
+
+# ONE-USE read-only diagnostic: sends exactly ONE minimal text-only
+# generateContent to Gemini FROM the staging server itself and prints the
+# sanitized Google response body (HTTP status, latency, error details) so the
+# real 429 reason (quota metric / violation / retry delay / geo wording) is
+# captured. Never prints the API key; body is scrubbed server- and
+# runner-side. No retry of any kind. Probe file self-destructs on first hit.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gemini-429-body-probe-staging
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    if: github.repository == 'veloratrade/veloratrade'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      FTP_SERVER: ${{ secrets.STAGING_FTP_SERVER }}
+      FTP_USERNAME: ${{ secrets.STAGING_FTP_USERNAME }}
+      FTP_PASSWORD: ${{ secrets.STAGING_FTP_PASSWORD }}
+      BASE: https://staging.veloratrade.ir
+    steps:
+      - name: One-use probe — read real Gemini response body from staging
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -q lftp >/dev/null
+          NAME="_velora_gemini_probe_$(openssl rand -hex 8).php"
+          TOKEN="$(openssl rand -hex 32)"
+          HASH="$(printf '%s' "$TOKEN" | sha256sum | awk '{print $1}')"
+          echo "::add-mask::$NAME"; echo "::add-mask::$TOKEN"; echo "::add-mask::$HASH"
+          export NAME TOKEN HASH
+
+          python3 <<'PY'
+          import os
+          template = r'''<?php
+          declare(strict_types=1);
+          $expected = '__HASH__';
+          $provided = (string) ($_SERVER['HTTP_X_VELORA_DIAG'] ?? '');
+          if ($provided === '' || !hash_equals($expected, hash('sha256', $provided))) {
+              http_response_code(404); exit('Not found');
+          }
+          @unlink(__FILE__);
+          require dirname(__DIR__) . '/api/src/bootstrap.php';
+          use Velora\Core\Config;
+
+          header('Content-Type: application/json; charset=utf-8');
+          header('Cache-Control: no-store');
+
+          $key = trim(Config::env('GEMINI_API_KEY', ''));
+          $model = trim(Config::env('GEMINI_MODEL', 'gemini-3.6-flash'));
+          if ($model === '') { $model = 'gemini-3.6-flash'; }
+          if ($key === '') {
+              echo json_encode(['probe_error' => 'GEMINI_API_KEY not configured on staging'], JSON_UNESCAPED_SLASHES);
+              exit;
+          }
+
+          // Exactly ONE minimal text-only request. No retry loop. Key in header, never in URL.
+          $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . rawurlencode($model) . ':generateContent';
+          $payload = json_encode([
+              'contents' => [['parts' => [['text' => 'Return exactly: PROBE_OK']]]],
+              'generationConfig' => ['temperature' => 0, 'maxOutputTokens' => 512],
+          ], JSON_UNESCAPED_SLASHES);
+
+          $ch = curl_init();
+          curl_setopt_array($ch, [
+              CURLOPT_URL => $url,
+              CURLOPT_POST => true,
+              CURLOPT_POSTFIELDS => $payload,
+              CURLOPT_RETURNTRANSFER => true,
+              CURLOPT_TIMEOUT => 20,
+              CURLOPT_CONNECTTIMEOUT => 5,
+              CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Accept: application/json', 'x-goog-api-key: ' . $key],
+          ]);
+          $t0 = microtime(true);
+          $resp = curl_exec($ch);
+          $errno = curl_errno($ch);
+          $errstr = $errno === 0 ? '' : curl_error($ch);
+          $http = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+          curl_close($ch);
+          $ms = (int) ((microtime(true) - $t0) * 1000);
+
+          // Scrub anything secret-like from the body before it ever leaves the server.
+          $clean = is_string($resp) ? $resp : '';
+          $clean = str_replace($key, '[REDACTED]', $clean);
+          $clean = preg_replace('/AIza[A-Za-z0-9_-]{10,}/', '[REDACTED]', $clean) ?? '';
+          $clean = preg_replace('/AQ\.[A-Za-z0-9_-]{10,}/', '[REDACTED]', $clean) ?? '';
+          $clean = preg_replace('/Bearer\s+[A-Za-z0-9._-]+/i', '[REDACTED]', $clean) ?? '';
+
+          echo json_encode([
+              'model' => $model,
+              'http_status' => $http,
+              'latency_ms' => $ms,
+              'curl_errno' => $errno,
+              'curl_error' => $errno === 0 ? null : substr($errstr, 0, 200),
+              'body' => $clean === '' ? null : substr($clean, 0, 4000),
+          ], JSON_UNESCAPED_SLASHES);
+          '''
+          open('/tmp/probe.php','w',encoding='utf-8').write(template.replace('__HASH__', os.environ['HASH']))
+          PY
+
+          cleanup() {
+            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+              -e "set ftp:ssl-allow no; set net:max-retries 1; set net:timeout 20; rm -f public_html/staging.veloratrade.ir/public/$NAME; bye" >/dev/null 2>&1 || true
+            rm -f /tmp/probe.php /tmp/probe.json
+          }
+          trap cleanup EXIT
+
+          uploaded=0
+          for attempt in $(seq 1 15); do
+            if lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+              -e "set ftp:ssl-allow no; set net:max-retries 2; set net:timeout 30; glob -a rm -f public_html/staging.veloratrade.ir/public/_velora_gemini_probe_*.php; put /tmp/probe.php -o public_html/staging.veloratrade.ir/public/$NAME; bye"; then
+              uploaded=1; break
+            fi
+            sleep 5
+          done
+          [ "$uploaded" = 1 ] || { echo "::error::probe upload failed"; exit 1; }
+
+          code=$(curl -sS -o /tmp/probe.json -w '%{http_code}' --max-time 40 -H "X-Velora-Diag: $TOKEN" "$BASE/public/$NAME")
+          [ "$code" = 200 ] || { echo "::error::probe returned HTTP $code"; exit 1; }
+
+          python3 <<'PY'
+          import json, pathlib, re
+          d = json.loads(pathlib.Path('/tmp/probe.json').read_text())
+          def scrub(s):
+              return re.sub(r'(?:(?:AIza|AQ\.)[A-Za-z0-9_-]{10,}|Bearer\s+[A-Za-z0-9._-]+)', '[REDACTED]', str(s or ''))
+          print("=== Gemini 429 Body Probe (Staging) — one request, sanitized ===")
+          print(f"model: {d.get('model')}")
+          print(f"STAGING_HTTP: {d.get('http_status')}")
+          print(f"STAGING_LATENCY: {d.get('latency_ms')}ms")
+          print(f"curl_errno: {d.get('curl_errno')} curl_error: {scrub(d.get('curl_error'))}")
+          body = d.get('body')
+          if not body:
+              print("GOOGLE_BODY: (empty)")
+              raise SystemExit(0)
+          print("GOOGLE_BODY (sanitized):")
+          print(scrub(body))
+          try:
+              e = json.loads(body).get('error', {})
+          except Exception:
+              print("GOOGLE_ERROR_STATUS: NON_JSON_BODY"); raise SystemExit(0)
+          print(f"GOOGLE_ERROR_STATUS: {e.get('status')}")
+          print(f"GOOGLE_ERROR_MESSAGE: {scrub(e.get('message'))}")
+          qm = vt = rd = None
+          for det in e.get('details', []) or []:
+              t = str(det.get('@type', ''))
+              if 'QuotaFailure' in t:
+                  for v in det.get('violations', []) or []:
+                      qm = qm or v.get('quotaMetric') or v.get('quotaId')
+                      vt = vt or v.get('violationType') or v.get('description') or v.get('subject')
+              if 'RetryInfo' in t:
+                  rd = det.get('retryDelay')
+          print(f"QUOTA_METRIC: {scrub(qm)}")
+          print(f"VIOLATION_TYPE: {scrub(vt)}")
+          print(f"RETRY_DELAY: {scrub(rd)}")
+          PY
