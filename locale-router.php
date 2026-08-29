@@ -83,7 +83,7 @@ if (is_string($refreshToken) && $refreshToken !== '' && strlen($refreshToken) <=
         require_once $root . '/api/src/bootstrap.php';
         $pdo = \Velora\Core\Database::connection();
         $stmt = $pdo->prepare(
-            'SELECT s.id, u.id AS user_id
+            'SELECT s.id, u.id AS user_id, u.role
                FROM user_sessions s INNER JOIN users u ON u.id = s.user_id
               WHERE s.refresh_token_hash = :hash
                 AND s.revoked_at IS NULL AND s.expires_at > :now AND u.status = :status
@@ -208,6 +208,15 @@ if ($found && in_array($relativeFile, $protectedRoutes, true)) {
     if (!$sessionIsValid) {
         header('Cache-Control: no-store');
         header('Location: /' . $locale . '/login/', true, 302);
+        return true;
+    }
+    // RBAC (server-authoritative): the Admin shell must never be delivered to a
+    // signed-in non-admin, regardless of client-side guards. The session query
+    // above selects u.role; anything other than 'admin' is routed back to the
+    // normal user area. Admin APIs enforce the same rule via adminOnly().
+    if ($relativeFile === 'admin/index.html' && ((string) ($session['role'] ?? '')) !== 'admin') {
+        header('Cache-Control: no-store');
+        header('Location: /' . $locale . '/dashboard/', true, 302);
         return true;
     }
 }

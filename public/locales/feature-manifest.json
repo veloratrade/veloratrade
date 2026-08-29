@@ -84,9 +84,9 @@
       },
       "profile": {
         "path": "fa/profile.json",
-        "messages": 20,
-        "bytes": 1561,
-        "sha256": "45d6a7a2dabfb8647f77ac221f4f7fc1ffd7b1d6f69b52ea12f9eb5aa42769a5"
+        "messages": 25,
+        "bytes": 2197,
+        "sha256": "440c6c35f41423659115033dd82b9065350741de118b02bcc65b9d02f935bc4b"
       },
       "support": {
         "path": "fa/support.json",
@@ -194,9 +194,9 @@
       },
       "profile": {
         "path": "en/profile.json",
-        "messages": 20,
-        "bytes": 1288,
-        "sha256": "49d6053e145c3c96c035b86e47fc85e69a82353935918455a3cab5e5495d72c8"
+        "messages": 25,
+        "bytes": 1679,
+        "sha256": "42137bbdf95e9d42cb3f053ba80007dbd23612687cc40567d3662eb96a6fbee2"
       },
       "support": {
         "path": "en/support.json",
