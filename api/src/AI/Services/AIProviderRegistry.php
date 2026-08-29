@@ -19,14 +19,17 @@ final class AIProviderRegistry
     /** @var array<string,class-string<AIProviderInterface>> */
     private const PROVIDER_MAP = [
         'gemini' => GeminiProvider::class,
+        'openai' => \Velora\AI\Providers\OpenAIProvider::class,
+        'claude' => \Velora\AI\Providers\ClaudeProvider::class,
         'tesseract' => TesseractProvider::class,
-        // Future: 'openai' => OpenAIProvider::class, 'qwen' => QwenProvider::class, 'local' => LocalModelProvider::class
+        // Future: 'qwen' => QwenProvider::class, 'local' => LocalModelProvider::class
     ];
 
     /** @var array<string,int> Default priority (lower = higher priority) */
     private const DEFAULT_PRIORITY = [
         'gemini' => 10,
         'openai' => 20,
+        'claude' => 25,
         'qwen' => 30,
         'local' => 40,
         'tesseract' => 100,

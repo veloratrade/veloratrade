@@ -6,9 +6,9 @@
     "fa": {
       "admin": {
         "path": "fa/admin.json",
-        "messages": 27,
-        "bytes": 1472,
-        "sha256": "11a0326279b2bebe87ef23bddc1906acf5d65bae1286db54d184b056ade3d11a"
+        "messages": 66,
+        "bytes": 3437,
+        "sha256": "25794580b4f564b625ba74ca8d96445a11dd2f5c65548a8b82413dc5b1e538d5"
       },
       "auth": {
         "path": "fa/auth.json",
@@ -116,9 +116,9 @@
     "en": {
       "admin": {
         "path": "en/admin.json",
-        "messages": 27,
-        "bytes": 1192,
-        "sha256": "eb8c01c25f0632c93bcc4632df1b83f8307515a8ed0915641993dbc0cf7bdd7a"
+        "messages": 66,
+        "bytes": 2731,
+        "sha256": "f2767ed1960a0662bfe8dd78bf2087484332dd4744a316ff78bee2df8ee16bbd"
       },
       "auth": {
         "path": "en/auth.json",

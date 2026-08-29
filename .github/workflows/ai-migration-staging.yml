@@ -88,14 +88,15 @@ jobs:
 
           $pdo = Database::connection();
           $mode = '__MODE__'; // check or apply
-          $expectedTables = ['ai_extractions','ai_provider_quotas','ai_provider_logs','ai_requests','ai_feature_flags','ai_audit_logs','ai_feedback','ai_jobs','ai_reports','ai_analysis'];
+          $expectedTables = ['ai_extractions','ai_provider_quotas','ai_provider_logs','ai_requests','ai_feature_flags','ai_audit_logs','ai_feedback','ai_jobs','ai_reports','ai_analysis','ai_feature_providers'];
 
-          $result = ['mode'=>$mode, 'tables'=>[], 'users_ai_consent_at'=>false, 'feature_flags'=>[]];
+          $result = ['mode'=>$mode, 'tables'=>[], 'users_ai_consent_at'=>false, 'ai_provider_logs_routing'=>false, 'feature_flags'=>[]];
 
           foreach ($expectedTables as $t) {
               $result['tables'][$t] = tableExists($pdo, $t);
           }
           $result['users_ai_consent_at'] = columnExists($pdo, 'users', 'ai_consent_at');
+          $result['ai_provider_logs_routing'] = columnExists($pdo, 'ai_provider_logs', 'feature') && columnExists($pdo, 'ai_provider_logs', 'model') && columnExists($pdo, 'ai_provider_logs', 'route') && columnExists($pdo, 'ai_provider_logs', 'fallback_index');
 
           if ($mode === 'check') {
               // Read feature flags
@@ -191,6 +192,23 @@ jobs:
               } catch (Throwable $e) { $errors[] = 'v0.8:'.$e->getMessage(); }
           }
 
+          // v0.9 — AI provider routing (must mirror api/database/migrations/v0.9_ai_provider_routing.sql)
+          $afpExists = tableExists($pdo, 'ai_feature_providers');
+          $logsFeatureCol = columnExists($pdo, 'ai_provider_logs', 'feature');
+          if (!$afpExists || !$logsFeatureCol) {
+              try {
+                  $pdo->exec("CREATE TABLE IF NOT EXISTS ai_feature_providers (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, feature VARCHAR(64) NOT NULL COMMENT 'screenshot_extraction, trade_analysis, weekly_report, assistant', provider VARCHAR(32) NOT NULL COMMENT 'gemini, openai, claude, tesseract', model VARCHAR(64) NULL COMMENT 'NULL = provider/env default model', priority SMALLINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '1 = first; ordered ASC', enabled TINYINT(1) NOT NULL DEFAULT 1, route VARCHAR(16) NULL COMMENT 'gemini: direct|n8n_relay|NULL; others: direct|NULL; NULL = provider default resolution', created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, PRIMARY KEY (id), UNIQUE KEY uq_afp_feature_provider (feature, provider), KEY idx_afp_lookup (feature, enabled, priority)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+                  // Seed ONLY screenshot_extraction (gemini@1, tesseract@2). OpenAI/Claude join
+                  // the chain exclusively through admin UI changes with passing adapters.
+                  $pdo->exec("INSERT IGNORE INTO ai_feature_providers (feature, provider, model, priority, enabled, route) VALUES ('screenshot_extraction','gemini',NULL,1,1,NULL), ('screenshot_extraction','tesseract',NULL,2,1,NULL)");
+                  if (!$logsFeatureCol) {
+                      $pdo->exec("ALTER TABLE ai_provider_logs ADD COLUMN feature VARCHAR(64) NULL AFTER error_code, ADD COLUMN model VARCHAR(64) NULL AFTER feature, ADD COLUMN route VARCHAR(16) NULL AFTER model, ADD COLUMN fallback_index SMALLINT UNSIGNED NULL AFTER route");
+                  }
+                  $pdo->exec("INSERT INTO ai_provider_quotas (provider, quota_limit) VALUES ('openai', 1500), ('claude', 1500) ON DUPLICATE KEY UPDATE quota_limit = VALUES(quota_limit)");
+                  $applied[] = 'v0.9';
+              } catch (Throwable $e) { $errors[] = 'v0.9:'.$e->getMessage(); }
+          }
+
           if ($errors) { $result['error'] = implode('; ', $errors); }
 
           // Re-check after apply
@@ -198,6 +216,7 @@ jobs:
               $result['tables'][$t] = tableExists($pdo, $t);
           }
           $result['users_ai_consent_at'] = columnExists($pdo, 'users', 'ai_consent_at');
+          $result['ai_provider_logs_routing'] = columnExists($pdo, 'ai_provider_logs', 'feature') && columnExists($pdo, 'ai_provider_logs', 'model') && columnExists($pdo, 'ai_provider_logs', 'route') && columnExists($pdo, 'ai_provider_logs', 'fallback_index');
           $result['applied'] = $applied;
 
           try {
@@ -243,6 +262,7 @@ jobs:
           for t, exists in tables.items():
               print(f"  Table {t}: {'EXISTS' if exists else 'MISSING'}")
           print(f"users.ai_consent_at: {'EXISTS' if data.get('users_ai_consent_at') else 'MISSING'}")
+          print(f"ai_provider_logs routing columns (feature/model/route/fallback_index): {'EXISTS' if data.get('ai_provider_logs_routing') else 'MISSING'}")
           print("Feature flags:")
           for flag in data.get('feature_flags',[]):
               print(f"  {flag.get('feature_name')}: enabled={flag.get('enabled')} rollout={flag.get('rollout_percentage')}")
@@ -254,6 +274,8 @@ jobs:
           missing = [t for t, exists in tables.items() if not exists]
           if not data.get('users_ai_consent_at'):
               missing.append('users.ai_consent_at')
+          if not data.get('ai_provider_logs_routing'):
+              missing.append('ai_provider_logs.routing_columns')
           if missing:
               print(f"FAIL: Missing {missing}")
           else:

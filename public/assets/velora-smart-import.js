@@ -330,6 +330,7 @@
     if (!shots.length) return;
     merged = {}; conflicts = []; conf = {}; editing = false;
     window.__vsiTimes = null;
+    window.__vsiExtraction = null;
     showScanning();
     var texts = [];
     try {
@@ -348,6 +349,8 @@
       try { fields = parseMt(text || ''); } catch (err) { fields = {}; }
       return { label: t('اسکرین', 'Shot') + ' ' + (i + 1), fields: fields };
     });
+    var aiParsed = extractionToParsed();
+    if (aiParsed) parsed = [aiParsed].concat(parsed);
     mergeAll(parsed);
     if (window.__vsiTimes) {
       if (__vsiTimes.openTime) merged.openTime = faDigits(__vsiTimes.openTime);
@@ -368,10 +371,59 @@
       method: 'POST',
       body: { images: packed }
     });
-    var list = data && data.texts;
-    if (!list || !list.length) throw new Error('empty');
+    // Multi-provider routing: an external AI result (gemini/openai/claude) is
+    // authoritative structured data; tesseract stays the supplementary text path.
+    window.__vsiExtraction = null;
+    var ext = data && (data.extraction || data.data) ? (data.extraction || data.data) : null;
+    if (ext && typeof ext === 'object') {
+      window.__vsiExtraction = {
+        provider: String(data.provider || ext.provider || ''),
+        fields: ext,
+        confidence: typeof data.confidence === 'number' ? data.confidence
+          : (typeof ext.confidence === 'number' ? ext.confidence : null)
+      };
+    }
+    var list = (data && data.texts) || [];
+    if ((!list || !list.length) && !extractionToParsed()) throw new Error('empty');
     window.__vsiTimes = data.times || null;
     return list;
+  }
+
+  // Map a structured external-AI extraction onto the review fields. Returns
+  // null for tesseract/cache rows so the existing OCR text pipeline stays
+  // fully intact as the supplementary path.
+  function extractionToParsed() {
+    var src = window.__vsiExtraction;
+    if (!src || !src.fields) return null;
+    var provider = src.provider;
+    var external = provider === 'gemini' || provider === 'openai' || provider === 'claude';
+    if (!external) return null;
+    var f = src.fields;
+    var score = Math.round((src.confidence != null ? src.confidence : 0.9) * 100);
+    if (!(score > 0) || score > 100) score = 90;
+    var out = {};
+    function put(key, value) {
+      if (value == null || value === '') return;
+      var v = String(value).trim();
+      if (NUMERIC_KEYS[key]) {
+        v = normalizeNumber(v);
+        if (!isFinite(parseFloat(v))) return;
+      }
+      out[key] = { value: v, confidence: score };
+    }
+    put('symbol', f.symbol);
+    var side = String(f.side || '').toLowerCase();
+    if (side === 'buy' || side === 'sell') put('direction', side);
+    put('volume', f.lot);
+    put('entryPrice', f.entry);
+    put('exitPrice', f.exit);
+    put('stopLoss', f.sl);
+    put('takeProfit', f.tp);
+    put('profitLoss', f.pnl);
+    if (!f.openTime && f.open_time) put('openTime', f.open_time); else put('openTime', f.openTime);
+    if (!f.closeTime && f.close_time) put('closeTime', f.close_time); else put('closeTime', f.closeTime);
+    if (!Object.keys(out).length) return null;
+    return { label: 'AI · ' + provider, fields: out };
   }
 
   var TESSERACT_OPTIONS = Object.freeze({
