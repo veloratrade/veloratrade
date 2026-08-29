@@ -49,17 +49,20 @@ assert "refusing to send the original image" in manager, "AIManager must refuse 
 assert "ImageAnonymizer::anonymize" in manager
 print("PASS: AIManager fail-closed on anonymization failure")
 
-# 3. Gemini key via header, not query string
+# 3. Gemini key via header, not query string (direct HTTP code lives in Transports since the transport split)
 gemini = read("api/src/AI/Providers/GeminiProvider.php")
-assert "?key=" not in gemini, "Gemini API key must not be in the URL query string"
-assert "x-goog-api-key" in gemini, "Gemini API key must be sent via x-goog-api-key header"
-assert "CURLOPT_SSL_VERIFYPEER" in gemini and "true" in gemini, "TLS verification must stay on"
-assert "CURLOPT_FOLLOWLOCATION" in gemini, "redirect handling must stay explicit"
-print("PASS: Gemini key via header, TLS + timeout preserved")
+direct = read("api/src/AI/Transports/DirectGeminiTransport.php")
+relay = read("api/src/AI/Transports/N8nGeminiRelayTransport.php")
+for src, label in ((gemini, "GeminiProvider"), (direct, "DirectGeminiTransport"), (relay, "N8nGeminiRelayTransport")):
+    assert "?key=" not in src and "?token=" not in src, f"{label}: credentials must not travel in the URL query string"
+assert "x-goog-api-key" in direct, "Gemini API key must be sent via x-goog-api-key header"
+assert "CURLOPT_SSL_VERIFYPEER" in direct and "true" in direct, "TLS verification must stay on"
+assert "CURLOPT_FOLLOWLOCATION" in direct, "redirect handling must stay explicit"
+print("PASS: Gemini key via header, TLS + timeout preserved (provider + transports)")
 
-# 4. Provider error classification
+# 4. Provider error classification (HTTP status mapping lives in the direct transport)
 for code, exc in [("401", "invalid or unauthorized"), ("429", "AIQuotaExhaustedException"), (">= 500", "service unavailable"), ("=== 400", "AIValidationException")]:
-    assert exc in gemini, f"GeminiProvider missing classification for {code}"
+    assert exc in gemini + direct, f"Gemini path missing classification for {code}"
 assert "AIQuotaExhaustedException" in gemini
 print("PASS: provider error classification (401/403/429/5xx/400)")
 
