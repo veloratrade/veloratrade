@@ -418,6 +418,17 @@ final class AuthService
 
     public function publicUser(array $user): array
     {
+        // Schema-safe: environments that have not applied v0.6 yet (users.ai_consent_at
+        // missing) must not break auth. The column is read only when the row carries
+        // it; otherwise the exception-safe consent repository answers (null => false).
+        $consentAt = $user['ai_consent_at'] ?? null;
+        if (!array_key_exists('ai_consent_at', $user)) {
+            try {
+                $consentAt = (new \Velora\AI\Repositories\UserAIConsentRepository())->getConsentAt((int) $user['id']);
+            } catch (\Throwable $e) {
+                $consentAt = null; // fail-closed: consent unknown => reported disabled
+            }
+        }
         return [
             'id' => (int) $user['id'],
             'email' => $user['email'],
@@ -427,7 +438,7 @@ final class AuthService
             'locale' => $user['locale'] ?? 'fa',
             'createdAt' => $user['created_at'],
             // Privacy consent state (users.ai_consent_at semantics): boolean only.
-            'aiConsent' => ($user['ai_consent_at'] ?? null) !== null,
+            'aiConsent' => $consentAt !== null && $consentAt !== '',
         ];
     }
 
