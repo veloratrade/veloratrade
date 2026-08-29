@@ -114,6 +114,27 @@ jobs:
                   $stmt = $pdo->query("SELECT NOW() AS db_now, @@session.time_zone AS session_tz, @@global.time_zone AS global_tz");
                   $result['db_clock'] = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
               } catch (Throwable $e) {}
+              $result['db_flags'] = null;
+              $result['quota_seeds'] = [];
+              $result['db_grants'] = [];
+              $result['users_count'] = null;
+              try {
+                  $stmt = $pdo->query("SELECT @@global.read_only AS read_only, @@global.super_read_only AS super_read_only");
+                  $result['db_flags'] = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+              } catch (Throwable $e) {}
+              try {
+                  $stmt = $pdo->query('SELECT provider, daily_used, quota_limit, reset_at FROM ai_provider_quotas ORDER BY provider');
+                  $result['quota_seeds'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+              } catch (Throwable $e) {}
+              try {
+                  $stmt = $pdo->query('SHOW GRANTS FOR CURRENT_USER()');
+                  $grants = [];
+                  while (($g = $stmt->fetch(PDO::FETCH_NUM)) !== false) { $grants[] = preg_replace("/'[^']*'@'[^']*'/", "'***'@'***'", (string) $g[0]); }
+                  $result['db_grants'] = $grants;
+              } catch (Throwable $e) {}
+              try {
+                  $result['users_count'] = (int) $pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
+              } catch (Throwable $e) {}
               try {
                   $stmt = $pdo->prepare('SELECT provider, status, error_code, latency_ms, created_at FROM ai_provider_logs WHERE provider=:provider ORDER BY id DESC LIMIT 15');
                   $stmt->execute(['provider'=>'gemini']);
@@ -276,6 +297,16 @@ jobs:
               print(f"Error: {data.get('error')}")
           # Sanitized read-only evidence rows; columns are pre-filtered by the probe SELECTs
           print(f"db_clock: {json.dumps(data.get('db_clock'), ensure_ascii=False, default=str)}")
+          print(f"db_flags: {json.dumps(data.get('db_flags'), ensure_ascii=False, default=str)}")
+          qs = data.get('quota_seeds') or []
+          print(f"quota_seeds: {len(qs)} row(s)")
+          for row in qs:
+              print(f"  {json.dumps(row, ensure_ascii=False, default=str)}")
+          grants = data.get('db_grants') or []
+          print(f"db_grants: {len(grants)} row(s)")
+          for g in grants:
+              print(f"  {g}")
+          print(f"users_count: {data.get('users_count')}")
           for key in ('provider_logs', 'extractions', 'requests'):
               rows = data.get(key) or []
               print(f"{key}: {len(rows)} row(s)")
