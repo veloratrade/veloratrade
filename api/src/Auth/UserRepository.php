@@ -27,7 +27,7 @@ final class UserRepository
     public function findById(int $id): ?array
     {
         $stmt = Database::connection()->prepare(
-            'SELECT id, email, email_verified_at, password_hash, full_name, role, timezone, locale, locale_source, status, created_at, ai_consent_at
+            'SELECT id, email, email_verified_at, password_hash, full_name, role, timezone, locale, locale_source, status, created_at
              FROM users WHERE id = :id LIMIT 1'
         );
         $stmt->execute(['id' => $id]);
