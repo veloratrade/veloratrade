@@ -426,6 +426,8 @@ final class AuthService
             'timezone' => $user['timezone'],
             'locale' => $user['locale'] ?? 'fa',
             'createdAt' => $user['created_at'],
+            // Privacy consent state (users.ai_consent_at semantics): boolean only.
+            'aiConsent' => ($user['ai_consent_at'] ?? null) !== null,
         ];
     }
 

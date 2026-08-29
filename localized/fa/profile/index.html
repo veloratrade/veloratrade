@@ -607,6 +607,11 @@ function toggleMobileSidebar() {
 <div class="sound-pref"><div class="sound-pref-copy"><div class="sound-pref-ico"><svg viewbox="0 0 24 24"><path d="M11 5 6 9v6l5 4V5Z"></path><path d="M15 9a4 4 0 0 1 0 6m2.5-8.5a7 7 0 0 1 0 11"></path></svg></div><div><b><span data-i18n="pages.profile.p05.sounds">صداهای رابط کاربری</span></b><small><span data-i18n="pages.profile.p05.sounds_detail">صدای ملایم فقط برای تأییدها و تعامل‌های مهم</span></small></div></div><button aria-checked="true" aria-label="صداهای رابط کاربری" class="sound-toggle" data-i18n-aria-label="pages.profile.p05.sounds" id="soundToggle" role="switch" type="button"><i></i></button></div>
 </div>
 <div class="panel">
+<div class="panel-head"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" viewbox="0 0 24 24"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"></path><path d="M5 19a9 9 0 0 1 14 0"></path></svg> <span data-i18n="profile.aiConsent.title">پردازش هوش مصنوعی</span></div>
+<div class="sound-pref"><div class="sound-pref-copy"><div class="sound-pref-ico"><svg viewbox="0 0 24 24"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"></path></svg></div><div><b id="aiConsentState"><span data-i18n="profile.aiConsent.stateOff">پردازش هوش مصنوعی غیرفعال است</span></b><small><span data-i18n="profile.aiConsent.description">با فعال‌سازی, اسکرین‌شات‌های واجد شرایط معاملات برای تکمیل خودکار ژورنال, توسط هوش مصنوعی پردازش می‌شود. هر زمان می‌توانید خاموش کنید.</span></small></div></div><button aria-checked="false" aria-label="پردازش هوش مصنوعی" class="sound-toggle" data-i18n-aria-label="profile.aiConsent.title" id="aiConsentToggle" role="switch" type="button"><i></i></button></div>
+<div class="error-box" id="aiConsentErr"></div>
+</div>
+<div class="panel">
 <div class="panel-head"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" viewbox="0 0 24 24"><rect height="14" rx="3" width="20" x="2" y="5"></rect><path d="M2 10h20"></path><path d="M6 14h.01M10 14h.01M14 14h.01"></path></svg> <span data-i18n="pages.profile.connected.devices.00dfa75d">دستگاه‌های متصل</span></div>
 <div id="devicesList">
 <div class="dev-item">
@@ -668,6 +673,45 @@ function toggleMobileSidebar() {
     if ($('mRole')) $('mRole').textContent = t(value.role === 'admin' ? 'profile.role.admin' : 'profile.role.user');
     if ($('mTz')) $('mTz').textContent = value.timezone || 'UTC';
     if ($('mCreated')) $('mCreated').textContent = VeloraLocale.date(value.createdAt);
+    renderAiConsent(typeof value.aiConsent === 'boolean' ? value.aiConsent : false);
+  }
+
+  
+  function renderAiConsent(enabled) {
+    var toggle = $('aiConsentToggle');
+    if (!toggle) return;
+    toggle.setAttribute('aria-checked', enabled ? 'true' : 'false');
+    toggle.disabled = false;
+    var state = $('aiConsentState');
+    if (state) state.textContent = t(enabled ? 'profile.aiConsent.stateOn' : 'profile.aiConsent.stateOff');
+  }
+
+  function showAiConsentError(show) {
+    var box = $('aiConsentErr');
+    if (!box) return;
+    if (show) { box.textContent = t('profile.aiConsent.error'); box.classList.add('show'); }
+    else { box.classList.remove('show'); }
+  }
+
+  if ($('aiConsentToggle')) {
+    $('aiConsentToggle').addEventListener('click', async function () {
+      var toggle = $('aiConsentToggle');
+      var next = toggle.getAttribute('aria-checked') !== 'true';
+      toggle.disabled = true;
+      showAiConsentError(false);
+      try {
+        await VeloraData.request('/api/v1/auth/me/preferences', { method: 'PATCH', body: { ai_consent: next } });
+      } catch (e) {
+        showAiConsentError(true); 
+      }
+      
+      try {
+        var me = await VeloraData.request('/api/v1/auth/me');
+        renderAiConsent(typeof (me.user || {}).aiConsent === 'boolean' ? me.user.aiConsent : false);
+      } catch (e2) {
+        if (toggle) toggle.disabled = false;
+      }
+    });
   }
 
   $('changePwBtn').addEventListener('click', async function () {

@@ -1,10 +1,10 @@
 {
   "algorithm": "sha256",
-  "commitSha": "0aba2e8689a236391b432d02eac5abeccd3b758f",
+  "commitSha": "8a04520fb86aceffc2c4b4e25b643fce8a80af75",
   "localizationVersion": "2026.08.22.1",
   "policyVersion": 2,
-  "releaseHtmlSha256": "da35a63f66269e25071879161c20a6689d1df9095204d9ea9e5152b6a2279fcd",
-  "releaseId": "2026.08.29.1",
+  "releaseHtmlSha256": "0fb7319a4c919b5e48047c4634289b0d6e1f588ca9d456573c11a2b57453f4f6",
+  "releaseId": "2026.08.30.1",
   "routeCount": 61,
   "routeManifestSha256": "77c267b42c509fae6a9f070298df1548d94a669176ed74999d28945504bdc251",
   "routes": {
@@ -694,11 +694,11 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "en/profile/index.html",
-      "htmlSha256": "d5090437764a56deb46801c9774a8600bb1d20cd144781f208bd3fce10bfc884",
+      "htmlSha256": "95e67362c5db90dd7bb6607c9a7607eb2ee69fee4daf3940de07c32abea52be8",
       "inlineScriptCount": 5,
       "inlineScriptHashes": [
-        "sha256-5mIAArcHmI2Sw59NbWYRNwL4YM1V3HRn8xLgPuf5UkY=",
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
+        "sha256-A40DsRXwEQ2yy7nUkuEDfKsNNFjx/bTSllyqKHdIQh4=",
         "sha256-BPo9AzCPtTVwrKrB1VZCiwWkWKUGtU+KtsQk2Ty8Xq4=",
         "sha256-VVSQj8uRcSoK3TViPfAjMxzXKy/AftAJIr3gt3bG4Pg=",
         "sha256-u96vcSziMsk7KMkknljeqYVj13CQi6MXk2v/rT8ZvL8="
@@ -1603,11 +1603,11 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "fa/profile/index.html",
-      "htmlSha256": "194231a6a22c99a13c0def5a0e80dd7acec2e929052bcf6cdbb77d284a2cd736",
+      "htmlSha256": "85eec4ad3597db2a633665f735170d2e27fa7e6d0d5a6a22b70224caed956191",
       "inlineScriptCount": 5,
       "inlineScriptHashes": [
-        "sha256-5mIAArcHmI2Sw59NbWYRNwL4YM1V3HRn8xLgPuf5UkY=",
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
+        "sha256-A40DsRXwEQ2yy7nUkuEDfKsNNFjx/bTSllyqKHdIQh4=",
         "sha256-BPo9AzCPtTVwrKrB1VZCiwWkWKUGtU+KtsQk2Ty8Xq4=",
         "sha256-VVSQj8uRcSoK3TViPfAjMxzXKy/AftAJIr3gt3bG4Pg=",
         "sha256-u96vcSziMsk7KMkknljeqYVj13CQi6MXk2v/rT8ZvL8="
@@ -1887,5 +1887,5 @@
       ]
     }
   },
-  "sourceDigest": "3068b2331107b969d5f8d7bae1b4c538370ff7b1bab9a0795bbf2a5ec421288c"
+  "sourceDigest": "a9f9a9b009de052f9eadc7a63a99d431be95641536f4ce335ac7198aa6c58b54"
 }
