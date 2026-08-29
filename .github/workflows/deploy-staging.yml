@@ -348,7 +348,10 @@ jobs:
             "localized/en/trades/new/index.html"
             "localized/fa/profile/index.html"
             "localized/en/profile/index.html"
-            "trades/new/index.html"
+            "localized/fa/admin/index.html"
+            "localized/en/admin/index.html"
+            "localized/fa/dashboard/index.html"
+            "localized/en/dashboard/index.html"
             "locale-router.php"
           )
           cmds=""
