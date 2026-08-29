@@ -271,6 +271,12 @@ jobs:
               print(f"Applied migrations: {data.get('applied')}")
           if 'error' in data:
               print(f"Error: {data.get('error')}")
+          # Sanitized read-only evidence rows (E2E window); columns are pre-filtered by the probe SELECTs
+          for key in ('provider_logs', 'extractions', 'requests'):
+              rows = data.get(key) or []
+              print(f"{key}: {len(rows)} row(s)")
+              for row in rows:
+                  print(f"  {json.dumps(row, ensure_ascii=False, default=str)}")
           # Determine pass/fail
           missing = [t for t, exists in tables.items() if not exists]
           if not data.get('users_ai_consent_at'):
