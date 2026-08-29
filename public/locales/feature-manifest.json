@@ -1,5 +1,5 @@
 {
-  "version": "2026.08.22.1",
+  "version": "2026.08.30.2",
   "basePath": "/public/locales/chunks",
   "strategy": "usage-scoped",
   "locales": {
@@ -8,109 +8,109 @@
         "path": "fa/admin.json",
         "messages": 66,
         "bytes": 3437,
-        "sha256": "25794580b4f564b625ba74ca8d96445a11dd2f5c65548a8b82413dc5b1e538d5"
+        "sha256": "d8e637debd5de05ca3dfe89d940418dd6584079f2e9aaec9c386668243e889b0"
       },
       "auth": {
         "path": "fa/auth.json",
         "messages": 112,
         "bytes": 10234,
-        "sha256": "c4cbfcd120100d040d23fe9bd62a977275aebc7091b798abbf011d324b2be001"
+        "sha256": "74382132cc5fdea720e492642bd992ed24c8a1349d296e9d5019f25e69f0a952"
       },
       "blog": {
         "path": "fa/blog.json",
         "messages": 141,
         "bytes": 26920,
-        "sha256": "f1b1b77ac2a9014893d5b1990698248d391288850c82368a1147128973489afd"
+        "sha256": "c4a3985fc2be0bc271439a1de0c326b7384965e01de22b0b9f6e248b7d061dfe"
       },
       "checkout": {
         "path": "fa/checkout.json",
         "messages": 24,
         "bytes": 2166,
-        "sha256": "c321a499e92f41b33badd32e932e82f19ad69a4d8b7520e53106c7bddcdaeeb5"
+        "sha256": "5d9ac46e5a177b67f3ae9e4c618cfec96a68eff8ebb1f9b57e6203c8ede837cd"
       },
       "common": {
         "path": "fa/common.json",
         "messages": 69,
         "bytes": 3344,
-        "sha256": "ddecf4cbd1ea7b66915e40fe3b3a39bff2f941eeb1d47d1e1d1337329e5ac46f"
+        "sha256": "3c31c29afb8b9dca4ecb9ae564d551a6de0b76ef0e91c7e471f523532070f8f0"
       },
       "dashboard": {
         "path": "fa/dashboard.json",
         "messages": 59,
         "bytes": 5772,
-        "sha256": "3794cabb55fa51e4dccad781f6d60c2e37064a7908cf5fec5df79f2ee256cbbd"
+        "sha256": "f46c3704c1631b7893901b3b3755a11810a2edcc08ac4626452deb00bdb804cb"
       },
       "errors": {
         "path": "fa/errors.json",
         "messages": 82,
         "bytes": 7921,
-        "sha256": "57aad07788c738b979def7b4488fdd38d6ed3bf25af57b61b7a10e13bc2d53ff"
+        "sha256": "6abbbeb59d96437428a8b4daa5d5c59a8bebf5d501a8604da6abaef69f949168"
       },
       "intelligence": {
         "path": "fa/intelligence.json",
         "messages": 27,
         "bytes": 3675,
-        "sha256": "2204b2814fd4e59fa29cf3dff991e42259f6dc504a1f998aca4d122beb8e2b98"
+        "sha256": "a39558a05eabae75b92b787049091ad9517cb88349a4b6432e875ab432c999df"
       },
       "landing": {
         "path": "fa/landing.json",
         "messages": 355,
         "bytes": 35518,
-        "sha256": "10fe883c171818469115a8085d51952cd038ecd793ddbd303af8a15cf152f0bd"
+        "sha256": "a0bda87905e5193576d9d703575abdac6b12859853c683507431bd9b53e9aa6f"
       },
       "markets": {
         "path": "fa/markets.json",
         "messages": 11,
         "bytes": 909,
-        "sha256": "3039d572eac3791d41cdc5115c0e5b773f1d57e9d19a78f1539a738749836843"
+        "sha256": "cdc2aac084628d8706e94fbf4fd4ec58e7786b8d919f6a77e4dc3fbc05c895a1"
       },
       "news": {
         "path": "fa/news.json",
         "messages": 16,
         "bytes": 1946,
-        "sha256": "f16e6c37993c895990e564b644f907153c73d8c39475eb5ab1e28a1509757bb2"
+        "sha256": "6c8e0302f5bab48456152527961b06120af1e902931c9acebad5cc597ad6756b"
       },
       "performance": {
         "path": "fa/performance.json",
         "messages": 8,
         "bytes": 705,
-        "sha256": "fa3c612f009d7853b664753cc782eac8397cc20502aeb2f71f2983d7a8e2b3b6"
+        "sha256": "a6829224eb156f67870ed8a0574c1e1af91bf3e4e0621d78ed456f0eacd37134"
       },
       "privacy": {
         "path": "fa/privacy.json",
         "messages": 93,
         "bytes": 11468,
-        "sha256": "b7c4266bac83f33a23dd18f27f94a598cbc8553ef1b1df21974f935b2d13c000"
+        "sha256": "b2c8b5a0e9f8d65400d0017f0e6ac94ee9e5f622eeb6f398c19df64234fb6b61"
       },
       "profile": {
         "path": "fa/profile.json",
         "messages": 25,
         "bytes": 2197,
-        "sha256": "440c6c35f41423659115033dd82b9065350741de118b02bcc65b9d02f935bc4b"
+        "sha256": "c264dc819e012da43f1711825df832f7d50c06c42d0d05d232c511b6a5da0536"
       },
       "support": {
         "path": "fa/support.json",
         "messages": 17,
         "bytes": 2068,
-        "sha256": "d5b6050aef6bebcb43bb43883f89d73a0eab7c4cc8ddf859020630317a266e62"
+        "sha256": "8926a6b11e9f643cd220b17d6dd9b56cfe43def1f96ab1e106e3ba426839e40d"
       },
       "terms": {
         "path": "fa/terms.json",
         "messages": 52,
         "bytes": 6219,
-        "sha256": "3ca1caabcc6b4dcaa824550877cb506bb91d894ba0f102b59ba087bbb87f052a"
+        "sha256": "ebc5520ce2ced944ce135ffb2095bdf191e00331e80808748486415e7575238d"
       },
       "trades": {
         "path": "fa/trades.json",
         "messages": 135,
         "bytes": 10670,
-        "sha256": "6bca004d4519f1a2570f50f5cc84003fe34532f4171e8fd1210aa8ef3f3bc57c"
+        "sha256": "fc4983915261850d3e03db46a41c2f4df7e8fcae0499b48502307d6ce9efabf2"
       },
       "wallet": {
         "path": "fa/wallet.json",
         "messages": 9,
         "bytes": 884,
-        "sha256": "3e6974db2e5e28f604e3c3fd9bed9c23ac542363b159cb9c6cda155211ff78d9"
+        "sha256": "847105461016e76392c059ca58b84f89191fa778c17f69d3ccf6f0fe88cd730f"
       }
     },
     "en": {
@@ -118,109 +118,109 @@
         "path": "en/admin.json",
         "messages": 66,
         "bytes": 2731,
-        "sha256": "f2767ed1960a0662bfe8dd78bf2087484332dd4744a316ff78bee2df8ee16bbd"
+        "sha256": "b0a240dd869af0a0ebd24eaa5c7bbbd62fffba6c4c8bd776ae80be4dc3f95032"
       },
       "auth": {
         "path": "en/auth.json",
         "messages": 112,
         "bytes": 8201,
-        "sha256": "a814c8bc9c000b314c6423dc7a34ccfb3fa7ddd6e329a3c41a9d8a6e546ad049"
+        "sha256": "c435966975f626e9b53a94e3e6614d8e8c0f6b087aaafe6f53c53b17094d0cb8"
       },
       "blog": {
         "path": "en/blog.json",
         "messages": 141,
         "bytes": 19344,
-        "sha256": "1a6508b65e639cd0d41bf8a1e198c457001e2fdace4f4b8e10c349e8d68f9bb2"
+        "sha256": "54a9b75b300ba0021f86d9569f138ba68d6fde28bba32616ff091a26b26e67c9"
       },
       "checkout": {
         "path": "en/checkout.json",
         "messages": 24,
         "bytes": 1692,
-        "sha256": "64d3f10ab59d2669b9886bc37ee76cba80354a8760bdcb0668ca296a195c2912"
+        "sha256": "8d5c61c3e8dc67c0aee012ae97ab883a00496107abe694db97a1c09fddbfdb34"
       },
       "common": {
         "path": "en/common.json",
         "messages": 69,
         "bytes": 2734,
-        "sha256": "6dfe24a865e6706d5a14ee18b2985979396817d66a4811cd8d73ebd3b3688bf3"
+        "sha256": "3daa7ff00c6f03075d65c2b8828475276681f9674799ca37b8aed109da49acbd"
       },
       "dashboard": {
         "path": "en/dashboard.json",
         "messages": 59,
         "bytes": 4441,
-        "sha256": "a1437957b75c916b871518cd8c908ab0f0fc4d96cb3dab1f0af87782fb622487"
+        "sha256": "f3836e224c5656e88f54c037bc7778badf5ac748c3091d014ccc49a98de4d984"
       },
       "errors": {
         "path": "en/errors.json",
         "messages": 82,
         "bytes": 5775,
-        "sha256": "03d9f1327f0f13025ac3ec7b15388f60cb2f7fbae6119bf87267ebca652dae48"
+        "sha256": "6f7db0aa8a1f2d4592134a4521728a04c53e29b4f49f9a9f0d655451b2b91fec"
       },
       "intelligence": {
         "path": "en/intelligence.json",
         "messages": 27,
         "bytes": 2910,
-        "sha256": "9379616ae49c38e5e9bdf3f0d9685e4219307592dbba8ea5a3b39dfb2fd8f859"
+        "sha256": "49a63c671b5df9f359a269bc0eac2a2db8e92b294f186ac7e4bbbfffc341644b"
       },
       "landing": {
         "path": "en/landing.json",
         "messages": 355,
         "bytes": 27551,
-        "sha256": "d9612e0c6e497bc449a85b4bb64825ec2f3dffa699b7993d7f891faa72c12335"
+        "sha256": "6ef25cf367f9cc4180ee4b6a148da52f9c0a4c8610d5d7a9c2c7c8b801513348"
       },
       "markets": {
         "path": "en/markets.json",
         "messages": 11,
         "bytes": 745,
-        "sha256": "bc243d33c91f17286ccb1eaa1277550552019b1425a0ea17c91ce9033c525b93"
+        "sha256": "de56c9489b562ee080a84e96fa93871586ae93d0dd4221362f78b3aa7e412248"
       },
       "news": {
         "path": "en/news.json",
         "messages": 16,
         "bytes": 1520,
-        "sha256": "f1cc6fad556ef6f77fcadb5ad3fe2ee8a6b88ab555967484329ebd446a2d3fdd"
+        "sha256": "ec6f234352e5e9b6a37f7d36b6d196ba82c7c88aeffcdcc54c4de228a8d8b006"
       },
       "performance": {
         "path": "en/performance.json",
         "messages": 8,
         "bytes": 616,
-        "sha256": "9b6348b98f84be1dcc13f6f68e767a7dd7adfb252b134b30719fbd562f7bd05b"
+        "sha256": "b5937bba476cb632ccb5b0c065d9e94eb3cd67bec70abe13ab99677dbb734eab"
       },
       "privacy": {
         "path": "en/privacy.json",
         "messages": 93,
         "bytes": 8191,
-        "sha256": "87fc5f3a77ec569ea07946e6bc457508118702dc13d29764e88b677b1097b549"
+        "sha256": "7e6b113fa11bb120e36ae3b30a9b2faaee8cb2e90db5db298adc8052a59f5c55"
       },
       "profile": {
         "path": "en/profile.json",
         "messages": 25,
         "bytes": 1679,
-        "sha256": "42137bbdf95e9d42cb3f053ba80007dbd23612687cc40567d3662eb96a6fbee2"
+        "sha256": "c170f9db57700afd5bd6a9f01b4939afb2d231bd0efe99f1846613b63311be14"
       },
       "support": {
         "path": "en/support.json",
         "messages": 17,
         "bytes": 1601,
-        "sha256": "cdc2658ccdfa48ad914aa72e6ab262932c922dc7cc9d866030afe998d959f9a8"
+        "sha256": "23acfa76a5d12394858ba6a22d93d3f557c8634d8839d8ccc6e35f67a44ba1c9"
       },
       "terms": {
         "path": "en/terms.json",
         "messages": 52,
         "bytes": 4492,
-        "sha256": "68d5586e63d05467da600cfc3e5c2db39d5836e5c7699e18db0b1e2926e18d20"
+        "sha256": "c381053ac0b79ed97d44a345ccaff43d0a0ecb8a2839ae629a6a17ca0be3b10d"
       },
       "trades": {
         "path": "en/trades.json",
         "messages": 135,
         "bytes": 8836,
-        "sha256": "531091255b9c8d00dc9b4c9ddc80574bc024942cf2ecd11b2cdbaa2848ec9862"
+        "sha256": "605f6cf91619ecd21d4d3ca477d7a768124bc584676ef55e0057b12b5bd2a1b7"
       },
       "wallet": {
         "path": "en/wallet.json",
         "messages": 9,
         "bytes": 792,
-        "sha256": "56f32b2fa8349c6780822b4ed793677e125c89a23fff7d743c6dd632eb484f53"
+        "sha256": "8c5e318ae8bb0fe95d04a002a699397cfd76eff58a1306e3f155079666f0b760"
       }
     }
   }
