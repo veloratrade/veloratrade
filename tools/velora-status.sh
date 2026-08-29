@@ -124,7 +124,9 @@ echo "  کامیت محلی   : $head_short"
 echo "  origin محلی  : ${origin_short:-در دسترس نیست}"
 echo "  فاصله        : ahead=$ahead / behind=$behind"
 echo "  تاریخ        : $(git log -1 --format='%ad' --date=iso 2>/dev/null)"
-echo "  پیام         : $(git log -1 --format='%s' 2>/dev/null | cut -c1-60)"
+# برش امنِ UTF-8: sed با لوکال سنجیده (کاراکترمحور) — نه cut -c (بایت‌محور)
+msg_short=$(git log -1 --format='%s' 2>/dev/null | LC_ALL=C.UTF-8 sed 's/^\(.\{0,60\}\).*$/\1/')
+echo "  پیام         : $msg_short"
 dirty=$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')
 echo "  working tree : $([ "$dirty" = 0 ] && echo 'تمیز ✅' || echo "$dirty فایل تغییرکرده ⚠️")"
 echo "  فایل‌ها      : $(git ls-files 2>/dev/null | wc -l | tr -d ' ')"
@@ -141,7 +143,8 @@ else
 fi
 echo
 echo "  ۵ کامیت آخر:"
-git log --oneline -5 --format='    %h %s' 2>/dev/null | cut -c1-70
+# برش امنِ UTF-8 (درس بالا): هر خط حداکثر ۷۰ «کاراکتر»، نه ۷۰ بایت
+git log --oneline -5 --format='    %h %s' 2>/dev/null | LC_ALL=C.UTF-8 sed 's/^\(.\{0,70\}\).*$/\1/'
 
 # ── ۲. Workflowها ─────────────────────────────────────────────────────────────
 echo; hr; echo "۲. Workflowها و آخرین اجرا"; hr
