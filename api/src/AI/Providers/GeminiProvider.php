@@ -31,6 +31,8 @@ use Velora\Core\Config;
  *
  * Secrets stay in env (Config::env), never hardcoded, never logged.
  * Prompt source is ONLY via PromptManager.
+ * Image optimization is handled in Extraction layer (ImageProcessor), not here;
+ * transports receive already-processed raw image bytes.
  */
 final class GeminiProvider implements AIProviderInterface
 {

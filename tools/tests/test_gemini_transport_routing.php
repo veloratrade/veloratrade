@@ -12,6 +12,25 @@ declare(strict_types=1);
  * Run: php tools/tests/test_gemini_transport_routing.php
  */
 
+$root = sys_get_temp_dir() . '/velora-gemini-transport-test-' . bin2hex(random_bytes(5));
+mkdir($root . '/config', 0700, true);
+mkdir($root . '/data', 0700, true);
+mkdir($root . '/logs', 0700, true);
+putenv('APP_ENV=local');
+putenv('VELORA_PRIVATE_ROOT=' . $root);
+putenv('VELORA_DOCUMENT_ROOT=' . dirname(__DIR__, 2));
+file_put_contents($root . '/config/velora.env', implode("\n", [
+    'APP_ENV=local',
+    'APP_DEBUG=true',
+    'DB_DRIVER=sqlite',
+    'DB_DATABASE=' . $root . '/data/velora.sqlite',
+    'JWT_SECRET=' . str_repeat('j', 48),
+    'APP_ENCRYPTION_KEY=' . base64_encode(random_bytes(32)),
+    'CORS_ALLOWED_ORIGINS=http://localhost',
+    'FRONTEND_URL=http://localhost',
+    'MAIL_DRIVER=log',
+]) . "\n");
+
 require __DIR__ . '/../../api/src/bootstrap.php';
 
 use Velora\AI\Exceptions\AIProviderException;
