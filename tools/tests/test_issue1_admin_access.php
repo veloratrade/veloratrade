@@ -110,7 +110,20 @@ foreach ($pages as $page) {
     $linkOk = strpos($html, 'id="adminLinkSide"') !== false && strpos($html, 'data-velora-adminhide-target="1"') !== false;
     $scriptOk = strpos($html, 'data-velora-adminhide') !== false && strpos($html, "u.role === 'admin'") !== false
         && strpos($html, "nodes[i].style.display = isAdmin ? '' : 'none'") !== false;
-    check($linkOk && $scriptOk, "{$page}/: admin link tagged + hide-script fails closed for non-admins");
+    $hiddenByDefault = strpos(
+        $html,
+        'id="adminLinkSide" style="display:none"'
+    ) !== false;
+    check($linkOk && $scriptOk && $hiddenByDefault, "{$page}/: admin link tagged + hidden by default + hide-script fails closed for non-admins");
+}
+// Server-rendered output must not expose the admin nav pre-JS: the localized
+// static pages (what staging actually serves) carry the same default-hidden style.
+foreach (['fa', 'en'] as $loc) {
+    $out = (string) file_get_contents($root . '/localized/' . $loc . '/dashboard/index.html');
+    check(
+        strpos($out, 'id="adminLinkSide" style="display:none"') !== false,
+        "localized/{$loc}/dashboard: admin nav hidden by default in served HTML"
+    );
 }
 $admin = (string) file_get_contents($root . '/admin/index.html');
 check(
