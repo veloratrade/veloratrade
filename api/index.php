@@ -107,6 +107,15 @@ $router->post('/api/v1/ai/feedback', [AIController::class, 'feedback'], $auth);
 // ---- Admin (RBAC) ----------------------------------------------------
 $router->get('/api/v1/admin/users', [\Velora\Admin\AdminController::class, 'users'], $admin);
 
+// ---- Admin AI configuration (RBAC; real persisted state only) ---------
+$router->get('/api/v1/admin/ai/overview', [\Velora\Admin\AIConfigController::class, 'overview'], $admin);
+$router->post('/api/v1/admin/ai/feature-providers', [\Velora\Admin\AIConfigController::class, 'create'], $admin);
+$router->post('/api/v1/admin/ai/feature-providers/reorder', [\Velora\Admin\AIConfigController::class, 'reorder'], $admin);
+$router->add('PATCH', '/api/v1/admin/ai/feature-providers/{id}', [\Velora\Admin\AIConfigController::class, 'update'], $admin);
+$router->delete('/api/v1/admin/ai/feature-providers/{id}', [\Velora\Admin\AIConfigController::class, 'delete'], $admin);
+$router->post('/api/v1/admin/ai/credentials/{provider}', [\Velora\Admin\AIConfigController::class, 'replaceCredential'], $admin);
+$router->delete('/api/v1/admin/ai/credentials/{provider}', [\Velora\Admin\AIConfigController::class, 'deleteCredential'], $admin);
+
 // Dispatch
 try {
     // ---- Rate limiting (v0.1 security) — لاگین/ثبت‌نام/بازیابی رمز ----

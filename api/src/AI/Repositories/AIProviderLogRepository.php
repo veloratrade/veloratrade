@@ -17,22 +17,52 @@ final class AIProviderLogRepository extends AIRepository
 
     /**
      * Log provider attempt.
+     *
+     * v0.9 routing observability: optional feature/model/route/fallbackIndex
+     * columns (ai_provider_logs). Falls back to the legacy insert when the
+     * extended columns are not present yet (pre-migration environments), so
+     * logging never breaks the request.
      */
-    public function log(string $provider, string $status, int $latencyMs = 0, ?string $errorCode = null): void
-    {
+    public function log(
+        string $provider,
+        string $status,
+        int $latencyMs = 0,
+        ?string $errorCode = null,
+        ?string $feature = null,
+        ?string $model = null,
+        ?string $route = null,
+        ?int $fallbackIndex = null,
+    ): void {
         try {
             $stmt = $this->connection()->prepare(
-                'INSERT INTO ' . self::TABLE . ' (provider, status, latency_ms, error_code)
-                 VALUES (:provider, :status, :latency_ms, :error_code)'
+                'INSERT INTO ' . self::TABLE . ' (provider, status, latency_ms, error_code, feature, model, route, fallback_index)
+                 VALUES (:provider, :status, :latency_ms, :error_code, :feature, :model, :route, :fallback_index)'
             );
             $stmt->bindValue(':provider', $provider);
             $stmt->bindValue(':status', $status);
             $stmt->bindValue(':latency_ms', $latencyMs, PDO::PARAM_INT);
             $stmt->bindValue(':error_code', $errorCode);
+            $stmt->bindValue(':feature', $feature);
+            $stmt->bindValue(':model', $model);
+            $stmt->bindValue(':route', $route);
+            $stmt->bindValue(':fallback_index', $fallbackIndex, PDO::PARAM_INT);
             $stmt->execute();
         } catch (\Throwable $e) {
-            // Best effort — don't fail extraction if log fails
-            error_log('[VELORA_AI_LOG] failed for ' . $provider . ': ' . $e->getMessage());
+            // Extended columns missing (pre-v0.9) or DB issue — legacy insert.
+            try {
+                $stmt = $this->connection()->prepare(
+                    'INSERT INTO ' . self::TABLE . ' (provider, status, latency_ms, error_code)
+                     VALUES (:provider, :status, :latency_ms, :error_code)'
+                );
+                $stmt->bindValue(':provider', $provider);
+                $stmt->bindValue(':status', $status);
+                $stmt->bindValue(':latency_ms', $latencyMs, PDO::PARAM_INT);
+                $stmt->bindValue(':error_code', $errorCode);
+                $stmt->execute();
+            } catch (\Throwable $e2) {
+                // Best effort — don't fail extraction if log fails
+                error_log('[VELORA_AI_LOG] failed for ' . $provider . ': ' . $e2->getMessage());
+            }
         }
     }
 
