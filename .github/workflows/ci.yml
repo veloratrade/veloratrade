@@ -59,6 +59,9 @@ jobs:
       - name: Database connection resilience contract
         run: php tools/tests/test_database_connection_resilience.php
 
+      - name: Gemini transport routing contract
+        run: php tools/tests/test_gemini_transport_routing.php
+
       - name: Prepare private runtime root
         run: |
           # Config::privateRoot() demands an absolute dir OUTSIDE the document root.

@@ -132,6 +132,11 @@ return [
         'gemini_api_key' => Config::env('GEMINI_API_KEY', ''),
         'gemini_model' => Config::env('GEMINI_MODEL', 'gemini-1.5-flash'),
         'gemini_timeout' => max(2, min(30, (int) Config::env('GEMINI_TIMEOUT', '8'))),
+        // Swappable Gemini transport: direct HTTPS | n8n relay (temporary region workaround)
+        'gemini_route' => strtolower(Config::env('GEMINI_ROUTE', '')) === 'n8n_relay' ? 'n8n_relay' : 'direct',
+        'gemini_relay_url' => Config::env('GEMINI_RELAY_URL', ''),
+        'gemini_relay_token' => Config::env('GEMINI_RELAY_TOKEN', ''),
+        'gemini_relay_timeout' => max(5, min(90, (int) Config::env('GEMINI_RELAY_TIMEOUT', '45'))),
         'openai_api_key' => Config::env('OPENAI_API_KEY', ''),
         'openai_model' => Config::env('OPENAI_MODEL', 'gpt-4o-mini'),
         'openai_timeout' => max(2, min(30, (int) Config::env('OPENAI_TIMEOUT', '10'))),

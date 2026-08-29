@@ -32,6 +32,9 @@ jobs:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
+          GEMINI_ROUTE: ${{ secrets.GEMINI_ROUTE }}
+          GEMINI_RELAY_URL: ${{ secrets.GEMINI_RELAY_URL }}
+          GEMINI_RELAY_TOKEN: ${{ secrets.GEMINI_RELAY_TOKEN }}
         run: |
           set -euo pipefail
           sudo apt-get install -y -q lftp > /dev/null
@@ -41,6 +44,7 @@ jobs:
           echo "::add-mask::$RESEND_API_KEY"
           if [ -n "${GEMINI_API_KEY:-}" ]; then echo "::add-mask::$GEMINI_API_KEY"; fi
           if [ -n "${GEMINI_MODEL:-}" ]; then echo "::add-mask::$GEMINI_MODEL"; fi
+          if [ -n "${GEMINI_RELAY_TOKEN:-}" ]; then echo "::add-mask::$GEMINI_RELAY_TOKEN"; fi
 
           mkdir -p private/config private/data private/logs
           printf '%s' "$VELORA_ENV" > private/config/velora.env
@@ -57,6 +61,9 @@ jobs:
               'MAIL_FROM_NAME': 'VELORA TRADE',
               'GEMINI_API_KEY': os.environ.get('GEMINI_API_KEY', ''),
               'GEMINI_MODEL': os.environ.get('GEMINI_MODEL', 'gemini-3.6-flash'),
+              'GEMINI_ROUTE': os.environ.get('GEMINI_ROUTE', ''),
+              'GEMINI_RELAY_URL': os.environ.get('GEMINI_RELAY_URL', ''),
+              'GEMINI_RELAY_TOKEN': os.environ.get('GEMINI_RELAY_TOKEN', ''),
           }
           # Remove empty GEMINI keys if not provided (keep fallback to Tesseract)
           updates = {k: v for k, v in updates.items() if v != ''}
