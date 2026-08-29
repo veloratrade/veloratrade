@@ -56,7 +56,7 @@ jobs:
               'MAIL_FROM': 'no-reply@veloratrade.ir',
               'MAIL_FROM_NAME': 'VELORA TRADE',
               'GEMINI_API_KEY': os.environ.get('GEMINI_API_KEY', ''),
-              'GEMINI_MODEL': os.environ.get('GEMINI_MODEL', 'gemini-1.5-flash'),
+              'GEMINI_MODEL': os.environ.get('GEMINI_MODEL', 'gemini-3.6-flash'),
           }
           # Remove empty GEMINI keys if not provided (keep fallback to Tesseract)
           updates = {k: v for k, v in updates.items() if v != ''}
