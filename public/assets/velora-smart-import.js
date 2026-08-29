@@ -350,11 +350,21 @@
       return { label: t('اسکرین', 'Shot') + ' ' + (i + 1), fields: fields };
     });
     var aiParsed = extractionToParsed();
-    if (aiParsed) parsed = [aiParsed].concat(parsed);
+    if (aiParsed) {
+      // Gemini/OpenAI/Claude result is authoritative for the fields it carries;
+      // OCR rows may only SUPPLEMENT missing fields, never overwrite them.
+      parsed.forEach(function (row) {
+        if (row === aiParsed) return;
+        Object.keys(row.fields || {}).forEach(function (key) {
+          if (aiParsed.fields[key]) delete row.fields[key];
+        });
+      });
+      parsed = [aiParsed].concat(parsed);
+    }
     mergeAll(parsed);
     if (window.__vsiTimes) {
-      if (__vsiTimes.openTime) merged.openTime = faDigits(__vsiTimes.openTime);
-      if (__vsiTimes.closeTime) merged.closeTime = faDigits(__vsiTimes.closeTime);
+      if (__vsiTimes.openTime && !merged.openTime) merged.openTime = faDigits(__vsiTimes.openTime);
+      if (__vsiTimes.closeTime && !merged.closeTime) merged.closeTime = faDigits(__vsiTimes.closeTime);
     }
     if (!Object.keys(merged).length) {
       showFail();
@@ -367,13 +377,15 @@
     var packed = [];
     for (var i = 0; i < dataUrls.length; i++) packed.push(await compressImage(dataUrls[i]));
     if (!window.VeloraData || !window.VeloraData.request) throw new Error('auth-client-unavailable');
+    // Freshness: drop any previous extraction BEFORE the request so a failed or
+    // empty response can never repopulate the form from the last screenshot.
+    window.__vsiExtraction = null;
     var data = await window.VeloraData.request('/api/v1/trades/extract-screenshot', {
       method: 'POST',
       body: { images: packed }
     });
     // Multi-provider routing: an external AI result (gemini/openai/claude) is
     // authoritative structured data; tesseract stays the supplementary text path.
-    window.__vsiExtraction = null;
     var ext = data && (data.extraction || data.data) ? (data.extraction || data.data) : null;
     if (ext && typeof ext === 'object') {
       window.__vsiExtraction = {

@@ -32,7 +32,7 @@ check(strpos($js, 'data.extraction') !== false || strpos($js, 'extraction || dat
 check(strpos($js, 'window.__vsiExtraction') !== false, 'extraction stashed for the merge step');
 check(substr_count($js, 'extractionToParsed') >= 3, 'extractionToParsed defined and wired');
 check(strpos($js, "provider === 'gemini' || provider === 'openai' || provider === 'claude'") !== false, 'gemini/openai/claude treated as authoritative external AI');
-check(strpos($js, "if (aiParsed) parsed = [aiParsed].concat(parsed);") !== false, 'AI row merged ahead of OCR rows (conflicts still surfaced)');
+check(strpos($js, "if (aiParsed.fields[key]) delete row.fields[key];") !== false && strpos($js, 'parsed = [aiParsed].concat(parsed);') !== false, 'AI row is authoritative: merged ahead of OCR, which only supplements fields the AI lacks');
 check(strpos($js, "if (!external) return null;") !== false, 'tesseract/cache rows do NOT take the AI path (stay supplementary)');
 
 echo "== Field mapping to review form ==\n";
@@ -85,6 +85,16 @@ if ($baselineCode === null || $baselineCode === '') {
 }
 $html = (string) file_get_contents($root . '/trades/new/index.html');
 check(strpos($html, 'velora-smart-import.js?v=') !== false, 'page still loads the asset via versioned script tag (no inline copy)');
+
+
+echo "== Freshness: new screenshot cannot inherit the previous run ==\n";
+$js = (string) file_get_contents($root . '/public/assets/velora-smart-import.js');
+$resetPos = strpos($js, "window.__vsiExtraction = null;\n    var data = await window.VeloraData.request('/api/v1/trades/extract-screenshot'");
+$reqPos = strpos($js, "/api/v1/trades/extract-screenshot");
+check($resetPos !== false, 'previous extraction is dropped BEFORE the extract request (failed request cannot repopulate the form)');
+check(strpos($js, 'aiParsed.fields[key]) delete row.fields[key];') !== false, 'OCR rows only supplement fields the external AI result lacks (AI value wins, no silent overwrite)');
+check(strpos($js, "__vsiTimes.openTime && !merged.openTime") !== false, 'server times fill missing values only — never overwrite AI-provided open/close times');
+check(strpos($js, "window.__vsiExtraction = null;") !== false && strpos($js, 'runExtract') !== false, 'runExtract path keeps its reset-on-entry');
 
 echo "\nscreenshot-ui: " . ($failures === 0 ? 'PASS' : 'FAIL') . " ($checks checks, $failures failures)\n";
 exit($failures === 0 ? 0 : 1);

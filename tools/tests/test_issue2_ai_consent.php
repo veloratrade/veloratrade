@@ -100,7 +100,19 @@ if (!in_array(getenv('VELORA_TEST_CHILD'), ['1', 'true'], true)) {
     $chunk = json_decode((string) file_get_contents(dirname(__DIR__, 2) . '/public/locales/chunks/fa/profile.json'), true)['messages'] ?? [];
     check(isset($chunk['profile.aiConsent.title']), 'profile feature chunk covers the new keys (template literal presence)');
 
-    echo "\nissue2-ai-consent: " . ($failures === 0 ? 'PASS' : 'FAIL') . " ($checks checks, $failures failures)\n";
+    
+echo "== Frontend: consent toggle renders the real switch pattern ==\n";
+$profile = (string) file_get_contents(dirname(__DIR__, 2) . '/profile/index.html');
+check(
+    strpos($profile, "toggle.classList.toggle('on', enabled)") !== false,
+    'renderAiConsent applies the shared .on switch state (visual ON/OFF, not text-only)'
+);
+check(
+    strpos($profile, '.sound-toggle.on{') !== false && strpos($profile, 'aiConsentToggle') !== false && strpos($profile, 'sound-toggle"') !== false,
+    'consent control reuses the existing gold toggle CSS (.sound-toggle.on) used by the sound switch'
+);
+
+echo "\nissue2-ai-consent: " . ($failures === 0 ? 'PASS' : 'FAIL') . " ($checks checks, $failures failures)\n";
     $rm = static function (string $p) use (&$rm): void {
         if (!is_dir($p)) { @unlink($p); return; }
         foreach (scandir($p) ?: [] as $f) { if ($f !== '.' && $f !== '..') $rm($p . '/' . $f); }
