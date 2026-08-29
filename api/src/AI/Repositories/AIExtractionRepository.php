@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Velora\AI\Repositories;
 
+use PDO;
+
 /**
  * Repository for ai_extractions table.
  * Follows existing TradeRepository pattern.

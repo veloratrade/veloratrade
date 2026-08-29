@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Velora\AI\Repositories;
 
+use PDO;
+
 /**
  * Repository for ai_provider_logs.
  * Simple persistence for provider health, no Redis.
