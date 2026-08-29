@@ -105,25 +105,28 @@ jobs:
                       $result['feature_flags'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
                   }
               } catch (Throwable $e) {}
-              // Sanitized read-only evidence for the existing E2E window.
-              $start = '2026-08-28 22:50:00';
-              $end = '2026-08-28 23:00:00';
+              // Sanitized read-only evidence — newest rows first, TZ-safe (no fixed window).
               $result['provider_logs'] = [];
               $result['extractions'] = [];
               $result['requests'] = [];
+              $result['db_clock'] = null;
               try {
-                  $stmt = $pdo->prepare('SELECT provider, status, error_code, latency_ms, created_at FROM ai_provider_logs WHERE provider=:provider AND created_at >= :start AND created_at < :end ORDER BY id ASC');
-                  $stmt->execute(['provider'=>'gemini','start'=>$start,'end'=>$end]);
+                  $stmt = $pdo->query("SELECT NOW() AS db_now, @@session.time_zone AS session_tz, @@global.time_zone AS global_tz");
+                  $result['db_clock'] = $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+              } catch (Throwable $e) {}
+              try {
+                  $stmt = $pdo->prepare('SELECT provider, status, error_code, latency_ms, created_at FROM ai_provider_logs WHERE provider=:provider ORDER BY id DESC LIMIT 15');
+                  $stmt->execute(['provider'=>'gemini']);
                   $result['provider_logs'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
               } catch (Throwable $e) {}
               try {
-                  $stmt = $pdo->prepare('SELECT status, error_code, confidence, created_at FROM ai_extractions WHERE created_at >= :start AND created_at < :end ORDER BY id ASC');
-                  $stmt->execute(['start'=>$start,'end'=>$end]);
+                  $stmt = $pdo->prepare('SELECT status, error_code, confidence, created_at FROM ai_extractions ORDER BY id DESC LIMIT 15');
+                  $stmt->execute();
                   $result['extractions'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
               } catch (Throwable $e) {}
               try {
-                  $stmt = $pdo->prepare('SELECT provider, status, latency_ms, created_at FROM ai_requests WHERE provider=:provider AND created_at >= :start AND created_at < :end ORDER BY id ASC');
-                  $stmt->execute(['provider'=>'gemini','start'=>$start,'end'=>$end]);
+                  $stmt = $pdo->prepare('SELECT provider, status, latency_ms, created_at FROM ai_requests WHERE provider=:provider ORDER BY id DESC LIMIT 15');
+                  $stmt->execute(['provider'=>'gemini']);
                   $result['requests'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
               } catch (Throwable $e) {}
               header('Content-Type: application/json; charset=utf-8');
