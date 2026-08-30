@@ -142,6 +142,15 @@ jobs:
       - name: G7 — Partial-extraction state machine (loud FAIL/BLOCKED until RC-3 lands in tree)
         run: node tools/tests/check_contract_partial_state.js
 
+      - name: G8 — AI locale contract (prompt language policies + canonical locale resolution)
+        run: python tools/localization/check_ai_locale_contract.py
+
+      - name: G8 regression tests (negative fixtures)
+        run: python -m unittest tools.tests.test_ai_locale_contract -v
+
+      - name: G5 — Latin-digit display layer runtime (real asset: Intl patch + toLatin + DOM normalization)
+        run: node tools/tests/test_latin_digits_layer.js
+
       - name: G10-G12 — Static security/enforcement gates (IDOR scoping, admin RBAC wiring, live-data numeric)
         run: python -m unittest tools.tests.test_security_static_gates -v
 

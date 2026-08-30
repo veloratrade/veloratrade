@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "generated_at": "2026-08-24T20:45:00+00:00",
+  "generated_at": "2026-08-30T18:20:00+00:00",
   "scope_note": "PR-01 freeze baseline. Each entry documents one known hardcoded UI literal source in shared JS or inline scripts of generated localized HTML. Counting = distinct candidate literals after stripping JS comments and filtering exact/regex-approved technical literals via literal_allowlist. Scope includes Persian-script literals and probable English UI literals. Resolve an entry via its resolution_pr; the entry must be removed in the same change that eliminates its violations.",
   "categories": {
     "legacy-dead": "file is scheduled for deletion",
@@ -865,10 +865,11 @@
       "id": "V3-025",
       "file": "public/assets/velora-smart-import.js",
       "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
-      "count": 26,
+      "count": 27,
       "category": "legacy-dictionary",
-      "reason": "t() fallback labels + Persian OCR regexes; migrate to central catalog",
-      "resolution_pr": "PR-08c"
+      "reason": "t() fallback labels + Persian OCR regexes + RC-3 bilingual partial-extraction warning (documented legacy t(fa,en)); migrate to central catalog",
+      "resolution_pr": "PR-08c",
+      "updated_at": "2026-08-30"
     }
   ],
   "baseline": {
@@ -876,5 +877,6 @@
     "literals": 412,
     "frozen_hashed_keys": 879,
     "note": "Allowlist integrity audit narrowed broad literal rules, removed stale matches, and added reason/source metadata. Baseline now counts only real remaining hardcoded UI literals plus reviewed technical exemptions."
-  }
+  },
+  "updated_note": "2026-08-30: V3-025 count 26->27 (RC-3 partial-extraction bilingual warning, documented allowlisted legacy dictionary; not a new unallowlisted violation)"
 }
