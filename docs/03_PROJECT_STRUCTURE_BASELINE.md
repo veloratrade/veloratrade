@@ -31,6 +31,7 @@ AS-IS VERIFIED BASELINE • READ-ONLY • APPROVAL REQUIRED BEFORE CHANGE
     "dashboard",
     "docs",
     "en",
+    "fixes",
     "forgot-password",
     "intelligence",
     "localized",

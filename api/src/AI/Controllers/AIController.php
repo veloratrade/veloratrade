@@ -9,6 +9,7 @@ use Velora\AI\Feedback\AIFeedbackService;
 use Velora\AI\Reports\WeeklyReportService;
 use Velora\AI\Repositories\AIAuditLogRepository;
 use Velora\AI\Services\AIFeatureGuard;
+use Velora\Auth\UserRepository;
 use Velora\Core\RateLimiter;
 use Velora\Core\Request;
 use Velora\Core\Response;
@@ -39,7 +40,26 @@ final class AIController
         private readonly AIFeatureGuard $featureGuard = new AIFeatureGuard(),
         private readonly AIAuditLogRepository $auditRepo = new AIAuditLogRepository(),
         private readonly TradeResolver $tradeResolver = new TradeResolver(),
+        private readonly UserRepository $userRepository = new UserRepository(),
     ) {
+    }
+
+    /**
+     * G8 — AI user-facing prose must follow the canonical locale contract.
+     * Resolution order: validated client locale → persisted canonical user
+     * locale (users.locale from the canonical locale system) → 'en' fallback.
+     * A client that omits or sends an invalid locale must never silently get
+     * English while the user's persisted locale is fa, and an unvalidated
+     * locale value is never echoed back.
+     */
+    private function resolveAiLocale(int $userId, mixed $bodyLocale): string
+    {
+        if (is_string($bodyLocale) && in_array(strtolower(trim($bodyLocale)), ['fa', 'en'], true)) {
+            return strtolower(trim($bodyLocale));
+        }
+        $user = $this->userRepository->findById($userId);
+        $locale = is_array($user) ? strtolower(trim((string) ($user['locale'] ?? ''))) : '';
+        return in_array($locale, ['fa', 'en'], true) ? $locale : 'en';
     }
 
     /**
@@ -78,10 +98,7 @@ final class AIController
             Response::error('No owned trades found for the provided ids.', 422, 'VALIDATION_FAILED', null, 'errors.ai.validation.noOwnedTrades');
         }
 
-        $locale = strtolower(trim((string) ($request->body['locale'] ?? 'en')));
-        if (!in_array($locale, ['en', 'fa'], true)) {
-            $locale = 'en';
-        }
+        $locale = $this->resolveAiLocale($userId, $request->body['locale'] ?? null);
 
         $timeframe = trim((string) ($request->body['timeframe'] ?? 'last_100'));
         if (strlen($timeframe) > 32) {
@@ -164,10 +181,7 @@ final class AIController
         }
 
         $periodEnd = trim((string) ($request->body['period_end'] ?? date('Y-m-d', strtotime($periodStart . ' +6 days'))));
-        $locale = strtolower(trim((string) ($request->body['locale'] ?? 'en')));
-        if (!in_array($locale, ['en', 'fa'], true)) {
-            $locale = 'en';
-        }
+        $locale = $this->resolveAiLocale($userId, $request->body['locale'] ?? null);
 
         try {
             $tradesHash = hash('sha256', json_encode($trades));

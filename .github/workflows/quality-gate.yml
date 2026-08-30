@@ -114,6 +114,49 @@ jobs:
       - name: Orphan catalog-key report unit tests
         run: python -m unittest tools.localization.test_report_orphan_catalog_keys -v
 
+      # ---- 2026-08-30 regression gates (raw-key leak class + Latin-digit invariance + VSI numeric pipeline) ----
+      - name: Translation reference-completeness gate (raw-key leak prevention)
+        run: python tools/localization/check_key_references.py
+
+      - name: Reference-completeness gate regression tests
+        run: python -m unittest tools.tests.test_key_references -v
+
+      - name: Latin-digit asset coverage per page
+        run: python -m unittest tools.tests.test_page_numeric_asset_coverage -v
+
+      - name: VSI numeric pipeline runtime regression
+        run: node tools/tests/test_vsi_numeric_pipeline.js
+
+      # ---- 2026-08-30 hardening round (bilingual + Latin-digit + security permanence) ----
+      - name: G1 — Translation reference completeness (full tree + runtime feature chunks)
+        run: python tools/localization/check_key_references.py --require-runtime
+
+      - name: G2 — Localized artifact freshness (source -> build byte parity)
+        run: |
+          RELEASE_ID=$(python -c "import json;print(json.load(open('public/locales/csp-manifest.json'))['releaseId'])")
+          python tools/localization/build_localized_static.py --release-id "$RELEASE_ID" --check
+
+      - name: G6/G7 — Synthetic extraction corpus (field-level + P/L pins; activates with fixed smart-import)
+        run: node tools/tests/test_extraction_corpus.js
+
+      - name: G7 — Partial-extraction state machine (loud FAIL/BLOCKED until RC-3 lands in tree)
+        run: node tools/tests/check_contract_partial_state.js
+
+      - name: G8 — AI locale contract (prompt language policies + canonical locale resolution)
+        run: python tools/localization/check_ai_locale_contract.py
+
+      - name: G8 regression tests (negative fixtures)
+        run: python -m unittest tools.tests.test_ai_locale_contract -v
+
+      - name: G8 runtime — canonical locale resolution (real controller + SQLite)
+        run: php tools/tests/test_ai_locale_contract_runtime.php
+
+      - name: 'G5 — Latin-digit display layer runtime (real asset: Intl patch + toLatin + DOM normalization)'
+        run: node tools/tests/test_latin_digits_layer.js
+
+      - name: G10-G12 — Static security/enforcement gates (IDOR scoping, admin RBAC wiring, live-data numeric)
+        run: python -m unittest tools.tests.test_security_static_gates -v
+
       - name: CID icon assets (PNG integrity)
         run: python tools/tests/test_notification_email_icons.py
 
