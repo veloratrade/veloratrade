@@ -985,10 +985,40 @@
     }
   }
 
+  // The broker's own P/L on the card (merged.profitLoss, read by AI/OCR) is
+  // authoritative. The manual form and the server's canonical PnlCalculator
+  // both compute pnl = delta * volume * contractSize, so a missing contract
+  // size (default 1) silently shrinks XAUUSD/FX results (e.g. 131.40 -> 1.31).
+  // Derive contractSize from the authoritative P/L and snap it ONLY to the
+  // standard specs documented in PnlCalculator (FX 100000, metals 100,
+  // indices/crypto 1...). No symbol hardcoding, no magic multiplier: if the
+  // ratio does not match a standard spec within tolerance, keep the default.
+  var CONTRACT_SPECS = [0.01, 0.1, 1, 10, 100, 1000, 10000, 100000];
+  function inferContractSize(fields) {
+    var entry = parseFloat(fields.entryPrice);
+    var exit = parseFloat(fields.exitPrice);
+    var vol = parseFloat(fields.volume);
+    var pnl = parseFloat(fields.profitLoss);
+    if (!isFinite(entry) || !isFinite(exit) || !isFinite(vol) || !isFinite(pnl) || !vol || !pnl) return null;
+    var delta = exit - entry;
+    if (fields.direction === 'sell') delta = -delta;
+    if (!delta) return null;
+    var ratio = pnl / (delta * vol);
+    if (!isFinite(ratio) || ratio <= 0) return null; // sign contradiction -> stay conservative
+    for (var i = 0; i < CONTRACT_SPECS.length; i++) {
+      if (Math.abs(ratio - CONTRACT_SPECS[i]) / CONTRACT_SPECS[i] <= 0.05) return CONTRACT_SPECS[i];
+    }
+    return null; // non-standard contract -> leave default, user can edit
+  }
+
   function applyToForm() {
     Object.keys(merged).forEach(function (key) {
       merged[key] = faDigits(merged[key]);
     });
+    var inferredContract = inferContractSize(merged);
+    if (inferredContract !== null && inferredContract !== 1) {
+      setInput('contract', String(inferredContract));
+    }
     if (merged.symbol) applySymbol(merged.symbol);
     if (merged.direction === 'sell') document.getElementById('optSell') && document.getElementById('optSell').click();
     else if (merged.direction === 'buy') document.getElementById('optBuy') && document.getElementById('optBuy').click();
