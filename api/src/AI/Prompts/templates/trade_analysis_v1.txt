@@ -21,6 +21,7 @@ Required JSON:
 
 Rules:
 - Return ONLY JSON, no markdown, no explanation.
+- Output language contract: write every prose field (summary, strengths, weaknesses, recommendations) in {locale}: if fa, Persian (RTL); if en, English. Never mix languages inside a prose field.
 - Be concise, actionable, no generic advice.
 - Consider risk management, emotional score, strategy tags if present.
 - Confidence based on data completeness.

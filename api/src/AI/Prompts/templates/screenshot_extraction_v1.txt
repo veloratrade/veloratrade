@@ -18,10 +18,11 @@ Required JSON fields (use null if not visible):
 
 Rules:
 - Return ONLY JSON, no markdown, no explanation.
+- Input language policy: the screenshot may be Persian, English, or mixed-language, and its numbers may use Persian digits (۰۱۲۳۴۵۶۷۸۹), Arabic-Indic digits (٠١٢٣٤٥٦٧٨٩), Latin digits, or a mix. Extract semantic fields (symbol, side, prices, lot, pnl) independently of the displayed language/digit forms. A Persian-digit number is never invalid input.
+- Numeric output policy: preferably return canonical machine-readable values as Latin ASCII digit strings (e.g. 131.40). Your digit representation is NOT authoritative — the backend normalizes Persian/Arabic/mixed digit forms to Latin before validation and calculation — so return the value you read in whichever digit form you can read reliably; never invent or approximate a number you cannot read.
 - Prices must be numeric strings, no currency symbols.
 - Symbol must be uppercase, no spaces.
 - Side must be exactly "buy" or "sell" or null.
-- If Persian digits (۰۱۲۳) present, convert to Latin.
 - If field not visible, use null.
 - Confidence: 0.9 if all fields clear, 0.7 if partial, 0.4 if uncertain.
 

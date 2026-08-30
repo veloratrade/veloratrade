@@ -1,0 +1,48 @@
+From: 76c23d1 (audit workspace) | Target: public/assets/velora-smart-import.js @ branch tip 401a9ce9
+RC-3 partial-extraction state machine (success/needs_review/failed) + bilingual warnings.
+Mission-mandated EXACT strings kept: FA='اطلاعات استخراج‌شده کامل نیست. لطفاً قبل از ذخیره آن را بررسی کنید.'
+EN='The extracted information is incomplete. Please review it before saving.'
+Hardcode is BY DESIGN here: this asset uses the allowlisted t(fa,en) pair architecture (G15 exception, documented; catalog migration is a tracked debt).
+Evidence: G7 gate 17/17 PASS on patched; 1 on unpatched; 1 BLOCKED on legacy. Not committed/pushed (owner-authorization pending).
+=============================================================
+@@ -373,6 +373,8 @@
+       parsed = [aiParsed].concat(parsed);
+     }
+     mergeAll(parsed);
++    merged.aiState = (aiParsed && aiParsed.state) || null;
++    merged.aiMissing = (aiParsed && aiParsed.missing) || [];
+     if (window.__vsiTimes) {
+       if (__vsiTimes.openTime && !merged.openTime) merged.openTime = faDigits(__vsiTimes.openTime);
+       if (__vsiTimes.closeTime && !merged.closeTime) merged.closeTime = faDigits(__vsiTimes.closeTime);
+@@ -446,7 +448,10 @@
+     if (!f.openTime && f.open_time) put('openTime', f.open_time); else put('openTime', f.openTime);
+     if (!f.closeTime && f.close_time) put('closeTime', f.close_time); else put('closeTime', f.closeTime);
+     if (!Object.keys(out).length) return null;
+-    return { label: 'AI · ' + provider, fields: out };
++    var MANDATORY = ['symbol', 'direction', 'entryPrice', 'exitPrice', 'volume'];
++    var missing = MANDATORY.filter(function (k) { return !out[k]; });
++    var state = missing.length === 0 ? 'success' : (Object.keys(out).length === 0 ? 'failed' : 'needs_review');
++    return { label: 'AI · ' + provider, fields: out, state: state, missing: missing };
+   }
+ 
+   var TESSERACT_OPTIONS = Object.freeze({
+@@ -933,6 +938,19 @@
+     if (dir === 'sell' && isFinite(en) && isFinite(sl) && sl <= en) w.push(t('برای فروش، حد ضرر معمولاً بالای ورود است.', 'For a Sell, SL is usually above entry.'));
+     if (dir === 'buy' && isFinite(en) && isFinite(tp) && tp <= en) w.push(t('برای خرید، حد سود معمولاً بالای ورود است.', 'For a Buy, TP is usually above entry.'));
+     if (dir === 'sell' && isFinite(en) && isFinite(tp) && tp >= en) w.push(t('برای فروش، حد سود معمولاً زیر ورود است.', 'For a Sell, TP is usually below entry.'));
++    var M = {
++      symbol: ['نماد', 'Symbol'], direction: ['جهت', 'Direction'],
++      entryPrice: ['قیمت ورود', 'Entry'], exitPrice: ['قیمت خروج', 'Exit'],
++      volume: ['حجم / لات', 'Volume / Lots']
++    };
++    var mandatory = ['symbol', 'direction', 'entryPrice', 'exitPrice', 'volume'];
++    var missingM = mandatory.filter(function (k) { return !merged[k]; });
++    if (missingM.length) {
++      w.push(t('فیلدهای ضروری ناقص است: ' + missingM.map(function (k) { return t(M[k][0], M[k][1]); }).join('، ') + '. لطفاً قبل از ذخیره بررسی کنید.', 'Mandatory fields missing: ' + missingM.map(function (k) { return t(M[k][0], M[k][1]); }).join(', ') + '. Please review before saving.'));
++    }
++    if (merged.aiState === 'needs_review') {
++      w.push(t('اطلاعات استخراج‌شده کامل نیست. لطفاً قبل از ذخیره آن را بررسی کنید.', 'The extracted information is incomplete. Please review it before saving.'));
++    }
+     return w;
+   }
+ 
