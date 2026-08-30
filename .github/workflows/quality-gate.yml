@@ -127,6 +127,24 @@ jobs:
       - name: VSI numeric pipeline runtime regression
         run: node tools/tests/test_vsi_numeric_pipeline.js
 
+      # ---- 2026-08-30 hardening round (bilingual + Latin-digit + security permanence) ----
+      - name: G1 — Translation reference completeness (full tree + runtime feature chunks)
+        run: python tools/localization/check_key_references.py --require-runtime
+
+      - name: G2 — Localized artifact freshness (source -> build byte parity)
+        run: |
+          RELEASE_ID=$(python -c "import json;print(json.load(open('public/locales/csp-manifest.json'))['releaseId'])")
+          python tools/localization/build_localized_static.py --release-id "$RELEASE_ID" --check
+
+      - name: G6/G7 — Synthetic extraction corpus (field-level + P/L pins; activates with fixed smart-import)
+        run: node tools/tests/test_extraction_corpus.js
+
+      - name: G7 — Partial-extraction state machine (loud FAIL/BLOCKED until RC-3 lands in tree)
+        run: node tools/tests/check_contract_partial_state.js
+
+      - name: G10-G12 — Static security/enforcement gates (IDOR scoping, admin RBAC wiring, live-data numeric)
+        run: python -m unittest tools.tests.test_security_static_gates -v
+
       - name: CID icon assets (PNG integrity)
         run: python tools/tests/test_notification_email_icons.py
 

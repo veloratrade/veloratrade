@@ -1,0 +1,437 @@
+{
+  "_meta": {
+    "synthetic": true,
+    "note": "SYNTHETIC corpus (2026-08-30). No real MT4/MT5 screenshots available in the audit environment; payloads emulate Gemini field output for the documented layouts (Standard MT4, MT5 compact, dense table, dark/light, small font, scaling). Field-level ground truth is authoritative for normalization/math evaluation. Runtime Gemini/Vision accuracy against REAL images: NOT VERIFIED.",
+    "fields_note": "Fields: symbol, side, lot, entry, exit, pnl, sl, tp, commission, swap, open_time, close_time, ticket. mandatory = symbol, side, entry, exit, lot. optional = pnl, sl, tp, commission, swap, times, ticket.",
+    "expected_contract": "complete = mandatory+optional present; derived = mandatory present, pnl absent (broker-authoritative math); partial = any mandatory missing (must NOT be treated as success)."
+  },
+  "cases": [
+    {
+      "id": "C01_golden_fa_buy",
+      "layout": "standard-mt4",
+      "theme": "dark",
+      "input": {
+        "symbol": "XAUUSD",
+        "side": "buy",
+        "lot": "\u06f0.\u06f2\u06f0",
+        "entry": "\u06f3\u06f3\u06f4\u06f2.\u06f1\u06f5",
+        "exit": "\u06f3\u06f3\u06f4\u06f8.\u06f7\u06f2",
+        "pnl": "\u06f1\u06f3\u06f1.\u06f4\u06f0"
+      },
+      "ground_truth": {
+        "symbol": "XAUUSD",
+        "direction": "buy",
+        "volume": "0.20",
+        "entryPrice": "3342.15",
+        "exitPrice": "3348.72",
+        "profitLoss": "131.40"
+      },
+      "contractSize": 100,
+      "expected_pnl": "131.40",
+      "state": "complete"
+    },
+    {
+      "id": "C02_golden_fa_sell",
+      "layout": "standard-mt4",
+      "theme": "light",
+      "input": {
+        "symbol": "XAUUSD",
+        "side": "sell",
+        "lot": "0.20",
+        "entry": "\u06f3\u06f3\u06f4\u06f2.\u06f1\u06f5",
+        "exit": "\u06f3\u06f3\u06f4\u06f2.\u06f6\u06f0\u06f4",
+        "pnl": "-9.08"
+      },
+      "ground_truth": {
+        "symbol": "XAUUSD",
+        "direction": "sell",
+        "volume": "0.20",
+        "entryPrice": "3342.15",
+        "exitPrice": "3342.604",
+        "profitLoss": "-9.08"
+      },
+      "contractSize": 100,
+      "expected_pnl": "-9.08",
+      "state": "complete"
+    },
+    {
+      "id": "C03_eurusd_buy",
+      "layout": "mt5-compact",
+      "theme": "dark",
+      "input": {
+        "symbol": "EURUSD",
+        "side": "buy",
+        "lot": "1.00",
+        "entry": "1.08500",
+        "exit": "1.08560",
+        "pnl": "60.00"
+      },
+      "ground_truth": {
+        "symbol": "EURUSD",
+        "direction": "buy",
+        "volume": "1.00",
+        "entryPrice": "1.08500",
+        "exitPrice": "1.08560",
+        "profitLoss": "60.00"
+      },
+      "contractSize": 100000,
+      "expected_pnl": "60.00",
+      "state": "complete"
+    },
+    {
+      "id": "C04_arabic_indic_digits",
+      "layout": "dense-table",
+      "theme": "light",
+      "input": {
+        "symbol": "XAUUSD",
+        "side": "buy",
+        "lot": "\u0660.\u0662\u0660",
+        "entry": "\u0663\u0663\u0664\u0662.\u0661\u0665",
+        "exit": "\u0663\u0663\u0664\u0668.\u0667\u0662",
+        "pnl": "\u0661\u0663\u0661.\u0664\u0660"
+      },
+      "ground_truth": {
+        "symbol": "XAUUSD",
+        "direction": "buy",
+        "volume": "0.20",
+        "entryPrice": "3342.15",
+        "exitPrice": "3348.72",
+        "profitLoss": "131.40"
+      },
+      "contractSize": 100,
+      "expected_pnl": "131.40",
+      "state": "complete"
+    },
+    {
+      "id": "C05_mixed_halfwidth",
+      "layout": "small-font",
+      "theme": "dark",
+      "input": {
+        "symbol": "XAUUSD",
+        "side": "buy",
+        "lot": "12\u06f3.4",
+        "entry": "\u06f3,342.15",
+        "exit": "3348.72",
+        "pnl": "\u06f1\u06f3\u06f1.40"
+      },
+      "ground_truth": {
+        "symbol": "XAUUSD",
+        "direction": "buy",
+        "volume": "123.4",
+        "entryPrice": "3342.15",
+        "exitPrice": "3348.72",
+        "profitLoss": "131.40"
+      },
+      "contractSize": null,
+      "expected_pnl": null,
+      "state": "mixed-normalization"
+    },
+    {
+      "id": "C06_european_decimal",
+      "layout": "mt5-compact",
+      "theme": "light",
+      "input": {
+        "symbol": "XAUUSD",
+        "side": "buy",
+        "lot": "0,20",
+        "entry": "3342,15",
+        "exit": "3348,72",
+        "pnl": "131,40"
+      },
+      "ground_truth": {
+        "symbol": "XAUUSD",
+        "direction": "buy",
+        "volume": "0.20",
+        "entryPrice": "3342.15",
+        "exitPrice": "3348.72",
+        "profitLoss": "131.40"
+      },
+      "contractSize": null,
+      "expected_pnl": null,
+      "state": "normalization"
+    },
+    {
+      "id": "C07_sign_corruption",
+      "layout": "standard-mt4",
+      "theme": "dark",
+      "input": {
+        "symbol": "XAUUSD",
+        "side": "buy",
+        "lot": "0.20",
+        "entry": "3342.15",
+        "exit": "3348.72",
+        "pnl": "-131.40"
+      },
+      "ground_truth": {
+        "symbol": "XAUUSD",
+        "direction": "buy",
+        "volume": "0.20",
+        "entryPrice": "3342.15",
+        "exitPrice": "3348.72",
+        "profitLoss": "-131.40"
+      },
+      "contractSize": null,
+      "expected_pnl": null,
+      "state": "complete-sign-conflict",
+      "note": "direction= buy + negative pnl = contradiction: contractSize must be null (no silent multiplier)."
+    },
+    {
+      "id": "C08_derived_no_pnl",
+      "layout": "standard-mt4",
+      "theme": "dark",
+      "input": {
+        "symbol": "XAUUSD",
+        "side": "buy",
+        "lot": "0.20",
+        "entry": "3342.15",
+        "exit": "3348.72"
+      },
+      "ground_truth": {
+        "symbol": "XAUUSD",
+        "direction": "buy",
+        "volume": "0.20",
+        "entryPrice": "3342.15",
+        "exitPrice": "3348.72"
+      },
+      "contractSize": null,
+      "expected_pnl": null,
+      "state": "derived-backend",
+      "note": "pnl absent: contractSize cannot be inferred without broker P/L. Broker-authoritative path: backend PnlCalculator with the BROKER contractSize (form field, user/broker-provided); never invented. Frontend inference: null."
+    },
+    {
+      "id": "C09_partial_missing_symbol",
+      "layout": "standard-mt4",
+      "theme": "light",
+      "input": {
+        "side": "buy",
+        "lot": "0.20",
+        "entry": "3342.15",
+        "exit": "3348.72",
+        "pnl": "131.40"
+      },
+      "ground_truth": {
+        "direction": "buy",
+        "volume": "0.20",
+        "entryPrice": "3342.15",
+        "exitPrice": "3348.72",
+        "profitLoss": "131.40"
+      },
+      "contractSize": null,
+      "expected_pnl": null,
+      "state": "partial",
+      "note": "mandatory symbol missing: MUST NOT be a complete success (see contract_partial_state.py)."
+    },
+    {
+      "id": "C10_partial_missing_direction",
+      "layout": "dense-table",
+      "theme": "dark",
+      "input": {
+        "symbol": "XAUUSD",
+        "lot": "0.20",
+        "entry": "3342.15",
+        "exit": "3348.72",
+        "pnl": "131.40"
+      },
+      "ground_truth": {
+        "symbol": "XAUUSD",
+        "volume": "0.20",
+        "entryPrice": "3342.15",
+        "exitPrice": "3348.72",
+        "profitLoss": "131.40"
+      },
+      "contractSize": null,
+      "expected_pnl": null,
+      "state": "partial"
+    },
+    {
+      "id": "C11_garbage_values",
+      "layout": "small-font",
+      "theme": "dark",
+      "input": {
+        "symbol": "XXX??",
+        "side": "hold",
+        "lot": "--",
+        "entry": "abc",
+        "exit": "3348.72",
+        "pnl": "N/A"
+      },
+      "ground_truth": {
+        "symbol": "XXX??"
+      },
+      "contractSize": null,
+      "expected_pnl": null,
+      "state": "partial-garbage",
+      "note": "garbage numerics never survive; invalid side never becomes a direction; symbol is non-numeric so it passes through for user review."
+    },
+    {
+      "id": "C12_commission_swap",
+      "layout": "dense-table",
+      "theme": "light",
+      "input": {
+        "symbol": "XAUUSD",
+        "side": "sell",
+        "lot": "0.20",
+        "entry": "3342.15",
+        "exit": "3342.604",
+        "pnl": "-9.08",
+        "commission": "0.50",
+        "swap": "\u2212 0.12"
+      },
+      "ground_truth": {
+        "symbol": "XAUUSD",
+        "direction": "sell",
+        "volume": "0.20",
+        "entryPrice": "3342.15",
+        "exitPrice": "3342.604",
+        "profitLoss": "-9.08"
+      },
+      "contractSize": 100,
+      "expected_pnl": null,
+      "state": "complete-with-costs",
+      "note": "commission/swap: NO AI-extraction path on the branch asset (extractionToParsed maps only symbol/side/volume/entry/exit/sl/tp/pnl/times). Only OCR merge supplies them; net P/L stays broker-authoritative (backend bcmath). UNSUPPORTED-by-AI \u2014 documented, not invented."
+    },
+    {
+      "id": "C13_sl_tp_present",
+      "layout": "mt5-compact",
+      "theme": "dark",
+      "input": {
+        "symbol": "XAUUSD",
+        "side": "buy",
+        "lot": "0.20",
+        "entry": "3342.15",
+        "exit": "3348.72",
+        "pnl": "131.40",
+        "sl": "3335.00",
+        "tp": "3355.00"
+      },
+      "ground_truth": {
+        "symbol": "XAUUSD",
+        "direction": "buy",
+        "volume": "0.20",
+        "entryPrice": "3342.15",
+        "exitPrice": "3348.72",
+        "profitLoss": "131.40",
+        "stopLoss": "3335.00",
+        "takeProfit": "3355.00"
+      },
+      "contractSize": 100,
+      "expected_pnl": "131.40",
+      "state": "complete"
+    },
+    {
+      "id": "C14_thousands_separator",
+      "layout": "dense-table",
+      "theme": "light",
+      "input": {
+        "symbol": "XAUUSD",
+        "side": "buy",
+        "lot": "0.20",
+        "entry": "3,342.15",
+        "exit": "3,348.72",
+        "pnl": "131.40"
+      },
+      "ground_truth": {
+        "symbol": "XAUUSD",
+        "direction": "buy",
+        "volume": "0.20",
+        "entryPrice": "3342.15",
+        "exitPrice": "3348.72",
+        "profitLoss": "131.40"
+      },
+      "contractSize": null,
+      "expected_pnl": null,
+      "state": "normalization"
+    },
+    {
+      "id": "C15_extra_fields_ignored",
+      "layout": "dense-table",
+      "theme": "dark",
+      "input": {
+        "symbol": "XAUUSD",
+        "side": "buy",
+        "lot": "0.20",
+        "entry": "3342.15",
+        "exit": "3348.72",
+        "pnl": "131.40",
+        "ticket": "1234567",
+        "margin": "668.43",
+        "open_time": "2026-08-29 10:00:00",
+        "close_time": "2026-08-29 14:30:00"
+      },
+      "ground_truth": {
+        "symbol": "XAUUSD",
+        "direction": "buy",
+        "volume": "0.20",
+        "entryPrice": "3342.15",
+        "exitPrice": "3348.72",
+        "profitLoss": "131.40",
+        "openTime": "2026-08-29 10:00:00",
+        "closeTime": "2026-08-29 14:30:00"
+      },
+      "contractSize": 100,
+      "expected_pnl": "131.40",
+      "state": "complete",
+      "note": "extra fields (margin) must not leak into the form model; times/ticket are supported extension fields."
+    },
+    {
+      "id": "C16_multirow_unsupported",
+      "layout": "multi-row",
+      "theme": "dark",
+      "input": {
+        "symbol": "XAUUSD",
+        "side": "buy",
+        "lot": "0.20",
+        "entry": "3342.15",
+        "exit": "3348.72",
+        "pnl": "131.40",
+        "rows": [
+          {
+            "symbol": "EURUSD",
+            "side": "sell",
+            "lot": "1.00",
+            "entry": "1.08500",
+            "exit": "1.08490",
+            "pnl": "10.00"
+          }
+        ]
+      },
+      "ground_truth": {
+        "symbol": "XAUUSD",
+        "direction": "buy",
+        "volume": "0.20",
+        "entryPrice": "3342.15",
+        "exitPrice": "3348.72",
+        "profitLoss": "131.40"
+      },
+      "contractSize": 100,
+      "expected_pnl": "131.40",
+      "state": "UNSUPPORTED-multi-row",
+      "note": "Current contract: single trade per screenshot. extra 'rows' key must be ignored (documented, not merged)."
+    },
+    {
+      "id": "C17_historical_131_scale_guard",
+      "layout": "standard-mt4",
+      "theme": "dark",
+      "input": {
+        "symbol": "XAUUSD",
+        "side": "buy",
+        "lot": "0.20",
+        "entry": "3342.15",
+        "exit": "3348.72",
+        "pnl": "1.31"
+      },
+      "ground_truth": {
+        "symbol": "XAUUSD",
+        "direction": "buy",
+        "volume": "0.20",
+        "entryPrice": "3342.15",
+        "exitPrice": "3348.72",
+        "profitLoss": "1.31"
+      },
+      "contractSize": null,
+      "expected_pnl": null,
+      "state": "complete",
+      "note": "Historical 2026-08 regression guard: the naive delta*volume product is 1.314 -> '1.31'. The system must NOT silently rescale (invent contractSize=100 to force 131.40); with a 100x mismatch inferContractSize must return null and the extracted (broker) value 1.31 stays authoritative. If someone re-breaks the *100 (or drops it), this case flips to FAIL."
+    }
+  ]
+}
