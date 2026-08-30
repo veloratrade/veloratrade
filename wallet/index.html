@@ -16,7 +16,10 @@
       var u = window.VeloraData ? VeloraData.getUser() : null;
       var isAdmin = u && u.role === 'admin';
       var nodes = document.querySelectorAll('[data-velora-adminhide-target="1"], #adminLinkSide, #adminLinkNav');
-      for (var i = 0; i < nodes.length; i++) nodes[i].style.display = isAdmin ? '' : 'none';
+      for (var i = 0; i < nodes.length; i++) {
+        if (isAdmin) { nodes[i].style.removeProperty('display'); }
+        else { nodes[i].style.setProperty('display', 'none', 'important'); }
+      }
     } catch(e) {}
   }
   hideAdmin();
@@ -490,7 +493,7 @@ function toggleMobileSidebar() {
 <a class="sb-item" href="/news/index.html"><i class="ico">▤</i><span data-i18n="common.news.bba91630">اخبار</span></a>
 <a class="sb-item" href="/profile/index.html"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.1 2.1-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56v.1h-3v-.1A1.7 1.7 0 0 0 10.7 18.6a1.7 1.7 0 0 0-1.88.34l-.06.06-2.1-2.1.06-.06A1.7 1.7 0 0 0 7.06 15a1.7 1.7 0 0 0-1.56-1.03H5.4v-3h.1A1.7 1.7 0 0 0 7.06 9.94 1.7 1.7 0 0 0 6.72 8.06L6.66 8l2.1-2.1.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1.03-1.56v-.1h3v.1a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.1 2.1-.06.06a1.7 1.7 0 0 0-.34 1.88 1.7 1.7 0 0 0 1.56 1.03h.1v3h-.1A1.7 1.7 0 0 0 19.4 15Z"/></svg><span data-i18n="common.profile.8b081d3b">پروفایل</span></a>
 <a class="sb-item" href="/support/index.html"><i class="ico">◌</i><span data-i18n="common.support.152185b4">پشتیبانی</span></a>
-<a class="sb-item" data-velora-adminhide-target="1" href="/admin/index.html" id="adminLinkSide" style="display:none"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z"/></svg><span data-i18n="common.admin.41ae8044">مدیریت</span></a>
+<a class="sb-item" data-velora-adminhide-target="1" href="/admin/index.html" id="adminLinkSide" style="display:none !important"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z"/></svg><span data-i18n="common.admin.41ae8044">مدیریت</span></a>
 </nav>
 <div class="sb-user" style="margin-top:auto !important;padding:14px !important;background:linear-gradient(135deg,rgba(14,26,51,0.9),rgba(6,10,20,0.95)) !important;border:1px solid rgba(212,175,55,0.35) !important;border-radius:16px !important;display:flex !important;align-items:center !important;gap:12px !important;box-shadow:0 8px 20px rgba(0,0,0,0.5) !important;">
 <div class="av-wrap" style="position:relative;flex-shrink:0;">
