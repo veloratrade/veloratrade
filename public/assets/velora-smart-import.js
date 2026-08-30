@@ -36,6 +36,11 @@
     { key: 'ticketId', label: t('شماره تیکت', 'Ticket'), id: null }
   ];
 
+  // Shared between parseMt() and extractionToParsed(); declaring it inside
+  // parseMt() only made extractionToParsed() throw ReferenceError at runtime,
+  // which silently aborted runExtract() and left the UI stuck on the spinner.
+  var NUMERIC_KEYS = { volume: 1, entryPrice: 1, exitPrice: 1, stopLoss: 1, takeProfit: 1, swap: 1, commission: 1, profitLoss: 1 };
+
   var MAX_SHOTS = 4;
   var MAX_CANVAS_DIMENSION = 4096;
   var MAX_CANVAS_PIXELS = 12000000;
@@ -601,7 +606,6 @@
     text = joinThousands(text);
     text = text.replace(/[→—–‒−]/g, '->');
     var out = {};
-    var NUMERIC_KEYS = { volume: 1, entryPrice: 1, exitPrice: 1, stopLoss: 1, takeProfit: 1, swap: 1, commission: 1, profitLoss: 1 };
     function set(key, value, score) {
       if (value == null || value === '' || value === '-' || out[key]) return;
       var v = String(value).trim();
