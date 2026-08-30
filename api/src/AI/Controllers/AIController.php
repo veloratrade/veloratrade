@@ -52,7 +52,7 @@ final class AIController
      * English while the user's persisted locale is fa, and an unvalidated
      * locale value is never echoed back.
      */
-    private function resolveAiLocale(int $userId, ?string $bodyLocale): string
+    private function resolveAiLocale(int $userId, mixed $bodyLocale): string
     {
         if (is_string($bodyLocale) && in_array(strtolower(trim($bodyLocale)), ['fa', 'en'], true)) {
             return strtolower(trim($bodyLocale));
