@@ -1,10 +1,10 @@
 {
   "algorithm": "sha256",
-  "commitSha": "6062b0bff206bba44391e7be5737747842f95ccb",
+  "commitSha": "96cba6a",
   "localizationVersion": "2026.08.30.2",
   "policyVersion": 2,
-  "releaseHtmlSha256": "ad48ae05d80cba41f2b8cc1d368d207a4fc38f41a8c50476157664812606adbd",
-  "releaseId": "2026.08.30.6",
+  "releaseHtmlSha256": "26192d2f305541ef1c9ff4a49c24e29a951b27b03e26ddee780ef6db3ca6575b",
+  "releaseId": "2026.08.30.7",
   "routeCount": 61,
   "routeManifestSha256": "77c267b42c509fae6a9f070298df1548d94a669176ed74999d28945504bdc251",
   "routes": {
@@ -12,7 +12,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/404.html",
-      "htmlSha256": "d1f7415534f58f07394996998d4c5af2df5a2aa77cd8f064594b849404a934e9",
+      "htmlSha256": "98dc1e621e43d8c5bbd1f119783ccfdfb31095876aa7fc0550b93a1775f3d167",
       "inlineScriptCount": 0,
       "inlineScriptHashes": [],
       "inlineStyleCount": 1,
@@ -26,7 +26,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/404/index.html",
-      "htmlSha256": "b1996c717189e2861710a2fa158b3581b67f9f78f83be372e2e6dbc527a89a64",
+      "htmlSha256": "756627de336a23930565e058d2d49f9f495fe802a5da09dc1e30355bfc7b3f33",
       "inlineScriptCount": 0,
       "inlineScriptHashes": [],
       "inlineStyleCount": 1,
@@ -126,7 +126,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/blog/forex-trading-journal/index.html",
-      "htmlSha256": "9191e716d202561c65f7343ae4b72f1d5b12735047d449b8dac16123570bcaa3",
+      "htmlSha256": "b9c2f7bd31731569bd5216a9f9747216258e839197bf273b07a9ea17d2674d4c",
       "inlineScriptCount": 2,
       "inlineScriptHashes": [
         "sha256-19QHlP0knSabeF5hJpskiMTfM0b2QVSYRZox4IonzdQ=",
@@ -146,7 +146,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/blog/index.html",
-      "htmlSha256": "859daffaead93f5dcb4b35b42559122124414dd97b536765a7039613832213e3",
+      "htmlSha256": "0f2cdb571bc7a1f2dbfa54c347ded508466a7fb07288805e109efe459033fe5b",
       "inlineScriptCount": 1,
       "inlineScriptHashes": [
         "sha256-pmzL2O1xJAYqwPTDa3bqFsFq4lXmDfftXMF7+hjxrhM="
@@ -166,7 +166,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/blog/mt4-mt5-trading-journal/index.html",
-      "htmlSha256": "365ad01da2e45539a466b8fa01af8c91e6f47951ad6b6d7f18424554b03d81cd",
+      "htmlSha256": "646df55e2787a63b4118b128df5adc62b6b54599d73195859caf960af669f34c",
       "inlineScriptCount": 2,
       "inlineScriptHashes": [
         "sha256-Pvrc8hYuW6EnAWIss6G/wxFSuOizz4zblzgEp6mbBJc=",
@@ -186,7 +186,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/blog/risk-management-in-trading/index.html",
-      "htmlSha256": "1be11369999bf144d66e01558e69de21ce030f706705e9de9d6ab1249cde1566",
+      "htmlSha256": "2fc173c7a0e96ed093ead02817a6351c35ae8dfe6794bb157d3e6aeb4f1e592a",
       "inlineScriptCount": 2,
       "inlineScriptHashes": [
         "sha256-urmyOBflUA7tjQF+x1bSzGqnK7dhSVPst434h+kTcGU=",
@@ -206,7 +206,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/blog/risk-management-trading/index.html",
-      "htmlSha256": "1be11369999bf144d66e01558e69de21ce030f706705e9de9d6ab1249cde1566",
+      "htmlSha256": "2fc173c7a0e96ed093ead02817a6351c35ae8dfe6794bb157d3e6aeb4f1e592a",
       "inlineScriptCount": 2,
       "inlineScriptHashes": [
         "sha256-urmyOBflUA7tjQF+x1bSzGqnK7dhSVPst434h+kTcGU=",
@@ -226,7 +226,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/blog/what-is-a-trading-journal/index.html",
-      "htmlSha256": "f6123b33ed2ce9274f0843fc4c7ba17a1bd635faeed1fa1e7b555a83d2632aa6",
+      "htmlSha256": "0d68392d84e2b762eb7ccae5dd47fb1214788ca4ea84a15e9c7716f3d6a3de97",
       "inlineScriptCount": 2,
       "inlineScriptHashes": [
         "sha256-WTpZJTIwxTf5whBQBEgS3D6lJ1UfphlsHpj61syqpgs=",
@@ -246,7 +246,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/blog/what-is-trading-journal/index.html",
-      "htmlSha256": "f6123b33ed2ce9274f0843fc4c7ba17a1bd635faeed1fa1e7b555a83d2632aa6",
+      "htmlSha256": "0d68392d84e2b762eb7ccae5dd47fb1214788ca4ea84a15e9c7716f3d6a3de97",
       "inlineScriptCount": 2,
       "inlineScriptHashes": [
         "sha256-WTpZJTIwxTf5whBQBEgS3D6lJ1UfphlsHpj61syqpgs=",
@@ -266,7 +266,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/blog/why-traders-need-a-journal/index.html",
-      "htmlSha256": "b0ba867aba345eab4f812707d4fe72ce373f5d195093350e6dac19b183c105cf",
+      "htmlSha256": "8676abb15154f43c49552772e074d395da05f939df33c3ef6d26756f046b4f1b",
       "inlineScriptCount": 2,
       "inlineScriptHashes": [
         "sha256-4Oa19LsJQQaxDyR2KAMoy/z50PC6MGas06AFWrqzf+A=",
@@ -286,7 +286,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/blog/why-traders-need-journal/index.html",
-      "htmlSha256": "b0ba867aba345eab4f812707d4fe72ce373f5d195093350e6dac19b183c105cf",
+      "htmlSha256": "8676abb15154f43c49552772e074d395da05f939df33c3ef6d26756f046b4f1b",
       "inlineScriptCount": 2,
       "inlineScriptHashes": [
         "sha256-4Oa19LsJQQaxDyR2KAMoy/z50PC6MGas06AFWrqzf+A=",
@@ -397,7 +397,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/forgot-password/index.html",
-      "htmlSha256": "8e881e4eef9aab72791cb5e2e145c05de3d39141bc9350cc56a689b2fa1e2bfd",
+      "htmlSha256": "565d988b6cb5bf9f891426b601e9f7dc6b9e840aa131443860e9f605012ded55",
       "inlineScriptCount": 1,
       "inlineScriptHashes": [
         "sha256-Vv0Va6gBN3akRkiboAhAHfHrl3CeIutxjXs+hjofgKI="
@@ -769,7 +769,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/reset-password/index.html",
-      "htmlSha256": "3f21e58f4aaae3d9f6f76121d5c16884ec01d75790be9251c4e8ed1fb1d3828a",
+      "htmlSha256": "1d35acdabd171ca7f70e472836c5034459b51b5f599d795fb93c40c9d5c20ef4",
       "inlineScriptCount": 1,
       "inlineScriptHashes": [
         "sha256-p2V5ziUJfM/obr40BTkI6uuitKkTlnS1jFTlG1e9odk="
@@ -885,7 +885,7 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "en/trades/new/index.html",
-      "htmlSha256": "39020f43bfad7922cc935b43a7378108e0a4680ddf401e7e306e7a830f6241c3",
+      "htmlSha256": "a30ea2502655c2a35b283c926f4aa794d684fe81edc9199d28779fab3adad7e8",
       "inlineScriptCount": 6,
       "inlineScriptHashes": [
         "sha256-1poHJeS5OXUbnszstlpAVSL2MCUCizVPO6npTCn2iaU=",
@@ -928,7 +928,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/verify-email/index.html",
-      "htmlSha256": "d08462feaae611f3134ba7cca4e873b45e1d9a1eae7075b83a2cba8838648a45",
+      "htmlSha256": "7e6ec4517b81945a827788798e6cfb518907359eb63dcb2346b89dcb130c7744",
       "inlineScriptCount": 1,
       "inlineScriptHashes": [
         "sha256-OTqS/uC9bC7aN9kM8o6TbiFr0CLLz/hodKfMZ4VEkfs="
@@ -992,7 +992,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "fa/404.html",
-      "htmlSha256": "86603eb44613db485848767a38c2909b817625793ccf6eb3ecf85cf759f4e6d8",
+      "htmlSha256": "1d592a1ab76414b4e390a3fab1fc2770c37a7d58bad1027ada71e21004cf64f1",
       "inlineScriptCount": 0,
       "inlineScriptHashes": [],
       "inlineStyleCount": 1,
@@ -1006,7 +1006,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "fa/404/index.html",
-      "htmlSha256": "af6216bcfd79f5f2ad4cbd1a9900be38c4cd9cf8920d5adf88d06decf3255077",
+      "htmlSha256": "55496abae3121bb668259a32fa65424e9267cfb43112cd26c8e3fd2512407203",
       "inlineScriptCount": 0,
       "inlineScriptHashes": [],
       "inlineStyleCount": 1,
@@ -1106,7 +1106,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "fa/blog/forex-trading-journal/index.html",
-      "htmlSha256": "9e1ae8302b68565547961ef2f1be5434754f507b8e5c79a409f015556acd41be",
+      "htmlSha256": "1847af011d4d54d640ca2ffe91b68ac433c2dbc4cbb5fc50d6412e6469a09f0a",
       "inlineScriptCount": 2,
       "inlineScriptHashes": [
         "sha256-2ISJ+iNgghauhZfZVprcgS9XhKM+C8/bHRNhCe58HOs=",
@@ -1126,7 +1126,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "fa/blog/index.html",
-      "htmlSha256": "ee97d36a2d98422246ff4d0bd3135380cbf7c73732f0e3857b1093462c103ab1",
+      "htmlSha256": "dfc6b8b0717ad1d3310f55991ccc602b9edae9a2e49e2393d2233eb69c08dc61",
       "inlineScriptCount": 1,
       "inlineScriptHashes": [
         "sha256-pmzL2O1xJAYqwPTDa3bqFsFq4lXmDfftXMF7+hjxrhM="
@@ -1146,7 +1146,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "fa/blog/mt4-mt5-trading-journal/index.html",
-      "htmlSha256": "f546933cd6f7be5a344fc5fd30803853ad65e375c2489488542669a284c10e96",
+      "htmlSha256": "21c96789b2b9a0743a5862c8c5d34b8e3f637a22f75ce14e55176d740f4884cd",
       "inlineScriptCount": 2,
       "inlineScriptHashes": [
         "sha256-Fpt9wabl3+EYNqoFd3Opq3BgOn4Pi2yIaVfIh4PMOVY=",
@@ -1166,7 +1166,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "fa/blog/risk-management-trading/index.html",
-      "htmlSha256": "5a7537c26353c0c2fca316eac6f10d3f7dbc6471050495d2293c7f7854319b8b",
+      "htmlSha256": "a91ff5ce3baaca109cae8b48a8177a61302d08ada805beb775318772390e17de",
       "inlineScriptCount": 2,
       "inlineScriptHashes": [
         "sha256-mRkCmINcKXtl+uSE12NMZmvLeddwuwVjUAurbo6MjyI=",
@@ -1186,7 +1186,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "fa/blog/what-is-trading-journal/index.html",
-      "htmlSha256": "326c3fbf9769a208720b338a2e5ca5328799a7aa22cef0fe93c00463b0e8b9f5",
+      "htmlSha256": "ee086eb348b1eb107b750080a44200e0df4df94ef63138b4702cf5dd0c331923",
       "inlineScriptCount": 2,
       "inlineScriptHashes": [
         "sha256-008GUWK58dZnBO7tk6vjf5s7zx4raRqimWFpmua7vI0=",
@@ -1206,7 +1206,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "fa/blog/why-traders-need-journal/index.html",
-      "htmlSha256": "581040ee31833e98f3d5d2ccd0d29a99db3dd17e19e83b476f81fdd99911959f",
+      "htmlSha256": "b36a8584cb6beb4b1d1cc8e095efd3906b734ab4617500a006ad909a2db27fa8",
       "inlineScriptCount": 2,
       "inlineScriptHashes": [
         "sha256-GpMU5sHOilkY6aFLgjqhzgKVxtL7rX9BnSbeTPjP1xM=",
@@ -1317,7 +1317,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "fa/forgot-password/index.html",
-      "htmlSha256": "28c21afd93bdd23f4e420e33dfb4ae36fa9e9be1ee4bf0063e73a542c7c96eae",
+      "htmlSha256": "43126f4c35149e040dc27a834413b5509f31e8bf9a055bc5e5812a54638add2b",
       "inlineScriptCount": 1,
       "inlineScriptHashes": [
         "sha256-Vv0Va6gBN3akRkiboAhAHfHrl3CeIutxjXs+hjofgKI="
@@ -1689,7 +1689,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "fa/reset-password/index.html",
-      "htmlSha256": "4fada85c4c2b5951d719322da14c87a5ac5ca59883ef01a29711dac678397561",
+      "htmlSha256": "ab0e1ce124131e7cc693011d4e7e266068c53ad80ea6d2c90ce870c0782520d8",
       "inlineScriptCount": 1,
       "inlineScriptHashes": [
         "sha256-p2V5ziUJfM/obr40BTkI6uuitKkTlnS1jFTlG1e9odk="
@@ -1805,7 +1805,7 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "fa/trades/new/index.html",
-      "htmlSha256": "fca177c6e8ba6465583eaae82bfd959caa4c2a2aea4fb4df914cbf86111b252f",
+      "htmlSha256": "c4cb8f24fc3b1e9617959f7ea1d4ff976ea05e6c247cc26ea46e69ac10f582ac",
       "inlineScriptCount": 6,
       "inlineScriptHashes": [
         "sha256-1poHJeS5OXUbnszstlpAVSL2MCUCizVPO6npTCn2iaU=",
@@ -1848,7 +1848,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "fa/verify-email/index.html",
-      "htmlSha256": "563f822bfc4664de71531c62c1525815e00170d28c7bb728e2959e7424d8118a",
+      "htmlSha256": "7a6f69cdd0da486ffa14bdba40202e1f028f556106fd25bc5a17cdc432df9552",
       "inlineScriptCount": 1,
       "inlineScriptHashes": [
         "sha256-OTqS/uC9bC7aN9kM8o6TbiFr0CLLz/hodKfMZ4VEkfs="
@@ -1909,5 +1909,5 @@
       ]
     }
   },
-  "sourceDigest": "188699c8204ef1aab49fcee0eaa3aa349424373b03b6269d61205a5b8b6f93c9"
+  "sourceDigest": "efbbb7f280995d1fa1712ce41fc6128a8ea5f67826081894cef9e84afe8abc32"
 }
