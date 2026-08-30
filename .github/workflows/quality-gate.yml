@@ -114,6 +114,19 @@ jobs:
       - name: Orphan catalog-key report unit tests
         run: python -m unittest tools.localization.test_report_orphan_catalog_keys -v
 
+      # ---- 2026-08-30 regression gates (raw-key leak class + Latin-digit invariance + VSI numeric pipeline) ----
+      - name: Translation reference-completeness gate (raw-key leak prevention)
+        run: python tools/localization/check_key_references.py
+
+      - name: Reference-completeness gate regression tests
+        run: python -m unittest tools.tests.test_key_references -v
+
+      - name: Latin-digit asset coverage per page
+        run: python -m unittest tools.tests.test_page_numeric_asset_coverage -v
+
+      - name: VSI numeric pipeline runtime regression
+        run: node tools/tests/test_vsi_numeric_pipeline.js
+
       - name: CID icon assets (PNG integrity)
         run: python tools/tests/test_notification_email_icons.py
 
