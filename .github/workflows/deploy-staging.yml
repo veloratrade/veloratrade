@@ -41,7 +41,7 @@ jobs:
       # آن را می‌گیرد و گیت‌هاب نام مخفف را رد می‌کند (بازتولید محلی:
       # «fatal: couldn't find remote ref 1d100fb»).
       # پس از هر استقرار موفق استیجینگ، همین مقدار به SHA تازه به‌روز شود.
-      base_sha: af1bf8b52c547984ced2f579c9dbcac34129e256
+      base_sha: a3230bb9e59f86c0e7345dc12bbaea5491b1a79b
 
   guard:
     name: بررسی CSP پیش از staging
@@ -181,7 +181,16 @@ jobs:
           set net:timeout 30
           set ftp:passive-mode on
           set mirror:parallel-transfer-count 1
-          mirror -R --continue --ignore-time --no-perms --no-symlinks --exclude-glob .git* ${EXCLUDE_ARGS[*]} staging-build/ public_html/staging.veloratrade.ir/
+          # ── C1 — همگرایی محتوایی (content-safe sync) ─────────────────────────
+          # باگ: --continue --ignore-time فقط بر اساس اندازه/زمان تصمیم skip/transfer
+          # می‌گیرد؛ یک فایلِ هم‌اندازه با محتوای متفاوت (مثل velora-smart-import.js
+          # یا feature-manifest.json) به‌اشتباه skip می‌شد و استیجینگ بیلدِ مخلوط
+          # پیدا می‌کرد. --transfer-all هر فایلِ build را بدون هیوریستیکِ اندازه
+          # ارسال می‌کند و --delete فایل‌های دورافتاده‌ی غایب از build را حذف می‌کند.
+          # --delete فقط روی زیردرختِ هدف mirror (public_html/staging.veloratrade.ir/)
+          # عمل می‌کند و به docroot تولید (public_html/) دست نمی‌زند؛ فایل‌های حیاتی
+          # CSP در EXCLUDE_ARGS هستند و در مرحله بعد با put اجباری آپلود می‌شوند.
+          mirror -R --transfer-all --delete --no-perms --no-symlinks --exclude-glob .git* ${EXCLUDE_ARGS[*]} staging-build/ public_html/staging.veloratrade.ir/
           bye
           " && break
             echo "قطع شد — ادامه از همان نقطه پس از 10 ثانیه..."
@@ -311,6 +320,65 @@ jobs:
                   )
           print("✅ routeCount/policyVersion بین دو فایل حیاتی روی سرور سازگار است")
           PY
+
+      - name: تطبیق محتوایی assets فرانتاند روی سرور (C3 — محتوابه‌محتوا، نه فقط اندازه)
+        env:
+          FTP_SERVER:   ${{ secrets.STAGING_FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.STAGING_FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.STAGING_FTP_PASSWORD }}
+        run: |
+          set -uo pipefail
+          # چرا: فایل‌های عادی از mirror --transfer-all عبور می‌کنند و mirror فقط
+          # تصمیم ارسال/رد را می‌گیرد. این گام مستقل و read-only است و از docroot
+          # استیجینگ دانلود می‌کند و SHA-256 هر asset را با build مقایسه می‌کند —
+          # بنابراین هم‌اندازه-اما-محتوا-متفاوت را هم تشخیص می‌دهد. فایل‌های HTML
+          # محافظت‌شده auth دارند و در HTTP به login رد می‌شوند؛ لذا مستقیم از FTP
+          # (نه HTTP) خوانده می‌شوند.
+          DESC=public_html/staging.veloratrade.ir
+          SERVER_FILES=(
+            "public/assets/velora-smart-import.js"
+            "public/assets/velora-data.js"
+            "public/assets/velora-dialog.js"
+            "public/assets/velora-dynamic-content.js"
+            "public/locales/feature-manifest.json"
+            "public/locales/manifest.json"
+            "public/locales/fa.json"
+            "public/locales/en.json"
+            "localized/fa/trades/new/index.html"
+            "localized/en/trades/new/index.html"
+            "localized/fa/profile/index.html"
+            "localized/en/profile/index.html"
+            "localized/fa/admin/index.html"
+            "localized/en/admin/index.html"
+            "localized/fa/dashboard/index.html"
+            "localized/en/dashboard/index.html"
+            "locale-router.php"
+          )
+          cmds=""
+          for f in "${SERVER_FILES[@]}"; do
+            cmds+="get $f -o /tmp/sv-$(echo "$f" | tr '/' '_')"$'\n'
+          done
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" <<LFTP
+          set ftp:ssl-allow no
+          set net:timeout 30
+          cd $DESC
+          $cmds
+          bye
+          LFTP
+          fail=0
+          for f in "${SERVER_FILES[@]}"; do
+            sv="/tmp/sv-$(echo "$f" | tr '/' '_')"
+            [ -f "$sv" ] || { echo "❌ not fetched: $f"; fail=1; continue; }
+            s=$(sha256sum "$sv" | awk '{print $1}')
+            l=$(sha256sum "staging-build/$f" 2>/dev/null | awk '{print $1}')
+            if [ "$s" = "$l" ]; then echo "✅ match: $f"; else echo "❌ MISMATCH: $f  (build=$l server=$s)"; fail=1; fi
+          done
+          if [ $fail -eq 0 ]; then
+            echo "✅ همه assets فرانت‌اند روی استیجینگ بایت‌به‌بایت برابر build هستند"
+          else
+            echo "❌ C3 coherence FAIL: استیجینگ با build هم‌خوان نیست"
+            exit 1
+          fi
 
       - name: بررسی سلامت نهایی staging (HTTP)
         run: |

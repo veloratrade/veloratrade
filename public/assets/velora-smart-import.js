@@ -36,6 +36,11 @@
     { key: 'ticketId', label: t('شماره تیکت', 'Ticket'), id: null }
   ];
 
+  // Shared between parseMt() and extractionToParsed(); declaring it inside
+  // parseMt() only made extractionToParsed() throw ReferenceError at runtime,
+  // which silently aborted runExtract() and left the UI stuck on the spinner.
+  var NUMERIC_KEYS = { volume: 1, entryPrice: 1, exitPrice: 1, stopLoss: 1, takeProfit: 1, swap: 1, commission: 1, profitLoss: 1 };
+
   var MAX_SHOTS = 4;
   var MAX_CANVAS_DIMENSION = 4096;
   var MAX_CANVAS_PIXELS = 12000000;
@@ -330,13 +335,21 @@
     if (!shots.length) return;
     merged = {}; conflicts = []; conf = {}; editing = false;
     window.__vsiTimes = null;
+    window.__vsiExtraction = null;
     showScanning();
     var texts = [];
     try {
       prog(t('خواندن روی سرور…', 'Reading on server…'));
       texts = await ocrServer(shots.map(function (s) { return s.dataUrl; }));
     } catch (e2) { texts = []; }
-    if (!texts.some(looksLikeTrade)) {
+    // Browser OCR is a FALLBACK only: it must not run when the server already
+    // returned a usable AI extraction (gemini/openai/claude with the critical
+    // trade fields). Previously this gate looked at OCR text alone, so an empty
+    // server-tesseract text started a slow in-browser OCR pass even after a
+    // fully valid Gemini extraction.
+    var aiParsed = extractionToParsed();
+    var aiUsable = !!(aiParsed && aiParsed.fields.symbol && aiParsed.fields.direction);
+    if (!aiUsable && !texts.some(looksLikeTrade)) {
       try {
         prog(t('خواندن در مرورگر… ممکن است چند ثانیه طول بکشد.', 'Reading in the browser… this can take a few seconds.'));
         var local = await ocr(shots[0].dataUrl);
@@ -348,10 +361,21 @@
       try { fields = parseMt(text || ''); } catch (err) { fields = {}; }
       return { label: t('اسکرین', 'Shot') + ' ' + (i + 1), fields: fields };
     });
+    if (aiParsed) {
+      // Gemini/OpenAI/Claude result is authoritative for the fields it carries;
+      // OCR rows may only SUPPLEMENT missing fields, never overwrite them.
+      parsed.forEach(function (row) {
+        if (row === aiParsed) return;
+        Object.keys(row.fields || {}).forEach(function (key) {
+          if (aiParsed.fields[key]) delete row.fields[key];
+        });
+      });
+      parsed = [aiParsed].concat(parsed);
+    }
     mergeAll(parsed);
     if (window.__vsiTimes) {
-      if (__vsiTimes.openTime) merged.openTime = faDigits(__vsiTimes.openTime);
-      if (__vsiTimes.closeTime) merged.closeTime = faDigits(__vsiTimes.closeTime);
+      if (__vsiTimes.openTime && !merged.openTime) merged.openTime = faDigits(__vsiTimes.openTime);
+      if (__vsiTimes.closeTime && !merged.closeTime) merged.closeTime = faDigits(__vsiTimes.closeTime);
     }
     if (!Object.keys(merged).length) {
       showFail();
@@ -364,14 +388,65 @@
     var packed = [];
     for (var i = 0; i < dataUrls.length; i++) packed.push(await compressImage(dataUrls[i]));
     if (!window.VeloraData || !window.VeloraData.request) throw new Error('auth-client-unavailable');
+    // Freshness: drop any previous extraction BEFORE the request so a failed or
+    // empty response can never repopulate the form from the last screenshot.
+    window.__vsiExtraction = null;
     var data = await window.VeloraData.request('/api/v1/trades/extract-screenshot', {
       method: 'POST',
       body: { images: packed }
     });
-    var list = data && data.texts;
-    if (!list || !list.length) throw new Error('empty');
+    // Multi-provider routing: an external AI result (gemini/openai/claude) is
+    // authoritative structured data; tesseract stays the supplementary text path.
+    var ext = data && (data.extraction || data.data) ? (data.extraction || data.data) : null;
+    if (ext && typeof ext === 'object') {
+      window.__vsiExtraction = {
+        provider: String(data.provider || ext.provider || ''),
+        fields: ext,
+        confidence: typeof data.confidence === 'number' ? data.confidence
+          : (typeof ext.confidence === 'number' ? ext.confidence : null)
+      };
+    }
+    var list = (data && data.texts) || [];
+    if ((!list || !list.length) && !extractionToParsed()) throw new Error('empty');
     window.__vsiTimes = data.times || null;
     return list;
+  }
+
+  // Map a structured external-AI extraction onto the review fields. Returns
+  // null for tesseract/cache rows so the existing OCR text pipeline stays
+  // fully intact as the supplementary path.
+  function extractionToParsed() {
+    var src = window.__vsiExtraction;
+    if (!src || !src.fields) return null;
+    var provider = src.provider;
+    var external = provider === 'gemini' || provider === 'openai' || provider === 'claude';
+    if (!external) return null;
+    var f = src.fields;
+    var score = Math.round((src.confidence != null ? src.confidence : 0.9) * 100);
+    if (!(score > 0) || score > 100) score = 90;
+    var out = {};
+    function put(key, value) {
+      if (value == null || value === '') return;
+      var v = String(value).trim();
+      if (NUMERIC_KEYS[key]) {
+        v = normalizeNumber(v);
+        if (!isFinite(parseFloat(v))) return;
+      }
+      out[key] = { value: v, confidence: score };
+    }
+    put('symbol', f.symbol);
+    var side = String(f.side || '').toLowerCase();
+    if (side === 'buy' || side === 'sell') put('direction', side);
+    put('volume', f.lot);
+    put('entryPrice', f.entry);
+    put('exitPrice', f.exit);
+    put('stopLoss', f.sl);
+    put('takeProfit', f.tp);
+    put('profitLoss', f.pnl);
+    if (!f.openTime && f.open_time) put('openTime', f.open_time); else put('openTime', f.openTime);
+    if (!f.closeTime && f.close_time) put('closeTime', f.close_time); else put('closeTime', f.closeTime);
+    if (!Object.keys(out).length) return null;
+    return { label: 'AI · ' + provider, fields: out };
   }
 
   var TESSERACT_OPTIONS = Object.freeze({
@@ -531,7 +606,6 @@
     text = joinThousands(text);
     text = text.replace(/[→—–‒−]/g, '->');
     var out = {};
-    var NUMERIC_KEYS = { volume: 1, entryPrice: 1, exitPrice: 1, stopLoss: 1, takeProfit: 1, swap: 1, commission: 1, profitLoss: 1 };
     function set(key, value, score) {
       if (value == null || value === '' || value === '-' || out[key]) return;
       var v = String(value).trim();
@@ -911,10 +985,40 @@
     }
   }
 
+  // The broker's own P/L on the card (merged.profitLoss, read by AI/OCR) is
+  // authoritative. The manual form and the server's canonical PnlCalculator
+  // both compute pnl = delta * volume * contractSize, so a missing contract
+  // size (default 1) silently shrinks XAUUSD/FX results (e.g. 131.40 -> 1.31).
+  // Derive contractSize from the authoritative P/L and snap it ONLY to the
+  // standard specs documented in PnlCalculator (FX 100000, metals 100,
+  // indices/crypto 1...). No symbol hardcoding, no magic multiplier: if the
+  // ratio does not match a standard spec within tolerance, keep the default.
+  var CONTRACT_SPECS = [0.01, 0.1, 1, 10, 100, 1000, 10000, 100000];
+  function inferContractSize(fields) {
+    var entry = parseFloat(fields.entryPrice);
+    var exit = parseFloat(fields.exitPrice);
+    var vol = parseFloat(fields.volume);
+    var pnl = parseFloat(fields.profitLoss);
+    if (!isFinite(entry) || !isFinite(exit) || !isFinite(vol) || !isFinite(pnl) || !vol || !pnl) return null;
+    var delta = exit - entry;
+    if (fields.direction === 'sell') delta = -delta;
+    if (!delta) return null;
+    var ratio = pnl / (delta * vol);
+    if (!isFinite(ratio) || ratio <= 0) return null; // sign contradiction -> stay conservative
+    for (var i = 0; i < CONTRACT_SPECS.length; i++) {
+      if (Math.abs(ratio - CONTRACT_SPECS[i]) / CONTRACT_SPECS[i] <= 0.05) return CONTRACT_SPECS[i];
+    }
+    return null; // non-standard contract -> leave default, user can edit
+  }
+
   function applyToForm() {
     Object.keys(merged).forEach(function (key) {
       merged[key] = faDigits(merged[key]);
     });
+    var inferredContract = inferContractSize(merged);
+    if (inferredContract !== null && inferredContract !== 1) {
+      setInput('contract', String(inferredContract));
+    }
     if (merged.symbol) applySymbol(merged.symbol);
     if (merged.direction === 'sell') document.getElementById('optSell') && document.getElementById('optSell').click();
     else if (merged.direction === 'buy') document.getElementById('optBuy') && document.getElementById('optBuy').click();

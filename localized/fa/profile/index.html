@@ -2,8 +2,8 @@
 
 <html data-i18n-features="common,errors,profile" data-route-locale="fa" data-velora-prelocalized="fa" dir="rtl" lang="fa">
 <head>
-<meta charset="utf-8"/><script src="/public/assets/velora-locale-registry.js?v=2026.08.22.1"></script>
-<script src="/public/assets/velora-latin-digits.js?v=2026.08.14.17"></script><script src="/public/assets/velora-locale-bootstrap.js?v=2026.08.22.1"></script><link href="/public/assets/velora-localization.css?v=2026.08.22.1" rel="stylesheet"/><script src="/public/assets/velora-localization.js?v=2026.08.22.1"></script><script src="/public/assets/velora-data.js?v=2026.08.22.1"></script><script defer="" src="/public/assets/velora-dynamic-content.js?v=2026.08.22.1"></script>
+<meta charset="utf-8"/><script src="/public/assets/velora-locale-registry.js?v=2026.08.30.2"></script>
+<script src="/public/assets/velora-latin-digits.js?v=2026.08.14.17"></script><script src="/public/assets/velora-locale-bootstrap.js?v=2026.08.30.2"></script><link href="/public/assets/velora-localization.css?v=2026.08.30.2" rel="stylesheet"/><script src="/public/assets/velora-localization.js?v=2026.08.30.2"></script><script src="/public/assets/velora-data.js?v=2026.08.30.2"></script><script defer="" src="/public/assets/velora-dynamic-content.js?v=2026.08.30.2"></script>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
 <meta content="#060A14" name="theme-color"/>
 <title data-i18n="pages.profile.profile.velora.f252884a">پروفایل | VELORA</title>
@@ -529,6 +529,19 @@ function toggleMobileSidebar() {
 </style>
 <style id="velora-sound-setting-css">
 .sound-pref{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:15px 16px;border:1px solid rgba(255,255,255,.11);border-radius:13px;background:linear-gradient(135deg,rgba(255,255,255,.055),rgba(233,196,92,.045));}.sound-pref-copy{display:flex;align-items:center;gap:11px}.sound-pref-ico{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;color:#f1c453;background:rgba(241,196,83,.1);border:1px solid rgba(241,196,83,.24)}.sound-pref-ico svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8}.sound-pref b{display:block;font-size:13px}.sound-pref small{display:block;color:var(--faint);font-size:11px;margin-top:2px}.sound-toggle{width:46px;height:25px;border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:3px;background:rgba(0,0,0,.28);cursor:pointer;transition:.2s}.sound-toggle i{display:block;width:17px;height:17px;border-radius:50%;background:#8e98a8;transition:.2s}.sound-toggle.on{background:rgba(241,196,83,.25);border-color:rgba(241,196,83,.58)}.sound-toggle.on i{transform:translateX(-20px);background:#ffe08a;box-shadow:0 0 10px rgba(241,196,83,.65)}
+.ai-pref-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.ai-pref-head .t{display:inline-flex;align-items:center;gap:8px}
+.ai-pill{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;padding:4px 11px;border-radius:20px;border:1px solid rgba(255,255,255,.18);color:var(--faint,#8fa0c0);background:rgba(255,255,255,.05);white-space:nowrap}
+.ai-pill .dot{width:6px;height:6px;border-radius:50%;background:#8e98a8}
+.ai-pill.on{color:#4cd39a;border-color:rgba(76,211,154,.38);background:rgba(76,211,154,.10)}
+.ai-pill.on .dot{background:#4cd39a;box-shadow:0 0 8px #4cd39a}
+.ai-pill.na{color:#fca5a5;border-color:rgba(239,68,68,.35);background:rgba(239,68,68,.08)}
+.ai-pill.na .dot{background:#fca5a5}
+.ai-consent-note{display:none;border:1px solid rgba(241,196,83,.42);border-right-width:3px;background:rgba(241,196,83,.08);color:#ffe08a;font-size:11.5px;line-height:1.9;border-radius:10px;padding:10px 13px;margin-top:12px}
+.ai-consent-note.show{display:block}
+.ai-consent-actions{display:flex;align-items:center;gap:10px;margin-top:14px}
+.ai-consent-actions .btn-gold[disabled]{opacity:.55;cursor:default}
+.ai-consent-actions .btn-gold.saving{pointer-events:none}
 </style>
 <link href="/public/assets/velora-latin-digits.css?v=2026.08.14.17" rel="stylesheet"/>
 <link href="/public/assets/velora-sidebar-icons.css?v=2026.08.13.45" rel="stylesheet"/><script src="/public/assets/velora-sidebar-icons.js?v=2026.08.13.42"></script>
@@ -548,7 +561,7 @@ function toggleMobileSidebar() {
 <a class="sb-item" href="/news/index.html"><i class="ico">▤</i><span data-i18n="common.news.bba91630">اخبار</span></a>
 <a class="sb-item active" href="/profile/index.html"><svg aria-hidden="true" class="ico" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.1 2.1-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56v.1h-3v-.1A1.7 1.7 0 0 0 10.7 18.6a1.7 1.7 0 0 0-1.88.34l-.06.06-2.1-2.1.06-.06A1.7 1.7 0 0 0 7.06 15a1.7 1.7 0 0 0-1.56-1.03H5.4v-3h.1A1.7 1.7 0 0 0 7.06 9.94 1.7 1.7 0 0 0 6.72 8.06L6.66 8l2.1-2.1.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1.03-1.56v-.1h3v.1a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.1 2.1-.06.06a1.7 1.7 0 0 0-.34 1.88 1.7 1.7 0 0 0 1.56 1.03h.1v3h-.1A1.7 1.7 0 0 0 19.4 15Z"></path></svg><span data-i18n="common.profile.8b081d3b">پروفایل</span></a>
 <a class="sb-item" href="/support/index.html"><i class="ico">◌</i><span data-i18n="common.support.152185b4">پشتیبانی</span></a>
-<a class="sb-item" data-velora-adminhide-target="1" href="/admin/index.html" id="adminLinkSide"><svg aria-hidden="true" class="ico" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z"></path></svg><span data-i18n="common.admin.41ae8044">مدیریت</span></a>
+<a class="sb-item" data-velora-adminhide-target="1" href="/admin/index.html" id="adminLinkSide" style="display:none !important"><svg aria-hidden="true" class="ico" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z"></path></svg><span data-i18n="common.admin.41ae8044">مدیریت</span></a>
 </nav>
 <div class="sb-user" style="margin-top:auto !important;padding:14px !important;background:linear-gradient(135deg,rgba(14,26,51,0.9),rgba(6,10,20,0.95)) !important;border:1px solid rgba(212,175,55,0.35) !important;border-radius:16px !important;display:flex !important;align-items:center !important;gap:12px !important;box-shadow:0 8px 20px rgba(0,0,0,0.5) !important;">
 <div class="av-wrap" style="position:relative;flex-shrink:0;">
@@ -607,6 +620,13 @@ function toggleMobileSidebar() {
 <div class="sound-pref"><div class="sound-pref-copy"><div class="sound-pref-ico"><svg viewbox="0 0 24 24"><path d="M11 5 6 9v6l5 4V5Z"></path><path d="M15 9a4 4 0 0 1 0 6m2.5-8.5a7 7 0 0 1 0 11"></path></svg></div><div><b><span data-i18n="pages.profile.p05.sounds">صداهای رابط کاربری</span></b><small><span data-i18n="pages.profile.p05.sounds_detail">صدای ملایم فقط برای تأییدها و تعامل‌های مهم</span></small></div></div><button aria-checked="true" aria-label="صداهای رابط کاربری" class="sound-toggle" data-i18n-aria-label="pages.profile.p05.sounds" id="soundToggle" role="switch" type="button"><i></i></button></div>
 </div>
 <div class="panel">
+<div class="panel-head ai-pref-head"><span class="t"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" viewbox="0 0 24 24"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"></path><path d="M5 19a9 9 0 0 1 14 0"></path></svg> <span data-i18n="profile.aiConsent.title">پردازش هوش مصنوعی</span></span><span class="ai-pill" id="aiConsentPill"><span class="dot"></span><span data-i18n="profile.aiConsent.statusLoading" id="aiConsentPillText">در حال بررسی وضعیت…</span></span></div>
+<div class="sound-pref"><div class="sound-pref-copy"><div class="sound-pref-ico"><svg viewbox="0 0 24 24"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"></path></svg></div><div><b id="aiConsentState"><span data-i18n="profile.aiConsent.stateOff">پردازش هوش مصنوعی غیرفعال است</span></b><small><span data-i18n="profile.aiConsent.description">با فعال‌سازی, اسکرین‌شات‌های واجد شرایط معاملات برای تکمیل خودکار ژورنال, توسط هوش مصنوعی پردازش می‌شود. هر زمان می‌توانید خاموش کنید.</span></small></div></div><button aria-checked="false" aria-label="پردازش هوش مصنوعی" class="sound-toggle" data-i18n-aria-label="profile.aiConsent.title" disabled="" id="aiConsentToggle" role="switch" type="button"><i></i></button></div>
+<div class="ai-consent-note" id="aiConsentNote"><span data-i18n="profile.aiConsent.required">برای تکمیل خودکار ژورنال از روی اسکرین‌شات معامله, ابتدا پردازش هوش مصنوعی را فعال کنید.</span></div>
+<div class="ai-consent-actions"><button class="btn-gold" data-i18n="profile.aiConsent.activate" disabled="" id="aiConsentCta" type="button">فعال‌سازی پردازش هوش مصنوعی</button></div>
+<div class="error-box" id="aiConsentErr"></div>
+</div>
+<div class="panel">
 <div class="panel-head"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" viewbox="0 0 24 24"><rect height="14" rx="3" width="20" x="2" y="5"></rect><path d="M2 10h20"></path><path d="M6 14h.01M10 14h.01M14 14h.01"></path></svg> <span data-i18n="pages.profile.connected.devices.00dfa75d">دستگاه‌های متصل</span></div>
 <div id="devicesList">
 <div class="dev-item">
@@ -634,7 +654,10 @@ function toggleMobileSidebar() {
       var u = window.VeloraData ? VeloraData.getUser() : null;
       var isAdmin = u && u.role === 'admin';
       var nodes = document.querySelectorAll('[data-velora-adminhide-target="1"], #adminLinkSide, #adminLinkNav');
-      for (var i = 0; i < nodes.length; i++) nodes[i].style.display = isAdmin ? '' : 'none';
+      for (var i = 0; i < nodes.length; i++) {
+        if (isAdmin) { nodes[i].style.removeProperty('display'); }
+        else { nodes[i].style.setProperty('display', 'none', 'important'); }
+      }
     } catch(e) {}
   }
   
@@ -668,6 +691,95 @@ function toggleMobileSidebar() {
     if ($('mRole')) $('mRole').textContent = t(value.role === 'admin' ? 'profile.role.admin' : 'profile.role.user');
     if ($('mTz')) $('mTz').textContent = value.timezone || 'UTC';
     if ($('mCreated')) $('mCreated').textContent = VeloraLocale.date(value.createdAt);
+    renderAiConsent(typeof value.aiConsent === 'boolean' ? value.aiConsent : false);
+  }
+
+  
+  
+  function setAiPill(mode, key) {
+    var pill = $('aiConsentPill');
+    var text = $('aiConsentPillText');
+    if (!pill || !text) return;
+    pill.classList.remove('on', 'na');
+    if (mode === 'on') pill.classList.add('on');
+    if (mode === 'na') pill.classList.add('na');
+    text.textContent = t(key);
+  }
+
+  function renderAiConsentState(state) {
+    var toggle = $('aiConsentToggle');
+    var cta = $('aiConsentCta');
+    var note = $('aiConsentNote');
+    var label = $('aiConsentState');
+    if (!toggle || !cta) return;
+    cta.classList.remove('saving');
+    if (state === 'loading') {
+      toggle.disabled = true; cta.disabled = true;
+      setAiPill('', 'profile.aiConsent.statusLoading');
+      if (note) note.classList.remove('show');
+    } else if (state === 'saving') {
+      toggle.disabled = true; cta.disabled = true;
+      cta.classList.add('saving');
+      cta.textContent = t('profile.aiConsent.saving');
+      setAiPill('', 'profile.aiConsent.statusLoading');
+    } else if (state === 'unavailable') {
+      toggle.disabled = true; cta.disabled = true;
+      cta.textContent = t('profile.aiConsent.activate');
+      setAiPill('na', 'profile.aiConsent.pillUnavailable');
+      if (note) note.classList.remove('show');
+      var box = $('aiConsentErr');
+      if (box) { box.textContent = t('profile.aiConsent.unavailable'); box.classList.add('show'); }
+    } else { 
+      var enabled = state === 'on';
+      toggle.setAttribute('aria-checked', enabled ? 'true' : 'false');
+      toggle.classList.toggle('on', enabled); 
+      toggle.disabled = false;
+      cta.disabled = false;
+      cta.textContent = t(enabled ? 'profile.aiConsent.deactivate' : 'profile.aiConsent.activate');
+      setAiPill(enabled ? 'on' : '', enabled ? 'profile.aiConsent.pillOn' : 'profile.aiConsent.pillOff');
+      if (note) note.classList.toggle('show', !enabled); 
+      if (label) label.textContent = t(enabled ? 'profile.aiConsent.stateOn' : 'profile.aiConsent.stateOff');
+    }
+  }
+
+  function renderAiConsent(enabled) { renderAiConsentState(enabled ? 'on' : 'off'); }
+
+  function showAiConsentError(show) {
+    var box = $('aiConsentErr');
+    if (!box) return;
+    if (show) { box.textContent = t('profile.aiConsent.error'); box.classList.add('show'); }
+    else { box.classList.remove('show'); }
+  }
+
+  async function submitAiConsent(next) {
+    renderAiConsentState('saving');
+    showAiConsentError(false);
+    var saveFailed = false;
+    try {
+      await VeloraData.request('/api/v1/auth/me/preferences', { method: 'PATCH', body: { ai_consent: next } });
+    } catch (e) {
+      saveFailed = true; 
+    }
+    
+    try {
+      var me = await VeloraData.request('/api/v1/auth/me');
+      renderAiConsent(typeof (me.user || {}).aiConsent === 'boolean' ? me.user.aiConsent : false);
+      if (saveFailed) showAiConsentError(true);
+    } catch (e2) {
+      renderAiConsentState('unavailable'); 
+    }
+  }
+
+  renderAiConsentState('loading');
+  if ($('aiConsentToggle')) {
+    $('aiConsentToggle').addEventListener('click', function () {
+      submitAiConsent($('aiConsentToggle').getAttribute('aria-checked') !== 'true');
+    });
+  }
+  if ($('aiConsentCta')) {
+    $('aiConsentCta').addEventListener('click', function () {
+      submitAiConsent($('aiConsentToggle') ? $('aiConsentToggle').getAttribute('aria-checked') !== 'true' : true);
+    });
   }
 
   $('changePwBtn').addEventListener('click', async function () {
@@ -715,7 +827,8 @@ function toggleMobileSidebar() {
   if ($('logoutBtn')) $('logoutBtn').addEventListener('click', signOut);
   if ($('mUserAv')) $('mUserAv').addEventListener('click', signOut);
   loadUser().catch(function (error) {
-    if (error && error.status === 401) signOut();
+    if (error && error.status === 401) { signOut(); return; }
+    renderAiConsentState('unavailable'); 
   });
 })();
 </script>

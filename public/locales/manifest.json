@@ -1,6 +1,6 @@
 {
   "$schema": "./manifest.schema.json",
-  "version": "2026.08.22.1",
+  "version": "2026.08.30.2",
   "defaultLocale": "fa",
   "fallbackLocale": "en",
   "storageKey": "velora.locale",

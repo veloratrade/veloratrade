@@ -2,8 +2,8 @@
 
 <html data-i18n-features="common,errors,trades" data-route-locale="en" data-velora-prelocalized="en" dir="ltr" lang="en">
 <head>
-<meta charset="utf-8"/><script src="/public/assets/velora-locale-registry.js?v=2026.08.22.1"></script>
-<script src="/public/assets/velora-latin-digits.js?v=2026.08.14.17"></script><script src="/public/assets/velora-locale-bootstrap.js?v=2026.08.22.1"></script><link href="/public/assets/velora-localization.css?v=2026.08.22.1" rel="stylesheet"/><script src="/public/assets/velora-localization.js?v=2026.08.22.1"></script><script src="/public/assets/velora-data.js?v=2026.08.22.1"></script><script defer="" src="/public/assets/velora-dynamic-content.js?v=2026.08.22.1"></script>
+<meta charset="utf-8"/><script src="/public/assets/velora-locale-registry.js?v=2026.08.30.2"></script>
+<script src="/public/assets/velora-latin-digits.js?v=2026.08.14.17"></script><script src="/public/assets/velora-locale-bootstrap.js?v=2026.08.30.2"></script><link href="/public/assets/velora-localization.css?v=2026.08.30.2" rel="stylesheet"/><script src="/public/assets/velora-localization.js?v=2026.08.30.2"></script><script src="/public/assets/velora-data.js?v=2026.08.30.2"></script><script defer="" src="/public/assets/velora-dynamic-content.js?v=2026.08.30.2"></script>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
 <meta content="#060A14" name="theme-color"/>
 <title data-i18n="pages.trades.new.new.trade.velora.3f37d5ab">New Trade | VELORA</title>
@@ -735,7 +735,7 @@ function toggleMobileSidebar() {
 <a class="sb-item" href="/news/index.html"><i class="ico">▤</i><span data-i18n="common.news.bba91630">News</span></a>
 <a class="sb-item" href="/profile/index.html"><svg aria-hidden="true" class="ico" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.1 2.1-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56v.1h-3v-.1A1.7 1.7 0 0 0 10.7 18.6a1.7 1.7 0 0 0-1.88.34l-.06.06-2.1-2.1.06-.06A1.7 1.7 0 0 0 7.06 15a1.7 1.7 0 0 0-1.56-1.03H5.4v-3h.1A1.7 1.7 0 0 0 7.06 9.94 1.7 1.7 0 0 0 6.72 8.06L6.66 8l2.1-2.1.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1.03-1.56v-.1h3v.1a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.1 2.1-.06.06a1.7 1.7 0 0 0-.34 1.88 1.7 1.7 0 0 0 1.56 1.03h.1v3h-.1A1.7 1.7 0 0 0 19.4 15Z"></path></svg><span data-i18n="common.profile.8b081d3b">Profile</span></a>
 <a class="sb-item" href="/support/index.html"><i class="ico">◌</i><span data-i18n="common.support.152185b4">Support</span></a>
-<a class="sb-item" data-velora-adminhide-target="1" href="/admin/index.html" id="adminLinkSide"><svg aria-hidden="true" class="ico" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z"></path></svg><span data-i18n="common.admin.41ae8044">Admin</span></a>
+<a class="sb-item" data-velora-adminhide-target="1" href="/admin/index.html" id="adminLinkSide" style="display:none !important"><svg aria-hidden="true" class="ico" fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z"></path></svg><span data-i18n="common.admin.41ae8044">Admin</span></a>
 </nav>
 <div class="sb-user" style="margin-top:auto !important;padding:14px !important;background:linear-gradient(135deg,rgba(14,26,51,0.9),rgba(6,10,20,0.95)) !important;border:1px solid rgba(212,175,55,0.35) !important;border-radius:16px !important;display:flex !important;align-items:center !important;gap:12px !important;box-shadow:0 8px 20px rgba(0,0,0,0.5) !important;">
 <div class="av-wrap" style="position:relative;flex-shrink:0;">
@@ -851,7 +851,10 @@ function toggleMobileSidebar() {
       var u = window.VeloraData ? VeloraData.getUser() : null;
       var isAdmin = u && u.role === 'admin';
       var nodes = document.querySelectorAll('[data-velora-adminhide-target="1"], #adminLinkSide, #adminLinkNav');
-      for (var i = 0; i < nodes.length; i++) nodes[i].style.display = isAdmin ? '' : 'none';
+      for (var i = 0; i < nodes.length; i++) {
+        if (isAdmin) { nodes[i].style.removeProperty('display'); }
+        else { nodes[i].style.setProperty('display', 'none', 'important'); }
+      }
     } catch(e) {}
   }
   
@@ -1235,6 +1238,6 @@ function toggleMobileSidebar() {
 <script src="/public/assets/velora-ui-sound.js?v=2026.08.13.2"></script>
 <script src="/public/assets/velora-dialog.js?v=2026.08.22.1"></script>
 <script src="/public/assets/velora-sym-picker.js?v=2026.08.25.1"></script>
-<script src="/public/assets/velora-smart-import.js?v=2026.08.22.1"></script>
+<script src="/public/assets/velora-smart-import.js?v=2026.08.30.6"></script>
 </body>
 </html>

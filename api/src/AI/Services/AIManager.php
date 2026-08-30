@@ -16,6 +16,9 @@ use Velora\AI\Extraction\ExtractedTradeData;
 use Velora\AI\Providers\AIProviderInterface;
 use Velora\AI\Providers\GeminiProvider;
 use Velora\AI\Providers\TesseractProvider;
+use Velora\AI\Services\AIFailureClassifier;
+use Velora\AI\Services\FeatureRouter;
+use Velora\AI\Services\ProviderCatalog;
 use Velora\AI\Repositories\AIProviderLogRepository;
 use Velora\AI\Repositories\AIProviderQuotaRepository;
 use Velora\AI\Repositories\AIRequestRepository;
@@ -31,11 +34,14 @@ final class AIManager
 {
     /** @var AIProviderInterface[] */
     private array $providers;
+    /** @var array<string,AIProviderInterface> name => instance (chain lookups) */
+    private array $providerMap = [];
     private AIProviderQuotaRepository $quotaRepo;
     private AIProviderLogRepository $logRepo;
     private AIRequestRepository $requestRepo;
+    private ?FeatureRouter $router;
 
-    public function __construct(?array $providers = null, ?AIProviderQuotaRepository $quotaRepo = null, ?AIProviderLogRepository $logRepo = null, ?AIRequestRepository $requestRepo = null)
+    public function __construct(?array $providers = null, ?AIProviderQuotaRepository $quotaRepo = null, ?AIProviderLogRepository $logRepo = null, ?AIRequestRepository $requestRepo = null, ?FeatureRouter $router = null)
     {
         if ($providers === null) {
             // Use registry instead of hardcoded list
@@ -44,9 +50,54 @@ final class AIManager
         } else {
             $this->providers = $providers;
         }
+        foreach ($this->providers as $p) {
+            $this->providerMap[$p->getName()] = $p;
+        }
         $this->quotaRepo = $quotaRepo ?? new AIProviderQuotaRepository();
         $this->logRepo = $logRepo ?? new AIProviderLogRepository();
         $this->requestRepo = $requestRepo ?? new AIRequestRepository();
+        $this->router = $router;
+    }
+
+    /**
+     * Resolve the ordered provider chain for a feature via FeatureRouter.
+     * Unknown/unrouted features keep the legacy environment-driven iteration
+     * (identical provider list and order as before v0.9).
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private function chainEntries(string $feature, ?string $capability): array
+    {
+        if ($this->router === null) {
+            $this->router = new FeatureRouter();
+        }
+        if (in_array($feature, ProviderCatalog::FEATURES, true)) {
+            return $this->router->resolveChain($feature, $capability);
+        }
+        return $this->router->buildEnvDefaultChain($capability);
+    }
+
+    /**
+     * Provider instance for a chain entry: injected providers win (tests /
+     * dependency injection), otherwise the catalog class is instantiated.
+     */
+    private function providerFor(string $name): ?AIProviderInterface
+    {
+        if (isset($this->providerMap[$name])) {
+            return $this->providerMap[$name];
+        }
+        $class = ProviderCatalog::providerClass($name);
+        if ($class !== null && class_exists($class)) {
+            try {
+                $instance = new $class();
+                if ($instance instanceof AIProviderInterface) {
+                    return $this->providerMap[$name] = $instance;
+                }
+            } catch (\Throwable $e) {
+                error_log('[VELORA_AI_MANAGER] failed to instantiate provider ' . $name);
+            }
+        }
+        return null;
     }
 
     /**
@@ -61,9 +112,18 @@ final class AIManager
         $lastException = null;
         $tried = [];
 
-        foreach ($this->providers as $provider) {
+        $chain = $this->chainEntries((string) $feature, isset($options['capability']) ? (string) $options['capability'] : null);
+        foreach ($chain as $entry) {
+            $provider = $this->providerFor((string) $entry['provider']);
+            if ($provider === null) {
+                $tried[] = $entry['provider'] . ':not_registered';
+                continue;
+            }
             $name = $provider->getName();
             $costTier = $provider->getCostTier();
+            $routeOverride = isset($entry['route']) && is_string($entry['route']) && $entry['route'] !== '' ? $entry['route'] : null;
+            $entryModel = isset($entry['model']) && is_string($entry['model']) && $entry['model'] !== '' ? $entry['model'] : null;
+            $fallbackIndex = (int) ($entry['fallback_index'] ?? 0);
 
             $requiredCap = $options['capability'] ?? null;
             if ($requiredCap !== null && !in_array($requiredCap, $provider->getCapabilities(), true)) {
@@ -73,7 +133,7 @@ final class AIManager
 
             if (!$provider->isAvailable()) {
                 $tried[] = $name . ':not_available';
-                $this->logRepo->log($name, 'failed', 0, 'NOT_AVAILABLE');
+                $this->logRepo->log($name, 'failed', 0, 'NOT_AVAILABLE', (string) $feature, $entryModel, $routeOverride, $fallbackIndex);
                 continue;
             }
 
@@ -125,10 +185,17 @@ final class AIManager
 
             $start = microtime(true);
             try {
-                $response = $provider->generate($prompt, $context, $options);
+                $callOptions = $options;
+                if ($routeOverride !== null) {
+                    $callOptions['route'] = $routeOverride;
+                }
+                if ($entryModel !== null && !isset($callOptions['model'])) {
+                    $callOptions['model'] = $entryModel;
+                }
+                $response = $provider->generate($prompt, $context, $callOptions);
                 $latency = (int) ((microtime(true) - $start) * 1000);
 
-                $this->logRepo->log($name, 'success', $latency, null);
+                $this->logRepo->log($name, 'success', $latency, null, (string) $feature, $entryModel ?? $response->model, $routeOverride, $fallbackIndex);
 
                 // Track request for audit/cost
                 try {
@@ -150,20 +217,26 @@ final class AIManager
             } catch (AIQuotaExhaustedException $e) {
                 $latency = (int) ((microtime(true) - $start) * 1000);
                 $tried[] = $name . ':quota_exhausted';
-                $this->logRepo->log($name, 'quota_exhausted', $latency, $e->errorCode());
+                $this->logRepo->log($name, 'quota_exhausted', $latency, $e->errorCode(), (string) $feature, $entryModel, $routeOverride, $fallbackIndex);
                 $lastException = $e;
                 // Quota was already reserved, but we keep it reserved (counts as attempt) — intentional to prevent retry storm
                 continue;
             } catch (AITimeoutException $e) {
                 $latency = (int) ((microtime(true) - $start) * 1000);
                 $tried[] = $name . ':timeout';
-                $this->logRepo->log($name, 'timeout', $latency, $e->errorCode());
+                $this->logRepo->log($name, 'timeout', $latency, $e->errorCode(), (string) $feature, $entryModel, $routeOverride, $fallbackIndex);
                 $lastException = $e;
                 continue;
             } catch (AIException $e) {
                 $latency = (int) ((microtime(true) - $start) * 1000);
+                if (AIFailureClassifier::classify($e) === AIFailureClassifier::ABORT) {
+                    // Consent, input validation, configuration or application
+                    // errors never fall through the chain.
+                    $this->logRepo->log($name, 'failed', $latency, $e->errorCode(), (string) $feature, $entryModel, $routeOverride, $fallbackIndex);
+                    throw $e;
+                }
                 $tried[] = $name . ':' . strtolower($e->errorCode() ?? 'failed');
-                $this->logRepo->log($name, 'failed', $latency, $e->errorCode());
+                $this->logRepo->log($name, 'failed', $latency, $e->errorCode(), (string) $feature, $entryModel, $routeOverride, $fallbackIndex);
                 $lastException = $e;
                 continue;
             }
@@ -184,13 +257,22 @@ final class AIManager
         $lastException = null;
         $triedProviders = [];
 
-        foreach ($this->providers as $provider) {
+        $chain = $this->chainEntries('screenshot_extraction', null);
+        foreach ($chain as $entry) {
+            $provider = $this->providerFor((string) $entry['provider']);
+            if ($provider === null) {
+                $triedProviders[] = $entry['provider'] . ':not_registered';
+                continue;
+            }
             $name = $provider->getName();
             $costTier = $provider->getCostTier();
+            $routeOverride = isset($entry['route']) && is_string($entry['route']) && $entry['route'] !== '' ? $entry['route'] : null;
+            $entryModel = isset($entry['model']) && is_string($entry['model']) && $entry['model'] !== '' ? $entry['model'] : null;
+            $fallbackIndex = (int) ($entry['fallback_index'] ?? 0);
 
             if (!$provider->isAvailable()) {
                 $triedProviders[] = $name . ':not_available';
-                $this->logRepo->log($name, 'failed', 0, 'NOT_AVAILABLE');
+                $this->logRepo->log($name, 'failed', 0, 'NOT_AVAILABLE', 'screenshot_extraction', $entryModel, $routeOverride, $fallbackIndex);
                 continue;
             }
 
@@ -210,12 +292,12 @@ final class AIManager
             if (!$reserved) {
                 if (!$this->quotaRepo->hasQuota($name, $costTier)) {
                     $triedProviders[] = $name . ':quota_exhausted';
-                    $this->logRepo->log($name, 'quota_exhausted', 0, 'QUOTA_EXHAUSTED');
+                    $this->logRepo->log($name, 'quota_exhausted', 0, 'QUOTA_EXHAUSTED', 'screenshot_extraction', $entryModel, $routeOverride, $fallbackIndex);
                     $lastException = new AIQuotaExhaustedException('Quota exhausted for ' . $name, $name);
                     continue;
                 }
                 $triedProviders[] = $name . ':quota_race_exhausted';
-                $this->logRepo->log($name, 'quota_exhausted', 0, 'QUOTA_RACE');
+                $this->logRepo->log($name, 'quota_exhausted', 0, 'QUOTA_RACE', 'screenshot_extraction', $entryModel, $routeOverride, $fallbackIndex);
                 $lastException = new AIQuotaExhaustedException('Quota race exhausted for ' . $name, $name);
                 continue;
             }
@@ -228,7 +310,7 @@ final class AIManager
                 $anonymized = ImageAnonymizer::anonymize($imageRaw);
                 if ($anonymized === null || $anonymized === '') {
                     $triedProviders[] = $name . ':anonymization_failed';
-                    $this->logRepo->log($name, 'failed', 0, 'ANONYMIZATION_FAILED');
+                    $this->logRepo->log($name, 'failed', 0, 'ANONYMIZATION_FAILED', 'screenshot_extraction', $entryModel, $routeOverride, $fallbackIndex);
                     $lastException = new AIProviderException(
                         'Image anonymization failed; refusing to send the original image to an external provider.',
                         $name,
@@ -240,46 +322,67 @@ final class AIManager
 
             $start = microtime(true);
             try {
-                $result = $provider->extract($imageToSend, $deadline);
+                // Explicit per-feature route override is only meaningful (and
+                // validated) for Gemini; other providers always use their
+                // default transport.
+                if ($routeOverride !== null && $provider instanceof GeminiProvider) {
+                    $result = $provider->extract($imageToSend, $deadline, $routeOverride);
+                } else {
+                    $result = $provider->extract($imageToSend, $deadline);
+                }
                 $latency = (int) ((microtime(true) - $start) * 1000);
 
                 if ($result->confidence < 0.2 && $name !== 'tesseract') {
                     $triedProviders[] = $name . ':low_confidence';
-                    $this->logRepo->log($name, 'failed', $latency, 'LOW_CONFIDENCE');
-                    $lastException = new AIValidationException('Low confidence from ' . $name);
+                    $this->logRepo->log($name, 'failed', $latency, 'LOW_CONFIDENCE', 'screenshot_extraction', $entryModel, $routeOverride, $fallbackIndex);
+                    $lastException = new AIValidationException('Low confidence from ' . $name, ['provider' => ['code' => 'LOW_CONFIDENCE']]);
                     continue;
                 }
 
-                $this->logRepo->log($name, 'success', $latency, null);
+                $this->logRepo->log($name, 'success', $latency, null, 'screenshot_extraction', $entryModel ?? $result->provider, $routeOverride, $fallbackIndex);
                 return $result;
             } catch (AIQuotaExhaustedException $e) {
                 $latency = (int) ((microtime(true) - $start) * 1000);
                 $triedProviders[] = $name . ':quota_exhausted';
-                $this->logRepo->log($name, 'quota_exhausted', $latency, $e->errorCode());
+                $this->logRepo->log($name, 'quota_exhausted', $latency, $e->errorCode(), 'screenshot_extraction', $entryModel, $routeOverride, $fallbackIndex);
                 $lastException = $e;
                 continue;
             } catch (AITimeoutException $e) {
                 $latency = (int) ((microtime(true) - $start) * 1000);
                 $triedProviders[] = $name . ':timeout';
-                $this->logRepo->log($name, 'timeout', $latency, $e->errorCode());
+                $this->logRepo->log($name, 'timeout', $latency, $e->errorCode(), 'screenshot_extraction', $entryModel, $routeOverride, $fallbackIndex);
                 $lastException = $e;
                 continue;
             } catch (AIValidationException $e) {
                 $latency = (int) ((microtime(true) - $start) * 1000);
+                if (AIFailureClassifier::classify($e) === AIFailureClassifier::ABORT) {
+                    // Invalid input/extraction contract — never fall through.
+                    $this->logRepo->log($name, 'failed', $latency, $e->errorCode(), 'screenshot_extraction', $entryModel, $routeOverride, $fallbackIndex);
+                    throw $e;
+                }
+                // Provider-output quality (malformed/low confidence) — fallback.
                 $triedProviders[] = $name . ':validation_failed';
-                $this->logRepo->log($name, 'failed', $latency, $e->errorCode());
+                $this->logRepo->log($name, 'failed', $latency, $e->errorCode(), 'screenshot_extraction', $entryModel, $routeOverride, $fallbackIndex);
                 $lastException = $e;
                 continue;
             } catch (AIProviderException $e) {
                 $latency = (int) ((microtime(true) - $start) * 1000);
+                if (AIFailureClassifier::classify($e) === AIFailureClassifier::ABORT) {
+                    $this->logRepo->log($name, 'failed', $latency, $e->errorCode(), 'screenshot_extraction', $entryModel, $routeOverride, $fallbackIndex);
+                    throw $e;
+                }
                 $triedProviders[] = $name . ':provider_error';
-                $this->logRepo->log($name, 'failed', $latency, $e->errorCode());
+                $this->logRepo->log($name, 'failed', $latency, $e->errorCode(), 'screenshot_extraction', $entryModel, $routeOverride, $fallbackIndex);
                 $lastException = $e;
                 continue;
             } catch (AIException $e) {
                 $latency = (int) ((microtime(true) - $start) * 1000);
+                if (AIFailureClassifier::classify($e) === AIFailureClassifier::ABORT) {
+                    $this->logRepo->log($name, 'failed', $latency, $e->errorCode(), 'screenshot_extraction', $entryModel, $routeOverride, $fallbackIndex);
+                    throw $e;
+                }
                 $triedProviders[] = $name . ':ai_error';
-                $this->logRepo->log($name, 'failed', $latency, $e->errorCode());
+                $this->logRepo->log($name, 'failed', $latency, $e->errorCode(), 'screenshot_extraction', $entryModel, $routeOverride, $fallbackIndex);
                 $lastException = $e;
                 continue;
             }
