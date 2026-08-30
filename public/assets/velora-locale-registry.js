@@ -6,5 +6,5 @@
     Object.keys(value).forEach(function (key) { deepFreeze(value[key]); });
     return Object.freeze(value);
   }
-  global.__VELORA_LOCALE_REGISTRY__ = deepFreeze({"version":"2026.08.22.1","defaultLocale":"fa","fallbackLocale":"en","storageKey":"velora.locale","cookieKey":"velora_locale","featureCatalogBase":"/public/locales/chunks","locales":{"fa":{"intlLocale":"fa-IR","name":"Persian","nativeName":"فارسی","direction":"rtl","enabled":true,"numberingSystem":"latn","script":"Arab"},"en":{"intlLocale":"en-GB","name":"English","nativeName":"English","direction":"ltr","enabled":true,"numberingSystem":"latn","script":"Latn"}}});
+  global.__VELORA_LOCALE_REGISTRY__ = deepFreeze({"version":"2026.08.30.2","defaultLocale":"fa","fallbackLocale":"en","storageKey":"velora.locale","cookieKey":"velora_locale","featureCatalogBase":"/public/locales/chunks","locales":{"fa":{"intlLocale":"fa-IR","name":"Persian","nativeName":"فارسی","direction":"rtl","enabled":true,"numberingSystem":"latn","script":"Arab"},"en":{"intlLocale":"en-GB","name":"English","nativeName":"English","direction":"ltr","enabled":true,"numberingSystem":"latn","script":"Latn"}}});
 })(window);

@@ -136,7 +136,12 @@ final class GeminiProvider implements AIProviderInterface
         // free-text analysis stays on direct transport.
         $extractionCall = ($options['responseMimeType'] ?? '') === 'application/json'
             || ($context['feature'] ?? '') === 'extraction';
-        $route = $this->getRoute();
+        // Optional explicit per-feature route override (validated allowlist:
+        // direct|n8n_relay). Absent/invalid => legacy resolution below, so the
+        // default behavior stays byte-compatible: GEMINI_ROUTE env >
+        // ai_gemini_relay_route flag > direct.
+        $override = strtolower(trim((string) ($options['route'] ?? '')));
+        $route = ($override === 'direct' || $override === 'n8n_relay') ? $override : $this->getRoute();
         $useRelay = $route === 'n8n_relay' && $extractionCall;
         $effectiveRoute = $useRelay ? 'n8n_relay' : 'direct';
         $transport = $this->transport($effectiveRoute);
@@ -200,18 +205,27 @@ final class GeminiProvider implements AIProviderInterface
     /**
      * Backward compatible extraction — uses generate() internally.
      * Prompt source ONLY via PromptManager per hardening requirement.
+     *
+     * The optional $routeOverride (explicitly validated allowlist value from a
+     * per-feature chain row: 'direct'|'n8n_relay') is forwarded to generate();
+     * null keeps the legacy route resolution unchanged.
      */
-    public function extract(string $imageRaw, float $deadline): ExtractedTradeData
+    public function extract(string $imageRaw, float $deadline, ?string $routeOverride = null): ExtractedTradeData
     {
         $prompt = PromptManager::get('screenshot_extraction', 'v1', 'en');
+
+        $generateOptions = [
+            'deadline' => $deadline,
+            'responseMimeType' => 'application/json',
+        ];
+        if ($routeOverride !== null) {
+            $generateOptions['route'] = $routeOverride;
+        }
 
         $response = $this->generate($prompt, [
             'imageRaw' => $imageRaw,
             'feature' => 'extraction',
-        ], [
-            'deadline' => $deadline,
-            'responseMimeType' => 'application/json',
-        ]);
+        ], $generateOptions);
 
         $text = $response->content;
         $extractedJson = json_decode($text, true);

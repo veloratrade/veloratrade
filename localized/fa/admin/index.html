@@ -2,8 +2,53 @@
 
 <html data-i18n-features="common,errors,admin" data-route-locale="fa" data-velora-prelocalized="fa" dir="rtl" lang="fa">
 <head>
-<meta charset="utf-8"/><script src="/public/assets/velora-locale-registry.js?v=2026.08.22.1"></script>
-<script src="/public/assets/velora-latin-digits.js?v=2026.08.14.17"></script><script src="/public/assets/velora-locale-bootstrap.js?v=2026.08.22.1"></script><link href="/public/assets/velora-localization.css?v=2026.08.22.1" rel="stylesheet"/><script src="/public/assets/velora-localization.js?v=2026.08.22.1"></script><script src="/public/assets/velora-data.js?v=2026.08.22.1"></script><script defer="" src="/public/assets/velora-dynamic-content.js?v=2026.08.22.1"></script>
+<meta charset="utf-8"/><script src="/public/assets/velora-locale-registry.js?v=2026.08.30.2"></script>
+<script src="/public/assets/velora-latin-digits.js?v=2026.08.14.17"></script><script src="/public/assets/velora-locale-bootstrap.js?v=2026.08.30.2"></script><link href="/public/assets/velora-localization.css?v=2026.08.30.2" rel="stylesheet"/><script src="/public/assets/velora-localization.js?v=2026.08.30.2"></script><script src="/public/assets/velora-data.js?v=2026.08.30.2"></script>
+<script defer="" src="/public/assets/velora-admin-ai.js?v=2026.08.22.1"></script>
+<script>
+
+window.VeloraAdminAIKeys = {
+  'addProvider': 'admin.ai.addProvider',
+  'auto': 'admin.ai.auto',
+  'available': 'admin.ai.available',
+  'chain': 'admin.ai.chain',
+  'confirmRemove': 'admin.ai.confirmRemove',
+  'credentialConfigured': 'admin.ai.credentialConfigured',
+  'credentialDelete': 'admin.ai.credentialDelete',
+  'credentialInput': 'admin.ai.credentialInput',
+  'credentialNotConfigured': 'admin.ai.credentialNotConfigured',
+  'credentialNotRequired': 'admin.ai.credentialNotRequired',
+  'credentialSet': 'admin.ai.credentialSet',
+  'disabled': 'admin.ai.disabled',
+  'effectiveRoute': 'admin.ai.effectiveRoute',
+  'empty': 'admin.ai.empty',
+  'enabled': 'admin.ai.enabled',
+  'error': 'admin.ai.error',
+  'feature.assistant': 'admin.ai.feature.assistant',
+  'feature.screenshot_extraction': 'admin.ai.feature.screenshot_extraction',
+  'feature.trade_analysis': 'admin.ai.feature.trade_analysis',
+  'feature.weekly_report': 'admin.ai.feature.weekly_report',
+  'model': 'admin.ai.model',
+  'moveDown': 'admin.ai.moveDown',
+  'moveUp': 'admin.ai.moveUp',
+  'priority': 'admin.ai.priority',
+  'provider': 'admin.ai.provider',
+  'providers': 'admin.ai.providers',
+  'quota': 'admin.ai.quota',
+  'refresh': 'admin.ai.refresh',
+  'relayToken': 'admin.ai.relayToken',
+  'relayUrl': 'admin.ai.relayUrl',
+  'remove': 'admin.ai.remove',
+  'route': 'admin.ai.route',
+  'routingRows': 'admin.ai.routingRows',
+  'source.db': 'admin.ai.source.db',
+  'source.envDefault': 'admin.ai.source.envDefault',
+  'status': 'admin.ai.status',
+  'subtitle': 'admin.ai.subtitle',
+  'title': 'admin.ai.title',
+  'unavailable': 'admin.ai.unavailable'
+};
+</script><script defer="" src="/public/assets/velora-dynamic-content.js?v=2026.08.30.2"></script>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
 <meta content="#060A14" name="theme-color"/>
 <title data-i18n="pages.admin.admin.panel.velora.ad0880f5">پنل مدیریت | VELORA</title>
@@ -583,6 +628,31 @@ function toggleMobileSidebar() {
 </style>
 <link href="/public/assets/velora-latin-digits.css?v=2026.08.14.17" rel="stylesheet"/>
 <link href="/public/assets/velora-sidebar-icons.css?v=2026.08.13.45" rel="stylesheet"/><script src="/public/assets/velora-sidebar-icons.js?v=2026.08.13.42"></script>
+<style id="velora-admin-ai-css">
+#aiSettingsPanel .ai-err{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.45);border-radius:12px;padding:10px 14px;color:#fca5a5;font-size:12.5px;margin:10px 0;}
+#aiSettingsPanel .ai-note{color:var(--muted);font-size:11.5px;margin:2px 0 6px;}
+#aiSettingsPanel .ai-subhead{font-size:11px;color:var(--faint);letter-spacing:1px;font-weight:700;margin:16px 0 8px;}
+#aiSettingsPanel .ai-badge{display:inline-block;border-radius:999px;padding:2px 10px;font-size:11px;font-weight:700;margin-inline-start:6px;}
+#aiSettingsPanel .ai-ok{background:rgba(76,211,154,.14);color:#4cd39a;border:1px solid rgba(76,211,154,.4);}
+#aiSettingsPanel .ai-off{background:rgba(239,68,68,.12);color:#f87171;border:1px solid rgba(239,68,68,.4);}
+#aiSettingsPanel .ai-muted{background:rgba(255,255,255,.06);color:var(--muted);border:1px solid rgba(255,255,255,.14);}
+#aiSettingsPanel .ai-prov{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;margin-bottom:8px;}
+#aiSettingsPanel .ai-prov-name{min-width:130px;}
+#aiSettingsPanel .ai-prov-cred{display:flex;flex-wrap:wrap;align-items:center;gap:8px;flex:1;}
+#aiSettingsPanel .ai-prov-cred .f-input{width:210px;padding:7px 10px;font-size:12px;}
+#aiSettingsPanel .ai-prov-relay{display:flex;gap:14px;font-size:11.5px;color:var(--muted);align-items:center;}
+#aiSettingsPanel .ai-kv{white-space:nowrap;}
+#aiSettingsPanel .ai-feature{margin-top:14px;padding:14px;}
+#aiSettingsPanel .ai-empty{color:var(--muted);font-size:12.5px;padding:8px 2px;}
+#aiSettingsPanel .ai-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+#aiSettingsPanel .ai-table th{color:var(--faint);font-size:10.5px;letter-spacing:.5px;text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);}
+#aiSettingsPanel .ai-table td{padding:7px 8px;border-bottom:1px solid rgba(255,255,255,.05);}
+#aiSettingsPanel .ai-add{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-top:10px;}
+#aiSettingsPanel .ai-field{display:flex;flex-direction:column;gap:4px;font-size:10.5px;color:var(--faint);}
+#aiSettingsPanel .ai-field .f-input{width:160px;padding:7px 10px;font-size:12px;}
+#aiSettingsPanel .panel-head .meta .chip{margin-inline-start:8px;cursor:pointer;}
+#aiSettingsPanel[data-busy]{opacity:.6;pointer-events:none;}
+</style>
 <meta content="fa" name="content-language"/><link href="https://veloratrade.ir/fa/admin/" rel="canonical"/><meta content="https://veloratrade.ir/fa/admin/" property="og:url"/><link href="https://veloratrade.ir/fa/admin/" hreflang="fa" rel="alternate"/><link href="https://veloratrade.ir/en/admin/" hreflang="en" rel="alternate"/><link href="https://veloratrade.ir/en/admin/" hreflang="x-default" rel="alternate"/></head>
 <body>
 <div class="bgfx"></div>
@@ -679,6 +749,19 @@ function toggleMobileSidebar() {
 </table>
 </div>
 <div class="pager" id="pager"></div>
+</div>
+
+<div class="panel" id="aiSettingsPanel">
+<div class="panel-head">
+<div class="t"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" viewbox="0 0 24 24"><path d="M12 3v3m0 12v3M3 12h3m12 0h3m-2.6-6.4-2.1 2.1m-8.6 8.6 2.1-2.1m0-8.6-2.1-2.1m8.6 8.6 2.1 2.1"></path><circle cx="12" cy="12" r="4"></circle></svg> <span data-i18n="admin.ai.title">تنظیمات هوش مصنوعی</span></div>
+<span class="meta"><span id="aiRoutingMeta">—</span> <button class="chip" data-i18n="admin.ai.refresh" id="aiRefresh" type="button">بازخوانی</button></span>
+</div>
+<div class="ai-note" data-i18n="admin.ai.subtitle">مسیریابی ارائه‌دهنده‌ها و کلیدها</div>
+<div class="ai-err" hidden="true" id="aiErrorBox"><span id="aiErrorText"></span></div>
+<div class="ai-subhead" data-i18n="admin.ai.providers">ارائه‌دهنده‌ها</div>
+<div id="aiProviders"></div>
+<div class="ai-subhead" data-i18n="admin.ai.chain">زنجیره پردازش</div>
+<div id="aiFeatures"></div>
 </div>
 </main>
 </div>

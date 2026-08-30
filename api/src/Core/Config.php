@@ -48,6 +48,17 @@ final class Config
     }
 
     /**
+     * Drop cached env/config so subsequent env() calls re-read the private
+     * velora.env (used by SecureCredentialStore after admin credential
+     * mutations). Process environment still wins — by design.
+     */
+    public static function clearCache(): void
+    {
+        self::$envVars = [];
+        self::$data = null;
+    }
+
+    /**
      * Return the validated private runtime root.
      *
      * The root must already exist, be absolute, and resolve outside the web
