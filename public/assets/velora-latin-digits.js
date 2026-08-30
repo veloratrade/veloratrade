@@ -12,11 +12,16 @@
   var HTML_NS = 'http://www.w3.org/1999/xhtml';
 
   function toLatin(value) {
-    return String(value).replace(NON_LATIN_DIGIT, function (ch) {
+    var s = String(value).replace(NON_LATIN_DIGIT, function (ch) {
       var code = ch.charCodeAt(0);
       if (code >= 0x06F0 && code <= 0x06F9) return String(code - 0x06F0);
       if (code >= 0x0660 && code <= 0x0669) return String(code - 0x0660);
       return ch;
+    });
+    // Arabic-Indic number separators (U+066B decimal / U+066C thousands) are
+    // NOT digits but must render as canonical Latin punctuation: ١٣١٫٤٠ -> 131.40.
+    return s.replace(/[\u066B\u066C]/g, function (ch) {
+      return ch === '\u066B' ? '.' : ',';
     });
   }
 
