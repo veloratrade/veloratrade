@@ -151,7 +151,7 @@ jobs:
       - name: G8 runtime — canonical locale resolution (real controller + SQLite)
         run: php tools/tests/test_ai_locale_contract_runtime.php
 
-      - name: G5 — Latin-digit display layer runtime (real asset: Intl patch + toLatin + DOM normalization)
+      - name: 'G5 — Latin-digit display layer runtime (real asset: Intl patch + toLatin + DOM normalization)'
         run: node tools/tests/test_latin_digits_layer.js
 
       - name: G10-G12 — Static security/enforcement gates (IDOR scoping, admin RBAC wiring, live-data numeric)
