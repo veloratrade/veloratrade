@@ -1,10 +1,10 @@
 {
   "algorithm": "sha256",
-  "commitSha": "b6d1fd02c938693fbd7bd984b256a340e24c4b60",
+  "commitSha": "bd0bb54e6714e3ad32ec98cd34847072c7e163ff",
   "localizationVersion": "2026.08.30.2",
   "policyVersion": 2,
-  "releaseHtmlSha256": "b95a8ecf81928ce89bd8f1b749582ac5270e2cc3000e9367bb2c9eaa9b84ab95",
-  "releaseId": "2026.08.30.2",
+  "releaseHtmlSha256": "1c6a31c159499429b242412749a1e96cc77e280c1336c3cfd0e69d12853d07e4",
+  "releaseId": "2026.08.30.3",
   "routeCount": 61,
   "routeManifestSha256": "77c267b42c509fae6a9f070298df1548d94a669176ed74999d28945504bdc251",
   "routes": {
@@ -884,7 +884,7 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "en/trades/new/index.html",
-      "htmlSha256": "e0fc3d8f5677a1a14a8173f18c3fd60687c391500e1aca83655a6c4ed38b9a8c",
+      "htmlSha256": "9e6993c27921881079af4732438dbb5c5667228a5a7cdef10db3a1cc12452903",
       "inlineScriptCount": 6,
       "inlineScriptHashes": [
         "sha256-1poHJeS5OXUbnszstlpAVSL2MCUCizVPO6npTCn2iaU=",
@@ -1803,7 +1803,7 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "fa/trades/new/index.html",
-      "htmlSha256": "fbdb0889bac78bde7b5114557efb95f501c5aa33120703ac5de0330d6b96c503",
+      "htmlSha256": "5aa5e241b1f5c5285f659487404fa4ec5a96c502b14e45f727f1033ac94d13a4",
       "inlineScriptCount": 6,
       "inlineScriptHashes": [
         "sha256-1poHJeS5OXUbnszstlpAVSL2MCUCizVPO6npTCn2iaU=",
@@ -1907,5 +1907,5 @@
       ]
     }
   },
-  "sourceDigest": "7966f3ff5342bfed48fd81f977f91ce6859f28947cfa8ad56f90b0b22f54715b"
+  "sourceDigest": "9e7c2d9171bb93963a2be6ad23064e9ee5c32c3411c6f1f93b79ffaaa6d69f37"
 }

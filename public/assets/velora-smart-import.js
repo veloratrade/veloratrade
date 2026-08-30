@@ -337,7 +337,14 @@
       prog(t('خواندن روی سرور…', 'Reading on server…'));
       texts = await ocrServer(shots.map(function (s) { return s.dataUrl; }));
     } catch (e2) { texts = []; }
-    if (!texts.some(looksLikeTrade)) {
+    // Browser OCR is a FALLBACK only: it must not run when the server already
+    // returned a usable AI extraction (gemini/openai/claude with the critical
+    // trade fields). Previously this gate looked at OCR text alone, so an empty
+    // server-tesseract text started a slow in-browser OCR pass even after a
+    // fully valid Gemini extraction.
+    var aiParsed = extractionToParsed();
+    var aiUsable = !!(aiParsed && aiParsed.fields.symbol && aiParsed.fields.direction);
+    if (!aiUsable && !texts.some(looksLikeTrade)) {
       try {
         prog(t('خواندن در مرورگر… ممکن است چند ثانیه طول بکشد.', 'Reading in the browser… this can take a few seconds.'));
         var local = await ocr(shots[0].dataUrl);
@@ -349,7 +356,6 @@
       try { fields = parseMt(text || ''); } catch (err) { fields = {}; }
       return { label: t('اسکرین', 'Shot') + ' ' + (i + 1), fields: fields };
     });
-    var aiParsed = extractionToParsed();
     if (aiParsed) {
       // Gemini/OpenAI/Claude result is authoritative for the fields it carries;
       // OCR rows may only SUPPLEMENT missing fields, never overwrite them.
