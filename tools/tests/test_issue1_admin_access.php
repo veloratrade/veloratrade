@@ -104,15 +104,19 @@ try {
 check($unauth !== null && $unauth->errorCode() === 'ADMIN_REQUIRED', 'unauthenticated request is rejected by adminOnly (401/403 at API layer, never data)');
 
 echo "== Frontend: admin nav hidden for non-admins ==\n";
-$pages = ['dashboard', 'trades', 'trades/new', 'wallet', 'news', 'markets', 'performance', 'support', 'intelligence', 'profile'];
+$pages = ['dashboard', 'trades', 'trades/new', 'wallet', 'news', 'markets', 'performance', 'support', 'intelligence', 'profile', 'accounts/connect'];
 foreach ($pages as $page) {
     $html = (string) file_get_contents($root . '/' . $page . '/index.html');
     $linkOk = strpos($html, 'id="adminLinkSide"') !== false && strpos($html, 'data-velora-adminhide-target="1"') !== false;
+    // The page CSS carries `.sb-nav a.sb-item { display:flex !important; }`, which
+    // outranks a plain inline `display:none`. Both the default style and the
+    // hide-script MUST therefore use the `important` priority to actually win.
     $scriptOk = strpos($html, 'data-velora-adminhide') !== false && strpos($html, "u.role === 'admin'") !== false
-        && strpos($html, "nodes[i].style.display = isAdmin ? '' : 'none'") !== false;
+        && strpos($html, "nodes[i].style.setProperty('display', 'none', 'important')") !== false
+        && strpos($html, "nodes[i].style.removeProperty('display')") !== false;
     $hiddenByDefault = strpos(
         $html,
-        'id="adminLinkSide" style="display:none"'
+        'id="adminLinkSide" style="display:none !important"'
     ) !== false;
     check($linkOk && $scriptOk && $hiddenByDefault, "{$page}/: admin link tagged + hidden by default + hide-script fails closed for non-admins");
 }
@@ -121,8 +125,8 @@ foreach ($pages as $page) {
 foreach (['fa', 'en'] as $loc) {
     $out = (string) file_get_contents($root . '/localized/' . $loc . '/dashboard/index.html');
     check(
-        strpos($out, 'id="adminLinkSide" style="display:none"') !== false,
-        "localized/{$loc}/dashboard: admin nav hidden by default in served HTML"
+        strpos($out, 'id="adminLinkSide" style="display:none !important"') !== false,
+        "localized/{$loc}/dashboard: admin nav hidden by default (with important priority) in served HTML"
     );
 }
 $admin = (string) file_get_contents($root . '/admin/index.html');

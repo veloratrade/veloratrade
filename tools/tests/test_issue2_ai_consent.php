@@ -91,7 +91,7 @@ if (!in_array(getenv('VELORA_TEST_CHILD'), ['1', 'true'], true)) {
     $en = json_decode((string) file_get_contents(dirname(__DIR__, 2) . '/public/locales/en.json'), true)['messages'];
     $fa = json_decode((string) file_get_contents(dirname(__DIR__, 2) . '/public/locales/fa.json'), true)['messages'];
     preg_match_all('/data-i18n(?:-[a-z-]+)?="(profile\.aiConsent\.[A-Za-z0-9_.]+)"/', $html, $mm);
-    check(count(array_unique($mm[1])) === 3, 'profile.aiConsent data-i18n attribute keys used (' . count(array_unique($mm[1])) . ')');
+    check(count(array_unique($mm[1])) === 6, 'profile.aiConsent data-i18n attribute keys used (' . count(array_unique($mm[1])) . ')');
     check(strpos($html, "'profile.aiConsent.stateOn'") !== false && strpos($html, "'profile.aiConsent.stateOff'") !== false, 'state labels resolved via catalog keys in the page script (chunk coverage source)');
     $missing = array_filter(array_unique($mm[1]), fn ($k) => !isset($en[$k]) || !isset($fa[$k]));
     check($missing === [], 'all aiConsent keys resolve in BOTH catalogs');
@@ -101,6 +101,15 @@ if (!in_array(getenv('VELORA_TEST_CHILD'), ['1', 'true'], true)) {
     check(isset($chunk['profile.aiConsent.title']), 'profile feature chunk covers the new keys (template literal presence)');
 
     
+echo "== Frontend: six UX states are modelled ==\n";
+$profile0 = (string) file_get_contents(dirname(__DIR__, 2) . '/profile/index.html');
+check(strpos($profile0, "renderAiConsentState('loading')") !== false, "state 'loading' rendered before first /auth/me answer");
+check(strpos($profile0, "renderAiConsentState('saving')") !== false, "state 'saving' rendered while PATCH is in flight");
+check(strpos($profile0, "renderAiConsentState('unavailable')") !== false, "state 'unavailable' rendered when server state cannot be read");
+check(strpos($profile0, "state === 'on'") !== false && strpos($profile0, "'profile.aiConsent.pillOff'") !== false, "states 'on'/'off' driven by authoritative aiConsent boolean");
+check(strpos($profile0, "t('profile.aiConsent.error')") !== false, 'error state surfaces via catalog key (no fake success)');
+check(strpos($profile0, 'aiConsentNote') !== false && strpos($profile0, 'profile.aiConsent.required') !== false, 'consent-required hint shown while consent is off');
+check(strpos($profile0, 'id="aiConsentCta"') !== false && strpos($profile0, 'btn-gold') !== false, 'primary action is an explicit btn-gold CTA, not only the switch');
 echo "== Frontend: consent toggle renders the real switch pattern ==\n";
 $profile = (string) file_get_contents(dirname(__DIR__, 2) . '/profile/index.html');
 check(
