@@ -528,7 +528,7 @@ function toggleMobileSidebar() {
 }
 </style>
 <style id="velora-sound-setting-css">
-.sound-pref{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:15px 16px;border:1px solid rgba(255,255,255,.11);border-radius:13px;background:linear-gradient(135deg,rgba(255,255,255,.055),rgba(233,196,92,.045));}.sound-pref-copy{display:flex;align-items:center;gap:11px}.sound-pref-ico{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;color:#f1c453;background:rgba(241,196,83,.1);border:1px solid rgba(241,196,83,.24)}.sound-pref-ico svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8}.sound-pref b{display:block;font-size:13px}.sound-pref small{display:block;color:var(--faint);font-size:11px;margin-top:2px}.sound-toggle{width:46px;height:25px;border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:3px;background:rgba(0,0,0,.28);cursor:pointer;transition:.2s}.sound-toggle i{display:block;width:17px;height:17px;border-radius:50%;background:#8e98a8;transition:.2s}.sound-toggle.on{background:rgba(241,196,83,.25);border-color:rgba(241,196,83,.58)}.sound-toggle.on i{transform:translateX(-20px);background:#ffe08a;box-shadow:0 0 10px rgba(241,196,83,.65)}
+.sound-pref{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:15px 16px;border:1px solid rgba(255,255,255,.11);border-radius:13px;background:linear-gradient(135deg,rgba(255,255,255,.055),rgba(233,196,92,.045));}.sound-pref-copy{display:flex;align-items:center;gap:11px}.sound-pref-ico{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;color:#f1c453;background:rgba(241,196,83,.1);border:1px solid rgba(241,196,83,.24)}.sound-pref-ico svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8}.sound-pref b{display:block;font-size:13px}.sound-pref small{display:block;color:var(--faint);font-size:11px;margin-top:2px}.sound-toggle{width:46px;height:25px;border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:3px;background:rgba(0,0,0,.28);cursor:pointer;transition:.2s}.sound-toggle i{display:block;width:17px;height:17px;border-radius:50%;background:#8e98a8;transition:.2s}.sound-toggle.on{background:rgba(241,196,83,.25);border-color:rgba(241,196,83,.58)}.sound-toggle.on i{transform:translateX(-20px);background:#ffe08a;box-shadow:0 0 10px rgba(241,196,83,.65)}[dir="ltr"] .sound-toggle.on i{transform:translateX(20px)}
 .ai-pref-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .ai-pref-head .t{display:inline-flex;align-items:center;gap:8px}
 .ai-pill{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;padding:4px 11px;border-radius:20px;border:1px solid rgba(255,255,255,.18);color:var(--faint,#8fa0c0);background:rgba(255,255,255,.05);white-space:nowrap}
@@ -696,6 +696,25 @@ function toggleMobileSidebar() {
 
   
   
+  
+  
+  
+  
+  
+  
+  
+  var aiConsentStateCurrent = 'loading';
+
+  function aiText(node, key) {
+    if (!node) return;
+    
+    
+    if (node.getAttribute && node.getAttribute('data-i18n')) node.removeAttribute('data-i18n');
+    var msg = t(key);
+    if (msg === key) return; 
+    node.textContent = msg;
+  }
+
   function setAiPill(mode, key) {
     var pill = $('aiConsentPill');
     var text = $('aiConsentPillText');
@@ -703,10 +722,11 @@ function toggleMobileSidebar() {
     pill.classList.remove('on', 'na');
     if (mode === 'on') pill.classList.add('on');
     if (mode === 'na') pill.classList.add('na');
-    text.textContent = t(key);
+    aiText(text, key);
   }
 
   function renderAiConsentState(state) {
+    aiConsentStateCurrent = state;
     var toggle = $('aiConsentToggle');
     var cta = $('aiConsentCta');
     var note = $('aiConsentNote');
@@ -720,25 +740,25 @@ function toggleMobileSidebar() {
     } else if (state === 'saving') {
       toggle.disabled = true; cta.disabled = true;
       cta.classList.add('saving');
-      cta.textContent = t('profile.aiConsent.saving');
+      aiText(cta, 'profile.aiConsent.saving');
       setAiPill('', 'profile.aiConsent.statusLoading');
     } else if (state === 'unavailable') {
       toggle.disabled = true; cta.disabled = true;
-      cta.textContent = t('profile.aiConsent.activate');
+      aiText(cta, 'profile.aiConsent.activate');
       setAiPill('na', 'profile.aiConsent.pillUnavailable');
       if (note) note.classList.remove('show');
       var box = $('aiConsentErr');
-      if (box) { box.textContent = t('profile.aiConsent.unavailable'); box.classList.add('show'); }
+      if (box) { aiText(box, 'profile.aiConsent.unavailable'); box.classList.add('show'); }
     } else { 
       var enabled = state === 'on';
       toggle.setAttribute('aria-checked', enabled ? 'true' : 'false');
       toggle.classList.toggle('on', enabled); 
       toggle.disabled = false;
       cta.disabled = false;
-      cta.textContent = t(enabled ? 'profile.aiConsent.deactivate' : 'profile.aiConsent.activate');
+      aiText(cta, enabled ? 'profile.aiConsent.deactivate' : 'profile.aiConsent.activate');
       setAiPill(enabled ? 'on' : '', enabled ? 'profile.aiConsent.pillOn' : 'profile.aiConsent.pillOff');
       if (note) note.classList.toggle('show', !enabled); 
-      if (label) label.textContent = t(enabled ? 'profile.aiConsent.stateOn' : 'profile.aiConsent.stateOff');
+      if (label) aiText(label, enabled ? 'profile.aiConsent.stateOn' : 'profile.aiConsent.stateOff');
     }
   }
 
@@ -747,7 +767,7 @@ function toggleMobileSidebar() {
   function showAiConsentError(show) {
     var box = $('aiConsentErr');
     if (!box) return;
-    if (show) { box.textContent = t('profile.aiConsent.error'); box.classList.add('show'); }
+    if (show) { aiText(box, 'profile.aiConsent.error'); box.classList.add('show'); }
     else { box.classList.remove('show'); }
   }
 
@@ -781,6 +801,17 @@ function toggleMobileSidebar() {
       submitAiConsent($('aiConsentToggle') ? $('aiConsentToggle').getAttribute('aria-checked') !== 'true' : true);
     });
   }
+  
+  
+  (function () {
+    function rerenderAiConsentLabels() {
+      try { renderAiConsentState(aiConsentStateCurrent); } catch (_) {}
+    }
+    if (window.VeloraLocale && VeloraLocale.ready && typeof VeloraLocale.ready.then === 'function') {
+      VeloraLocale.ready.then(rerenderAiConsentLabels).catch(function () {});
+    }
+    document.addEventListener('velora:locale-change', rerenderAiConsentLabels);
+  })();
 
   $('changePwBtn').addEventListener('click', async function () {
     var currentPassword = $('curPw').value;
