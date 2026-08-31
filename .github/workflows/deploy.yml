@@ -76,11 +76,39 @@ jobs:
       environment_name: staging
       write_probes: false
 
+  # ── ۲٫۵ پایهٔ مقایسهٔ گیت آرشیو: در dispatch رویدادِ base طبیعی ندارد ──
+  deploy_base:
+    name: تعیین SHA پایهٔ مقایسه (والد ریف انتخابی)
+    needs: gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      base_sha: ${{ steps.parent.outputs.base_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: والد کامیت انتخاب‌شده (SHA پایهٔ diff)
+        id: parent
+        run: |
+          set -euo pipefail
+          # Fail closed: پایهٔ مقایسه باید همیشه قابل‌تعیین باشد.
+          BASE_SHA="$(git rev-parse --verify 'HEAD^1^{commit}')"
+          if [ -z "$BASE_SHA" ]; then
+            echo "::error::BASE_SHA is empty; cannot determine changed-file set"
+            exit 1
+          fi
+          echo "base_sha=${BASE_SHA}" >> "$GITHUB_OUTPUT"
+
   # ── ۳. گیت دائمی کیفیت (Phase 3.2): Auth/Email/Security/Localization ──
   quality_gate:
     name: گیت دائمی کیفیت — پیش‌شرط انتشار
-    needs: staging_gate
+    needs: [staging_gate, deploy_base]
     uses: ./.github/workflows/quality-gate.yml
+    with:
+      # در workflow_dispatch هیچ base طبیعی وجود ندارد (event.before و PR base
+      # خالی‌اند) → والد SHA انتخابی صریح پاس می‌شود؛ gate-archive fail-closed می‌ماند.
+      base_sha: ${{ needs.deploy_base.outputs.base_sha }}
 
   # ── ۴. گارد CSP ────────────────────────────────────────────────
   guard:
