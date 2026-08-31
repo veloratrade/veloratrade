@@ -376,4 +376,50 @@ CREATE TABLE IF NOT EXISTS content_translation_jobs (
     KEY idx_translation_job_lock (status, locked_at)
 ) ENGINE=InnoDB;
 
+-- ----------------------------------------------------------------------------
+-- AI FOUNDATION (v0.4) — extraction cache, provider quotas, provider health logs
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS ai_extractions (
+    id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    user_id         BIGINT UNSIGNED NOT NULL,
+    provider        VARCHAR(32)     NOT NULL DEFAULT 'gemini',
+    image_hash      CHAR(64)        NOT NULL,
+    original_result JSON            NULL,
+    final_result    JSON            NULL,
+    confidence      FLOAT           NOT NULL DEFAULT 0.0,
+    latency_ms      INT UNSIGNED    NOT NULL DEFAULT 0,
+    status          ENUM('success','fallback','failed') NOT NULL DEFAULT 'success',
+    error_code      VARCHAR(64)     NULL,
+    created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_ai_extractions_user (user_id),
+    KEY idx_ai_extractions_hash (image_hash),
+    KEY idx_ai_extractions_provider (provider),
+    KEY idx_ai_extractions_status (status),
+    KEY idx_ai_extractions_created (created_at),
+    CONSTRAINT fk_ai_extractions_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS ai_provider_quotas (
+    provider        VARCHAR(32)     NOT NULL,
+    daily_used      INT UNSIGNED    NOT NULL DEFAULT 0,
+    quota_limit     INT UNSIGNED    NOT NULL DEFAULT 1500,
+    reset_at        DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (provider)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS ai_provider_logs (
+    id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    provider        VARCHAR(32)     NOT NULL,
+    status          ENUM('success','failed','quota_exhausted','timeout') NOT NULL,
+    latency_ms      INT UNSIGNED    NOT NULL DEFAULT 0,
+    error_code      VARCHAR(64)     NULL,
+    created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_provider_logs_provider (provider),
+    KEY idx_provider_logs_status (status),
+    KEY idx_provider_logs_created (created_at)
+) ENGINE=InnoDB;
+
 SET FOREIGN_KEY_CHECKS = 1;
