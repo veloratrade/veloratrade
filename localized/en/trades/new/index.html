@@ -811,10 +811,10 @@ function toggleMobileSidebar() {
 <div class="field"><label data-i18n="pages.trades.new.stop.loss.sl.a16f5daa">Stop Loss (SL)</label><input class="input" data-i18n-placeholder="common.optional.4efaacbe" id="sl" inputmode="decimal" placeholder="Optional" step="any" type="text"/></div>
 <div class="field"><label data-i18n="pages.trades.new.take.profit.tp.f3e73cce">Take Profit (TP)</label><input class="input" data-i18n-placeholder="common.optional.4efaacbe" id="tp" inputmode="decimal" placeholder="Optional" step="any" type="text"/></div>
 <div class="desk-sec"><span data-i18n="pages.trades.new.p05.timing_psychology">Timing and psychology</span></div>
-<div class="field"><label data-i18n="pages.trades.new.open.time.f5d607ee">Open Time</label><input class="input" id="openTime" required="" type="datetime-local"/>
+<div class="field"><label data-i18n="pages.trades.new.open.time.f5d607ee">Open Time</label><input autocomplete="off" class="input" id="openTime" placeholder="2026-08-14T13:01" required="" spellcheck="false" type="text"/></div>
 <div class="session-row"><span class="session-pill off" id="sessionPill"><span data-i18n="pages.trades.new.p05.session">Session</span></span><span class="session-sub" id="sessionSub"></span></div>
 </div>
-<div class="field"><label data-i18n="pages.trades.new.close.time.3fc955ae">Close Time</label><input class="input" id="closeTime" required="" type="datetime-local"/></div>
+<div class="field"><label data-i18n="pages.trades.new.close.time.3fc955ae">Close Time</label><input autocomplete="off" class="input" id="closeTime" placeholder="2026-08-14T13:01" required="" spellcheck="false" type="text"/></div>
 <div class="field" style="grid-column:1/-1;">
 <label data-i18n="pages.trades.new.emotional.score.3adcd56b">Emotional Score</label>
 <div class="emot-row" id="emotRow">
@@ -832,9 +832,9 @@ function toggleMobileSidebar() {
 <div style="text-align:left;"><div class="lbl" data-i18n="pages.trades.new.details.27928bea">Details</div><div style="font-size:12px;color:var(--muted);line-height:1.9;"><span data-i18n="common.login.e09e596b">Login</span> <b id="mEntry">—</b> <span data-i18n="pages.trades.new.logout.e97aeff6">· Logout</span> <b id="mExit">—</b><br/><span data-i18n="pages.trades.new.volume.b81fbec4">Volume</span> <b id="mVol">—</b> <span data-i18n="pages.trades.new.commission.1254ba0b">· Commission</span> <b id="mComm">—</b></div></div>
 </div>
 <button class="btn-gold" data-i18n="pages.trades.new.record.trade.in.journal.d60654ec" id="submitBtn" style="margin-top:18px;">Record Trade in Journal</button>
-</div>
-</main>
-</div>
+</main></div>
+
+
 <div class="toast" id="toast"></div>
 <script data-velora-early="1">
 (function(){
