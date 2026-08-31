@@ -1,10 +1,10 @@
 {
   "algorithm": "sha256",
-  "commitSha": "5f2668560f77b81cb0879960b1758a234565e614",
+  "commitSha": "9b2e665",
   "localizationVersion": "2026.08.30.2",
   "policyVersion": 2,
-  "releaseHtmlSha256": "1288853635265c40f002024c2e324d8f76ed5ef2f5dd21ad20f25bd3985fdf8d",
-  "releaseId": "2026.08.30.10",
+  "releaseHtmlSha256": "54ef700351e01681cd897fc80caa3c43b31cc63a648c1bfe1d5fd7694d69755d",
+  "releaseId": "2026.08.31.1",
   "routeCount": 61,
   "routeManifestSha256": "77c267b42c509fae6a9f070298df1548d94a669176ed74999d28945504bdc251",
   "routes": {
@@ -700,7 +700,7 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "en/profile/index.html",
-      "htmlSha256": "0ee5ae5ba66ebfd230a475e98938ce1b7dbcbf69b7705178c491a78ab2115c69",
+      "htmlSha256": "2fe01c279dd5654c4e181b15f57fbb05947b7c786719c08dcfed6beb454831da",
       "inlineScriptCount": 5,
       "inlineScriptHashes": [
         "sha256-0QORiE4Z7p0WIXjhzcOfcMxMQMkbatwknu73tZMu9V4=",
@@ -712,12 +712,12 @@
       "inlineStyleCount": 8,
       "inlineStyleHashes": [
         "sha256-0LB74sxFUnqv059J+Fz47xF0QypouOy6URu5GQ5AKOk=",
+        "sha256-6U67tlRmj3pqfV904CnyOsVv4euqHcBvj0kZedVDgsM=",
         "sha256-CU/w7+WP3i3jfhXHYYU9FpwP2piTTruxB/sFuVzoGGI=",
         "sha256-Iz4NjMW1PB/nc1TNvHy1zwTyKZrbEtB4jaSCUvy4Des=",
         "sha256-Ncsd7x3I5dghe8UuEeKid+AiCrg7Z7PGpuY4KmrhCOI=",
         "sha256-YIJxlGw1GlETZz3usl63EXVCMLynXyGgFtVyLiJm0bY=",
         "sha256-e+Qwl4B7obuRhSGpNipgmz84K83eS5ROcYUsKnaC2Vk=",
-        "sha256-pvsG4gs6+vZ3ppkG6+XcA03JQ4y7xLpt4evz0Md2wao=",
         "sha256-zNTViFMsDbByF0vAc4nR2MizwH09FcZlegzqmR2+yjQ="
       ],
       "styleAttributeCount": 11,
@@ -885,7 +885,7 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "en/trades/new/index.html",
-      "htmlSha256": "02ba2a191d9692951d0f4f3225d41fb671c04abf2ab99dd954cb0fd5184a4563",
+      "htmlSha256": "fbca4c312145c2c0c8732d7a3e810b78aad433049c21cab75317fd24acdb06f9",
       "inlineScriptCount": 6,
       "inlineScriptHashes": [
         "sha256-1poHJeS5OXUbnszstlpAVSL2MCUCizVPO6npTCn2iaU=",
@@ -1620,7 +1620,7 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "fa/profile/index.html",
-      "htmlSha256": "f36a7df6103c2dca37260570ab134773fc2c4173736eceaa29136b2e0e6b58b2",
+      "htmlSha256": "07dcb5d2429327abaf9010161b0fb9626d5b208bdde325425cf895fe77b6d4c1",
       "inlineScriptCount": 5,
       "inlineScriptHashes": [
         "sha256-0QORiE4Z7p0WIXjhzcOfcMxMQMkbatwknu73tZMu9V4=",
@@ -1632,12 +1632,12 @@
       "inlineStyleCount": 8,
       "inlineStyleHashes": [
         "sha256-0LB74sxFUnqv059J+Fz47xF0QypouOy6URu5GQ5AKOk=",
+        "sha256-6U67tlRmj3pqfV904CnyOsVv4euqHcBvj0kZedVDgsM=",
         "sha256-CU/w7+WP3i3jfhXHYYU9FpwP2piTTruxB/sFuVzoGGI=",
         "sha256-Iz4NjMW1PB/nc1TNvHy1zwTyKZrbEtB4jaSCUvy4Des=",
         "sha256-Ncsd7x3I5dghe8UuEeKid+AiCrg7Z7PGpuY4KmrhCOI=",
         "sha256-YIJxlGw1GlETZz3usl63EXVCMLynXyGgFtVyLiJm0bY=",
         "sha256-e+Qwl4B7obuRhSGpNipgmz84K83eS5ROcYUsKnaC2Vk=",
-        "sha256-pvsG4gs6+vZ3ppkG6+XcA03JQ4y7xLpt4evz0Md2wao=",
         "sha256-zNTViFMsDbByF0vAc4nR2MizwH09FcZlegzqmR2+yjQ="
       ],
       "styleAttributeCount": 11,
@@ -1805,7 +1805,7 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "fa/trades/new/index.html",
-      "htmlSha256": "1ea7604204ec104db601da2c1297357daa56675feaeed28e27675ec343a11893",
+      "htmlSha256": "b868a22c7bfa27bcc9d81270e09d15f09bea3aaa43dc96d776e06b086cfc7a4a",
       "inlineScriptCount": 6,
       "inlineScriptHashes": [
         "sha256-1poHJeS5OXUbnszstlpAVSL2MCUCizVPO6npTCn2iaU=",
@@ -1909,5 +1909,5 @@
       ]
     }
   },
-  "sourceDigest": "588cb4c464c8d1b363257b5c8abe94b8a48eb31fc0f97a75b7240c14588ba42f"
+  "sourceDigest": "08cef264b9cdf6e0f2bdd09d11707cf740d0a85f03346a6d15664512fde2f006"
 }
