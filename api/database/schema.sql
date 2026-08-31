@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS users (
     locale        VARCHAR(35)     NOT NULL DEFAULT 'fa',          -- UI language preference (fa/en) — PR-03
     locale_source VARCHAR(16)     NOT NULL DEFAULT 'default',     -- default|browser|cookie|user — PR-03
     locale_updated_at DATETIME    NULL,                           -- last explicit preference write (UTC) — PR-03
+    ai_consent_at   DATETIME    NULL,                           -- external AI processing consent (UTC) — v0.6
     status        ENUM('active','suspended') NOT NULL DEFAULT 'active',
     email_verified_at DATETIME    NULL,                       -- ستون تأیید ایمیل (لینک فعال‌سازی)
     created_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -415,11 +416,157 @@ CREATE TABLE IF NOT EXISTS ai_provider_logs (
     status          ENUM('success','failed','quota_exhausted','timeout') NOT NULL,
     latency_ms      INT UNSIGNED    NOT NULL DEFAULT 0,
     error_code      VARCHAR(64)     NULL,
+    feature         VARCHAR(64)     NULL,
+    model           VARCHAR(64)     NULL,
+    route           VARCHAR(16)     NULL,
+    fallback_index  SMALLINT UNSIGNED NULL,
     created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     KEY idx_provider_logs_provider (provider),
     KEY idx_provider_logs_status (status),
     KEY idx_provider_logs_created (created_at)
+) ENGINE=InnoDB;
+
+-- ----------------------------------------------------------------------------
+-- AI REQUESTS / FEATURE FLAGS / AUDIT LOGS / FEEDBACK (v0.5)
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS ai_requests (
+    id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    user_id         BIGINT UNSIGNED NOT NULL,
+    feature         VARCHAR(32)     NOT NULL DEFAULT 'extraction',
+    provider        VARCHAR(32)     NOT NULL DEFAULT 'gemini',
+    model           VARCHAR(64)     NOT NULL DEFAULT 'gemini-1.5-flash',
+    prompt_hash     CHAR(64)        NOT NULL,
+    tokens_used     INT UNSIGNED    NOT NULL DEFAULT 0,
+    latency_ms      INT UNSIGNED    NOT NULL DEFAULT 0,
+    status          ENUM('success','failed','quota_exhausted','timeout') NOT NULL DEFAULT 'success',
+    cost            DECIMAL(10,6)   NOT NULL DEFAULT 0.000000,
+    created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_ai_requests_user (user_id),
+    KEY idx_ai_requests_feature (feature),
+    KEY idx_ai_requests_provider (provider),
+    KEY idx_ai_requests_status (status),
+    KEY idx_ai_requests_created (created_at),
+    KEY idx_ai_requests_prompt_hash (prompt_hash),
+    CONSTRAINT fk_ai_requests_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS ai_feature_flags (
+    feature_name        VARCHAR(64)     NOT NULL,
+    enabled             TINYINT(1)      NOT NULL DEFAULT 0,
+    rollout_percentage  TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    created_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (feature_name)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS ai_audit_logs (
+    id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    user_id         BIGINT UNSIGNED NOT NULL,
+    feature         VARCHAR(32)     NOT NULL DEFAULT 'extraction',
+    provider        VARCHAR(32)     NOT NULL DEFAULT 'gemini',
+    image_hash      CHAR(64)        NOT NULL,
+    action          VARCHAR(32)     NOT NULL DEFAULT 'extraction',
+    created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_ai_audit_user (user_id),
+    KEY idx_ai_audit_feature (feature),
+    KEY idx_ai_audit_provider (provider),
+    KEY idx_ai_audit_hash (image_hash),
+    KEY idx_ai_audit_created (created_at),
+    CONSTRAINT fk_ai_audit_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS ai_feedback (
+    id                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    user_id             BIGINT UNSIGNED NOT NULL,
+    extraction_id       BIGINT UNSIGNED NULL,
+    original_result     JSON            NULL,
+    corrected_result    JSON            NULL,
+    changed_fields      JSON            NULL,
+    created_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_ai_feedback_user (user_id),
+    KEY idx_ai_feedback_extraction (extraction_id),
+    KEY idx_ai_feedback_created (created_at),
+    CONSTRAINT fk_ai_feedback_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    CONSTRAINT fk_ai_feedback_extraction FOREIGN KEY (extraction_id) REFERENCES ai_extractions (id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+-- ----------------------------------------------------------------------------
+-- AI JOBS QUEUE (v0.7)
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS ai_jobs (
+    id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    user_id         BIGINT UNSIGNED NOT NULL,
+    job_type        VARCHAR(32)     NOT NULL,
+    payload         JSON            NOT NULL,
+    status          ENUM('pending','processing','completed','failed') NOT NULL DEFAULT 'pending',
+    attempts        TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    available_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_ai_jobs_user (user_id),
+    KEY idx_ai_jobs_type (job_type),
+    KEY idx_ai_jobs_status (status),
+    KEY idx_ai_jobs_available (available_at),
+    KEY idx_ai_jobs_created (created_at),
+    KEY idx_ai_jobs_status_available (status, available_at),
+    CONSTRAINT fk_ai_jobs_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- ----------------------------------------------------------------------------
+-- AI REPORTS / ANALYSIS (v0.8)
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS ai_reports (
+    id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    user_id         BIGINT UNSIGNED NOT NULL,
+    period_start    DATE            NOT NULL,
+    period_end      DATE            NOT NULL,
+    locale          VARCHAR(10)     NOT NULL DEFAULT 'en',
+    content         JSON            NOT NULL,
+    created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_ai_reports_user (user_id),
+    KEY idx_ai_reports_period (period_start, period_end),
+    KEY idx_ai_reports_locale (locale),
+    KEY idx_ai_reports_created (created_at),
+    UNIQUE KEY uq_ai_reports_user_period_locale (user_id, period_start, period_end, locale),
+    CONSTRAINT fk_ai_reports_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS ai_analysis (
+    id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    user_id         BIGINT UNSIGNED NOT NULL,
+    provider        VARCHAR(32)     NOT NULL DEFAULT 'gemini',
+    model           VARCHAR(64)     NOT NULL DEFAULT 'gemini-1.5-flash',
+    result_json     JSON            NOT NULL,
+    confidence      FLOAT           NOT NULL DEFAULT 0.0,
+    created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_ai_analysis_user (user_id),
+    KEY idx_ai_analysis_created (created_at),
+    CONSTRAINT fk_ai_analysis_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- ----------------------------------------------------------------------------
+-- AI PROVIDER ROUTING (v0.9)
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS ai_feature_providers (
+    id          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    feature     VARCHAR(64)     NOT NULL,
+    provider    VARCHAR(32)     NOT NULL,
+    model       VARCHAR(64)     NULL,
+    priority    SMALLINT UNSIGNED NOT NULL DEFAULT 1,
+    enabled     TINYINT(1)      NOT NULL DEFAULT 1,
+    route       VARCHAR(16)     NULL,
+    created_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_afp_feature_provider (feature, provider),
+    KEY idx_afp_lookup (feature, enabled, priority)
 ) ENGINE=InnoDB;
 
 SET FOREIGN_KEY_CHECKS = 1;

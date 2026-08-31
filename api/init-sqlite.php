@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS users (
     locale TEXT NOT NULL DEFAULT 'fa',
     locale_source TEXT NOT NULL DEFAULT 'default',
     locale_updated_at DATETIME NULL,
+    ai_consent_at DATETIME NULL,
     status TEXT NOT NULL DEFAULT 'active',
     email_verified_at DATETIME NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -230,7 +231,106 @@ CREATE TABLE IF NOT EXISTS ai_provider_logs (
     status TEXT NOT NULL,
     latency_ms INTEGER NOT NULL DEFAULT 0,
     error_code TEXT NULL,
+    feature TEXT NULL,
+    model TEXT NULL,
+    route TEXT NULL,
+    fallback_index INTEGER NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS ai_requests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    feature TEXT NOT NULL DEFAULT 'extraction',
+    provider TEXT NOT NULL DEFAULT 'gemini',
+    model TEXT NOT NULL DEFAULT 'gemini-1.5-flash',
+    prompt_hash TEXT NOT NULL,
+    tokens_used INTEGER NOT NULL DEFAULT 0,
+    latency_ms INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'success',
+    cost REAL NOT NULL DEFAULT 0.000000,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS ai_feature_flags (
+    feature_name TEXT NOT NULL PRIMARY KEY,
+    enabled INTEGER NOT NULL DEFAULT 0,
+    rollout_percentage INTEGER NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS ai_audit_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    feature TEXT NOT NULL DEFAULT 'extraction',
+    provider TEXT NOT NULL DEFAULT 'gemini',
+    image_hash TEXT NOT NULL,
+    action TEXT NOT NULL DEFAULT 'extraction',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS ai_feedback (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    extraction_id INTEGER NULL,
+    original_result TEXT NULL,
+    corrected_result TEXT NULL,
+    changed_fields TEXT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (extraction_id) REFERENCES ai_extractions(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS ai_jobs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    job_type TEXT NOT NULL,
+    payload TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    attempts INTEGER NOT NULL DEFAULT 0,
+    available_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS ai_reports (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    period_start TEXT NOT NULL,
+    period_end TEXT NOT NULL,
+    locale TEXT NOT NULL DEFAULT 'en',
+    content TEXT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, period_start, period_end, locale),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS ai_analysis (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    provider TEXT NOT NULL DEFAULT 'gemini',
+    model TEXT NOT NULL DEFAULT 'gemini-1.5-flash',
+    result_json TEXT NOT NULL,
+    confidence REAL NOT NULL DEFAULT 0.0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS ai_feature_providers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    feature TEXT NOT NULL,
+    provider TEXT NOT NULL,
+    model TEXT NULL,
+    priority INTEGER NOT NULL DEFAULT 1,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    route TEXT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(feature, provider)
 );
 ");
 
