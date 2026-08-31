@@ -528,7 +528,7 @@ function toggleMobileSidebar() {
 }
 </style>
 <style id="velora-sound-setting-css">
-.sound-pref{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:15px 16px;border:1px solid rgba(255,255,255,.11);border-radius:13px;background:linear-gradient(135deg,rgba(255,255,255,.055),rgba(233,196,92,.045));}.sound-pref-copy{display:flex;align-items:center;gap:11px}.sound-pref-ico{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;color:#f1c453;background:rgba(241,196,83,.1);border:1px solid rgba(241,196,83,.24)}.sound-pref-ico svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8}.sound-pref b{display:block;font-size:13px}.sound-pref small{display:block;color:var(--faint);font-size:11px;margin-top:2px}.sound-toggle{width:46px;height:25px;border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:3px;background:rgba(0,0,0,.28);cursor:pointer;transition:.2s}.sound-toggle i{display:block;width:17px;height:17px;border-radius:50%;background:#8e98a8;transition:.2s}.sound-toggle.on{background:rgba(241,196,83,.25);border-color:rgba(241,196,83,.58)}.sound-toggle.on i{transform:translateX(-20px);background:#ffe08a;box-shadow:0 0 10px rgba(241,196,83,.65)}[dir="ltr"] .sound-toggle.on i{transform:translateX(20px)}
+.sound-pref{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:15px 16px;border:1px solid rgba(255,255,255,.11);border-radius:13px;background:linear-gradient(135deg,rgba(255,255,255,.055),rgba(233,196,92,.045));}.sound-pref-copy{display:flex;align-items:center;gap:11px}.sound-pref-ico{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;color:#f1c453;background:rgba(241,196,83,.1);border:1px solid rgba(241,196,83,.24)}.sound-pref-ico svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8}.sound-pref b{display:block;font-size:13px}.sound-pref small{display:block;color:var(--faint);font-size:11px;margin-top:2px}.sound-toggle{width:46px;height:25px;border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:3px;background:rgba(0,0,0,.28);cursor:pointer;transition:.2s;flex-shrink:0}.sound-toggle i{display:block;width:17px;height:17px;border-radius:50%;background:#8e98a8;transition:.2s}.sound-toggle.on{background:rgba(241,196,83,.25);border-color:rgba(241,196,83,.58)}.sound-toggle.on i{transform:translateX(-20px);background:#ffe08a;box-shadow:0 0 10px rgba(241,196,83,.65)}[dir="ltr"] .sound-toggle.on i{transform:translateX(20px)}
 .ai-pref-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .ai-pref-head .t{display:inline-flex;align-items:center;gap:8px}
 .ai-pill{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;padding:4px 11px;border-radius:20px;border:1px solid rgba(255,255,255,.18);color:var(--faint,#8fa0c0);background:rgba(255,255,255,.05);white-space:nowrap}
@@ -621,7 +621,7 @@ function toggleMobileSidebar() {
 </div>
 <div class="panel">
 <div class="panel-head ai-pref-head"><span class="t"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" viewbox="0 0 24 24"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"></path><path d="M5 19a9 9 0 0 1 14 0"></path></svg> <span data-i18n="profile.aiConsent.title">پردازش هوش مصنوعی</span></span><span class="ai-pill" id="aiConsentPill"><span class="dot"></span><span data-i18n="profile.aiConsent.statusLoading" id="aiConsentPillText">در حال بررسی وضعیت…</span></span></div>
-<div class="sound-pref"><div class="sound-pref-copy"><div class="sound-pref-ico"><svg viewbox="0 0 24 24"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"></path></svg></div><div><b id="aiConsentState"><span data-i18n="profile.aiConsent.stateOff">پردازش هوش مصنوعی غیرفعال است</span></b><small><span data-i18n="profile.aiConsent.description">با فعال‌سازی, اسکرین‌شات‌های واجد شرایط معاملات برای تکمیل خودکار ژورنال, توسط هوش مصنوعی پردازش می‌شود. هر زمان می‌توانید خاموش کنید.</span></small></div></div><button aria-checked="false" aria-label="پردازش هوش مصنوعی" class="sound-toggle" data-i18n-aria-label="profile.aiConsent.title" disabled="" id="aiConsentToggle" role="switch" type="button"><i></i></button></div>
+<div class="sound-pref"><div class="sound-pref-copy"><div class="sound-pref-ico"><svg viewbox="0 0 24 24"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"></path></svg></div><div><b id="aiConsentState"><span data-i18n="profile.aiConsent.stateOff">پردازش هوش مصنوعی غیرفعال است</span></b><small><span data-i18n="profile.aiConsent.description">با فعال‌سازی, اسکرین‌شات‌های واجد شرایط معاملات برای تکمیل خودکار ژورنال, توسط هوش مصنوعی پردازش می‌شود. هر زمان می‌توانید خاموش کنید.</span></small></div></div><button aria-checked="false" aria-label="پردازش هوش مصنوعی" class="sound-toggle" data-i18n-aria-label="profile.aiConsent.title" id="aiConsentToggle" role="switch" type="button"><i></i></button></div>
 <div class="ai-consent-note" id="aiConsentNote"><span data-i18n="profile.aiConsent.required">برای تکمیل خودکار ژورنال از روی اسکرین‌شات معامله, ابتدا پردازش هوش مصنوعی را فعال کنید.</span></div>
 <div class="ai-consent-actions"><button class="btn-gold" data-i18n="profile.aiConsent.activate" disabled="" id="aiConsentCta" type="button">فعال‌سازی پردازش هوش مصنوعی</button></div>
 <div class="error-box" id="aiConsentErr"></div>
@@ -734,16 +734,18 @@ function toggleMobileSidebar() {
     if (!toggle || !cta) return;
     cta.classList.remove('saving');
     if (state === 'loading') {
-      toggle.disabled = true; cta.disabled = true;
+      
+      
+      cta.disabled = true;
       setAiPill('', 'profile.aiConsent.statusLoading');
       if (note) note.classList.remove('show');
     } else if (state === 'saving') {
-      toggle.disabled = true; cta.disabled = true;
+      cta.disabled = true;
       cta.classList.add('saving');
       aiText(cta, 'profile.aiConsent.saving');
       setAiPill('', 'profile.aiConsent.statusLoading');
     } else if (state === 'unavailable') {
-      toggle.disabled = true; cta.disabled = true;
+      cta.disabled = true;
       aiText(cta, 'profile.aiConsent.activate');
       setAiPill('na', 'profile.aiConsent.pillUnavailable');
       if (note) note.classList.remove('show');
@@ -753,7 +755,6 @@ function toggleMobileSidebar() {
       var enabled = state === 'on';
       toggle.setAttribute('aria-checked', enabled ? 'true' : 'false');
       toggle.classList.toggle('on', enabled); 
-      toggle.disabled = false;
       cta.disabled = false;
       aiText(cta, enabled ? 'profile.aiConsent.deactivate' : 'profile.aiConsent.activate');
       setAiPill(enabled ? 'on' : '', enabled ? 'profile.aiConsent.pillOn' : 'profile.aiConsent.pillOff');
@@ -790,9 +791,26 @@ function toggleMobileSidebar() {
     }
   }
 
+  var aiConsentRefreshing = false;
+  async function refreshAiConsent() {
+    if (aiConsentRefreshing) return;
+    aiConsentRefreshing = true;
+    renderAiConsentState('loading');
+    try {
+      var me = await VeloraData.request('/api/v1/auth/me');
+      renderAiConsent(typeof (me.user || {}).aiConsent === 'boolean' ? me.user.aiConsent : false);
+    } catch (e) {
+      renderAiConsentState('unavailable'); 
+    }
+    aiConsentRefreshing = false;
+  }
+
   renderAiConsentState('loading');
   if ($('aiConsentToggle')) {
     $('aiConsentToggle').addEventListener('click', function () {
+      var state = aiConsentStateCurrent;
+      if (state === 'saving') return; 
+      if (state === 'loading' || state === 'unavailable') { refreshAiConsent(); return; }
       submitAiConsent($('aiConsentToggle').getAttribute('aria-checked') !== 'true');
     });
   }
