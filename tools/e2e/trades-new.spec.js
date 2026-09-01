@@ -148,6 +148,30 @@ async function runLocale(browser, base, label, pagePath) {
   }));
   step(`${label}: dropdown opens`, shown);
   step(`${label}: symbol list populated (>=60)`, counts.items >= 60, `items=${counts.items}`);
+
+  // ---------- F2 regression: no inline icon handlers + delegated fallback ----------
+  const iconAudit = await page.evaluate(() => {
+    const imgs = Array.from(document.querySelectorAll('.velora-sym img'));
+    return {
+      total: imgs.length,
+      withInlineHandler: imgs.filter((i) => i.hasAttribute('onload') || i.hasAttribute('onerror')).length,
+    };
+  });
+  step(`${label}: symbol icons render (imgs present)`, iconAudit.total > 0, `imgs=${iconAudit.total}`);
+  step(`${label}: icons carry no inline onload/onerror`, iconAudit.withInlineHandler === 0, `inline=${iconAudit.withInlineHandler}`);
+  const brokenDisplay = await page.evaluate(async () => {
+    const span = document.createElement('span');
+    span.className = 'velora-sym';
+    const img = document.createElement('img');
+    img.src = '/public/assets/symbols/forex/__spec_broken__.png';
+    span.appendChild(img);
+    document.getElementById('symList').appendChild(span);
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    return getComputedStyle(img).display;
+  });
+  step(`${label}: broken icon hidden by delegated listener`, brokenDisplay === 'none', `display=${brokenDisplay}`);
+  // ---------- end F2 regression ----------
+
   step(`${label}: list actually overflows (scrollable content)`, counts.scrollH > counts.clientH, `scrollH=${counts.scrollH} clientH=${counts.clientH}`);
   step(`${label}: desktop wheel scrolls the list`, (await wheelScroll(page, 480)) > 0);
 
