@@ -14,6 +14,23 @@ window.VeloraSymbols = (function () {
   var registryPromise = null; // پرامیس برای لود یکبار
   var loaded = false;
 
+  // ── Fallback تصویر خراب — بدون هندلر inline (سازگار با CSP: script-src-attr) ──
+  // رویدادِ error روی <img> حبابی نیست؛ شنونده باید در فاز capture نصب شود.
+  // فقط تصاویر داخل «.velora-sym» را هدف می‌گیرد و یکبار نصب می‌شود؛
+  // رفتار قبلی inline (this.style.display='none') عیناً حفظ شده است.
+  function installBrokenImageFallback() {
+    if (installBrokenImageFallback._installed) return;
+    installBrokenImageFallback._installed = true;
+    document.addEventListener('error', function (event) {
+      var target = event.target;
+      if (target && target.tagName === 'IMG' &&
+          target.matches && target.matches('.velora-sym img')) {
+        target.style.display = 'none';
+      }
+    }, true);
+  }
+  installBrokenImageFallback();
+
   // رنگ برند برای fallback
   var COLORS = {
     'BTC':'#F7931A','ETH':'#627EEA','USDT':'#26A17B','BNB':'#F3BA2F','SOL':'#9945FF',
@@ -115,8 +132,7 @@ window.VeloraSymbols = (function () {
       'display:inline-flex;align-items:center;justify-content:center;width:' + s + 'px;height:' + s + 'px;' +
       'border-radius:50%;overflow:hidden;flex-shrink:0;position:relative;background:#0b1220;' +
       'box-shadow:0 2px 8px rgba(0,0,0,.35), inset 0 0 0 1px rgba(252,227,138,.22);">' +
-      '<img alt="" src="/public/assets/symbols/forex/' + safePathPart(safeSymbol) + '.png" style="width:100%;height:100%;object-fit:cover;display:block;" ' +
-      'onerror="this.style.display=\'none\'">' +
+      '<img alt="" src="/public/assets/symbols/forex/' + safePathPart(safeSymbol) + '.png" style="width:100%;height:100%;object-fit:cover;display:block;">' +
       '</span>';
   }
 
@@ -195,9 +211,7 @@ window.VeloraSymbols = (function () {
       return '<span class="velora-sym" data-symbol="' + escapeHtml(b) + '" style="' + baseStyle +
         'background:linear-gradient(145deg,#141E33,#0C1424);box-shadow:0 2px 8px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.07);">' +
         '<img src="/' + escapeHtml(iconPath) + '" alt="' + escapeHtml(b) + '" loading="lazy" style="' +
-        'width:100%;height:100%;object-fit:cover;display:block;border-radius:50%;" ' +
-        'onload="this.parentElement.classList.remove(\'velora-sym-loading\')" ' +
-        'onerror="this.style.display=\'none\'">' +
+        'width:100%;height:100%;object-fit:cover;display:block;border-radius:50%;">' +
         '</span>';
     }
 
