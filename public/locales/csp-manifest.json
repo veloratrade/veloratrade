@@ -1,10 +1,10 @@
 {
   "algorithm": "sha256",
-  "commitSha": "98fcc31ac41e64487215a54877ea298a138f102b",
+  "commitSha": "c5fe60b74c0d3e1f280b3e264b41d07a9363d712",
   "localizationVersion": "2026.08.30.2",
   "policyVersion": 2,
-  "releaseHtmlSha256": "a31498c35cee87197eafa66af5fe1427549b7918bd4035684df732ab8bdd2530",
-  "releaseId": "2026.08.31.4",
+  "releaseHtmlSha256": "1543a3cd20799b6f43bd78c8a00aecaedf76f03bf143495b5581aa906795f826",
+  "releaseId": "2026.09.01.1",
   "routeCount": 61,
   "routeManifestSha256": "77c267b42c509fae6a9f070298df1548d94a669176ed74999d28945504bdc251",
   "routes": {
@@ -413,7 +413,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/index.html",
-      "htmlSha256": "d773842831a378aecd81e5c12f1d6feb813608e6d10118f07567e4e40f4fec9b",
+      "htmlSha256": "806ada36ad1146ac6d7a17c6d99b22434a22091fc4c57659364df9c6b228e73a",
       "inlineScriptCount": 3,
       "inlineScriptHashes": [
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
@@ -425,7 +425,7 @@
         "sha256-Ncsd7x3I5dghe8UuEeKid+AiCrg7Z7PGpuY4KmrhCOI=",
         "sha256-YIJxlGw1GlETZz3usl63EXVCMLynXyGgFtVyLiJm0bY=",
         "sha256-e+Qwl4B7obuRhSGpNipgmz84K83eS5ROcYUsKnaC2Vk=",
-        "sha256-k9DDX7fon/y+DToo1vXlN0bmZ5LVxLpRsHGfGuAa908="
+        "sha256-qYVKYvqk71OaPDNS04zbXrFdMum7cksKwniJ/oM6LBY="
       ],
       "styleAttributeCount": 13,
       "styleAttributeHashes": [
@@ -1333,7 +1333,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "fa/index.html",
-      "htmlSha256": "fcf49e8d375a508c8b70ecd0ae6f41d528812246174730e970adeabe9bffc039",
+      "htmlSha256": "2d1b228ebef6743e0c826af84a45ab0aa15aca89992fce3f66dee9a6a911af59",
       "inlineScriptCount": 3,
       "inlineScriptHashes": [
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
@@ -1345,7 +1345,7 @@
         "sha256-Ncsd7x3I5dghe8UuEeKid+AiCrg7Z7PGpuY4KmrhCOI=",
         "sha256-YIJxlGw1GlETZz3usl63EXVCMLynXyGgFtVyLiJm0bY=",
         "sha256-e+Qwl4B7obuRhSGpNipgmz84K83eS5ROcYUsKnaC2Vk=",
-        "sha256-k9DDX7fon/y+DToo1vXlN0bmZ5LVxLpRsHGfGuAa908="
+        "sha256-qYVKYvqk71OaPDNS04zbXrFdMum7cksKwniJ/oM6LBY="
       ],
       "styleAttributeCount": 13,
       "styleAttributeHashes": [
@@ -1909,5 +1909,5 @@
       ]
     }
   },
-  "sourceDigest": "25873c61ccf79ffc9c850a0de38444c3c483a60d4759e146e7ed6ff82b3a8173"
+  "sourceDigest": "fa72816335ae21a793541b4b3c4ab3cdda5605774a1ad77664b598817b7ca931"
 }
