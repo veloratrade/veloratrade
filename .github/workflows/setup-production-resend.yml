@@ -31,6 +31,9 @@ jobs:
       FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
       FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
       RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      GEMINI_RELAY_URL: ${{ secrets.GEMINI_RELAY_URL }}
+      GEMINI_RELAY_TOKEN: ${{ secrets.GEMINI_RELAY_TOKEN }}
+      GEMINI_MODEL_SECRET: ${{ secrets.GEMINI_MODEL }}
       INPUT_CONFIRM: ${{ inputs.confirm_production_resend }}
     steps:
       - name: Gate and download current private env read-only
@@ -42,6 +45,14 @@ jobs:
           }
           [ -n "$RESEND_API_KEY" ] || { echo "::error::RESEND_API_KEY خالی است"; exit 1; }
           echo "::add-mask::$RESEND_API_KEY"
+          # Gemini relay secrets are REQUIRED for this overlay (values never printed).
+          [ -n "$GEMINI_RELAY_URL" ]   || { echo "::error::GEMINI_RELAY_URL secret is empty"; exit 1; }
+          [ -n "$GEMINI_RELAY_TOKEN" ] || { echo "::error::GEMINI_RELAY_TOKEN secret is empty"; exit 1; }
+          [ -n "$GEMINI_MODEL_SECRET" ] || { echo "::error::GEMINI_MODEL secret is empty"; exit 1; }
+          case "$GEMINI_RELAY_URL" in https://*) ;; *) echo "::error::GEMINI_RELAY_URL must be https"; exit 1;; esac
+          echo "::add-mask::$GEMINI_RELAY_URL"
+          echo "::add-mask::$GEMINI_RELAY_TOKEN"
+          echo "::add-mask::$GEMINI_MODEL_SECRET"
           sudo apt-get update -qq
           sudo apt-get install -y -q lftp >/dev/null
           success=0
@@ -70,6 +81,14 @@ jobs:
             'RESEND_API_KEY':os.environ['RESEND_API_KEY'],
             'MAIL_FROM':'no-reply@veloratrade.ir',
             'MAIL_FROM_NAME':'VELORA TRADE',
+            # Gemini n8n relay overlay — additive; only these four keys are
+            # touched. GEMINI_API_KEY is intentionally NOT modified, and all
+            # other existing env lines are preserved by the merge loop.
+            # GEMINI_MODEL is required (gated non-empty above); no fallback.
+            'GEMINI_ROUTE':'n8n_relay',
+            'GEMINI_RELAY_URL':os.environ['GEMINI_RELAY_URL'].strip(),
+            'GEMINI_RELAY_TOKEN':os.environ['GEMINI_RELAY_TOKEN'].strip(),
+            'GEMINI_MODEL':os.environ['GEMINI_MODEL_SECRET'].strip(),
           }
           source=open(path,encoding='utf-8-sig').read().splitlines();out=[];written=set()
           for line in source:
@@ -136,6 +155,13 @@ jobs:
             'RESEND_API_KEY':vals.get('RESEND_API_KEY')==os.environ['RESEND_API_KEY'],
             'MAIL_FROM':vals.get('MAIL_FROM')=='no-reply@veloratrade.ir',
             'MAIL_FROM_NAME':vals.get('MAIL_FROM_NAME')=='VELORA TRADE',
+            # Gemini relay read-back: booleans/equality only — never values.
+            'GEMINI_ROUTE_is_n8n_relay': vals.get('GEMINI_ROUTE')=='n8n_relay',
+            'GEMINI_RELAY_URL_configured_https': bool(vals.get('GEMINI_RELAY_URL')) and vals.get('GEMINI_RELAY_URL','').startswith('https://'),
+            'GEMINI_RELAY_TOKEN_configured': bool(vals.get('GEMINI_RELAY_TOKEN')),
+            'GEMINI_MODEL_matches_secret': vals.get('GEMINI_MODEL')==os.environ['GEMINI_MODEL_SECRET'].strip(),
+            'GEMINI_RELAY_URL_matches_secret': vals.get('GEMINI_RELAY_URL')==os.environ['GEMINI_RELAY_URL'].strip(),
+            'GEMINI_RELAY_TOKEN_matches_secret': vals.get('GEMINI_RELAY_TOKEN')==os.environ['GEMINI_RELAY_TOKEN'].strip(),
           }
           for name,ok in checks.items():print(name+('=OK' if ok else '=FAIL'))
           if not all(checks.values()):raise SystemExit('::error::Production env verification failed')
