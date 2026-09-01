@@ -25,4 +25,6 @@
 CRITICAL_DEPLOY_FILES=(
   "localized/.csp-release.json"
   "public/locales/csp-manifest.json"
+  "localized/en/trades/new/index.html"
+  "localized/fa/trades/new/index.html"
 )
