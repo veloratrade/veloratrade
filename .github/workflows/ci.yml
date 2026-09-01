@@ -175,6 +175,9 @@ jobs:
       - name: Verify transactional CID icon assets
         run: python tools/tests/test_notification_email_icons.py
 
+      - name: Verify symbol icon CSP cleanliness
+        run: python tools/tests/test_symbol_icons_csp.py
+
       - name: Set up Node for browser-contract tests
         uses: actions/setup-node@v4
         with:
