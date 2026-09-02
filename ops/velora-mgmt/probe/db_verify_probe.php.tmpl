@@ -110,6 +110,49 @@ try {
         $checks['schema_read'] = ['ok' => false, 'error' => $e->getMessage()];
     }
 
+    // 5) READ-ONLY migration schema inventory (Phase 2A v1.0 + Phase 5 v1.1).
+    //    This NEVER fails the core post-deploy check on its own: it reports which
+    //    expected migration columns/indexes/tables are present so a caller can compare
+    //    BEFORE vs AFTER a migration. Pure information_schema reads; no DDL/DML.
+    try {
+        $colsOf = function (string $table) use ($pdo): array {
+            $st = $pdo->prepare(
+                'SELECT COLUMN_NAME FROM information_schema.COLUMNS '
+                . 'WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? ORDER BY ORDINAL_POSITION');
+            $st->execute([$table]);
+            return $st->fetchAll(PDO::FETCH_COLUMN);
+        };
+        $tableExists = function (string $table) use ($pdo): bool {
+            $st = $pdo->prepare(
+                'SELECT COUNT(*) FROM information_schema.TABLES '
+                . 'WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=?');
+            $st->execute([$table]);
+            return (int)$st->fetchColumn() > 0;
+        };
+        $phase2a = ['occurred_open_at_utc', 'occurred_close_at_utc', 'time_status',
+                    'source_timezone', 'source_timezone_source', 'source_calendar',
+                    'raw_open_text', 'raw_close_text'];
+        $tradeCols = $tableExists('trades') ? $colsOf('trades') : [];
+        $acctCols  = $tableExists('trading_accounts') ? $colsOf('trading_accounts') : [];
+        $migration = [
+            'trades_table_exists'       => $tableExists('trades'),
+            'phase2a_columns_expected'  => $phase2a,
+            'phase2a_columns_present'   => array_values(array_intersect($phase2a, $tradeCols)),
+            'phase2a_columns_missing'   => array_values(array_diff($phase2a, $tradeCols)),
+            'trading_accounts_timezone'          => in_array('timezone', $acctCols, true),
+            'trading_accounts_timezone_source'   => in_array('timezone_source', $acctCols, true),
+            // Phase 5 (v1.1) ledger table
+            'metaapi_fills_exists'      => $tableExists('metaapi_fills'),
+        ];
+        $migration['phase2a_applied'] = count($migration['phase2a_columns_missing']) === 0
+                                        && $migration['trades_table_exists'];
+        // advisory only: present here for evidence, not used in $allOk below
+        $checks['migration_schema'] = ['ok' => true, 'advisory' => true, 'detail' => $migration];
+    } catch (Throwable $e) {
+        $checks['migration_schema'] = ['ok' => true, 'advisory' => true,
+                                       'note' => 'migration inventory skipped: ' . $e->getMessage()];
+    }
+
     $allOk = true;
     foreach ($checks as $c) { if (empty($c['ok'])) { $allOk = false; break; } }
 

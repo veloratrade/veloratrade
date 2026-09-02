@@ -19,6 +19,17 @@ name: Deploy Staging
 
 on:
   workflow_dispatch:
+    inputs:
+      with_db_backup_gate:
+        description: "Run a FRESH verified staging DB backup (private repo release asset) and gate the deploy on it"
+        required: true
+        type: boolean
+        default: false
+      with_postdeploy_db_verify:
+        description: "Run read-only post-deploy DB verification after the deploy"
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -48,10 +59,25 @@ jobs:
     needs: quality_gate
     uses: ./.github/workflows/csp-guard.yml
 
+  # ── بکاپ تازه و راستی‌آزمایی‌شده‌ی دیتابیس STAGING (اختیاری، opt-in) ──
+  # با ورودی with_db_backup_gate فعال می‌شود. از reusable workflow مختص staging
+  # استفاده می‌کند (velora-db-backup-staging.yml) که فقط با STAGING_FTP_* و آدرس
+  # staging.veloratrade.ir کار می‌کند و دامپ را به‌صورت Release Asset در ریپوی
+  # PRIVATE veloratrade/velora-backups ذخیره و بایت‌به‌بایت راستی‌آزمایی می‌کند.
+  # اگر بکاپ/آپلود شکست بخورد، این job fail می‌شود و deploy اجرا نخواهد شد (fail-closed).
+  db_backup:
+    name: بکاپ تازه‌ی دیتابیس staging → ریپوی private
+    needs: guard
+    if: ${{ inputs.with_db_backup_gate }}
+    secrets: inherit
+    uses: ./.github/workflows/velora-db-backup-staging.yml
+
   deploy-staging:
     name: ساخت بسته و آپلود روی staging
-    needs: guard
-    if: github.repository == 'veloratrade/veloratrade'
+    needs: [guard, db_backup]
+    # when the backup gate is on, a failed db_backup must skip the deploy; when it
+    # is off, db_backup reports 'skipped' and the deploy proceeds as before.
+    if: ${{ github.repository == 'veloratrade/veloratrade' && needs.db_backup.result != 'failure' && needs.db_backup.result != 'cancelled' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -418,3 +444,14 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "یادآوری: velora_private_staging (env/data/logs) دستی مدیریت می‌شود." >> $GITHUB_STEP_SUMMARY
           echo "تست: https://staging.veloratrade.ir/health" >> $GITHUB_STEP_SUMMARY
+
+  # ── راستی‌آزمایی READ-ONLY دیتابیس پس از استقرار روی STAGING (اختیاری، opt-in) ──
+  # با ورودی with_postdeploy_db_verify اجرا می‌شود. یک probe یک‌بار‌مصرفِ توکن‌دارِ
+  # خودحذف‌شونده را روی staging آپلود می‌کند، یک‌بار over HTTPS صدا می‌زند و
+  # POSTDEPLOY_DB_OK را الزام می‌کند. فقط SELECT/information_schema؛ هیچ تغییری نمی‌دهد.
+  db_verify:
+    name: راستی‌آزمایی دیتابیس staging پس از انتشار (read-only)
+    needs: deploy-staging
+    if: ${{ inputs.with_postdeploy_db_verify && needs.deploy-staging.result == 'success' }}
+    uses: ./.github/workflows/velora-db-verify-staging.yml
+    secrets: inherit
