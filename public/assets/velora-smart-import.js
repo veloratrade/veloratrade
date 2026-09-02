@@ -336,6 +336,7 @@
     merged = {}; conflicts = []; conf = {}; editing = false;
     window.__vsiTimes = null;
     window.__vsiExtraction = null;
+    window.__vsiTimeEvidence = null;
     showScanning();
     var texts = [];
     try {
@@ -393,6 +394,7 @@
     // Freshness: drop any previous extraction BEFORE the request so a failed or
     // empty response can never repopulate the form from the last screenshot.
     window.__vsiExtraction = null;
+    window.__vsiTimeEvidence = null;
     var data = await window.VeloraData.request('/api/v1/trades/extract-screenshot', {
       method: 'POST',
       body: { images: packed }
@@ -406,6 +408,19 @@
         fields: ext,
         confidence: typeof data.confidence === 'number' ? data.confidence
           : (typeof ext.confidence === 'number' ? ext.confidence : null)
+      };
+      // Phase 3F: preserve v2 datetime EVIDENCE verbatim for the create-trade
+      // request. The browser must NOT convert/normalize these (no toISOString,
+      // no Z, no browser tz, no calendar guess). The backend owns resolution.
+      // rawOpenText/rawCloseText are PRIMARY; AI openTime/closeTime are not
+      // authoritative. Values are carried as-is into __vsiTimeEvidence.
+      window.__vsiTimeEvidence = {
+        rawOpenText: ext.rawOpenText != null ? String(ext.rawOpenText) : null,
+        rawCloseText: ext.rawCloseText != null ? String(ext.rawCloseText) : null,
+        sourceCalendar: ['gregorian', 'jalali', 'unknown'].indexOf(ext.sourceCalendar) !== -1 ? ext.sourceCalendar : null,
+        dateFormat: typeof ext.dateFormat === 'string' ? ext.dateFormat : null,
+        timezoneText: ext.timezoneText != null ? String(ext.timezoneText).slice(0, 64) : null,
+        timezoneOffsetHintMinutes: Number.isInteger(ext.timezoneOffsetHintMinutes) ? ext.timezoneOffsetHintMinutes : null
       };
     }
     var list = (data && data.texts) || [];
@@ -1048,8 +1063,13 @@
     setInput('tp', merged.takeProfit);
     setInput('commission', merged.commission);
     setInput('swap', merged.swap);
-    setInput('openTime', toLocal(merged.openTime));
-    setInput('closeTime', toLocal(merged.closeTime));
+    // Phase 3F: v2 raw wall text is the primary evidence. Prefer it verbatim
+    // (no browser conversion); fall back to the parsed card time otherwise.
+    var ev = window.__vsiTimeEvidence || {};
+    var rawOpen = ev.rawOpenText || merged.openTime;
+    var rawClose = ev.rawCloseText || merged.closeTime;
+    setInput('openTime', ev.rawOpenText ? String(ev.rawOpenText).replace(' ', 'T') : toLocal(rawOpen));
+    setInput('closeTime', ev.rawCloseText ? String(ev.rawCloseText).replace(' ', 'T') : toLocal(rawClose));
 
     var note = document.getElementById('notes');
     if (note && merged.ticketId && note.value.indexOf(merged.ticketId) === -1) {

@@ -18,6 +18,13 @@ final class TradeService
 
     public function __construct(
         private readonly TradeRepository $repository = new TradeRepository(),
+        private readonly TradeTimeResolutionService $timeResolution = new TradeTimeResolutionService(),
+        private readonly \Velora\Accounts\AccountRepository $accounts = new \Velora\Accounts\AccountRepository(),
+        // Session is DERIVED from canonical UTC. Production reads the spec's
+        // approved windows; while those are empty (unapproved) the engine
+        // reports 'unconfigured' and never invents labels. Activation is a
+        // single switch in MarketSessionSpec (gated by APPROVED + version).
+        private readonly ?TradingSessionEngine $sessionEngine = null,
     ) {
     }
 
@@ -33,7 +40,9 @@ final class TradeService
     public function buildTrade(array $raw, int $userId): array
     {
         $rawSymbol = $raw['symbol'] ?? '';
-        $symbol = is_string($rawSymbol) ? mb_strtoupper(trim($rawSymbol)) : '';
+        // Symbols are constrained to portable ASCII below; use a byte-safe
+        // uppercase (no mbstring dependency).
+        $symbol = is_string($rawSymbol) ? strtoupper(trim($rawSymbol)) : '';
         $rawDirection = $raw['direction'] ?? 'buy';
         $direction = is_string($rawDirection) ? $rawDirection : '';
         // Manual trade API must not allow clients to impersonate auto-sync source.
@@ -101,6 +110,14 @@ final class TradeService
             throw new ValidationException('Close time must not precede open time.', ['closeTime' => ['code' => 'INVALID_CHRONOLOGY', 'messageKey' => 'errors.validation.datetime', 'params' => []]]);
         }
 
+        // --- Phase 2E canonical UTC resolution (NEW trades only). -----------
+        // Legacy open_time/close_time above are kept verbatim (unknown original
+        // timezone); they are never reinterpreted as UTC. Canonical columns are
+        // derived purely from raw evidence + trustworthy tz, independently for
+        // open/close. Invalid source datetimes are a hard validation error;
+        // unresolved stays NULL and never fabricates UTC.
+        $canonical = $this->resolveCanonicalTimes($raw, $accountId, $userId);
+
         $strategyTag = self::optionalText($raw['strategyTag'] ?? null, 'strategyTag', 64);
         $notes = self::optionalText($raw['notes'] ?? null, 'notes', 5000);
 
@@ -144,11 +161,57 @@ final class TradeService
             'take_profit' => $takeProfit,
             'open_time' => $openTime,
             'close_time' => $closeTime,
+            'occurred_open_at_utc' => $canonical['occurred_open_at_utc'],
+            'occurred_close_at_utc' => $canonical['occurred_close_at_utc'],
+            'time_status' => $canonical['time_status'],
+            'source_timezone' => $canonical['source_timezone'],
+            'source_timezone_source' => $canonical['source_timezone_source'],
+            'source_calendar' => $canonical['source_calendar'],
+            'raw_open_text' => $canonical['raw_open_text'],
+            'raw_close_text' => $canonical['raw_close_text'],
             'strategy_tag' => $strategyTag,
             'emotional_score' => $emotionalScore,
             'notes' => $notes,
             'source' => $source,
         ];
+    }
+
+    /**
+     * Phase 2E — derive canonical open/close UTC columns from raw evidence.
+     * Pure delegation to TradeTimeResolutionService + the account's SOURCE
+     * timezone (trading_accounts.timezone). users.timezone is intentionally
+     * never consulted (display-only).
+     *
+     * @param array<string,mixed> $raw
+     * @return array<string,mixed>
+     */
+    private function resolveCanonicalTimes(array $raw, ?int $accountId, int $userId): array
+    {
+        $evidence = TradeTimeResolutionService::evidenceFromInput($raw);
+
+        // Account SOURCE timezone (broker/account, set by the user or verified
+        // broker metadata). Distinct from users.timezone which is display-only.
+        if ($accountId !== null) {
+            $account = $this->accounts->findByIdForUser($accountId, $userId);
+            if ($account !== null) {
+                $tz = $account['timezone'] ?? null;
+                if (is_string($tz) && trim($tz) !== '' && TimezoneResolver::isValidIana($tz)) {
+                    $evidence['accountTimezone'] = $tz;
+                    $evidence['accountTimezoneSource'] = $account['timezone_source'] ?? 'account_config';
+                }
+            }
+        }
+
+        $result = $this->timeResolution->resolve($evidence);
+
+        // Invalid source datetime is a HARD error — never downgrade to unresolved.
+        if (!$result['open_valid'] || !$result['close_valid']) {
+            $field = !$result['open_valid'] ? 'openTime' : 'closeTime';
+            $reason = !$result['open_valid'] ? ($result['open_reason'] ?? 'invalid') : ($result['close_reason'] ?? 'invalid');
+            throw new ValidationException('Invalid trade datetime.', [$field => ['code' => 'INVALID_DATETIME', 'messageKey' => 'errors.validation.datetime', 'params' => ['reason' => $reason]]]);
+        }
+
+        return $result;
     }
 
     public function create(array $raw, int $userId): array
@@ -226,6 +289,13 @@ final class TradeService
         return $updated;
     }
 
+    private function resolveSessionEngine(): TradingSessionEngine
+    {
+        // Injected engine wins (tests); otherwise production spec (unconfigured
+        // until product approves windows).
+        return $this->sessionEngine ?? MarketSessionSpec::productionEngine();
+    }
+
     public function serialize(array $trade): array
     {
         return [
@@ -245,6 +315,18 @@ final class TradeService
             'accountId' => $trade['account_id'] === null ? null : (int) $trade['account_id'],
             'openTime' => $trade['open_time'],
             'closeTime' => $trade['close_time'],
+            'occurredOpenAtUtc' => $trade['occurred_open_at_utc'] ?? null,
+            'occurredCloseAtUtc' => $trade['occurred_close_at_utc'] ?? null,
+            'timeStatus' => $trade['time_status'] ?? 'unresolved',
+            'sourceTimezone' => $trade['source_timezone'] ?? null,
+            'sourceTimezoneSource' => $trade['source_timezone_source'] ?? 'unknown',
+            'sourceCalendar' => $trade['source_calendar'] ?? 'unknown',
+            'rawOpenText' => $trade['raw_open_text'] ?? null,
+            'rawCloseText' => $trade['raw_close_text'] ?? null,
+            // Phase 3: session is DERIVED from canonical UTC at read time
+            // (never stored, never fed back into resolution). 'unconfigured'
+            // until product-approved IANA windows are supplied.
+            'session' => $this->resolveSessionEngine()->classify($trade['occurred_open_at_utc'] ?? null),
             'strategyTag' => $trade['strategy_tag'],
             'emotionalScore' => $trade['emotional_score'] === null ? null : (int) $trade['emotional_score'],
             'notes' => $trade['notes'],
@@ -266,6 +348,14 @@ final class TradeService
             'take_profit' => 'takeProfit',
             'open_time' => 'openTime',
             'close_time' => 'closeTime',
+            'occurred_open_at_utc' => 'occurredOpenAtUtc',
+            'occurred_close_at_utc' => 'occurredCloseAtUtc',
+            'time_status' => 'timeStatus',
+            'source_timezone' => 'sourceTimezone',
+            'source_timezone_source' => 'sourceTimezoneSource',
+            'source_calendar' => 'sourceCalendar',
+            'raw_open_text' => 'rawOpenText',
+            'raw_close_text' => 'rawCloseText',
             'strategy_tag' => 'strategyTag',
             'emotional_score' => 'emotionalScore',
         ];

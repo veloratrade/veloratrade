@@ -43,7 +43,13 @@ final class AccountController
             'currency' => 'string|max:3',
             'leverage' => 'string|max:16',
             'status' => 'string|in:' . implode(',', self::STATUSES),
+            'timezone' => 'string|max:64',
         ]);
+
+        $accountTimezone = trim((string) ($request->body['timezone'] ?? ''));
+        if ($accountTimezone !== '' && !\Velora\Trades\TimezoneResolver::isValidIana($accountTimezone)) {
+            throw new ValidationException('Invalid timezone.', ['timezone' => ['code' => 'INVALID_TIMEZONE', 'messageKey' => 'errors.validation.format', 'params' => []]]);
+        }
 
         $currency = mb_strtoupper(trim((string) ($request->body['currency'] ?? 'USD')));
         $accountNumber = trim((string) ($request->body['accountNumber'] ?? ''));
@@ -95,6 +101,8 @@ final class AccountController
                 'status' => $request->body['status'] ?? 'disconnected',
                 'balance' => '0.00',
                 'equity' => '0.00',
+                'timezone' => $accountTimezone !== '' ? $accountTimezone : null,
+                'timezone_source' => $accountTimezone !== '' ? 'user_config' : 'unknown',
             ]);
         });
         Response::json(['account' => $this->serialize($this->repository->findByIdForUser($id, $userId))], 201);
@@ -265,6 +273,36 @@ final class AccountController
         ]);
     }
 
+    /**
+     * PATCH /api/v1/accounts/{id}/timezone — set/clear the broker/account SOURCE
+     * timezone (IANA). Empty clears it. NOT the user display timezone.
+     */
+    public function updateTimezone(Request $request, array $params): never
+    {
+        $userId = (int) $request->attributes['user_id'];
+        $accountId = (int) $params['id'];
+
+        Validation::assert($request->body, ['timezone' => 'string|max:64']);
+
+        $account = $this->repository->findByIdForUser($accountId, $userId);
+        if ($account === null) {
+            Response::error('Account not found.', 404, 'NOT_FOUND');
+        }
+
+        $raw = $request->body['timezone'] ?? '';
+        $tz = is_string($raw) ? trim($raw) : '';
+        if ($tz !== '') {
+            if (!\Velora\Trades\TimezoneResolver::isValidIana($tz)) {
+                throw new ValidationException('Invalid timezone.', ['timezone' => ['code' => 'INVALID_TIMEZONE', 'messageKey' => 'errors.validation.format', 'params' => []]]);
+            }
+            $this->repository->updateTimezone($accountId, $tz, 'user_config');
+        } else {
+            $this->repository->updateTimezone($accountId, null, 'unknown');
+        }
+
+        Response::json(['account' => $this->serialize($this->repository->findByIdForUser($accountId, $userId))]);
+    }
+
     public function destroy(Request $request, array $params): never
     {
         $this->metaapi->deleteAccount((int) $params['id'], (int) $request->attributes['user_id']);
@@ -282,6 +320,8 @@ final class AccountController
             'platform' => $account['platform'] ?? $account['provider'],
             'broker' => $account['broker'] ?? null,
             'server' => $account['server'] ?? null,
+            'timezone' => $account['timezone'] ?? null,
+            'timezoneSource' => $account['timezone_source'] ?? 'unknown',
             'mtLogin' => $account['mt_login'] ?? $account['account_number_masked'] ?? null,
             'label' => $account['label'],
             'accountNumber' => $account['account_number_masked'],

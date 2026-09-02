@@ -60,6 +60,11 @@ MANIFEST: dict[str, dict] = {
         "name": "screenshot_extraction",
         "note": "Extraction returns structured machine-readable numeric fields.",
     },
+    "screenshot_extraction_v2.txt": {
+        "kind": "machine-data",
+        "name": "screenshot_extraction",
+        "note": "Phase 2D v2 evidence extraction returns structured machine-readable numeric/time fields.",
+    },
 }
 
 # Required markers per kind — each requirement is a LIST of case-insensitive

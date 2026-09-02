@@ -352,11 +352,52 @@
       return Number.isNaN(numeric.getTime()) ? null : numeric;
     }
     if (!value) return null;
-    /* API timestamps are ISO-8601. A SQL UTC timestamp is normalized without translating it. */
     var input = String(value).trim();
-    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(input)) input = input.replace(' ', 'T') + 'Z';
+    // Canonical instants ONLY: an explicit UTC designator (Z) or numeric
+    // offset. We must NOT append "Z" to a naive "YYYY-MM-DD HH:mm:ss" legacy
+    // wall-clock — that would falsely declare the broker/server wall time as
+    // UTC (Phase 3F). Naive SQL strings are returned as a display-only marker
+    // (dateWall()) and never parsed to an absolute instant here.
+    if (/\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}/.test(input) && !/(Z$|[+-]\d{2}:?\d{2}$)/i.test(input)) {
+      return null;
+    }
     var parsed = new Date(input);
     return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  /* Legacy/naive wall-clock value (original timezone unknown). Formatted
+     verbatim for display only — never treated as, or converted to, UTC. */
+  function dateWall(value, options) {
+    if (value == null) return '—';
+    var s = String(value).trim().replace('T', ' ');
+    var m = /^(\d{4})-(\d{2})-(\d{2})(?:[ ](\d{2}):(\d{2}))?/.exec(s);
+    if (!m) return '—';
+    var dateOnly = !m[4];
+    var intlLocale = /^fa/i.test(current || '') ? 'fa-IR-u-nu-latn' : 'en-US-u-nu-latn';
+    var opts = dateOnly
+      ? { year: 'numeric', month: '2-digit', day: '2-digit', numberingSystem: 'latn' }
+      : Object.assign({ year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false, numberingSystem: 'latn' }, options || {});
+    // Build from the wall components with NO timezone (floating local-like),
+    // using UTC fields so Intl does not apply any browser offset.
+    var d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0)));
+    try {
+      return new Intl.DateTimeFormat(intlLocale, Object.assign({ timeZone: 'UTC' }, opts)).format(d);
+    } catch (_) {
+      return s.slice(0, dateOnly ? 10 : 16);
+    }
+  }
+
+  /* Canonical trade instant (occurred*AtUtc). Formats the already-UTC instant
+     in the user's explicit display timezone + calendar via VeloraTime. Falls
+     back to the UTC instant; returns '—' when no canonical instant exists. */
+  function tradeDate(canonicalUtc, legacyWall, options) {
+    if (global.VeloraTime) {
+      var r = global.VeloraTime.tradeTimeDisplay(canonicalUtc, legacyWall, options || {});
+      return r.text || '—';
+    }
+    var v = dateValue(canonicalUtc);
+    if (v) return formatter('DateTimeFormat', options || { dateStyle: 'medium' }).format(v);
+    return dateWall(legacyWall, options);
   }
 
   function date(value, options) {
@@ -504,6 +545,8 @@
     percent: percent,
     date: date,
     dateTime: dateTime,
+    dateWall: dateWall,
+    tradeDate: tradeDate,
     time: time,
     relative: relative,
     errorMessage: errorMessage,
