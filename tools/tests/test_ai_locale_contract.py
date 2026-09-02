@@ -69,6 +69,7 @@ def tree(**extra: str) -> dict[str, str]:
         PROMPT + "/weekly_report_v1.txt": GOOD_PROSE,
         PROMPT + "/trade_analysis_v1.txt": GOOD_PROSE.replace("analyst", "trade analyst"),
         PROMPT + "/screenshot_extraction_v1.txt": GOOD_MACHINE,
+        PROMPT + "/screenshot_extraction_v2.txt": GOOD_MACHINE,
         CTRL: GOOD_CONTROLLER,
         "api/src/AI/Analysis/TradeAnalyzerService.php": GOOD_SERVICE,
         "api/src/AI/Reports/WeeklyReportService.php": GOOD_SERVICE,
