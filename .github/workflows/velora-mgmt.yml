@@ -100,7 +100,7 @@ jobs:
             [[ -n "${FTP_SERVER:-}" && -n "${FTP_USERNAME:-}" && -n "${FTP_PASSWORD:-}" ]] || { echo "::error::missing production FTP_* secrets"; exit 1; }
           fi
           # Mutating gates
-          if [[ "$READONLY" == "false" ]]; then
+          if [[ "$VRO" == "false" ]]; then
             WANT="APPROVE-${ENVIRONMENT}-${MODE}"
             [[ "$APPROVAL" == "$WANT" ]] || { echo "::error::mutating op requires exact approval token '$WANT'"; exit 1; }
             [[ "$BACKUP_OK" == "true" ]] || { echo "::error::mutating op requires backup_verified=true (verified pre-change backup)"; exit 1; }
@@ -140,16 +140,16 @@ jobs:
       FTP_PASSWORD: ${{ needs.guard.outputs.env == 'production' && secrets.FTP_PASSWORD || secrets.STAGING_FTP_PASSWORD }}
       BASE_URL: ${{ needs.guard.outputs.base_url }}
       DOCROOT:  ${{ needs.guard.outputs.docroot }}
-      OP:       ${{ needs.guard.outputs.mode }}
-      ENVIRON:  ${{ needs.guard.outputs.env }}
-      READONLY: ${{ needs.guard.outputs.readonly }}
+      VOP:       ${{ needs.guard.outputs.mode }}
+      VENV:  ${{ needs.guard.outputs.env }}
+      VRO: ${{ needs.guard.outputs.readonly }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Refuse mutating op unless explicitly enabled (defense in depth)
         run: |
-          if [[ "$READONLY" != "true" ]]; then
-            echo "::error::Mutating operations ($OP) are DISABLED in this workflow build."
+          if [[ "$VRO" != "true" ]]; then
+            echo "::error::Mutating operations ($VOP) are DISABLED in this workflow build."
             echo "::error::Use the approved, backup-gated runbook; this path performs read-only probes only."
             exit 2
           fi
@@ -163,11 +163,11 @@ jobs:
           TOKEN="$(openssl rand -hex 32)"
           HASH="$(printf '%s' "$TOKEN" | sha256sum | awk '{print $1}')"
           echo "::add-mask::$NAME"; echo "::add-mask::$TOKEN"; echo "::add-mask::$HASH"
-          export NAME HASH OP ENVIRON
+          export NAME HASH VOP VENV
           python3 - <<'PY'
           import os, pathlib
           tpl = pathlib.Path('ops/velora-mgmt/probe/mgmt_probe.php.tmpl').read_text()
-          tpl = tpl.replace('__HASH__', os.environ['HASH']).replace('__OP__', os.environ['OP']).replace('__ENV__', os.environ['ENVIRON'])
+          tpl = tpl.replace('__HASH__', os.environ['HASH']).replace('__OP__', os.environ['VOP']).replace('__ENV__', os.environ['VENV'])
           pathlib.Path('/tmp/probe.php').write_text(tpl)
           PY
           cleanup() {
@@ -195,10 +195,10 @@ jobs:
           set -euo pipefail
           SHA="${{ github.event.inputs.commit_sha }}"
           [ -z "$SHA" ] && SHA="$(git rev-parse HEAD)"
-          python3 ops/velora-mgmt/velora_mgmt.py inspect --environment "$ENVIRON" --metadata mgmt-result.json | tee inspect.json
+          python3 ops/velora-mgmt/velora_mgmt.py inspect --environment "$VENV" --metadata mgmt-result.json | tee inspect.json
           if [[ "$OP" == "plan" || "$OP" == "verify" ]]; then
-            python3 ops/velora-mgmt/velora_mgmt.py plan --environment "$ENVIRON" --metadata mgmt-result.json --commit-sha "$SHA" | tee plan.json
-            python3 ops/velora-mgmt/velora_mgmt.py verify --environment "$ENVIRON" --metadata mgmt-result.json || echo "::warning::verify reports pending migrations (expected pre-migration)"
+            python3 ops/velora-mgmt/velora_mgmt.py plan --environment "$VENV" --metadata mgmt-result.json --commit-sha "$SHA" | tee plan.json
+            python3 ops/velora-mgmt/velora_mgmt.py verify --environment "$VENV" --metadata mgmt-result.json || echo "::warning::verify reports pending migrations (expected pre-migration)"
           fi
 
       - name: Upload audit artifacts
