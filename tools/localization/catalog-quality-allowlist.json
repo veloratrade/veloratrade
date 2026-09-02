@@ -6,7 +6,8 @@
     "notes": [
       "en.empty is allowlisted only for intentional landing-page title suffix keys.",
       "fa.en.identical is allowlisted only for approved do-not-translate brand, product, version, or token strings.",
-      "orphanKeys baselines current repository debt; any new orphan key or stale allowlist entry fails CI."
+      "orphanKeys baselines current repository debt; any new orphan key or stale allowlist entry fails CI.",
+    "The 11 pages.trades.new.p05.session_* keys are RESERVED for the proposed trading-session selector (Phase 3G). Phase 3G is NOT APPROVED and NOT active (MarketSessionSpec::APPROVED = false, zero configured windows), so no template references them yet. They are allowlisted by exact key until 3G is approved and wired, or removed if rejected; they are not wildcarded and do not relax detection of any other orphan."
     ]
   },
   "catalogAnomalies": {
@@ -211,6 +212,17 @@
     "pages.terms.all.velora.intellectual.property.and.brand.rights.a613eb1e",
     "pages.terms.terms.velora.debcf7e0",
     "pages.terms.using.velora.s.trading.platform.and.ai.50f2c39a",
+    "pages.trades.new.p05.session_asia",
+    "pages.trades.new.p05.session_asia_sub",
+    "pages.trades.new.p05.session_london",
+    "pages.trades.new.p05.session_london_sub",
+    "pages.trades.new.p05.session_newyork",
+    "pages.trades.new.p05.session_newyork_sub",
+    "pages.trades.new.p05.session_note_prefix",
+    "pages.trades.new.p05.session_outside",
+    "pages.trades.new.p05.session_overlap",
+    "pages.trades.new.p05.session_overlap_sub",
+    "pages.trades.new.p05.session_select_open",
     "profile.saved",
     "status.buy",
     "status.completed",
