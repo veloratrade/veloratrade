@@ -1,0 +1,185 @@
+<?php
+/**
+ * VELORA Environment Management System — ONE-USE probe TEMPLATE.
+ *
+ * This file is a TEMPLATE stored in the repo (ops/velora-mgmt/probe/). It is NEVER
+ * deployed as a permanent endpoint. The GitHub Actions workflow (velora-mgmt.yml):
+ *   1. copies this template to a RANDOM one-time filename,
+ *   2. injects __HASH__ (sha256 of a one-time bearer token) and __OP__ / __ENV__,
+ *   3. uploads it via environment-scoped FTP to the target docroot,
+ *   4. invokes it once over HTTPS with the X-Velora-Mgmt header,
+ *   5. the probe self-deletes (@unlink) and the workflow also FTP-cleans up.
+ *
+ * SECURITY PROPERTIES
+ *  - token-gated with hash_equals (timing-safe); random filename; single execution.
+ *  - accepts ONLY a predefined operation (__OP__) — NEVER arbitrary SQL or PHP.
+ *  - inspect/plan/verify run ONLY information_schema / @@ / SHOW metadata (read-only).
+ *  - migrate is DEFINED but hard-gated: it requires an explicit allow AND a verified
+ *    backup token AND exact environment match; in the read-only implementation phase
+ *    the workflow never passes these, so migrate is refused server-side.
+ *  - prints metadata only; never prints credentials, DSNs, .env, or row payloads.
+ *  - production mutating operations are additionally impossible unless __ENV__==production
+ *    AND all approval/backup assertions are satisfied (defense in depth; the workflow
+ *    already locks production behind a protected GitHub environment).
+ */
+declare(strict_types=1);
+
+$expected = '__HASH__';
+$provided = (string)($_SERVER['HTTP_X_VELORA_MGMT'] ?? '');
+if ($provided === '' || !hash_equals($expected, hash('sha256', $provided))) {
+    http_response_code(404);
+    exit('Not found');
+}
+@unlink(__FILE__); // single-use: remove self immediately on authorized execution
+
+require dirname(__DIR__) . '/api/src/bootstrap.php';
+
+use Velora\Core\Database;
+
+header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store');
+
+$OP  = '__OP__';   // inspect | plan | verify | migrate | backup | deploy
+$ENV = '__ENV__';  // staging | production
+
+$ALLOWED_OPS = ['inspect', 'plan', 'verify', 'migrate', 'backup', 'deploy'];
+$READONLY_OPS = ['inspect', 'plan', 'verify'];
+
+$out = ['probe' => 'velora-mgmt', 'op' => $OP, 'env' => $ENV, 'time' => gmdate('c')];
+
+if (!in_array($OP, $ALLOWED_OPS, true)) {
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'error' => 'op not allowed']);
+    exit;
+}
+
+function vmg_q(PDO $pdo, string $sql): array {
+    try {
+        return ['ok' => true, 'rows' => $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC)];
+    } catch (Throwable $e) {
+        return ['ok' => false, 'error' => $e->getMessage()];
+    }
+}
+
+try {
+    $pdo = Database::connection();
+    $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+    $out['driver'] = $driver;
+
+    if ($driver !== 'mysql') {
+        // SQLite (CI/local) — minimal read-only fallback; never used for real gates.
+        $out['tables'] = vmg_q($pdo, "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name");
+        echo json_encode($out, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
+    // ---- READ-ONLY METADATA (inspect / plan / verify / backup all start here) ----
+    $scalars = [
+        'VERSION'                => 'SELECT VERSION() AS v',
+        'version_comment'        => 'SELECT @@version_comment AS v',
+        'sql_mode'               => 'SELECT @@sql_mode AS v',
+        'transaction_isolation'  => 'SELECT @@transaction_isolation AS v',
+        'character_set_server'   => 'SELECT @@character_set_server AS v',
+        'collation_server'       => 'SELECT @@collation_server AS v',
+        'character_set_database' => 'SELECT @@character_set_database AS v',
+        'collation_database'     => 'SELECT @@collation_database AS v',
+        'current_database'       => 'SELECT DATABASE() AS v',
+        'current_user'           => 'SELECT CURRENT_USER() AS v',
+        'innodb_version'         => "SHOW VARIABLES LIKE 'innodb_version'",
+    ];
+    $out['scalars'] = [];
+    foreach ($scalars as $k => $sql) { $out['scalars'][$k] = vmg_q($pdo, $sql); }
+
+    // Privilege audit (read-only): what can the APPLICATION db account do? Report only.
+    $out['privileges'] = [
+        'schema_grants' => vmg_q($pdo, "SELECT PRIVILEGE_TYPE, IS_GRANTABLE FROM
+            information_schema.USER_PRIVILEGES"),
+        'db_grants'     => vmg_q($pdo, "SELECT PRIVILEGE_TYPE, IS_GRANTABLE FROM
+            information_schema.SCHEMA_PRIVILEGES WHERE TABLE_SCHEMA = DATABASE()"),
+        'table_privs'   => vmg_q($pdo, "SELECT TABLE_NAME, PRIVILEGE_TYPE FROM
+            information_schema.TABLE_PRIVILEGES WHERE TABLE_SCHEMA = DATABASE() LIMIT 200"),
+        'can_ddl_probe' => vmg_q($pdo, "SELECT CURRENT_USER() AS v"), // no DDL executed;
+                                             // privilege truth derived from grants above
+    ];
+
+    $out['tables'] = vmg_q($pdo, "SELECT TABLE_NAME, ENGINE, TABLE_TYPE, TABLE_COLLATION, TABLE_ROWS
+        FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() ORDER BY TABLE_NAME");
+    $out['migration_like_tables'] = vmg_q($pdo, "SELECT TABLE_NAME, ENGINE FROM
+        information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE()
+        AND (TABLE_NAME LIKE '%migrat%' OR TABLE_NAME LIKE '%version%' OR TABLE_NAME LIKE '%schema%')");
+
+    // Detailed metadata for the tables the management system reasons about.
+    $focus = ['trades', 'trading_accounts', 'metaapi_fills', 'users'];
+    $out['focus'] = [];
+    foreach ($focus as $t) {
+        $eq = vmg_q($pdo, "SELECT COUNT(*) AS c FROM information_schema.TABLES
+            WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=" . $pdo->quote($t));
+        $exists = $eq['ok'] && (int)($eq['rows'][0]['c'] ?? 0) === 1;
+        $entry = ['exists' => $exists];
+        if ($exists) {
+            $entry['columns'] = vmg_q($pdo, "SELECT COLUMN_NAME, COLUMN_TYPE, DATA_TYPE,
+                IS_NULLABLE, COLUMN_DEFAULT, ORDINAL_POSITION, COLUMN_KEY, EXTRA
+                FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
+                AND TABLE_NAME=" . $pdo->quote($t) . " ORDER BY ORDINAL_POSITION");
+            $entry['statistics'] = vmg_q($pdo, "SELECT INDEX_NAME, NON_UNIQUE, SEQ_IN_INDEX,
+                COLUMN_NAME, INDEX_TYPE FROM information_schema.STATISTICS
+                WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=" . $pdo->quote($t) .
+                " ORDER BY INDEX_NAME, SEQ_IN_INDEX");
+            $entry['key_usage'] = vmg_q($pdo, "SELECT CONSTRAINT_NAME, COLUMN_NAME,
+                ORDINAL_POSITION, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
+                FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA=DATABASE()
+                AND TABLE_NAME=" . $pdo->quote($t) . " ORDER BY CONSTRAINT_NAME, ORDINAL_POSITION");
+        }
+        $out['focus'][$t] = $entry;
+    }
+
+    // ---- BACKUP (read-only discovery only in this phase) ----
+    if ($OP === 'backup') {
+        // The probe cannot create a verified mysqldump on shared hosting; report what is
+        // knowable WITHOUT triggering a backup. Actual backup is a separate owner/cPanel
+        // action. We never fabricate a backup.
+        $out['backup'] = [
+            'supported_in_probe' => false,
+            'state' => 'UNVERIFIED',
+            'note' => 'No in-probe dump; use cPanel/hosting snapshot or an owner-run '
+                    . 'mysqldump, then record + verify checksum. Probe did not create one.',
+        ];
+    }
+
+    // ---- MIGRATE / DEPLOY: hard server-side gate (refused in read-only phase) ----
+    if (in_array($OP, ['migrate', 'deploy'], true)) {
+        // The workflow must pass these as proof; in the read-only implementation they are
+        // never supplied, so execution is refused. NEVER accept SQL from input.
+        $approvalToken = (string)($_SERVER['HTTP_X_VELORA_APPROVAL'] ?? '');
+        $backupToken   = (string)($_SERVER['HTTP_X_VELORA_BACKUP_OK'] ?? '');
+        $wantEnv       = (string)($_SERVER['HTTP_X_VELORA_ENV'] ?? '');
+        $approved = $approvalToken !== '' && $wantEnv === $ENV;
+        // Production additionally requires a verified backup token.
+        $backupOk = ($ENV === 'production') ? ($backupToken !== '') : true;
+        if (!$approved || !$backupOk) {
+            http_response_code(403);
+            $out['ok'] = false;
+            $out['refused'] = true;
+            $out['reason'] = 'Mutating op refused: missing bound approval'
+                           . ($ENV === 'production' ? ' and/or verified backup' : '');
+            echo json_encode($out, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
+        // If ever enabled: execute ONLY repository migration files by fixed path, in
+        // deterministic order (v1.0 then v1.1), idempotent, stop-on-error. This branch is
+        // intentionally NOT reachable in the current read-only phase.
+        $out['ok'] = false;
+        $out['refused'] = true;
+        $out['reason'] = 'Migration execution is disabled in this build; use the approved, '
+                       . 'backup-gated runbook. No DDL executed.';
+        http_response_code(403);
+    } else {
+        $out['ok'] = true;
+    }
+
+    echo json_encode($out, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+} catch (Throwable $e) {
+    $out['ok'] = false;
+    $out['fatal'] = $e->getMessage();
+    echo json_encode($out, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+}

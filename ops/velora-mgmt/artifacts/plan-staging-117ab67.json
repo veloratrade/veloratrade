@@ -1,0 +1,479 @@
+{
+  "plan_version": 1,
+  "environment": "staging",
+  "operation": "migrate",
+  "commit_sha": "117ab67777ab7832c1423912d4da1ab9d47d2885",
+  "current_database": {
+    "engine_version": "8.0.46-cll-lve",
+    "database": "***_staging",
+    "charset": "utf8mb4",
+    "collation": "utf8mb4_unicode_ci",
+    "sql_mode": "",
+    "transaction_isolation": "REPEATABLE-READ",
+    "table_count": 28
+  },
+  "detected_differences": {
+    "missing_tables": [
+      "metaapi_fills"
+    ],
+    "unexpected_tables": [],
+    "tables": {
+      "ai_analysis": {
+        "exists": true,
+        "missing_columns": [],
+        "type_mismatches": [],
+        "nullability_mismatches": [],
+        "default_mismatches": [],
+        "missing_indexes": [],
+        "missing_foreign_keys": [],
+        "engine_mismatch": null,
+        "collation_mismatch": null,
+        "column_detail_captured": false
+      },
+      "ai_audit_logs": {
+        "exists": true,
+        "missing_columns": [],
+        "type_mismatches": [],
+        "nullability_mismatches": [],
+        "default_mismatches": [],
+        "missing_indexes": [],
+        "missing_foreign_keys": [],
+        "engine_mismatch": null,
+        "collation_mismatch": null,
+        "column_detail_captured": false
+      },
+      "ai_extractions": {
+        "exists": true,
+        "missing_columns": [],
+        "type_mismatches": [],
+        "nullability_mismatches": [],
+        "default_mismatches": [],
+        "missing_indexes": [],
+        "missing_foreign_keys": [],
+        "engine_mismatch": null,
+        "collation_mismatch": null,
+        "column_detail_captured": false
+      },
+      "ai_feature_flags": {
+        "exists": true,
+        "missing_columns": [],
+        "type_mismatches": [],
+        "nullability_mismatches": [],
+        "default_mismatches": [],
+        "missing_indexes": [],
+        "missing_foreign_keys": [],
+        "engine_mismatch": null,
+        "collation_mismatch": null,
+        "column_detail_captured": false
+      },
+      "ai_feature_providers": {
+        "exists": true,
+        "missing_columns": [],
+        "type_mismatches": [],
+        "nullability_mismatches": [],
+        "default_mismatches": [],
+        "missing_indexes": [],
+        "missing_foreign_keys": [],
+        "engine_mismatch": null,
+        "collation_mismatch": null,
+        "column_detail_captured": false
+      },
+      "ai_feedback": {
+        "exists": true,
+        "missing_columns": [],
+        "type_mismatches": [],
+        "nullability_mismatches": [],
+        "default_mismatches": [],
+        "missing_indexes": [],
+        "missing_foreign_keys": [],
+        "engine_mismatch": null,
+        "collation_mismatch": null,
+        "column_detail_captured": false
+      },
+      "ai_jobs": {
+        "exists": true,
+        "missing_columns": [],
+        "type_mismatches": [],
+        "nullability_mismatches": [],
+        "default_mismatches": [],
+        "missing_indexes": [],
+        "missing_foreign_keys": [],
+        "engine_mismatch": null,
+        "collation_mismatch": null,
+        "column_detail_captured": false
+      },
+      "ai_provider_logs": {
+        "exists": true,
+        "missing_columns": [],
+        "type_mismatches": [],
+        "nullability_mismatches": [],
+        "default_mismatches": [],
+        "missing_indexes": [],
+        "missing_foreign_keys": [],
+        "engine_mismatch": null,
+        "collation_mismatch": null,
+        "column_detail_captured": false
+      },
+      "ai_provider_quotas": {
+        "exists": true,
+        "missing_columns": [],
+        "type_mismatches": [],
+        "nullability_mismatches": [],
+        "default_mismatches": [],
+        "missing_indexes": [],
+        "missing_foreign_keys": [],
+        "engine_mismatch": null,
+        "collation_mismatch": null,
+        "column_detail_captured": false
+      },
+      "ai_reports": {
+        "exists": true,
+        "missing_columns": [],
+        "type_mismatches": [],
+        "nullability_mismatches": [],
+        "default_mismatches": [],
+        "missing_indexes": [],
+        "missing_foreign_keys": [],
+        "engine_mismatch": null,
+        "collation_mismatch": null,
+        "column_detail_captured": false
+      },
+      "ai_requests": {
+        "exists": true,
+        "missing_columns": [],
+        "type_mismatches": [],
+        "nullability_mismatches": [],
+        "default_mismatches": [],
+        "missing_indexes": [],
+        "missing_foreign_keys": [],
+        "engine_mismatch": null,
+        "collation_mismatch": null,
+        "column_detail_captured": false
+      },
+      "content_translation_cache": {
+        "exists": true,
+        "missing_columns": [],
+        "type_mismatches": [],
+        "nullability_mismatches": [],
+        "default_mismatches": [],
+        "missing_indexes": [],
+        "missing_foreign_keys": [],
+        "engine_mismatch": null,
+        "collation_mismatch": null,
+        "column_detail_captured": false
+      },
+      "content_translation_jobs": {
+        "exists": true,
+        "missing_columns": [],
+        "type_mismatches": [],
+        "nullability_mismatches": [],
+        "default_mismatches": [],
+        "missing_indexes": [],
+        "missing_foreign_keys": [],
+        "engine_mismatch": null,
+        "collation_mismatch": null,
+        "column_detail_captured": false
+      },
+      "email_notifications": {
+        "exists": true,
+        "missing_columns": [],
+        "type_mismatches": [],
+        "nullability_mismatches": [],
+        "default_mismatches": [],
+        "missing_indexes": [],
+        "missing_foreign_keys": [],
+        "engine_mismatch": null,
+        "collation_mismatch": null,
+        "column_detail_captured": false
+      },
+      "email_preferences": {
+        "exists": true,
+        "missing_columns": [],
+        "type_mismatches": [],
+        "nullability_mismatches": [],
+        "default_mismatches": [],
+        "missing_indexes": [],
+        "missing_foreign_keys": [],
+        "engine_mismatch": null,
+        "collation_mismatch": null,
+        "column_detail_captured": false
+      },
+      "email_verifications": {
+        "exists": true,
+        "missing_columns": [],
+        "type_mismatches": [],
+        "nullability_mismatches": [],
+        "default_mismatches": [],
+        "missing_indexes": [],
+        "missing_foreign_keys": [],
+        "engine_mismatch": null,
+        "collation_mismatch": null,
+        "column_detail_captured": false
+      },
+      "metaapi_fills": {
+        "exists": false,
+        "missing_columns": [],
+        "type_mismatches": [],
+        "nullability_mismatches": [],
+        "default_mismatches": [],
+        "missing_indexes": [],
+        "missing_foreign_keys": [],
+        "engine_mismatch": null,
+        "collation_mismatch": null,
+        "column_detail_captured": false
+      },
+      "metaapi_operations": {
+        "exists": true,
+        "missing_columns": [],
+        "type_mismatches": [],
+        "nullability_mismatches": [],
+        "default_mismatches": [],
+        "missing_indexes": [],
+        "missing_foreign_keys": [],
+        "engine_mismatch": null,
+        "collation_mismatch": null,
+        "column_detail_captured": false
+      },
+      "password_resets": {
+        "exists": true,
+        "missing_columns": [],
+        "type_mismatches": [],
+        "nullability_mismatches": [],
+        "default_mismatches": [],
+        "missing_indexes": [],
+        "missing_foreign_keys": [],
+        "engine_mismatch": null,
+        "collation_mismatch": null,
+        "column_detail_captured": false
+      },
+      "rate_limits": {
+        "exists": true,
+        "missing_columns": [],
+        "type_mismatches": [],
+        "nullability_mismatches": [],
+        "default_mismatches": [],
+        "missing_indexes": [],
+        "missing_foreign_keys": [],
+        "engine_mismatch": null,
+        "collation_mismatch": null,
+        "column_detail_captured": false
+      },
+      "sync_jobs": {
+        "exists": true,
+        "missing_columns": [],
+        "type_mismatches": [],
+        "nullability_mismatches": [],
+        "default_mismatches": [],
+        "missing_indexes": [],
+        "missing_foreign_keys": [],
+        "engine_mismatch": null,
+        "collation_mismatch": null,
+        "column_detail_captured": false
+      },
+      "trade_exits": {
+        "exists": true,
+        "missing_columns": [],
+        "type_mismatches": [],
+        "nullability_mismatches": [],
+        "default_mismatches": [],
+        "missing_indexes": [],
+        "missing_foreign_keys": [],
+        "engine_mismatch": null,
+        "collation_mismatch": null,
+        "column_detail_captured": false
+      },
+      "trades": {
+        "exists": true,
+        "missing_columns": [
+          "occurred_open_at_utc",
+          "occurred_close_at_utc",
+          "time_status",
+          "source_timezone",
+          "source_timezone_source",
+          "source_calendar",
+          "raw_open_text",
+          "raw_close_text"
+        ],
+        "type_mismatches": [],
+        "nullability_mismatches": [],
+        "default_mismatches": [
+          {
+            "column": "source",
+            "actual": "manual",
+            "expected": "'manual'"
+          }
+        ],
+        "missing_indexes": [
+          {
+            "name": "idx_trades_occurred_open",
+            "columns": [
+              "user_id",
+              "occurred_open_at_utc"
+            ],
+            "unique": false
+          },
+          {
+            "name": "idx_trades_time_status",
+            "columns": [
+              "time_status"
+            ],
+            "unique": false
+          }
+        ],
+        "missing_foreign_keys": [],
+        "engine_mismatch": null,
+        "collation_mismatch": null,
+        "column_detail_captured": true
+      },
+      "trading_accounts": {
+        "exists": true,
+        "missing_columns": [
+          "timezone",
+          "timezone_source"
+        ],
+        "type_mismatches": [],
+        "nullability_mismatches": [],
+        "default_mismatches": [
+          {
+            "column": "provider",
+            "actual": "MANUAL",
+            "expected": "'MANUAL'"
+          },
+          {
+            "column": "platform",
+            "actual": "MANUAL",
+            "expected": "'MANUAL'"
+          },
+          {
+            "column": "account_type",
+            "actual": "STANDARD",
+            "expected": "'STANDARD'"
+          },
+          {
+            "column": "sync_status",
+            "actual": "DISCONNECTED",
+            "expected": "'DISCONNECTED'"
+          },
+          {
+            "column": "label",
+            "actual": "",
+            "expected": "''"
+          },
+          {
+            "column": "account_number_masked",
+            "actual": "",
+            "expected": "''"
+          },
+          {
+            "column": "currency",
+            "actual": "USD",
+            "expected": "'USD'"
+          },
+          {
+            "column": "status",
+            "actual": "disconnected",
+            "expected": "'disconnected'"
+          }
+        ],
+        "missing_indexes": [],
+        "missing_foreign_keys": [],
+        "engine_mismatch": null,
+        "collation_mismatch": null,
+        "column_detail_captured": true
+      },
+      "user_achievements": {
+        "exists": true,
+        "missing_columns": [],
+        "type_mismatches": [],
+        "nullability_mismatches": [],
+        "default_mismatches": [],
+        "missing_indexes": [],
+        "missing_foreign_keys": [],
+        "engine_mismatch": null,
+        "collation_mismatch": null,
+        "column_detail_captured": false
+      },
+      "user_devices": {
+        "exists": true,
+        "missing_columns": [],
+        "type_mismatches": [],
+        "nullability_mismatches": [],
+        "default_mismatches": [],
+        "missing_indexes": [],
+        "missing_foreign_keys": [],
+        "engine_mismatch": null,
+        "collation_mismatch": null,
+        "column_detail_captured": false
+      },
+      "user_sessions": {
+        "exists": true,
+        "missing_columns": [],
+        "type_mismatches": [],
+        "nullability_mismatches": [],
+        "default_mismatches": [],
+        "missing_indexes": [],
+        "missing_foreign_keys": [],
+        "engine_mismatch": null,
+        "collation_mismatch": null,
+        "column_detail_captured": false
+      },
+      "users": {
+        "exists": true,
+        "missing_columns": [],
+        "type_mismatches": [],
+        "nullability_mismatches": [],
+        "default_mismatches": [],
+        "missing_indexes": [],
+        "missing_foreign_keys": [],
+        "engine_mismatch": null,
+        "collation_mismatch": null,
+        "column_detail_captured": false
+      },
+      "webhook_events": {
+        "exists": true,
+        "missing_columns": [],
+        "type_mismatches": [],
+        "nullability_mismatches": [],
+        "default_mismatches": [],
+        "missing_indexes": [],
+        "missing_foreign_keys": [],
+        "engine_mismatch": null,
+        "collation_mismatch": null,
+        "column_detail_captured": false
+      }
+    },
+    "engine_notes": []
+  },
+  "migrations": [
+    "v1.0",
+    "v1.1"
+  ],
+  "expected_operations": [
+    {
+      "migration": "v1.0",
+      "file": "api/database/migrations/v1.0_trade_time_canonical.sql",
+      "kind": "additive ALTER (idempotent, information_schema-guarded)",
+      "objects": "trades +8 columns/+2 indexes; trading_accounts +2 columns",
+      "destructive": false
+    },
+    {
+      "migration": "v1.1",
+      "file": "api/database/migrations/v1.1_metaapi_fill_ledger.sql",
+      "kind": "CREATE TABLE IF NOT EXISTS metaapi_fills (InnoDB/utf8mb4)",
+      "objects": "metaapi_fills + unique(account_id,external_deal_id) + indexes",
+      "destructive": false
+    }
+  ],
+  "forbidden_sql_hits": [],
+  "risk": "LOW — additive, nullable, idempotent, no backfill, no destructive SQL",
+  "backup_requirement": {
+    "required": false,
+    "state": "UNVERIFIED",
+    "note": "Production: verified pre-change backup is MANDATORY. Staging: migrate stays BLOCKED until a verified backup/rollback is evidenced."
+  },
+  "approval": {
+    "state": "WAITING_FOR_EXPLICIT_APPROVAL"
+  },
+  "execution": "BLOCKED",
+  "plan_hash": "7d1358af529cd6f43682c076d060da7ab5d66a14874c70aa4e7e568c7299b58a"
+}

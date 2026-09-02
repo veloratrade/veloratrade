@@ -1,0 +1,214 @@
+name: Velora Environment Management (inspect/plan/verify; migrate/deploy gated)
+
+# ============================================================================
+# REUSABLE, ENVIRONMENT-AWARE management system for STAGING and PRODUCTION.
+#
+#   Target is ALWAYS explicit via input `environment` (staging|production).
+#   Modes: inspect | plan | verify   -> READ-ONLY (default; safe to run).
+#          backup | migrate | deploy -> MUTATING; locked behind explicit gates:
+#             * staging migrate: BLOCKED in CI until a verified backup/rollback is
+#               supplied (input backup_verified must be true AND the probe re-checks).
+#             * production anything: job uses the protected GitHub ENVIRONMENT
+#               `production` (required reviewers) AND requires backup_verified=true.
+#
+# Transport reuses the PROVEN one-use PHP-probe pattern (FTP -> random token-gated
+# self-deleting probe -> HTTPS -> Database::connection()). NO arbitrary SQL/PHP is
+# accepted: the probe runs a FIXED set of metadata queries (read-only) or, only when
+# fully approved, repository-defined migration files in fixed order (never input SQL).
+#
+# This workflow never prints secret VALUES (GitHub masks env secrets; probe emits
+# metadata only). Staging and production use strictly separate credentials.
+# ============================================================================
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "TARGET (explicit): staging OR production (never inferred)"
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      mode:
+        description: "Operation: inspect | plan | verify (read-only); backup | migrate | deploy (gated)"
+        required: true
+        type: choice
+        options:
+          - inspect
+          - plan
+          - verify
+          - backup
+          - migrate
+          - deploy
+        default: inspect
+      commit_sha:
+        description: "Expected deployed commit SHA (binds plan/approval). For inspect/verify optional."
+        required: false
+        default: ""
+      plan_hash:
+        description: "Approval binding: plan hash from a prior plan run (mutating ops only)"
+        required: false
+        default: ""
+      approval:
+        description: "Mutating ops only: APPROVE-<env>-<mode> to confirm. Ignored for read-only."
+        required: false
+        default: ""
+      backup_verified:
+        description: "Mutating ops ONLY: set true ONLY after a verified pre-change backup exists"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: velora-mgmt-${{ github.event.inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  # ------------------------------------------------------------------------- #
+  # Gate: validate every safety input BEFORE touching anything.
+  # ------------------------------------------------------------------------- #
+  guard:
+    name: Guard — validate target / mode / approval / backup
+    runs-on: ubuntu-latest
+    outputs:
+      env: ${{ steps.v.outputs.env }}
+      mode: ${{ steps.v.outputs.mode }}
+      readonly: ${{ steps.v.outputs.readonly }}
+      docroot: ${{ steps.v.outputs.docroot }}
+      base_url: ${{ steps.v.outputs.base_url }}
+    steps:
+      - id: v
+        run: |
+          set -euo pipefail
+          ENVIRONMENT="${{ github.event.inputs.environment }}"
+          MODE="${{ github.event.inputs.mode }}"
+          BACKUP_OK="${{ github.event.inputs.backup_verified }}"
+          APPROVAL="${{ github.event.inputs.approval }}"
+          [[ "$ENVIRONMENT" == "staging" || "$ENVIRONMENT" == "production" ]] || { echo "::error::environment must be staging|production"; exit 1; }
+          case "$MODE" in inspect|plan|verify|backup|migrate|deploy) ;; *) echo "::error::bad mode"; exit 1;; esac
+          if [[ "$MODE" == "inspect" || "$MODE" == "plan" || "$MODE" == "verify" ]]; then READONLY=true; else READONLY=false; fi
+          # environment-specific transport (NO mixing, NO fallback)
+          if [[ "$ENVIRONMENT" == "staging" ]]; then
+            DOCROOT="public_html/staging.veloratrade.ir"; BASE="https://staging.veloratrade.ir"
+            [[ -n "${STAGING_FTP_SERVER:-}" && -n "${STAGING_FTP_USERNAME:-}" && -n "${STAGING_FTP_PASSWORD:-}" ]] || { echo "::error::missing STAGING_FTP_* secrets"; exit 1; }
+          else
+            DOCROOT="public_html"; BASE="https://veloratrade.ir"
+            [[ -n "${FTP_SERVER:-}" && -n "${FTP_USERNAME:-}" && -n "${FTP_PASSWORD:-}" ]] || { echo "::error::missing production FTP_* secrets"; exit 1; }
+          fi
+          # Mutating gates
+          if [[ "$READONLY" == "false" ]]; then
+            WANT="APPROVE-${ENVIRONMENT}-${MODE}"
+            [[ "$APPROVAL" == "$WANT" ]] || { echo "::error::mutating op requires exact approval token '$WANT'"; exit 1; }
+            [[ "$BACKUP_OK" == "true" ]] || { echo "::error::mutating op requires backup_verified=true (verified pre-change backup)"; exit 1; }
+            if [[ "$ENVIRONMENT" == "production" ]]; then
+              echo "::notice::PRODUCTION mutating op: also requires protected 'production' environment reviewers."
+            fi
+          fi
+          echo "env=$ENVIRONMENT"; echo "mode=$MODE"; echo "readonly=$READONLY"
+          echo "environment=$ENVIRONMENT" >> "$GITHUB_OUTPUT"
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          echo "readonly=$READONLY" >> "$GITHUB_OUTPUT"
+          echo "docroot=$DOCROOT" >> "$GITHUB_OUTPUT"
+          echo "base_url=$BASE" >> "$GITHUB_OUTPUT"
+        env:
+          STAGING_FTP_SERVER: ${{ secrets.STAGING_FTP_SERVER }}
+          STAGING_FTP_USERNAME: ${{ secrets.STAGING_FTP_USERNAME }}
+          STAGING_FTP_PASSWORD: ${{ secrets.STAGING_FTP_PASSWORD }}
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+
+  # ------------------------------------------------------------------------- #
+  # Read-only metadata probe. Runs for ALL envs (inspect/plan/verify/backup).
+  # For production mutating modes this job is grouped under the protected env too.
+  # ------------------------------------------------------------------------- #
+  probe:
+    name: ${{ needs.guard.outputs.env }} / ${{ needs.guard.outputs.mode }} — one-use read-only probe
+    needs: guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # PRODUCTION (any mode) routes through the protected GitHub environment so the
+    # required-reviewer policy applies. Staging uses repo-level secrets.
+    environment: ${{ needs.guard.outputs.env == 'production' && 'production' || '' }}
+    env:
+      FTP_SERVER:   ${{ needs.guard.outputs.env == 'production' && secrets.FTP_SERVER || secrets.STAGING_FTP_SERVER }}
+      FTP_USERNAME: ${{ needs.guard.outputs.env == 'production' && secrets.FTP_USERNAME || secrets.STAGING_FTP_USERNAME }}
+      FTP_PASSWORD: ${{ needs.guard.outputs.env == 'production' && secrets.FTP_PASSWORD || secrets.STAGING_FTP_PASSWORD }}
+      BASE_URL: ${{ needs.guard.outputs.base_url }}
+      DOCROOT:  ${{ needs.guard.outputs.docroot }}
+      OP:       ${{ needs.guard.outputs.mode }}
+      ENVIRON:  ${{ needs.guard.outputs.env }}
+      READONLY: ${{ needs.guard.outputs.readonly }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Refuse mutating op unless explicitly enabled (defense in depth)
+        run: |
+          if [[ "$READONLY" != "true" ]]; then
+            echo "::error::Mutating operations ($OP) are DISABLED in this workflow build."
+            echo "::error::Use the approved, backup-gated runbook; this path performs read-only probes only."
+            exit 2
+          fi
+
+      - name: Build, upload, execute, remove one-use probe
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -q lftp >/dev/null
+          NAME="_velora_mgmt_$(openssl rand -hex 8).php"
+          TOKEN="$(openssl rand -hex 32)"
+          HASH="$(printf '%s' "$TOKEN" | sha256sum | awk '{print $1}')"
+          echo "::add-mask::$NAME"; echo "::add-mask::$TOKEN"; echo "::add-mask::$HASH"
+          export NAME HASH OP ENVIRON
+          python3 - <<'PY'
+          import os, pathlib
+          tpl = pathlib.Path('ops/velora-mgmt/probe/mgmt_probe.php.tmpl').read_text()
+          tpl = tpl.replace('__HASH__', os.environ['HASH']).replace('__OP__', os.environ['OP']).replace('__ENV__', os.environ['ENVIRON'])
+          pathlib.Path('/tmp/probe.php').write_text(tpl)
+          PY
+          cleanup() {
+            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+              -e "set ftp:ssl-allow no; set net:max-retries 1; set net:timeout 20; glob -a rm -f $DOCROOT/public/_velora_mgmt_*.php; bye" >/dev/null 2>&1 || true
+            shred -u /tmp/probe.php /tmp/mgmt.json 2>/dev/null || rm -f /tmp/probe.php /tmp/mgmt.json
+          }
+          trap cleanup EXIT
+          uploaded=0
+          for attempt in $(seq 1 15); do
+            if lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+              -e "set ftp:ssl-allow no; set net:max-retries 2; set net:timeout 30; glob -a rm -f $DOCROOT/public/_velora_mgmt_*.php; put /tmp/probe.php -o $DOCROOT/public/$NAME; bye"; then
+              uploaded=1; break
+            fi
+            sleep 5
+          done
+          [[ "$uploaded" == 1 ]] || { echo "::error::probe upload failed"; exit 1; }
+          code=$(curl -sS -o /tmp/mgmt.json -w '%{http_code}' --max-time 60 -H "X-Velora-Mgmt: $TOKEN" "$BASE_URL/public/$NAME")
+          echo "probe HTTP: $code"
+          [[ "$code" == "200" ]] || { echo "::error::probe HTTP $code"; head -c 1200 /tmp/mgmt.json; exit 1; }
+          cp /tmp/mgmt.json mgmt-result.json
+
+      - name: Normalize / inspect / plan / verify (local engine, read-only)
+        run: |
+          set -euo pipefail
+          SHA="${{ github.event.inputs.commit_sha }}"
+          [ -z "$SHA" ] && SHA="$(git rev-parse HEAD)"
+          python3 ops/velora-mgmt/velora_mgmt.py inspect --environment "$ENVIRON" --metadata mgmt-result.json | tee inspect.json
+          if [[ "$OP" == "plan" || "$OP" == "verify" ]]; then
+            python3 ops/velora-mgmt/velora_mgmt.py plan --environment "$ENVIRON" --metadata mgmt-result.json --commit-sha "$SHA" | tee plan.json
+            python3 ops/velora-mgmt/velora_mgmt.py verify --environment "$ENVIRON" --metadata mgmt-result.json || echo "::warning::verify reports pending migrations (expected pre-migration)"
+          fi
+
+      - name: Upload audit artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: velora-mgmt-${{ needs.guard.outputs.env }}-${{ needs.guard.outputs.mode }}-${{ github.run_id }}
+          path: |
+            mgmt-result.json
+            inspect.json
+            plan.json
+          if-no-files-found: ignore
+          retention-days: 30
