@@ -1,0 +1,129 @@
+name: Velora DB Backup → Private Repository (connectivity + dry-run; real backup gated)
+
+# ============================================================================
+# Connects veloratrade/veloratrade (public) to veloratrade/velora-backups (PRIVATE).
+#
+# READ-ONLY / DRY-RUN BY DEFAULT. This workflow:
+#   * requires an explicit `environment` (staging|production) — never inferred;
+#   * uses a DEDICATED, private-repo-scoped credential (BACKUP_REPO_TOKEN, a GitHub
+#     App installation token or a fine-grained PAT limited to velora-backups) — it
+#     does NOT reuse a broad token and never prints it;
+#   * verifies the private repo exists and is private, and that namespaces are
+#     isolated per environment;
+#   * runs the Python lifecycle in DRY-RUN (no dump, no release, no metadata write).
+#
+# Real database backups (mysqldump on the host via the one-use probe -> Release Asset)
+# are a SEPARATE, later, explicitly-authorized operation. In THIS build, `do_real_backup`
+# is ignored and the workflow refuses to create a backup (fail closed). Dumps are
+# Release Assets ONLY — never committed to git. Retention runs only after a fully
+# verified operation and never deletes the newest verified backup.
+# ============================================================================
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "TARGET (explicit): staging OR production"
+        required: true
+        type: choice
+        options: [staging, production]
+      mode:
+        description: "connectivity (read-only) | dry-run (lifecycle, no write)"
+        required: true
+        type: choice
+        options: [connectivity, dry-run]
+        default: connectivity
+      commit_sha:
+        description: "App commit this backup is bound to (for metadata)"
+        required: false
+        default: ""
+      do_real_backup:
+        description: "Must stay false in this phase — real backups are disabled"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: velora-backup-${{ github.event.inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  guard:
+    name: Guard — explicit env + dedicated credential present
+    runs-on: ubuntu-latest
+    outputs:
+      env: ${{ steps.g.outputs.environment }}
+    steps:
+      - id: g
+        env:
+          BACKUP_REPO_TOKEN: ${{ secrets.BACKUP_REPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          ENVIRON="${{ github.event.inputs.environment }}"
+          MODE="${{ github.event.inputs.mode }}"
+          REAL="${{ github.event.inputs.do_real_backup }}"
+          [[ "$ENVIRON" == "staging" || "$ENVIRON" == "production" ]] || { echo "::error::environment must be staging|production"; exit 1; }
+          [[ "$MODE" == "connectivity" || "$MODE" == "dry-run" ]] || { echo "::error::bad mode"; exit 1; }
+          if [[ "$REAL" == "true" ]]; then
+            echo "::error::Real backup creation is DISABLED in this build. Use the separately-authorized, approval+backup-gated runbook."
+            exit 2
+          fi
+          [ -n "${BACKUP_REPO_TOKEN:-}" ] || { echo "::error::missing dedicated secret BACKUP_REPO_TOKEN (scoped to veloratrade/velora-backups). Do NOT reuse a broad token."; exit 1; }
+          echo "environment=$ENVIRON" >> "$GITHUB_OUTPUT"
+          echo "guard OK (no backup will be created)"
+
+  connect:
+    name: ${{ needs.guard.outputs.env }} — private repo connectivity + dry-run
+    needs: guard
+    runs-on: ubuntu-latest
+    # Production routes through the protected GitHub environment (required reviewers)
+    # even for read-only connectivity, so production remains approval-gated.
+    environment: ${{ needs.guard.outputs.env == 'production' && 'production' || '' }}
+    env:
+      BACKUP_REPO_TOKEN: ${{ secrets.BACKUP_REPO_TOKEN }}
+      BACKUP_TARGET_ENV: ${{ needs.guard.outputs.env }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: "Connectivity check (read-only: repo exists + is private)"
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os, sys
+          sys.path.insert(0, "ops/velora-mgmt")
+          import backup_repo_client as bc
+          c = bc.Client(transport=bc.make_default_transport(os.environ["BACKUP_REPO_TOKEN"]))
+          info = c.check_repository()   # fails closed if missing / not private / no access
+          print("CONNECTED to", info["full_name"], "private=", info["private"],
+                "default_branch=", info["default_branch"])
+          existing = c.list_backups(os.environ["BACKUP_TARGET_ENV"])
+          print("existing", os.environ["BACKUP_TARGET_ENV"], "backup releases:", len(existing))
+          PY
+
+      - name: Dry-run lifecycle (no dump / no upload / no deletion)
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os, sys
+          sys.path.insert(0, "ops/velora-mgmt")
+          import backup_repo_client as bc, backup_lifecycle as bl
+          # No credentials/dump are used here: we pass no dump bytes => the lifecycle
+          # must report BLOCKED (never fabricate a backup), proving the guard.
+          class ReadOnly(bc.Client):
+              def __init__(self): super().__init__(transport=lambda *a, **k: {"status":200,"json":[]})
+          c = ReadOnly()
+          sha = "${{ github.event.inputs.commit_sha }}" or os.environ.get("GITHUB_SHA","")
+          req = bl.LifecycleRequest(
+              environment=os.environ["BACKUP_TARGET_ENV"], operation="migrate",
+              commit_sha=sha, workflow_run_id=os.environ.get("GITHUB_RUN_ID","0"),
+              plan_hash="dry-run-" + "0"*58, migrations=["v1.0","v1.1"],
+              approval_token=None, dump_bytes=None, dry_run=True)
+          out = bl.run_backup_lifecycle(c, req)
+          print("dry-run status:", out["status"], "at:", out.get("stopped_at"))
+          assert out["status"] == bl.BLOCKED, "expected BLOCKED when no dump supplied"
+          assert out.get("backups_deleted", []) == [], "must never delete in dry-run"
+          print("OK: lifecycle refuses to fabricate a backup; no uploads/deletions.")
+          PY

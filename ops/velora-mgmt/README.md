@@ -25,6 +25,14 @@ deployment and database management. One architecture, strict environment isolati
   retention over release-asset DB dumps (dumps as GitHub **Releases** assets; metadata in
   git). See `PRIVATE_BACKUP_REPO.md`. Dry-run: `private_backup_repo.py dry-run-metadata
   --environment staging --commit <sha>` (no network, no backup).
+- `backup_repo_client.py` — **connection client** to the private repo (injectable transport;
+  reads `BACKUP_REPO_TOKEN`, never prints it): verify repo exists & is private, list backups,
+  commit small metadata/checksum text, create release, upload `.sql.gz` **Release Asset only**,
+  sha256+gzip integrity verify, guarded retention delete. Never fabricates a backup.
+- `backup_lifecycle.py` — lifecycle orchestrator DISCOVER→PLAN→APPROVE→CREATE→UPLOAD→VERIFY
+  INTEGRITY→BIND→MUTATE→POST-VERIFY→RETENTION; BLOCKS without a real dump, production mutation
+  requires a bound approval, dry-run never writes/deletes. Workflow: `.github/workflows/velora-backup.yml`
+  (connectivity/dry-run; real backups disabled in this build). Tests: `tests/test_backup_repo_connection.py`.
 - `probe/mgmt_probe.php.tmpl` — one-use PHP probe template (fixed ops only; no arbitrary
   SQL/PHP; read-only metadata; self-deleting). Placeholders `__HASH__/__OP__/__ENV__`.
 - `tests/test_velora_mgmt.py` — read-only/dry-run unit tests (fixtures + synthetic).

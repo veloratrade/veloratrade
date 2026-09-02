@@ -175,3 +175,36 @@ Only a passed isolated restore flips state to RESTORE_VERIFIED.
   the private repo + credentials + an authorized backup operation); restore testing.
 - **Not done (blocked on owner):** repo creation, credentials, any real backup/restore/migration/
   deploy. No production/staging change.
+
+---
+
+## 18. Connection layer (implemented) + live status
+
+Added components (branch only):
+- `backup_repo_client.py` — `Client` with injectable transport (default reads `BACKUP_REPO_TOKEN`,
+  never prints it): `check_repository()` (must exist AND be private AND match exact owner/name),
+  `list_backups(env)`, `commit_metadata()` (small text via contents API; refuses out-of-namespace
+  paths), `create_backup_release()`, `upload_release_asset()` (the ONLY dump path; enforces
+  `<env>/<id>.sql.gz`), `verify_integrity()` (sha256 + gzip validity + non-empty), and guarded
+  `delete_release_by_tag()` (env-prefixed tags only).
+- `backup_lifecycle.py` — orchestrates DISCOVER→PLAN→APPROVE→CREATE→UPLOAD→VERIFY→BIND→MUTATE→
+  POST-VERIFY→RETENTION; BLOCKS (never fabricates) when no dump is supplied; production mutate
+  requires a bound approval; failures STOP with no retention/deletion; dry-run never uploads/deletes.
+- `.github/workflows/velora-backup.yml` — `workflow_dispatch`, explicit env, requires
+  `BACKUP_REPO_TOKEN`, routes production through the protected `production` environment, and
+  refuses `do_real_backup=true` in this build (connectivity/dry-run only).
+- Tests: `tests/test_backup_repo_connection.py` (18 cases with a MOCK transport; synthetic gzip
+  blob, not database data) covering repo-exists/private, public refusal, missing-repo fail-closed,
+  env isolation, no namespace collision, unverified blocks migrate, dump never enters contents/git,
+  deterministic release-asset naming, secret-free metadata, sha256 integrity gate, retention keeps
+  newest after success and never deletes on failure, lifecycle no-dump BLOCKS, production approval
+  required, dry-run makes no writes, and production file-backup lifecycle stays separate.
+
+LIVE READ-ONLY STATUS (2026-09-02):
+- `veloratrade/velora-backups` was reported created, but the CURRENT project fine-grained PAT returns
+  **HTTP 404** for it (the token can read the public app repo, 200). A fine-grained PAT/GitHub App only
+  sees repos it is explicitly granted; this token predates / is not scoped to the new private repo.
+- Per the safety rule (do not guess/expand credentials), connection is therefore BLOCKED on a
+  credential: the owner must grant the new private repo to a **dedicated identity** and provide
+  `BACKUP_REPO_TOKEN` (GitHub App installation token preferred) scoped to `velora-backups` with
+  `contents: write` + `metadata: read` ONLY. No real backup/metadata/release was created.
