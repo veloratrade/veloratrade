@@ -1,10 +1,10 @@
 {
   "algorithm": "sha256",
-  "commitSha": "c5fe60b74c0d3e1f280b3e264b41d07a9363d712",
+  "commitSha": "11b113e91f85c30725557b97732ea0b743499fd1",
   "localizationVersion": "2026.08.30.2",
   "policyVersion": 2,
-  "releaseHtmlSha256": "1543a3cd20799b6f43bd78c8a00aecaedf76f03bf143495b5581aa906795f826",
-  "releaseId": "2026.09.01.1",
+  "releaseHtmlSha256": "74d7f94afdd602faf7dfd339c8c80b0773f6503ebf329d168d8fe8ef4414ffb2",
+  "releaseId": "local-phase3f-20260902",
   "routeCount": 61,
   "routeManifestSha256": "77c267b42c509fae6a9f070298df1548d94a669176ed74999d28945504bdc251",
   "routes": {
@@ -328,16 +328,16 @@
         "sha256-oGb8lVOdFFB8uXIHgw/+BbIwiWBRaJyRMijn+WgAav0="
       ],
       "file": "en/dashboard/index.html",
-      "htmlSha256": "e39b1f9623f28162091a26464e44820798db22aa1d4a52dc126ef66e74beea8e",
+      "htmlSha256": "98626c02b42860dcf6d24ac2b401fa8b52f2dc6b7706072d5ceac8ff8fbeb560",
       "inlineScriptCount": 7,
       "inlineScriptHashes": [
-        "sha256-1e/2UYdCipWVeJ9PcCyM4kiDwJb7vjp+4CyhFlJMUYQ=",
         "sha256-7K7+K2frRzpU7tXPl05V/slbXJnLyW13PnABypXsPGM=",
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
         "sha256-MkbXG2G5CmolpDwYztPdKRPEx6Za12VQKoVrSE1YJuY=",
         "sha256-VVSQj8uRcSoK3TViPfAjMxzXKy/AftAJIr3gt3bG4Pg=",
         "sha256-WpIo/c0C5/v4qMYhd7QzDU0LP8RY/KI1s/L5gF12Dfc=",
-        "sha256-w8NsgCNpqK7nhoe2q2aFxDuLywJMKrk/gUkTN3+ORoI="
+        "sha256-w8NsgCNpqK7nhoe2q2aFxDuLywJMKrk/gUkTN3+ORoI=",
+        "sha256-z7yJZr9p8PfQMvBZV4Q3anNVAvtb/LplJk6SWb3/2Q0="
       ],
       "inlineStyleCount": 8,
       "inlineStyleHashes": [
@@ -850,13 +850,13 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "en/trades/index.html",
-      "htmlSha256": "f764e745e80186d15a37073134e1380e5b91a30ab080a3f5b1b6a98f72a7924b",
+      "htmlSha256": "5fc8af974eb21ff96c595e09d1ed910b4542072f310b976478e7824572bcae6a",
       "inlineScriptCount": 4,
       "inlineScriptHashes": [
         "sha256-3P3heGI/XX1DguQD0oe5881ErY6c5wSNj5y70eKKrHA=",
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
         "sha256-VVSQj8uRcSoK3TViPfAjMxzXKy/AftAJIr3gt3bG4Pg=",
-        "sha256-xKMANSzGJTE9htAjNOahZhFMXH0PacMb3zaxnFufXnY="
+        "sha256-pnLFmhmWNQgJCRZHp5KcZVuoCWI4M754NqOfhG2Y76U="
       ],
       "inlineStyleCount": 4,
       "inlineStyleHashes": [
@@ -885,15 +885,15 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "en/trades/new/index.html",
-      "htmlSha256": "6800915f39ce7a6eca64882b2a49e65fd13e58bb20a5cbb2c7c920e573b8affc",
+      "htmlSha256": "7822e8d3f109474ef569937f2a6d087e4c19a282424cd6f0339bd81b3842d37d",
       "inlineScriptCount": 6,
       "inlineScriptHashes": [
         "sha256-1poHJeS5OXUbnszstlpAVSL2MCUCizVPO6npTCn2iaU=",
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
         "sha256-BPo9AzCPtTVwrKrB1VZCiwWkWKUGtU+KtsQk2Ty8Xq4=",
-        "sha256-OchT4cVj6swFn2znPC1fjPTxH/+0bAz15z4I7rpcpxI=",
         "sha256-VVSQj8uRcSoK3TViPfAjMxzXKy/AftAJIr3gt3bG4Pg=",
-        "sha256-WpIo/c0C5/v4qMYhd7QzDU0LP8RY/KI1s/L5gF12Dfc="
+        "sha256-WpIo/c0C5/v4qMYhd7QzDU0LP8RY/KI1s/L5gF12Dfc=",
+        "sha256-c0nqQXVuhRwatcsdl3ruZ6Je+lLrjgZkukG5RpgXnVQ="
       ],
       "inlineStyleCount": 6,
       "inlineStyleHashes": [
@@ -1248,16 +1248,16 @@
         "sha256-oGb8lVOdFFB8uXIHgw/+BbIwiWBRaJyRMijn+WgAav0="
       ],
       "file": "fa/dashboard/index.html",
-      "htmlSha256": "90be130e2358e58d3d90af35ba88aaacb6eed99ea2f6fcb06caf34a9aab3255f",
+      "htmlSha256": "08377526bb59e349cf05b3fa27bf06b0852748aaaf58966a2eba3ea096f15d1b",
       "inlineScriptCount": 7,
       "inlineScriptHashes": [
-        "sha256-1e/2UYdCipWVeJ9PcCyM4kiDwJb7vjp+4CyhFlJMUYQ=",
         "sha256-7K7+K2frRzpU7tXPl05V/slbXJnLyW13PnABypXsPGM=",
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
         "sha256-MkbXG2G5CmolpDwYztPdKRPEx6Za12VQKoVrSE1YJuY=",
         "sha256-VVSQj8uRcSoK3TViPfAjMxzXKy/AftAJIr3gt3bG4Pg=",
         "sha256-WpIo/c0C5/v4qMYhd7QzDU0LP8RY/KI1s/L5gF12Dfc=",
-        "sha256-w8NsgCNpqK7nhoe2q2aFxDuLywJMKrk/gUkTN3+ORoI="
+        "sha256-w8NsgCNpqK7nhoe2q2aFxDuLywJMKrk/gUkTN3+ORoI=",
+        "sha256-z7yJZr9p8PfQMvBZV4Q3anNVAvtb/LplJk6SWb3/2Q0="
       ],
       "inlineStyleCount": 8,
       "inlineStyleHashes": [
@@ -1770,13 +1770,13 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "fa/trades/index.html",
-      "htmlSha256": "c7147abb946ad6260a428849aa494b264ec04cc879872ae4f9dd7c42f7dd609f",
+      "htmlSha256": "8352bb4d52aaa0a05a63a5114af18b6308af50a9532a013147206f40b67c0b72",
       "inlineScriptCount": 4,
       "inlineScriptHashes": [
         "sha256-3P3heGI/XX1DguQD0oe5881ErY6c5wSNj5y70eKKrHA=",
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
         "sha256-VVSQj8uRcSoK3TViPfAjMxzXKy/AftAJIr3gt3bG4Pg=",
-        "sha256-xKMANSzGJTE9htAjNOahZhFMXH0PacMb3zaxnFufXnY="
+        "sha256-pnLFmhmWNQgJCRZHp5KcZVuoCWI4M754NqOfhG2Y76U="
       ],
       "inlineStyleCount": 4,
       "inlineStyleHashes": [
@@ -1805,15 +1805,15 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "fa/trades/new/index.html",
-      "htmlSha256": "95cdfdcf8ea78140d6495df6dd3d55c3fbf99df25a93c134710e4a8a3c5798ca",
+      "htmlSha256": "6fbd303aeefc38567bfddf590942aa2e6acf46049b624a5218215221f04d2ce2",
       "inlineScriptCount": 6,
       "inlineScriptHashes": [
         "sha256-1poHJeS5OXUbnszstlpAVSL2MCUCizVPO6npTCn2iaU=",
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
         "sha256-BPo9AzCPtTVwrKrB1VZCiwWkWKUGtU+KtsQk2Ty8Xq4=",
-        "sha256-OchT4cVj6swFn2znPC1fjPTxH/+0bAz15z4I7rpcpxI=",
         "sha256-VVSQj8uRcSoK3TViPfAjMxzXKy/AftAJIr3gt3bG4Pg=",
-        "sha256-WpIo/c0C5/v4qMYhd7QzDU0LP8RY/KI1s/L5gF12Dfc="
+        "sha256-WpIo/c0C5/v4qMYhd7QzDU0LP8RY/KI1s/L5gF12Dfc=",
+        "sha256-c0nqQXVuhRwatcsdl3ruZ6Je+lLrjgZkukG5RpgXnVQ="
       ],
       "inlineStyleCount": 6,
       "inlineStyleHashes": [
@@ -1909,5 +1909,5 @@
       ]
     }
   },
-  "sourceDigest": "fa72816335ae21a793541b4b3c4ab3cdda5605774a1ad77664b598817b7ca931"
+  "sourceDigest": "dd6225b2d7454878f88baf48eac15c31b60608efdeaed20942f740358d6cbf6c"
 }
