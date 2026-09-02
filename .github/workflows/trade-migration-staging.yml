@@ -14,6 +14,21 @@ name: Trade Schema Migration (Staging) — v1.0 Phase 2A + v1.1 Phase 5
 # ============================================================================
 
 on:
+  workflow_call:
+    inputs:
+      mode:
+        description: 'check (report only) or apply (additive migration)'
+        type: string
+        required: true
+        default: check
+      confirm:
+        description: 'must be APPLY-TRADE-MIGRATION when mode=apply'
+        type: string
+        required: false
+        default: ''
+    outputs:
+      result:
+        value: ${{ jobs.migrate.outputs.result }}
   workflow_dispatch:
     inputs:
       mode:
@@ -36,14 +51,16 @@ jobs:
     name: Trade migration check/apply on STAGING
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      result: ${{ steps.runsql.outputs.state }}
     env:
       FTP_SERVER:   ${{ secrets.STAGING_FTP_SERVER }}
       FTP_USERNAME: ${{ secrets.STAGING_FTP_USERNAME }}
       FTP_PASSWORD: ${{ secrets.STAGING_FTP_PASSWORD }}
       BASE: https://staging.veloratrade.ir
       DOCROOT: public_html/staging.veloratrade.ir
-      INPUT_MODE: ${{ github.event.inputs.mode }}
-      INPUT_CONFIRM: ${{ github.event.inputs.confirm }}
+      INPUT_MODE: ${{ inputs.mode || github.event.inputs.mode }}
+      INPUT_CONFIRM: ${{ inputs.confirm || github.event.inputs.confirm }}
     steps:
       - uses: actions/checkout@v4
 
@@ -68,6 +85,7 @@ jobs:
           esac
 
       - name: Create, upload, execute, and remove one-use probe
+        id: runsql
         run: |
           set -euo pipefail
           NAME="_velora_tmig_$(openssl rand -hex 8).php"
@@ -121,6 +139,17 @@ jobs:
           if not d.get('ok') or d.get('errors'):
               sys.exit("::error::trade migration probe reported errors")
           print("PASS: migration probe ok (mode=%s)" % d.get('mode'))
+          PY
+          # emit a compact post-state for reusable-workflow callers
+          python3 - <<'PY'
+          import json, os
+          d=json.load(open('trade-migration-result.json'))
+          st=d.get('state',{})
+          line="applied=%s phase2a=%s metaapi_fills=%s ta_timezone=%s" % (
+              d.get('applied'), st.get('phase2a_applied'), st.get('metaapi_fills_exists'),
+              st.get('trading_accounts_timezone'))
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:
+              f.write("state="+line.replace('\n',' ')+"\n")
           PY
 
       - name: Keep migration result

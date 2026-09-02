@@ -30,6 +30,17 @@ on:
         required: true
         type: boolean
         default: false
+      trade_migration_mode:
+        description: "Trade v1.0/v1.1 schema migration: off | check | apply (apply is additive+idempotent, after backup)"
+        required: true
+        type: choice
+        default: off
+        options: [off, check, apply]
+      migration_confirm:
+        description: "Must be APPLY-TRADE-MIGRATION when trade_migration_mode=apply"
+        required: false
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -72,12 +83,35 @@ jobs:
     secrets: inherit
     uses: ./.github/workflows/velora-db-backup-staging.yml
 
+  # ── مهاجرت اسکیمای ترید (v1.0 Phase 2A + v1.1 Phase 5) روی STAGING — opt-in ──
+  # حالت check فقط گزارش می‌دهد؛ حالت apply افزودنی و idempotent است و چون بعد از
+  # db_backup اجرا می‌شود، فقط زمانی پیش می‌رود که بکاپ تازه و راستی‌آزمایی‌شده موفق
+  # بوده باشد. هر شکست این job، استقرار را skip می‌کند (fail-closed).
+  db_migration_check:
+    name: بررسی وضعیت مهاجرت اسکیمای ترید (read-only)
+    needs: db_backup
+    if: ${{ inputs.trade_migration_mode == 'check' || inputs.trade_migration_mode == 'apply' }}
+    secrets: inherit
+    uses: ./.github/workflows/trade-migration-staging.yml
+    with:
+      mode: check
+
+  db_migration_apply:
+    name: اعمال مهاجرت افزودنی اسکیمای ترید روی staging
+    needs: db_migration_check
+    if: ${{ inputs.trade_migration_mode == 'apply' }}
+    secrets: inherit
+    uses: ./.github/workflows/trade-migration-staging.yml
+    with:
+      mode: apply
+      confirm: ${{ inputs.migration_confirm }}
+
   deploy-staging:
     name: ساخت بسته و آپلود روی staging
-    needs: [guard, db_backup]
-    # when the backup gate is on, a failed db_backup must skip the deploy; when it
-    # is off, db_backup reports 'skipped' and the deploy proceeds as before.
-    if: ${{ github.repository == 'veloratrade/veloratrade' && needs.db_backup.result != 'failure' && needs.db_backup.result != 'cancelled' }}
+    needs: [guard, db_backup, db_migration_check, db_migration_apply]
+    # A failed backup or migration must skip the deploy; when those are off they
+    # report 'skipped' and the deploy proceeds as before. Fail closed.
+    if: ${{ github.repository == 'veloratrade/veloratrade' && needs.db_backup.result != 'failure' && needs.db_backup.result != 'cancelled' && needs.db_migration_check.result != 'failure' && needs.db_migration_check.result != 'cancelled' && needs.db_migration_apply.result != 'failure' && needs.db_migration_apply.result != 'cancelled' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
