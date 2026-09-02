@@ -424,6 +424,7 @@ jobs:
               "last_incremental_at" => "TEXT", "connection_checked_at" => "TEXT",
               "consecutive_errors" => "INTEGER DEFAULT 0", "last_error" => "TEXT",
               "starting_balance" => "REAL DEFAULT 0", "current_balance" => "REAL DEFAULT 0",
+              "timezone" => "TEXT", "timezone_source" => "TEXT DEFAULT \"unknown\"",
             ];
             foreach ($add as $col => $type) {
               if (!in_array($col, $have, true)) {
@@ -433,6 +434,26 @@ jobs:
             $tc = array_column($pdo->query("PRAGMA table_info(trades)")->fetchAll(PDO::FETCH_ASSOC), "name");
             if (!in_array("external_deal_id", $tc, true)) {
               $pdo->exec("ALTER TABLE trades ADD COLUMN external_deal_id TEXT");
+            }
+            # Phase 2A canonical trade-time columns. The v1.0 migration is
+            # MySQL-specific (information_schema/PREPARE), so this SQLite test
+            # harness applies the equivalent additive columns here; nullable /
+            # defaulted exactly like the migration, no backfill. Mirrors ci.yml.
+            $tc = array_column($pdo->query("PRAGMA table_info(trades)")->fetchAll(PDO::FETCH_ASSOC), "name");
+            $tadd = [
+              "occurred_open_at_utc" => "TEXT",
+              "occurred_close_at_utc" => "TEXT",
+              "time_status" => "TEXT NOT NULL DEFAULT \"unresolved\"",
+              "source_timezone" => "TEXT",
+              "source_timezone_source" => "TEXT NOT NULL DEFAULT \"unknown\"",
+              "source_calendar" => "TEXT NOT NULL DEFAULT \"unknown\"",
+              "raw_open_text" => "TEXT",
+              "raw_close_text" => "TEXT",
+            ];
+            foreach ($tadd as $col => $type) {
+              if (!in_array($col, $tc, true)) {
+                $pdo->exec("ALTER TABLE trades ADD COLUMN $col $type");
+              }
             }
             $hash = password_hash("CiTest1234!", PASSWORD_BCRYPT, ["cost" => 10]);
             $pdo->prepare(
