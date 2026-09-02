@@ -75,7 +75,7 @@ jobs:
     name: Guard — validate target / mode / approval / backup
     runs-on: ubuntu-latest
     outputs:
-      env: ${{ steps.v.outputs.env }}
+      target_env: ${{ steps.v.outputs.target_env }}
       mode: ${{ steps.v.outputs.mode }}
       readonly: ${{ steps.v.outputs.readonly }}
       docroot: ${{ steps.v.outputs.docroot }}
@@ -109,7 +109,7 @@ jobs:
             fi
           fi
           echo "env=$ENVIRONMENT"; echo "mode=$MODE"; echo "readonly=$READONLY"
-          echo "environment=$ENVIRONMENT" >> "$GITHUB_OUTPUT"
+          echo "target_env=$ENVIRONMENT" >> "$GITHUB_OUTPUT"
           echo "mode=$MODE" >> "$GITHUB_OUTPUT"
           echo "readonly=$READONLY" >> "$GITHUB_OUTPUT"
           echo "docroot=$DOCROOT" >> "$GITHUB_OUTPUT"
@@ -127,21 +127,21 @@ jobs:
   # For production mutating modes this job is grouped under the protected env too.
   # ------------------------------------------------------------------------- #
   probe:
-    name: ${{ needs.guard.outputs.env }} / ${{ needs.guard.outputs.mode }} — one-use read-only probe
+    name: ${{ needs.guard.outputs.target_env }} / ${{ needs.guard.outputs.mode }} — one-use read-only probe
     needs: guard
     runs-on: ubuntu-latest
     timeout-minutes: 15
     # PRODUCTION (any mode) routes through the protected GitHub environment so the
     # required-reviewer policy applies. Staging uses repo-level secrets.
-    environment: ${{ needs.guard.outputs.env == 'production' && 'production' || '' }}
+    environment: ${{ needs.guard.outputs.target_env == 'production' && 'production' || '' }}
     env:
-      FTP_SERVER:   ${{ needs.guard.outputs.env == 'production' && secrets.FTP_SERVER || secrets.STAGING_FTP_SERVER }}
-      FTP_USERNAME: ${{ needs.guard.outputs.env == 'production' && secrets.FTP_USERNAME || secrets.STAGING_FTP_USERNAME }}
-      FTP_PASSWORD: ${{ needs.guard.outputs.env == 'production' && secrets.FTP_PASSWORD || secrets.STAGING_FTP_PASSWORD }}
+      FTP_SERVER:   ${{ needs.guard.outputs.target_env == 'production' && secrets.FTP_SERVER || secrets.STAGING_FTP_SERVER }}
+      FTP_USERNAME: ${{ needs.guard.outputs.target_env == 'production' && secrets.FTP_USERNAME || secrets.STAGING_FTP_USERNAME }}
+      FTP_PASSWORD: ${{ needs.guard.outputs.target_env == 'production' && secrets.FTP_PASSWORD || secrets.STAGING_FTP_PASSWORD }}
       BASE_URL: ${{ needs.guard.outputs.base_url }}
       DOCROOT:  ${{ needs.guard.outputs.docroot }}
       VOP:       ${{ needs.guard.outputs.mode }}
-      VENV:  ${{ needs.guard.outputs.env }}
+      VENV:  ${{ needs.guard.outputs.target_env }}
       VRO: ${{ needs.guard.outputs.readonly }}
     steps:
       - uses: actions/checkout@v4
@@ -156,7 +156,7 @@ jobs:
       - name: Build, upload, execute, remove one-use probe
         env:
           VOP: ${{ needs.guard.outputs.mode }}
-          VENV: ${{ needs.guard.outputs.env }}
+          VENV: ${{ needs.guard.outputs.target_env }}
         run: |
           set -euo pipefail
           sudo apt-get update -qq
@@ -195,7 +195,7 @@ jobs:
       - name: Normalize / inspect / plan / verify (local engine, read-only)
         env:
           VOP: ${{ needs.guard.outputs.mode }}
-          VENV: ${{ needs.guard.outputs.env }}
+          VENV: ${{ needs.guard.outputs.target_env }}
         run: |
           set -euo pipefail
           SHA="${{ github.event.inputs.commit_sha }}"
@@ -210,7 +210,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: velora-mgmt-${{ needs.guard.outputs.env }}-${{ needs.guard.outputs.mode }}-${{ github.run_id }}
+          name: velora-mgmt-${{ needs.guard.outputs.target_env }}-${{ needs.guard.outputs.mode }}-${{ github.run_id }}
           path: |
             mgmt-result.json
             inspect.json
