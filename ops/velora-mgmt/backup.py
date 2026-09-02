@@ -96,6 +96,13 @@ class BackupRecord:
     retention_expires_at: Optional[str] = None
     operation_id: Optional[str] = None
     workflow_run_id: Optional[str] = None
+    # Private backup-repository binding (repo: veloratrade/velora-backups, private)
+    backup_repo: Optional[str] = None            # 'veloratrade/velora-backups'
+    release_tag: Optional[str] = None            # db-backup-<env>-<yyyymmddhhmmss>-<sha12>
+    release_asset: Optional[str] = None          # <env>/<backup_id>.sql.gz
+    metadata_path: Optional[str] = None          # backups/<env>/<backup_id>.json (in git)
+    creation_mechanism: Optional[str] = None     # 'github-release-upload' etc.
+    schema_migration_version: Optional[str] = None  # e.g. 'v1.0,v1.1' applied set
     note: Optional[str] = None
 
     def to_dict(self) -> dict:

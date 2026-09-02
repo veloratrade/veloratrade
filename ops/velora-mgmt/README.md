@@ -19,6 +19,12 @@ deployment and database management. One architecture, strict environment isolati
   RESTORE_VERIFIED / UNVERIFIED), mutation backup gate, approval↔backup-id binding, and
   retention lifecycle (multiple history; cleanup only after success; never delete newest
   verified). See `BACKUP_POLICY.md` and `ROLLBACK.md`.
+- `private_backup_repo.py` — **PRIVATE backup repository** (`veloratrade/velora-backups`)
+  integration: explicit env targeting, namespacing (release-tag/asset/metadata), secret-free
+  metadata builder, cross-environment contamination guards, private-repo migration gate, and
+  retention over release-asset DB dumps (dumps as GitHub **Releases** assets; metadata in
+  git). See `PRIVATE_BACKUP_REPO.md`. Dry-run: `private_backup_repo.py dry-run-metadata
+  --environment staging --commit <sha>` (no network, no backup).
 - `probe/mgmt_probe.php.tmpl` — one-use PHP probe template (fixed ops only; no arbitrary
   SQL/PHP; read-only metadata; self-deleting). Placeholders `__HASH__/__OP__/__ENV__`.
 - `tests/test_velora_mgmt.py` — read-only/dry-run unit tests (fixtures + synthetic).
