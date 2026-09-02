@@ -184,9 +184,14 @@ class DeployStagingWiringTests(unittest.TestCase):
         self.assertIn("db_backup", needs)
 
     def test_15_failed_backup_skips_deploy(self):
+        # deploy runs only on success/skipped (allowlist) — a failed/cancelled
+        # backup is therefore never matched, so the deploy is skipped (fail closed).
         cond = self.jobs["deploy-staging"].get("if", "")
         self.assertIn("db_backup.result", cond)
-        self.assertIn("failure", cond)
+        self.assertIn("'success'", cond)
+        self.assertIn("'skipped'", cond)
+        self.assertNotIn("'failure'", cond)
+        self.assertNotIn("'cancelled'", cond)
 
     def test_16_postdeploy_verify_after_deploy_when_enabled(self):
         self.assertIn("db_verify", self.jobs)
@@ -201,6 +206,58 @@ class DeployStagingWiringTests(unittest.TestCase):
         self.assertIn("with_postdeploy_db_verify", inp)
         self.assertEqual(inp["with_db_backup_gate"].get("default"), False)
         self.assertEqual(inp["with_postdeploy_db_verify"].get("default"), False)
+
+
+class StagingMigrationWiringTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.doc, cls.text = load("deploy-staging.yml")
+        cls.jobs = cls.doc["jobs"]
+        cls.mdoc, cls.mtext = load("trade-migration-staging.yml")
+        probe = os.path.join(MGMT, "probe", "trade_migration_probe.php.tmpl")
+        with open(probe) as f:
+            cls.probe = f.read()
+
+    def test_20_migration_reusable_jobs_present_and_after_backup(self):
+        self.assertIn("db_migration_check", self.jobs)
+        self.assertIn("db_migration_apply", self.jobs)
+        chk = self.jobs["db_migration_check"]
+        ap = self.jobs["db_migration_apply"]
+        self.assertIn("trade-migration-staging.yml", chk.get("uses", ""))
+        self.assertIn("trade-migration-staging.yml", ap.get("uses", ""))
+        self.assertIn("db_backup", str(chk.get("needs")))
+        self.assertIn("db_migration_check", str(ap.get("needs")))
+        # apply must pass the confirmation phrase
+        self.assertIn("APPLY-TRADE-MIGRATION", self.mtext)
+
+    def test_21_migration_is_staging_locked_and_additive(self):
+        self.assertIn("STAGING_FTP_SERVER", self.mtext)
+        self.assertIn("https://staging.veloratrade.ir", self.mtext)
+        self.assertIn("'staging'", self.probe)
+        # additive DDL lives in the one-use probe
+        for needle in ("occurred_open_at_utc", "metaapi_fills",
+                       "idx_trades_occurred_open", "timezone_source",
+                       "ADD COLUMN", "CREATE TABLE IF NOT EXISTS"):
+            self.assertIn(needle, self.probe)
+        # the forward migration probe never runs destructive data verbs
+        for bad in ("DROP TABLE", "TRUNCATE", "DELETE FROM", "DROP DATABASE"):
+            self.assertNotIn(bad, self.probe)
+        # probe is check/apply-gated and self-deleting/token-gated
+        self.assertIn("__MODE__", self.probe)
+        self.assertIn("unlink(__FILE__)", self.probe)
+        self.assertIn("hash_equals", self.probe)
+
+    def test_22_migration_check_is_read_only_and_apply_gated(self):
+        # apply requires the confirmation guard both in workflow and probe mode gate
+        self.assertRegex(self.mtext, r'APPLY-TRADE-MIGRATION')
+        # deploy proceeds only on success/skipped (an allowlist), never on failure
+        dep_cond = self.jobs["deploy-staging"].get("if", "")
+        for need in ("db_backup", "db_migration_check", "db_migration_apply"):
+            self.assertIn(f"needs.{need}.result", dep_cond)
+        self.assertIn("'skipped'", dep_cond)
+        self.assertIn("'success'", dep_cond)
+        self.assertNotIn("'failure'", dep_cond)
+        self.assertNotIn("'cancelled'", dep_cond)
 
 
 class ProductionPathUntouchedTests(unittest.TestCase):

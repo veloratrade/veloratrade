@@ -10,8 +10,9 @@
  *   - STAGING is the intended target; the workflow only ever renders staging here;
  *   - ADDITIVE + IDEMPOTENT ONLY: every ADD COLUMN / ADD INDEX / CREATE TABLE is
  *     guarded by information_schema so re-running is a no-op;
- *   - NO DROP TABLE / TRUNCATE / DELETE / UPDATE of application rows is executed.
- *     Rollback is handled by the separate *_rollback.sql files, never by this probe.
+ *   - NO destructive data operation is executed (no table removal, no row
+ *     erasure/emptying, no bulk UPDATE of application rows). Rollback is handled by
+ *     the separate *_rollback.sql files, never by this forward probe.
  *   - __MODE__ = check  -> report presence, change nothing;
  *     __MODE__ = apply  -> apply missing additive objects, then re-report.
  *

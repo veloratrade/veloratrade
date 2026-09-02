@@ -109,9 +109,10 @@ jobs:
   deploy-staging:
     name: ساخت بسته و آپلود روی staging
     needs: [guard, db_backup, db_migration_check, db_migration_apply]
-    # A failed backup or migration must skip the deploy; when those are off they
-    # report 'skipped' and the deploy proceeds as before. Fail closed.
-    if: ${{ github.repository == 'veloratrade/veloratrade' && needs.db_backup.result != 'failure' && needs.db_backup.result != 'cancelled' && needs.db_migration_check.result != 'failure' && needs.db_migration_check.result != 'cancelled' && needs.db_migration_apply.result != 'failure' && needs.db_migration_apply.result != 'cancelled' }}
+    # A FAILED or CANCELLED backup/migration blocks the deploy; jobs that are
+    # intentionally off (mode=off) report 'skipped' and MUST NOT block. Only
+    # success and skipped proceed. Fail closed on failure/cancelled.
+    if: ${{ github.repository == 'veloratrade/veloratrade' && (needs.db_backup.result == 'success' || needs.db_backup.result == 'skipped') && (needs.db_migration_check.result == 'success' || needs.db_migration_check.result == 'skipped') && (needs.db_migration_apply.result == 'success' || needs.db_migration_apply.result == 'skipped') }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
