@@ -126,4 +126,4 @@ jobs:
           name: velora-staging-db-verify-${{ github.run_id }}
           path: db-verify-staging-result.json
           if-no-files-found: ignore
-          retention-days: 30
+          retention-days: 14

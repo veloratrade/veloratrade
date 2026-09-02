@@ -177,4 +177,4 @@ jobs:
           name: velora-staging-db-backup-meta-${{ github.run_id }}
           path: bk-staging-probe-result.json
           if-no-files-found: ignore
-          retention-days: 30
+          retention-days: 14
