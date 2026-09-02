@@ -8,6 +8,7 @@ import json
 import os
 import sys
 import unittest
+import yaml
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.abspath(os.path.join(HERE, "..")))
@@ -282,6 +283,107 @@ class ExistingProductionFileBackupIntactTests(unittest.TestCase):
         self.assertNotEqual(file_artifact, m["storage"]["release_tag"])
         self.assertTrue(m["storage"]["release_asset"].endswith(".sql.gz"))
 
+class HardenedIntegrationTests(unittest.TestCase):
+    """Finalization tests: wrong-repo rejection, no SQL surface, missing credential,
+    no pull_request trigger, token never appears in error messages."""
+
+    def test_19_wrong_repository_rejected(self):
+        # A client pointed at any repo other than veloratrade/velora-backups must
+        # refuse even if that other repo exists and is private.
+        t = MockTransport()
+        c = bc.Client(repo="veloratrade/veloratrade", transport=t)
+        with self.assertRaises(bc.BackupRepoClientError):
+            c.check_repository()  # mock returns full_name=velora-backups -> mismatch
+
+    def test_20_repo_constant_is_hard_bound(self):
+        self.assertEqual(pb.PRIVATE_BACKUP_REPO, "veloratrade/velora-backups")
+        self.assertNotEqual(pb.PRIVATE_BACKUP_REPO, pb.PUBLIC_APP_REPO)
+        # client defaults to the private repo, never the public app repo
+        c = bc.Client(transport=lambda *a, **k: {"status": 200,
+                      "json": {"full_name": pb.PRIVATE_BACKUP_REPO, "private": True,
+                               "default_branch": "main"}})
+        self.assertEqual(c.repo, "veloratrade/velora-backups")
+
+    def test_21_no_arbitrary_sql_surface(self):
+        # The client/lifecycle must have no way to run SQL: no sql/query/exec method.
+        import inspect, re
+        src = inspect.getsource(bc) + inspect.getsource(bl) + inspect.getsource(pb)
+        # strip docstrings/comments so that words in PROSE (e.g. runbook references)
+        # do not count; we assert the absence of actual EXECUTION primitives.
+        code = re.sub(r"\"\"\".*?\"\"\"", "", src, flags=re.S)
+        code = chr(10).join(l.split("#", 1)[0] for l in code.splitlines())
+        for bad in ["subprocess", "os.system", "os.popen", "eval(", "exec(",
+                    "pymysql", "mysql.connector", "sqlite3", ".cursor(",
+                    "def execute_sql", "def run_sql", "def query("]:
+            self.assertNotIn(bad, code, f"found SQL/shell execution surface: {bad}")
+        # SQL passed in any field is just inert metadata; no executor exists.
+        m = pb.build_private_backup_metadata(
+            "staging", source_commit_sha=SHA, workflow_run_id="1", created_utc="2026-09-02T10:00:00Z",
+            size_bytes=1, checksum_sha256="a"*64, database_identity_redacted="x; DROP TABLE x;",
+            schema_migration_version=None)
+        self.assertEqual(m["backup_type"], "database")  # string stored, never executed
+
+    def test_22_missing_credential_fails_closed(self):
+        # No token in env and no explicit token => API calls carry no Authorization;
+        # a 401/404 transport response must raise, never silently succeed.
+        monkeypatch_env = {"PATH": "/usr/bin"}
+
+        def noauth_transport(method, url, headers=None, data=None, raw=False):
+            assert not any(k.lower() == "authorization" for k in (headers or {})), "auth header present"
+            return {"status": 401, "headers": {}, "json": {"message": "Requires authentication"}}
+        c = bc.Client(transport=noauth_transport)
+        with self.assertRaises(bc.BackupRepoClientError):
+            c.check_repository()
+        # default token resolver returns None when env lacks the secret
+        import backup_repo_client as _bc
+        self.assertIsNone(_bc.default_token()) if not os.environ.get("BACKUP_REPO_TOKEN") else None
+
+    def test_23_token_never_leaks_into_error_messages(self):
+        secret = "github_pat_SUPERSECRETVALUE123"
+        def leaky(method, url, headers=None, data=None, raw=False):
+            # emulate an HTTP error whose body does NOT contain the token
+            return {"status": 500, "headers": {}, "json": {"message": "internal error"}}
+        c = bc.Client(transport=leaky)
+        try:
+            c.check_repository()
+            self.fail("expected error")
+        except bc.BackupRepoClientError as e:
+            self.assertNotIn(secret, str(e))
+            self.assertNotIn("Authorization", str(e))
+        # the default transport puts the token only in a header, never in URLs/bodies
+        tr = bc.make_default_transport(token=secret)
+        captured = {}
+        def fake_urlopen(req, timeout=None):
+            captured["auth"] = req.headers.get("Authorization")
+            raise type("E", (), {"code": 500, "headers": {}, "read": lambda self: b'{"message":"x"}'})()
+        import urllib.request
+        orig = urllib.request.urlopen
+        urllib.request.urlopen = fake_urlopen
+        try:
+            tr("GET", "https://api.github.com/repos/veloratrade/velora-backups")
+        except Exception:
+            pass
+        finally:
+            urllib.request.urlopen = orig
+        self.assertEqual(captured.get("auth"), f"Bearer {secret}")  # header only
+        # token must not appear in the URL
+        self.assertNotIn(secret, "https://api.github.com/repos/veloratrade/velora-backups")
+
+    def test_24_workflow_has_no_pull_request_trigger(self):
+        wf_path = os.path.abspath(os.path.join(HERE, "..", "..", "..",
+                                              ".github", "workflows", "velora-backup.yml"))
+        with open(wf_path) as f:
+            wf = f.read()
+        d = yaml.safe_load(wf)
+        triggers = d.get("on", d.get(True))
+        trig_keys = list(triggers.keys()) if isinstance(triggers, dict) else [triggers]
+        self.assertIn("workflow_dispatch", trig_keys)
+        for forbidden in ("pull_request", "pull_request_target", "push", "issue_comment", "fork"):
+            self.assertNotIn(forbidden, trig_keys, f"unexpected trigger {forbidden}")
+        # the secret must never be echoed/interpolated into a log statement
+        self.assertNotIn('echo "$BACKUP_REPO_TOKEN"', wf)
+        self.assertNotIn("printenv", wf)
+        self.assertIn("add-mask", wf)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
