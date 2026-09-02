@@ -4,7 +4,8 @@
  *
  * PURPOSE-BUILT for the backup operation ONLY. It is NOT a remote shell:
  *   - token-gated with hash_equals() (timing-safe), random filename, single execution;
- *   - fixed operation (backup) and fixed environment (__ENV__); production is refused;
+ *   - fixed operation (backup) and fixed explicit environment (__ENV__ = staging|
+ *     production); any other environment/operation is refused;
  *   - NO arbitrary PHP, NO arbitrary SQL input, NO arbitrary shell input. All SQL is
  *     FIXED metadata (information_schema / SHOW CREATE) plus row READS for the dump;
  *   - performs ONLY a read-only, transaction-consistent logical dump — never INSERT/
@@ -53,11 +54,15 @@ function bk_fail(array $out, int $code, string $msg): void {
 if ($OP !== 'backup') {
     bk_fail($out, 400, 'this probe only performs op=backup');
 }
-// This first real test is STAGING ONLY. Refuse production outright (defense in depth;
-// the workflow also never targets production here).
-if ($ENV !== 'staging') {
-    bk_fail($out, 403, 'production backup is not permitted by this probe');
+// Explicit environment ONLY. Staging and production have separate namespaces, separate
+// private roots, separate credentials (chosen by the calling workflow), and separate
+// deterministic IDs; production is additionally gated by the protected GitHub environment.
+if ($ENV !== 'staging' && $ENV !== 'production') {
+    bk_fail($out, 400, "unsupported environment for backup: {$ENV}");
 }
+// Per-environment deterministic identity + private root (never inferred, never mixed).
+$ftpBaseDir = ($ENV === 'production') ? 'velora_private' : 'velora_private_staging';
+$dbIdentity = ($ENV === 'production') ? '***_velora_production' : '***_velora_staging';
 
 /** Quote a MySQL identifier (schema/table/column) safely. */
 function bk_ident(string $name): string {
@@ -91,8 +96,8 @@ try {
     // ---- Deterministic backup identity (environment is part of the id) -------
     $tsUtc    = gmdate('YmdHis');                       // UTC timestamp
     $rand12   = bin2hex(random_bytes(6));              // 12-hex unique suffix
-    $backupId = "db-backup-staging-{$tsUtc}-{$rand12}";
-    $assetName = "staging/{$backupId}.sql.gz";
+    $backupId = "db-backup-{$ENV}-{$tsUtc}-{$rand12}";
+    $assetName = "{$ENV}/{$backupId}.sql.gz";
 
     // ---- Destination: OUTSIDE the web root (VELORA_PRIVATE_ROOT/backups) -----
     $absDir = Config::privatePath('backups');          // validated outside docroot
@@ -100,8 +105,8 @@ try {
     if (!is_dir($absDir)) { bk_fail($out, 500, 'cannot create private backup dir'); }
     @chmod($absDir, 0700);
     $absFile = $absDir . '/' . $backupId . '.sql.gz';
-    // FTP-relative retrieval path (sibling of public_html): velora_private_staging/...
-    $ftpRel  = 'velora_private_staging/backups/' . $backupId . '.sql.gz';
+    // FTP-relative retrieval path (sibling of public_html): <env private root>/backups/...
+    $ftpRel  = $ftpBaseDir . '/backups/' . $backupId . '.sql.gz';
 
     $gz = gzopen($absFile, 'wb9');
     if ($gz === false) { bk_fail($out, 500, 'cannot open gz for write in private root'); }
@@ -109,7 +114,7 @@ try {
 
     $w("-- Velora database logical backup\n");
     $w("-- backup_id: {$backupId}\n");
-    $w("-- environment: staging\n");
+    $w("-- environment: {$ENV}\n");
     $w("-- created_utc: " . gmdate('c') . "\n");
     $w("-- engine: MySQL {$version}\n");
     $w("-- schema: " . str_repeat('*', 6) . " (name redacted)\n");
@@ -200,13 +205,13 @@ try {
         'ok' => true,
         'probe' => 'velora-db-backup',
         'op' => 'backup',
-        'env' => 'staging',
+        'env' => $ENV,
         'backup_id' => $backupId,
         'release_tag' => $backupId,
         'release_asset' => $assetName,
         'engine' => 'mysql',
         'engine_version' => $version,
-        'database_identity' => '***_velora_staging',
+        'database_identity' => $dbIdentity,
         'table_count' => $tableCount,
         'view_count' => $viewCount,
         'approx_db_size_bytes' => (int)($sizeRow['bytes'] ?? 0),

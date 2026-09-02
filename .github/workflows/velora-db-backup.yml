@@ -1,0 +1,190 @@
+name: Velora DB Backup (production) — reusable, enforced
+
+# ============================================================================
+# PRODUCTION DATABASE BACKUP — a reusable workflow (workflow_call) that the real
+# Production deploy (deploy.yml) MUST depend on. It can also be run manually.
+#
+# Hard rules enforced here:
+#   * Production ONLY (environment choice locked; production probe path).
+#   * Requires BOTH the production FTP secrets (existing) AND BACKUP_REPO_TOKEN
+#     (a credential able to write the private repo veloratrade/velora-backups).
+#     If BACKUP_REPO_TOKEN is absent this job FAILS CLOSED — there is no fallback
+#     to GITHUB_TOKEN and no skip. This is the exact point the credential is needed.
+#   * Produces a FRESH, verified, byte-checked Production DB backup as a GitHub
+#     Release Asset in veloratrade/velora-backups; metadata is committed (small
+#     secret-free text); the .sql.gz is NEVER committed to Git.
+#   * Outputs backup_id/release_tag/sha256 so the caller can BIND this exact backup
+#     to the deployment/approval. A non-200/verification failure fails the job, which
+#     blocks any deploy that `needs:` it.
+#
+# This workflow does NOT deploy, migrate, or mutate the database: the dump is a
+# read-only, transaction-consistent logical backup (see db_backup_probe.php.tmpl).
+# ============================================================================
+
+on:
+  workflow_call:
+    outputs:
+      backup_id:
+        description: "Deterministic verified production backup id bound to this run"
+        value: ${{ jobs.backup.outputs.backup_id }}
+      release_tag:
+        value: ${{ jobs.backup.outputs.release_tag }}
+      sha256:
+        value: ${{ jobs.backup.outputs.sha256 }}
+      source_commit_sha:
+        value: ${{ jobs.backup.outputs.source_commit_sha }}
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "MUST be production"
+        required: true
+        type: choice
+        options: [production]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: velora-db-backup-production
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: production — fresh verified DB backup → private repo
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: production                 # protected environment (required reviewers)
+    outputs:
+      backup_id: ${{ steps.run.outputs.backup_id }}
+      release_tag: ${{ steps.run.outputs.release_tag }}
+      sha256: ${{ steps.run.outputs.sha256 }}
+      source_commit_sha: ${{ steps.run.outputs.source_commit_sha }}
+    env:
+      FTP_SERVER:   ${{ secrets.FTP_SERVER }}
+      FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+      FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+      BACKUP_REPO_TOKEN: ${{ secrets.BACKUP_REPO_TOKEN }}
+      DOCROOT: "public_html"
+      BASE_URL: "https://veloratrade.ir"
+      VENV: "production"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Guard — production FTP + BACKUP_REPO_TOKEN present (fail closed)
+        run: |
+          set -euo pipefail
+          [ -n "${FTP_SERVER:-}" ] && [ -n "${FTP_USERNAME:-}" ] && [ -n "${FTP_PASSWORD:-}" ] \
+            || { echo "::error::missing production FTP_* secrets"; exit 1; }
+          # The production DB backup MUST be uploaded to the private repo. There is
+          # intentionally NO fallback to GITHUB_TOKEN (it cannot cross repositories).
+          if [ -z "${BACKUP_REPO_TOKEN:-}" ]; then
+            echo "::error::BACKUP_REPO_TOKEN is required but not currently available to the workflow."
+            echo "::error::Set a credential scoped to veloratrade/velora-backups (Contents:RW + Metadata:R) as secret BACKUP_REPO_TOKEN. Production deploy is blocked until then."
+            exit 1
+          fi
+          echo "::add-mask::${BACKUP_REPO_TOKEN}"
+          echo "production backup guard OK"
+
+      - name: Install lftp
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -q lftp >/dev/null
+
+      - name: Fresh production dump via one-use probe; retrieve; verify; upload; bind
+        id: run
+        run: |
+          set -euo pipefail
+          NAME="_velora_bk_$(openssl rand -hex 8).php"
+          TOKEN="$(openssl rand -hex 32)"
+          HASH="$(printf '%s' "$TOKEN" | sha256sum | awk '{print $1}')"
+          echo "::add-mask::$NAME"; echo "::add-mask::$TOKEN"; echo "::add-mask::$HASH"
+          export NAME HASH
+          python3 - <<'PY'
+          import os, pathlib
+          tpl = pathlib.Path('ops/velora-mgmt/probe/db_backup_probe.php.tmpl').read_text()
+          tpl = (tpl.replace('__HASH__', os.environ['HASH'])
+                     .replace('__OP__', 'backup')
+                     .replace('__ENV__', 'production'))
+          pathlib.Path('/tmp/db_backup_probe.php').write_text(tpl)
+          PY
+
+          cleanup_remote() {
+            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+              -e "set ftp:ssl-allow no; set net:max-retries 1; set net:timeout 20; glob -a rm -f $DOCROOT/public/_velora_bk_*.php; bye" >/dev/null 2>&1 || true
+            shred -u /tmp/db_backup_probe.php /tmp/bk.json 2>/dev/null || rm -f /tmp/db_backup_probe.php /tmp/bk.json
+          }
+          trap cleanup_remote EXIT
+
+          # 1) ensure production private backups dir (outside docroot); upload probe
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+            -e "set ftp:ssl-allow no; set net:max-retries 2; set net:timeout 30; mkdir -p velora_private/backups; glob -a rm -f $DOCROOT/public/_velora_bk_*.php; put /tmp/db_backup_probe.php -o $DOCROOT/public/$NAME; bye"
+
+          # 2) invoke once over HTTPS (one-time bearer token)
+          code=$(curl -sS -o /tmp/bk.json -w '%{http_code}' --max-time 240 \
+                  -H "X-Velora-Mgmt: $TOKEN" "$BASE_URL/public/$NAME")
+          echo "probe HTTP: $code"
+          [[ "$code" == "200" ]] || { echo "::error::production backup probe HTTP $code"; head -c 1500 /tmp/bk.json; exit 1; }
+          cp /tmp/bk.json bk-prod-probe-result.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('bk-prod-probe-result.json'))
+          assert d.get('ok') is True, d
+          assert d.get('env') == 'production', 'environment must be production'
+          assert d.get('gzip_valid') is True, 'server-side gzip integrity failed'
+          assert d.get('verification_status') == 'INTEGRITY_VERIFIED', d.get('verification_status')
+          assert d['backup_id'].startswith('db-backup-production-'), d['backup_id']
+          print('backup_id :', d['backup_id'])
+          print('engine    :', d['engine'], d['engine_version'])
+          print('tables    :', d['table_count'])
+          print('dump bytes:', d['dump_size_bytes'])
+          print('sha256    :', d['sha256'])
+          PY
+
+          # 3) retrieve the dump from the production private root (never the docroot)
+          FTP_REL=$(python3 -c "import json;print(json.load(open('bk-prod-probe-result.json'))['private_ftp_path'])")
+          echo "retrieving $FTP_REL"
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+            -e "set ftp:ssl-allow no; set net:max-retries 3; set net:timeout 60; get $FTP_REL -o dump.sql.gz; bye"
+          [ -s dump.sql.gz ] || { echo "::error::dump missing/empty"; exit 1; }
+
+          # 4) local integrity verification (gzip + sha256 + size)
+          gzip -t dump.sql.gz || { echo "::error::gzip integrity failed"; exit 1; }
+          LOCAL_SHA=$(sha256sum dump.sql.gz | awk '{print $1}')
+          REMOTE_SHA=$(python3 -c "import json;print(json.load(open('bk-prod-probe-result.json'))['sha256'])")
+          LOCAL_SIZE=$(stat -c%s dump.sql.gz)
+          REMOTE_SIZE=$(python3 -c "import json;print(json.load(open('bk-prod-probe-result.json'))['dump_size_bytes'])")
+          [ "$LOCAL_SHA" == "$REMOTE_SHA" ] || { echo "::error::SHA-256 mismatch"; exit 1; }
+          [ "$LOCAL_SIZE" == "$REMOTE_SIZE" ] || { echo "::error::size mismatch"; exit 1; }
+          echo "local verify: gzip OK, sha256 match, size match (INTEGRITY_VERIFIED)"
+
+          # 5) store in the PRIVATE repo as a Release Asset + secret-free metadata,
+          #    then byte-verify the uploaded asset. All via BACKUP_REPO_TOKEN.
+          python3 ops/velora-mgmt/velora_prod_backup_upload.py bk-prod-probe-result.json \
+              "$GITHUB_SHA" "$GITHUB_RUN_ID" dump.sql.gz
+
+          # 6) emit outputs bound to THIS run/deployment commit
+          python3 - <<'PY'
+          import json, os
+          d=json.load(open('bk-prod-probe-result.json'))
+          out=os.environ['GITHUB_OUTPUT']
+          with open(out,'a') as f:
+              f.write(f"backup_id={d['backup_id']}\n")
+              f.write(f"release_tag={d['release_tag']}\n")
+              f.write(f"sha256={d['sha256']}\n")
+              f.write(f"source_commit_sha={os.environ['GITHUB_SHA']}\n")
+          PY
+
+          # 7) remove the temporary server-side dump AFTER verified upload (keep probe self-deleted)
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+            -e "set ftp:ssl-allow no; set net:max-retries 2; set net:timeout 30; rm -f \"$FTP_REL\"; bye"
+          echo "remote temp dump removed: $FTP_REL"
+
+      - name: Audit artifact (metadata only; never the dump)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: velora-prod-db-backup-meta-${{ github.run_id }}
+          path: bk-prod-probe-result.json
+          if-no-files-found: ignore
+          retention-days: 30

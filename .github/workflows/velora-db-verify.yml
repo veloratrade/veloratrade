@@ -1,0 +1,112 @@
+name: Velora Post-Deploy DB Verification (production) — reusable
+
+# Read-only, one-use probe verification of the Production DATABASE after a deploy.
+# It connects through the application's own Database::connection() via a token-gated,
+# random-named, self-deleting PHP probe and runs a FIXED set of checks (connectivity,
+# critical tables, representative queries, schema read). It NEVER mutates the DB and
+# accepts no SQL/shell input. Any failure (non-200 / ok=false) fails this job; callers
+# must `needs:` it and treat failure as a FAILED deployment.
+on:
+  workflow_call:
+    inputs:
+      environment_name:
+        type: string
+        required: true
+      base_url:
+        type: string
+        required: true
+    outputs:
+      verification:
+        value: ${{ jobs.verify.outputs.verification }}
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: "${{ inputs.environment_name }} — post-deploy DATABASE verification (read-only)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    outputs:
+      verification: ${{ steps.run.outputs.verification }}
+    env:
+      FTP_SERVER:   ${{ secrets.FTP_SERVER }}
+      FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+      FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+      BASE_URL: ${{ inputs.base_url }}
+      VENV: ${{ inputs.environment_name }}
+      DOCROOT: "public_html"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install lftp
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -q lftp >/dev/null
+      - name: Run one-use read-only DB verify probe
+        id: run
+        run: |
+          set -euo pipefail
+          [ "$VENV" == "production" ] || { echo "::error::this verifier is production-scoped"; exit 1; }
+          NAME="_velora_verify_$(openssl rand -hex 8).php"
+          TOKEN="$(openssl rand -hex 32)"
+          HASH="$(printf '%s' "$TOKEN" | sha256sum | awk '{print $1}')"
+          echo "::add-mask::$NAME"; echo "::add-mask::$TOKEN"; echo "::add-mask::$HASH"
+          export NAME HASH
+          python3 - <<'PY'
+          import os, pathlib
+          tpl = pathlib.Path('ops/velora-mgmt/probe/db_verify_probe.php.tmpl').read_text()
+          tpl = (tpl.replace('__HASH__', os.environ['HASH'])
+                     .replace('__OP__', 'verify')
+                     .replace('__ENV__', 'production'))
+          pathlib.Path('/tmp/db_verify_probe.php').write_text(tpl)
+          PY
+          cleanup() {
+            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+              -e "set ftp:ssl-allow no; set net:max-retries 1; set net:timeout 20; glob -a rm -f $DOCROOT/public/_velora_verify_*.php; bye" >/dev/null 2>&1 || true
+            shred -u /tmp/db_verify_probe.php /tmp/verify.json 2>/dev/null || rm -f /tmp/db_verify_probe.php /tmp/verify.json
+          }
+          trap cleanup EXIT
+          uploaded=0
+          for attempt in $(seq 1 10); do
+            if lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+              -e "set ftp:ssl-allow no; set net:max-retries 2; set net:timeout 30; glob -a rm -f $DOCROOT/public/_velora_verify_*.php; put /tmp/db_verify_probe.php -o $DOCROOT/public/$NAME; bye"; then
+              uploaded=1; break
+            fi
+            sleep 5
+          done
+          [ "$uploaded" == "1" ] || { echo "::error::verify probe upload failed"; exit 1; }
+          code=$(curl -sS -o /tmp/verify.json -w '%{http_code}' --max-time 120 \
+                  -H "X-Velora-Mgmt: $TOKEN" "$BASE_URL/public/$NAME")
+          echo "verify probe HTTP: $code"
+          [ "$code" == "200" ] || { echo "::error::post-deploy DB verify HTTP $code"; head -c 1500 /tmp/verify.json; exit 1; }
+          cp /tmp/verify.json db-verify-result.json
+          RESULT=$(python3 - <<'PY'
+          import json
+          d=json.load(open('db-verify-result.json'))
+          if not d.get('ok'):
+              print('POSTDEPLOY_DB_FAILED'); raise SystemExit(0)
+          print(d.get('verification','POSTDEPLOY_DB_FAILED'))
+          PY
+          )
+          echo "verification=$RESULT" >> "$GITHUB_OUTPUT"
+          python3 - <<'PY'
+          import json,sys
+          d=json.load(open('db-verify-result.json'))
+          print(json.dumps(d.get('checks',{}), indent=2))
+          if not d.get('ok'):
+              sys.exit("::error::post-deploy DATABASE verification FAILED")
+          PY
+          if [ "$RESULT" != "POSTDEPLOY_DB_OK" ]; then
+            echo "::error::post-deploy DATABASE verification did not return POSTDEPLOY_DB_OK"; exit 1
+          fi
+          echo "✅ post-deploy DATABASE verification OK"
+      - name: Keep verification result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: velora-prod-db-verify-${{ github.run_id }}
+          path: db-verify-result.json
+          if-no-files-found: ignore
+          retention-days: 30

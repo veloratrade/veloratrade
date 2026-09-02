@@ -2,6 +2,19 @@ name: Setup Production Resend
 
 # Production-only env overlay. Manual, exact confirmation, server-side backup,
 # hardcoded paths, no Secret output. Run only after Resend-capable code is live.
+#
+# BACKUP-LAW EXEMPTION (documented, justified): this workflow writes ONLY the
+# private env overlay `velora_private/config/velora.env` (email/Resend config). It
+# does NOT deploy application code, does NOT touch public_html, does NOT run SQL,
+# does NOT migrate, and does NOT modify the database or schema. It therefore cannot
+# affect the database or require a database rollback. It still:
+#   * is behind the protected `production` environment + exact CONFIRM phrase;
+#   * makes its own server-side backup of the prior env file
+#     (velora_private/backups/velora.env.pre-resend-*) and verifies it is non-empty;
+#   * never prints secret values.
+# Any future change that makes this workflow write application code or run DB
+# operations MUST be routed through the enforced backup-gated deploy path
+# (deploy.yml -> prod_db_backup -> prod_backup_gate -> deploy -> prod_db_verify).
 
 on:
   workflow_dispatch:

@@ -32,12 +32,21 @@ class ProbeSecurityTests(unittest.TestCase):
         self.assertIn("HTTP_X_VELORA_MGMT", self.probe)
         self.assertIn("@unlink(__FILE__)", self.probe)
 
-    def test_03_production_refused(self):
-        # refusal is expressed as "only staging allowed"; any other env (incl.
-        # production) is rejected with a 403.
-        self.assertTrue(re.search(r"\$ENV\s*!==\s*'staging'", self.probe),
-                        "probe must refuse any env other than staging")
-        self.assertIn("production backup is not permitted", self.probe)
+    def test_03_environment_is_explicit_and_unknown_refused(self):
+        # The template is now environment-driven (staging|production); any OTHER
+        # environment is refused. Staging renders its own namespace; production is a
+        # separate namespace and is gated by the protected GitHub environment.
+        self.assertIn("'staging'", self.probe)
+        self.assertIn("'production'", self.probe)
+        self.assertIn("unsupported environment for backup", self.probe)
+        # the staging-rendered probe must never produce a production id
+        self.assertIn("db-backup-{$ENV}", self.probe)
+        self.assertIn("$ftpBaseDir = ($ENV === 'production') ? 'velora_private'", self.probe)
+        # staging rendering keeps the staging env value and the env-driven id
+        self.assertIn("'staging'", self.rendered)
+        self.assertIn('$ENV = \'staging\'', self.rendered)
+        self.assertIn('"db-backup-{$ENV}-', self.rendered)  # PHP resolves env at runtime
+        self.assertIn('velora_private_staging', self.rendered)
 
     def test_04_no_arbitrary_sql_or_shell_input(self):
         # No use of request/input to build SQL; no shell execution functions.
@@ -73,9 +82,21 @@ class ProbeSecurityTests(unittest.TestCase):
         self.assertIn("name redacted", self.probe)
 
     def test_08_deterministic_staging_identity(self):
-        self.assertIn("db-backup-staging-", self.probe)
-        self.assertIn("staging/{$backupId}.sql.gz", self.probe)
+        # env-driven id/asset; the STAGING-rendered probe yields staging namespace
+        self.assertIn('"db-backup-{$ENV}-{$tsUtc}-{$rand12}"', self.probe)
+        self.assertIn('"{$ENV}/{$backupId}.sql.gz"', self.probe)
         self.assertIn("bin2hex(random_bytes(6))", self.probe)
+        # render both environments and confirm namespaces cannot collide
+        stag = self.probe.replace("__HASH__", "h").replace("__OP__", "backup").replace("__ENV__", "staging")
+        prod = self.probe.replace("__HASH__", "h").replace("__OP__", "backup").replace("__ENV__", "production")
+        ternary = "($ENV === 'production') ? 'velora_private' : 'velora_private_staging'"
+        self.assertIn(ternary, self.probe)
+        self.assertIn("$ftpRel  = $ftpBaseDir . '/backups/'", self.probe)
+        # production render resolves to a non-staging private root and prod identity
+        self.assertIn("'***_velora_production'", prod)
+        # staging identity distinct from production
+        self.assertIn("'***_velora_staging'", stag)
+        self.assertNotEqual(stag.count('velora_private_staging'), 0)
 
     def test_09_reports_integrity_not_restore(self):
         self.assertIn("INTEGRITY_VERIFIED", self.probe)

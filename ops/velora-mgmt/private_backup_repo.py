@@ -84,6 +84,9 @@ SECRET_MARKERS = ["password", "passwd", "secret", "token", "api_key", "apikey",
 
 _HEX40 = re.compile(r"^[0-9a-f]{40}$")
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
+# public aliases for the deploy gate / upload scripts
+HEX40 = _HEX40
+SHA256_RE = _SHA256
 
 
 class BackupRepoError(Exception):
