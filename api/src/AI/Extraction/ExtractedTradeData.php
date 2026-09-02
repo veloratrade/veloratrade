@@ -25,6 +25,13 @@ final class ExtractedTradeData
         public readonly string $provider = 'unknown',
         public readonly ?string $rawText = null,
         public readonly array $rawResponse = [],
+        // --- Phase 2D: SOURCE datetime evidence (verbatim; never normalized here) ---
+        public readonly ?string $rawOpenText = null,
+        public readonly ?string $rawCloseText = null,
+        public readonly ?string $sourceCalendar = null,   // gregorian|jalali|unknown
+        public readonly ?string $dateFormat = null,       // DD/MM/YYYY|MM/DD/YYYY|YYYY/MM/DD|YYYY-MM-DD|unknown
+        public readonly ?string $timezoneText = null,     // verbatim visible tz/offset label
+        public readonly ?int $timezoneOffsetHintMinutes = null, // only if an explicit offset is shown
     ) {
     }
 
@@ -47,6 +54,13 @@ final class ExtractedTradeData
             'confidence' => $this->confidence,
             'provider' => $this->provider,
             'rawText' => $this->rawText,
+            // Phase 2D datetime evidence (null unless the model/contract provides it).
+            'rawOpenText' => $this->rawOpenText,
+            'rawCloseText' => $this->rawCloseText,
+            'sourceCalendar' => $this->sourceCalendar,
+            'dateFormat' => $this->dateFormat,
+            'timezoneText' => $this->timezoneText,
+            'timezoneOffsetHintMinutes' => $this->timezoneOffsetHintMinutes,
         ];
     }
 
@@ -78,6 +92,13 @@ final class ExtractedTradeData
             provider: $provider,
             rawText: $rawText,
             rawResponse: $rawResponse,
+            // Phase 2D: verbatim/evidence passthrough — NO conversion here.
+            rawOpenText: self::evidenceText($data['rawOpenText'] ?? $data['raw_open_text'] ?? null),
+            rawCloseText: self::evidenceText($data['rawCloseText'] ?? $data['raw_close_text'] ?? null),
+            sourceCalendar: self::calendarEvidence($data['sourceCalendar'] ?? $data['source_calendar'] ?? null),
+            dateFormat: self::formatEvidence($data['dateFormat'] ?? $data['date_format'] ?? null),
+            timezoneText: self::evidenceText($data['timezoneText'] ?? $data['timezone_text'] ?? null),
+            timezoneOffsetHintMinutes: self::offsetEvidence($data['timezoneOffsetHintMinutes'] ?? $data['timezone_offset_hint_minutes'] ?? null),
         );
     }
 
@@ -87,5 +108,94 @@ final class ExtractedTradeData
     public function toLegacyArray(): array
     {
         return $this->toArray();
+    }
+
+    // --- Phase 2D evidence helpers: sanitize ONLY, never normalize/convert ---
+
+    /**
+     * Verbatim visible text. Kept exactly as observed (digits/separators
+     * preserved); only length-capped and control characters trimmed. Returns
+     * null for empty/non-string so missing evidence is explicit.
+     */
+    private static function evidenceText(mixed $value): ?string
+    {
+        if (!is_string($value)) {
+            return null;
+        }
+        $value = trim($value);
+        if ($value === '') {
+            return null;
+        }
+        if (preg_match('/[\x00-\x1F\x7F]/', $value) === 1) {
+            $value = preg_replace('/[\x00-\x1F\x7F]/', '', $value) ?? '';
+            $value = trim($value);
+        }
+        if ($value === '') {
+            return null;
+        }
+        // Cap length without depending on mbstring (hosts may lack it).
+        if (strlen($value) <= 256) {
+            return $value;
+        }
+        if (function_exists('mb_substr')) {
+            return mb_substr($value, 0, 64, 'UTF-8');
+        }
+        // Byte-safe prefix: never cut a multibyte sequence in half.
+        $prefix = substr($value, 0, 256);
+        return preg_replace('/[\x80-\xBF]+$/', '', $prefix) ?? $prefix;
+    }
+
+    /**
+     * Restrict to the known calendar vocabulary; anything else => unknown so a
+     * model can never smuggle a guess (e.g. an IANA timezone) into this field.
+     */
+    private static function calendarEvidence(mixed $value): ?string
+    {
+        if (!is_string($value)) {
+            return null;
+        }
+        return match (strtolower(trim($value))) {
+            'gregorian' => 'gregorian',
+            'jalali', 'persian', 'shamsi' => 'jalali',
+            'unknown', '', 'null' => 'unknown',
+            default => 'unknown',
+        };
+    }
+
+    /**
+     * Restrict to the known date-format vocabulary; ambiguous/unknown => unknown.
+     */
+    private static function formatEvidence(mixed $value): ?string
+    {
+        if (!is_string($value)) {
+            return null;
+        }
+        $allowed = ['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY/MM/DD', 'YYYY-MM-DD', 'unknown'];
+        $v = strtoupper(trim($value));
+        // Tolerate separators for the year-first forms.
+        $v = str_replace(['.', '-'], ['/', '-'], $v);
+        return in_array($v, $allowed, true) ? $v : 'unknown';
+    }
+
+    /**
+     * Integer minutes only when an explicit numeric offset was observed.
+     * Bounded to a sane range; non-numeric/empty => null. Never derived here.
+     */
+    private static function offsetEvidence(mixed $value): ?int
+    {
+        if ($value === null || $value === '' || is_bool($value)) {
+            return null;
+        }
+        if (is_int($value)) {
+            $minutes = $value;
+        } elseif (is_string($value) && preg_match('/\A[+-]?\d{1,4}\z/', trim($value))) {
+            $minutes = (int) $value;
+        } elseif (is_numeric($value)) {
+            $minutes = (int) $value;
+        } else {
+            return null;
+        }
+        // Valid UTC offsets span -12:00..+14:00 => -720..+840 minutes.
+        return ($minutes >= -720 && $minutes <= 840) ? $minutes : null;
     }
 }

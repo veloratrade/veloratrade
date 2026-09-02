@@ -39,7 +39,7 @@
 })();
 </script>
 <meta charset="utf-8"/><script src="/public/assets/velora-locale-registry.js?v=2026.08.30.2"></script>
-<script src="/public/assets/velora-latin-digits.js?v=2026.08.30.8"></script><script src="/public/assets/velora-locale-bootstrap.js?v=2026.08.30.2"></script><link href="/public/assets/velora-localization.css?v=2026.08.30.2" rel="stylesheet"/><script src="/public/assets/velora-localization.js?v=2026.08.30.2"></script><script src="/public/assets/velora-data.js?v=2026.08.30.2"></script><script defer="" src="/public/assets/velora-dynamic-content.js?v=2026.08.30.2"></script>
+<script src="/public/assets/velora-latin-digits.js?v=2026.08.30.8"></script><script src="/public/assets/velora-locale-bootstrap.js?v=2026.08.30.2"></script><link href="/public/assets/velora-localization.css?v=2026.08.30.2" rel="stylesheet"/><script src="/public/assets/velora-localization.js?v=2026.08.30.2"></script><script src="/public/assets/velora-data.js?v=2026.08.30.2"></script><script src="/public/assets/velora-time.js?v=2026.09.02.1"></script><script defer="" src="/public/assets/velora-dynamic-content.js?v=2026.08.30.2"></script>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
 <meta content="#060A14" name="theme-color"/>
 <title data-i18n="common.dashboard.velora.smart.trading.journal.782a8df6">Dashboard | VELORA — Smart Trading Journal</title>
@@ -1197,7 +1197,7 @@ function toggleMobileSidebar() {
         if (d < bd) { bd = d; best = i; }
       });
       var p = points[best];
-      tip.innerHTML = '<b data-value-type="date">' + esc(VeloraLocale.date(p.date)) + '</b> — <span data-value-type="currency">' + esc(VeloraLocale.currency(p.equity, 'USD')) + '</span>';
+      tip.innerHTML = '<b data-value-type="date">' + esc(VeloraLocale.dateWall(p.date)) + '</b> — <span data-value-type="currency">' + esc(VeloraLocale.currency(p.equity, 'USD')) + '</span>';
       tip.style.display = 'block';
       tip.style.left = (X(best)/W*100) + '%';
       tip.style.top = '10px';
@@ -1220,7 +1220,8 @@ function toggleMobileSidebar() {
       var pnl = fmtPnl(t.profitLoss);
       var r = t.rMultiple === null || t.rMultiple === undefined ? '—' : Number(t.rMultiple).toFixed(2);
       var dirLabel = VeloraLocale.status(t.direction);
-      var date = VeloraLocale.date(t.closeTime);
+      var opts = (window.VeloraTime) ? { user: VeloraData.getUser() || {}, locale: (window.__VELORA_LOCALE__ || 'fa'), timeZone: VeloraTime.displayTimezone(VeloraData.getUser()||{}), calendar: VeloraTime.displayCalendar({ locale: (window.__VELORA_LOCALE__||'fa') }) } : {};
+      var date = VeloraLocale.tradeDate(t.occurredCloseAtUtc, t.closeTime, opts);
       return '<tr>'
         + '<td><span class="sym">' + esc(t.symbol) + '</span></td>'
         + '<td><span class="dir ' + t.direction + '">' + dirLabel + '</span></td>'

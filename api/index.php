@@ -89,6 +89,7 @@ $router->post('/api/v1/accounts/detect-server', [AccountController::class, 'dete
 $router->post('/api/v1/accounts/connect-metaapi', [AccountController::class, 'connectMetaApi'], $auth);
 $router->post('/api/v1/accounts/{id}/sync', [AccountController::class, 'sync'], $auth);
 $router->get('/api/v1/accounts/{id}/sync-status', [AccountController::class, 'syncStatus'], $auth);
+$router->add('PATCH', '/api/v1/accounts/{id}/timezone', [AccountController::class, 'updateTimezone'], $auth);
 $router->delete('/api/v1/accounts/{id}', [AccountController::class, 'destroy'], $auth);
 
 // v0.2 — MetaApi Webhooks (HMAC, no JWT — public but verified)

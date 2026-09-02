@@ -3,7 +3,7 @@
 <html data-i18n-features="common,errors,trades" data-route-locale="en" data-velora-prelocalized="en" dir="ltr" lang="en">
 <head>
 <meta charset="utf-8"/><script src="/public/assets/velora-locale-registry.js?v=2026.08.30.2"></script>
-<script src="/public/assets/velora-latin-digits.js?v=2026.08.30.8"></script><script src="/public/assets/velora-locale-bootstrap.js?v=2026.08.30.2"></script><link href="/public/assets/velora-localization.css?v=2026.08.30.2" rel="stylesheet"/><script src="/public/assets/velora-localization.js?v=2026.08.30.2"></script><script src="/public/assets/velora-data.js?v=2026.08.30.2"></script><script defer="" src="/public/assets/velora-dynamic-content.js?v=2026.08.30.2"></script>
+<script src="/public/assets/velora-latin-digits.js?v=2026.08.30.8"></script><script src="/public/assets/velora-locale-bootstrap.js?v=2026.08.30.2"></script><link href="/public/assets/velora-localization.css?v=2026.08.30.2" rel="stylesheet"/><script src="/public/assets/velora-localization.js?v=2026.08.30.2"></script><script src="/public/assets/velora-data.js?v=2026.08.30.2"></script><script src="/public/assets/velora-time.js?v=2026.09.02.1"></script><script defer="" src="/public/assets/velora-dynamic-content.js?v=2026.08.30.2"></script>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
 <meta content="#060A14" name="theme-color"/>
 <title data-i18n="pages.trades.new.new.trade.velora.3f37d5ab">New Trade | VELORA</title>
@@ -983,16 +983,12 @@ function toggleMobileSidebar() {
       else list.splice(i, 1);
       writeStars(list);
     }
-    function sessionFromOpen(value) {
-      if (!value) return { id: 'off', title: t('pages.trades.new.p05.session_unknown'), sub: t('pages.trades.new.p05.session_select_open') };
-      var d = new Date(value);
-      if (isNaN(d.getTime())) return { id: 'off', title: t('pages.trades.new.p05.session_unknown'), sub: '' };
-      var h = d.getUTCHours();
-      if (h >= 0 && h < 8) return { id: 'asia', title: t('pages.trades.new.p05.session_asia'), sub: t('pages.trades.new.p05.session_asia_sub') };
-      if (h >= 8 && h < 13) return { id: 'london', title: t('pages.trades.new.p05.session_london'), sub: t('pages.trades.new.p05.session_london_sub') };
-      if (h >= 13 && h < 17) return { id: 'overlap', title: t('pages.trades.new.p05.session_overlap'), sub: t('pages.trades.new.p05.session_overlap_sub') };
-      if (h >= 17 && h < 22) return { id: 'newyork', title: t('pages.trades.new.p05.session_newyork'), sub: t('pages.trades.new.p05.session_newyork_sub') };
-      return { id: 'off', title: t('pages.trades.new.p05.session_outside'), sub: 'UTC 22–00' };
+    
+    
+    
+    
+    function sessionFromOpen() {
+      return { id: 'off', title: t('pages.trades.new.p05.session_unknown'), sub: '' };
     }
     function paintSession() {
       var pill = byId('sessionPill');
@@ -1170,14 +1166,34 @@ function toggleMobileSidebar() {
       byId('mComm').textContent = VeloraLocale.number(commission, { maximumFractionDigits: 2 });
     }
 
-    var now = new Date();
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-    var defaultOpen = now.toISOString().slice(0, 16);
-    var defaultClose = new Date(Date.now() + 3600000 - new Date(Date.now() + 3600000).getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    
+    
+    
+    
+    function localWall(offsetMs) {
+      var d = new Date(Date.now() + (offsetMs || 0));
+      function p(n) { return String(n).padStart(2, '0'); }
+      return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate())
+        + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());
+    }
+    var defaultOpen = localWall(0);
+    var defaultClose = localWall(3600000);
     setTimeout(function () {
       if (!byId('openTime').value) byId('openTime').value = defaultOpen;
       if (!byId('closeTime').value) byId('closeTime').value = defaultClose;
     }, 200);
+
+    
+    
+    
+    
+    function buildSubmitEvidence(openRaw, closeRaw) {
+      var ev = (window.VeloraTime && window.__vsiTimeEvidence) ? window.__vsiTimeEvidence : {};
+      var body = window.VeloraTime
+        ? window.VeloraTime.buildTimeEvidence(Object.assign({}, ev, { openRaw: openRaw, closeRaw: closeRaw }))
+        : { rawOpenText: String(openRaw || '').replace('T', ' '), rawCloseText: String(closeRaw || '').replace('T', ' ') };
+      return body;
+    }
 
     byId('submitBtn').addEventListener('click', async function () {
       var symbol = byId('symbol').value.trim().toUpperCase();
@@ -1206,17 +1222,19 @@ function toggleMobileSidebar() {
             swap: byId('swap').value || 0,
             stopLoss: byId('sl').value || null,
             takeProfit: byId('tp').value || null,
-            openTime: new Date(openTime).toISOString(),
-            closeTime: new Date(closeTime).toISOString(),
+            openTime: openTime,
+            closeTime: closeTime,
+            
+            
+            
+            
+            
+            ...buildSubmitEvidence(openTime, closeTime),
             strategyTag: byId('strategy').value.trim() || null,
             emotionalScore: emotion,
             notes: (function () {
+              
               var note = byId('notes').value.trim();
-              var sess = sessionFromOpen(openTime);
-              var sessionPrefix = t('pages.trades.new.p05.session_note_prefix');
-              if (sess && sess.id !== 'off' && note.indexOf(sessionPrefix) === -1) {
-                note = (note ? note + ' · ' : '') + sessionPrefix + ' ' + sess.title;
-              }
               return note || null;
             })()
           }

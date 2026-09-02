@@ -71,6 +71,17 @@ final class TradeController
             // خطای مبهم «فرمت تاریخ/زمان صحیح نیست» به کلاینت برمی‌گشت.
             'openTime' => 'required|datetime',
             'closeTime' => 'required|datetime',
+            // Phase 2E optional datetime EVIDENCE (never authoritative truth).
+            'rawOpenText' => 'string|max:64',
+            'rawCloseText' => 'string|max:64',
+            'sourceCalendar' => 'string|max:16',
+            'dateFormat' => 'string|max:16',
+            'timezoneText' => 'string|max:64',
+            'timezoneOffsetHintMinutes' => 'integer',
+            'explicitTimezone' => 'string|max:64',
+            'explicitTimezoneSource' => 'string|max:24',
+            'brokerTimezone' => 'string|max:64',
+            'importTimezone' => 'string|max:64',
         ]);
 
         $trade = $this->service->create($request->body, (int) $request->attributes['user_id']);
