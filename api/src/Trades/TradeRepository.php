@@ -18,7 +18,10 @@ final class TradeRepository
     private const PUBLIC_COLUMNS = '
         id, user_id, account_id, external_deal_id, symbol, direction, entry_price, exit_price,
         volume, contract_size, commission, swap, profit_loss, r_multiple, stop_loss, take_profit,
-        open_time, close_time, strategy_tag, emotional_score, notes, source, created_at, updated_at
+        open_time, close_time,
+        occurred_open_at_utc, occurred_close_at_utc, time_status,
+        source_timezone, source_timezone_source, source_calendar, raw_open_text, raw_close_text,
+        strategy_tag, emotional_score, notes, source, created_at, updated_at
     ';
 
     public function findOwned(int $id, int $userId): ?array
@@ -112,11 +115,17 @@ final class TradeRepository
             'INSERT INTO trades
                 (user_id, account_id, symbol, direction, entry_price, exit_price, volume, contract_size,
                  commission, swap, profit_loss, r_multiple, stop_loss, take_profit,
-                 open_time, close_time, strategy_tag, emotional_score, notes, source)
+                 open_time, close_time, strategy_tag, emotional_score, notes, source,
+                 occurred_open_at_utc, occurred_close_at_utc, time_status,
+                 source_timezone, source_timezone_source, source_calendar,
+                 raw_open_text, raw_close_text)
              VALUES
                 (:user_id, :account_id, :symbol, :direction, :entry_price, :exit_price, :volume, :contract_size,
                  :commission, :swap, :profit_loss, :r_multiple, :stop_loss, :take_profit,
-                 :open_time, :close_time, :strategy_tag, :emotional_score, :notes, :source)'
+                 :open_time, :close_time, :strategy_tag, :emotional_score, :notes, :source,
+                 :occurred_open_at_utc, :occurred_close_at_utc, :time_status,
+                 :source_timezone, :source_timezone_source, :source_calendar,
+                 :raw_open_text, :raw_close_text)'
         );
 
         $stmt->bindValue(':user_id', $trade['user_id'], PDO::PARAM_INT);
@@ -139,6 +148,16 @@ final class TradeRepository
         self::bindNullable($stmt, ':emotional_score', $trade['emotional_score'], PDO::PARAM_INT);
         self::bindNullable($stmt, ':notes', $trade['notes']);
         $stmt->bindValue(':source', $trade['source']);
+
+        // Phase 2E canonical time columns (additive).
+        self::bindNullable($stmt, ':occurred_open_at_utc', $trade['occurred_open_at_utc'] ?? null);
+        self::bindNullable($stmt, ':occurred_close_at_utc', $trade['occurred_close_at_utc'] ?? null);
+        $stmt->bindValue(':time_status', $trade['time_status'] ?? 'unresolved');
+        self::bindNullable($stmt, ':source_timezone', $trade['source_timezone'] ?? null);
+        $stmt->bindValue(':source_timezone_source', $trade['source_timezone_source'] ?? 'unknown');
+        $stmt->bindValue(':source_calendar', $trade['source_calendar'] ?? 'unknown');
+        self::bindNullable($stmt, ':raw_open_text', $trade['raw_open_text'] ?? null);
+        self::bindNullable($stmt, ':raw_close_text', $trade['raw_close_text'] ?? null);
 
         $stmt->execute();
         return (int) Database::connection()->lastInsertId();
@@ -188,7 +207,15 @@ final class TradeRepository
                     stop_loss = :stop_loss, take_profit = :take_profit,
                     open_time = :open_time, close_time = :close_time,
                     strategy_tag = :strategy_tag, emotional_score = :emotional_score,
-                    notes = :notes
+                    notes = :notes,
+                    occurred_open_at_utc = :occurred_open_at_utc,
+                    occurred_close_at_utc = :occurred_close_at_utc,
+                    time_status = :time_status,
+                    source_timezone = :source_timezone,
+                    source_timezone_source = :source_timezone_source,
+                    source_calendar = :source_calendar,
+                    raw_open_text = :raw_open_text,
+                    raw_close_text = :raw_close_text
                  WHERE id = :id AND user_id = :user_id'
             );
 
@@ -211,6 +238,14 @@ final class TradeRepository
             self::bindNullable($stmt, ':strategy_tag', $trade['strategy_tag']);
             self::bindNullable($stmt, ':emotional_score', $trade['emotional_score'], PDO::PARAM_INT);
             self::bindNullable($stmt, ':notes', $trade['notes']);
+            self::bindNullable($stmt, ':occurred_open_at_utc', $trade['occurred_open_at_utc'] ?? null);
+            self::bindNullable($stmt, ':occurred_close_at_utc', $trade['occurred_close_at_utc'] ?? null);
+            $stmt->bindValue(':time_status', $trade['time_status'] ?? 'unresolved');
+            self::bindNullable($stmt, ':source_timezone', $trade['source_timezone'] ?? null);
+            $stmt->bindValue(':source_timezone_source', $trade['source_timezone_source'] ?? 'unknown');
+            $stmt->bindValue(':source_calendar', $trade['source_calendar'] ?? 'unknown');
+            self::bindNullable($stmt, ':raw_open_text', $trade['raw_open_text'] ?? null);
+            self::bindNullable($stmt, ':raw_close_text', $trade['raw_close_text'] ?? null);
             $stmt->execute();
 
             // Parent edits must not leave stored partial-exit PnL inconsistent.

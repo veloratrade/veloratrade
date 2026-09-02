@@ -212,7 +212,10 @@ final class GeminiProvider implements AIProviderInterface
      */
     public function extract(string $imageRaw, float $deadline, ?string $routeOverride = null): ExtractedTradeData
     {
-        $prompt = PromptManager::get('screenshot_extraction', 'v1', 'en');
+        // Phase 2D: Gemini uses the v2 evidence contract (verbatim datetime
+        // evidence; the model never normalizes/converts/guesses timezone).
+        // Other vision providers remain on v1 until they are migrated.
+        $prompt = PromptManager::get('screenshot_extraction', 'v2', 'en');
 
         $generateOptions = [
             'deadline' => $deadline,
@@ -242,6 +245,17 @@ final class GeminiProvider implements AIProviderInterface
         $confidence = isset($extractedJson['confidence']) ? (float) $extractedJson['confidence'] : 0.85;
         $confidence = max(0.0, min(1.0, $confidence));
 
+        // Defense-in-depth: openTime/closeTime are best-effort hints and must
+        // never masquerade as UTC instants. If the model (against instructions)
+        // appended a Z/offset, strip it so the value is treated as a source
+        // wall-clock reading. The verbatim rawOpenText/rawCloseText evidence is
+        // never modified.
+        foreach (['openTime', 'closeTime'] as $hintField) {
+            if (isset($extractedJson[$hintField]) && is_string($extractedJson[$hintField])) {
+                $extractedJson[$hintField] = self::stripUtcMarker($extractedJson[$hintField]);
+            }
+        }
+
         return ExtractedTradeData::fromArray(
             $extractedJson,
             $this->getName(),
@@ -249,6 +263,17 @@ final class GeminiProvider implements AIProviderInterface
             $text,
             $response->rawResponse,
         );
+    }
+
+    /**
+     * Remove a trailing UTC marker (Z or numeric offset) from a best-effort
+     * datetime hint so it cannot be read as an authoritative instant.
+     */
+    private static function stripUtcMarker(string $value): string
+    {
+        $value = trim($value);
+        $value = preg_replace('/(?:Z|[+-]\d{2}:?\d{2})\s*$/i', '', $value) ?? $value;
+        return trim($value);
     }
 
     private function detectMime(string $raw): string

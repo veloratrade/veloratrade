@@ -207,12 +207,27 @@
     return Number.isSafeInteger(number) ? number : null;
   }
 
+  /* Parse an EXPLICIT-UTC/offset instant only (ISO with Z or ±HH:MM).
+     Never appends "Z": a naive "YYYY-MM-DD HH:mm:ss" legacy wall-clock must
+     not be falsely declared UTC (Phase 3F). Server-generated canonical/audit
+     timestamps (created_at etc.) are UTC and carry no offset either, so they
+     are returned as the raw canonical SQL string; use rawWall() for legacy. */
   function isoDate(value) {
     if (!value) return null;
     var input = String(value).trim();
-    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(input)) input = input.replace(' ', 'T') + 'Z';
-    var parsed = new Date(input);
-    return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+    if (/(Z$|[+-]\d{2}:?\d{2}$)/i.test(input)) {
+      var parsed = new Date(input);
+      return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+    }
+    // Naive SQL datetime: NOT an absolute instant. Return null (do not guess).
+    return null;
+  }
+
+  /* Legacy/naive wall-clock string preserved verbatim for fallback display. */
+  function rawWall(value) {
+    if (value == null || value === '') return null;
+    var s = String(value).trim();
+    return /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}/.test(s) ? s.replace('T', ' ') : null;
   }
 
   function normalizeTrade(raw) {
@@ -233,9 +248,22 @@
       strategyTag: text(raw.strategyTag !== undefined ? raw.strategyTag : raw.strategy_tag),
       notes: text(raw.notes),
       source: text(raw.source, 'manual'),
-      openTime: isoDate(raw.openTime !== undefined ? raw.openTime : raw.open_time),
-      closeTime: isoDate(raw.closeTime !== undefined ? raw.closeTime : raw.close_time),
-      createdAt: isoDate(raw.createdAt !== undefined ? raw.createdAt : raw.created_at)
+      // Canonical trade instants (backend-authoritative UTC). These are the
+      // ONLY values the UI may treat as absolute instants.
+      occurredOpenAtUtc: text(raw.occurredOpenAtUtc !== undefined ? raw.occurredOpenAtUtc : raw.occurred_open_at_utc, null),
+      occurredCloseAtUtc: text(raw.occurredCloseAtUtc !== undefined ? raw.occurredCloseAtUtc : raw.occurred_close_at_utc, null),
+      timeStatus: text(raw.timeStatus !== undefined ? raw.timeStatus : raw.time_status, 'unresolved'),
+      sourceTimezone: text(raw.sourceTimezone !== undefined ? raw.sourceTimezone : raw.source_timezone, null),
+      sourceTimezoneSource: text(raw.sourceTimezoneSource !== undefined ? raw.sourceTimezoneSource : raw.source_timezone_source, 'unknown'),
+      sourceCalendar: text(raw.sourceCalendar !== undefined ? raw.sourceCalendar : raw.source_calendar, 'unknown'),
+      rawOpenText: text(raw.rawOpenText !== undefined ? raw.rawOpenText : raw.raw_open_text, null),
+      rawCloseText: text(raw.rawCloseText !== undefined ? raw.rawCloseText : raw.raw_close_text, null),
+      session: raw.session && typeof raw.session === 'object' ? raw.session : null,
+      // Legacy naive wall clocks (original tz unknown). Preserved verbatim;
+      // NEVER parsed to an instant / treated as UTC.
+      openTime: rawWall(raw.openTime !== undefined ? raw.openTime : raw.open_time),
+      closeTime: rawWall(raw.closeTime !== undefined ? raw.closeTime : raw.close_time),
+      createdAt: rawWall(raw.createdAt !== undefined ? raw.createdAt : raw.created_at)
     });
   }
 
@@ -254,7 +282,7 @@
       equity: decimal(raw.equity),
       leverage: decimal(raw.leverage),
       currency: text(raw.currency, 'USD').toUpperCase(),
-      lastSyncedAt: isoDate(raw.lastSyncedAt !== undefined ? raw.lastSyncedAt : raw.last_synced_at)
+      lastSyncedAt: isoDate(raw.lastSyncedAt !== undefined ? raw.lastSyncedAt : raw.last_synced_at) || rawWall(raw.lastSyncedAt !== undefined ? raw.lastSyncedAt : raw.last_synced_at)
     });
   }
 
@@ -266,7 +294,7 @@
       contentId: text(raw.contentId !== undefined ? raw.contentId : raw.id, ''),
       sourceLocale: text(raw.sourceLocale !== undefined ? raw.sourceLocale : raw.source_locale, 'und'),
       sourceHash: text(raw.sourceHash !== undefined ? raw.sourceHash : raw.source_hash, ''),
-      publishedAt: isoDate(raw.publishedAt !== undefined ? raw.publishedAt : raw.published_at),
+      publishedAt: isoDate(raw.publishedAt !== undefined ? raw.publishedAt : raw.published_at) || rawWall(raw.publishedAt !== undefined ? raw.publishedAt : raw.published_at),
       source: text(raw.source),
       url: text(raw.url),
       fields: Object.freeze({ title: text(fields.title, ''), summary: text(fields.summary), content: text(fields.content) })
@@ -312,7 +340,7 @@
     requireSession: requireSession,
     logout: logout,
     ApiError: ApiError,
-    raw: Object.freeze({ text: text, decimal: decimal, integer: integer, isoDate: isoDate }),
+    raw: Object.freeze({ text: text, decimal: decimal, integer: integer, isoDate: isoDate, rawWall: rawWall }),
     normalize: Object.freeze({ trade: normalizeTrade, account: normalizeAccount, content: normalizeContent }),
     Stream: Stream
   });

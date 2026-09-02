@@ -11,6 +11,8 @@ use Velora\Core\Crypto;
 use Velora\Core\Database;
 use Velora\Core\Exceptions\ApiException;
 use Velora\Core\Exceptions\ConflictException;
+use Velora\Trades\MetaApiDealAssembler;
+use Velora\Trades\MetaApiInstantResolver;
 
 /**
  * MetaApi bridge with durable provisioning operations and reconciliation-safe
@@ -25,17 +27,23 @@ final class MetaApiService
     private SyncJobRepository $jobs;
     private MetaApiOperationRepository $operations;
     private ?Closure $transport;
+    private MetaApiInstantResolver $instants;
+    private MetaApiDealAssembler $assembler;
 
     public function __construct(
         ?AccountRepository $accounts = null,
         ?SyncJobRepository $jobs = null,
         ?MetaApiOperationRepository $operations = null,
         ?callable $transport = null,
+        ?MetaApiInstantResolver $instants = null,
+        ?MetaApiDealAssembler $assembler = null,
     ) {
         $this->accounts = $accounts ?? new AccountRepository();
         $this->jobs = $jobs ?? new SyncJobRepository();
         $this->operations = $operations ?? new MetaApiOperationRepository();
         $this->transport = $transport === null ? null : Closure::fromCallable($transport);
+        $this->instants = $instants ?? new MetaApiInstantResolver();
+        $this->assembler = $assembler ?? new MetaApiDealAssembler($this->instants);
         $this->apiToken = (string) Config::env('METAAPI_TOKEN', '');
         $configured = rtrim((string) Config::env(
             'METAAPI_BASE_URL',
@@ -71,22 +79,19 @@ final class MetaApiService
         return $id;
     }
 
-    private function normalizeMetaDateTime(mixed $value): ?string
+    /**
+     * Phase 4 — resolve a MetaApi timestamp to a canonical UTC instant.
+     *
+     * Accepts ONLY offset-explicit absolute instants (deal/position/order
+     * `time`, `doneTime`, ServerTime `time` — ISO with trailing Z/offset).
+     * A naive `brokerTime` (no offset) is NOT parseable to an absolute instant
+     * and yields null — it is never run through strtotime/gmdate or a default
+     * timezone. Returns null on empty/naive/unresolved; callers treat a null
+     * instant as "unresolved" and never fabricate UTC.
+     */
+    private function resolveMetaInstant(mixed $value): ?string
     {
-        if (!is_string($value)) {
-            return null;
-        }
-        $value = trim($value);
-        if ($value === '' || strlen($value) > 64 || preg_match('/[\x00-\x1F\x7F]/', $value) === 1) {
-            return null;
-        }
-        $ts = strtotime($value);
-        if ($ts === false) {
-            return null;
-        }
-        $normalized = gmdate('Y-m-d H:i:s', $ts);
-        $year = (int) substr($normalized, 0, 4);
-        return $year >= 1000 && $year <= 9999 ? $normalized : null;
+        return $this->instants->canonicalUtc($value);
     }
 
     private function normalizeExternalDecimal(mixed $value, int $maxIntegerDigits, int $maxFractionDigits): ?string
@@ -148,9 +153,30 @@ final class MetaApiService
         return $value;
     }
 
-    private function normalizeExternalTrade(array $deal): ?array
+    /**
+     * Phase 4 — normalize ONE MetaApi history deal (a single FILL) into the
+     * internal deal shape consumed by {@see MetaApiDealAssembler}. Deals are
+     * paired into closed positions by positionId there.
+     *
+     * Timestamp rule (Phase 2E verification): ONLY the offset-explicit `time`
+     * field yields an absolute instant. The naive `brokerTime` is preserved as
+     * evidence but NEVER used as an instant. A deal whose `time` is naive or
+     * missing keeps time_utc = null (assembler then leaves the boundary
+     * unresolved rather than fabricating UTC).
+     *
+     * Returns null for records that are not market fills (balance/credit deals
+     * with no symbol) or that lack a usable deal identity/price/volume.
+     */
+    private function normalizeExternalDeal(array $deal): ?array
     {
-        $externalId = $this->normalizeExternalIdentifier($deal['id'] ?? $deal['dealId'] ?? $deal['ticket'] ?? $deal['orderId'] ?? null);
+        $externalId = $this->normalizeExternalIdentifier(
+            $deal['id'] ?? $deal['dealId'] ?? $deal['ticket'] ?? null
+        );
+        $positionId = $this->normalizeExternalIdentifier(
+            $deal['positionId'] ?? $deal['position_id'] ?? null
+        );
+        $orderId = $this->normalizeExternalIdentifier($deal['orderId'] ?? $deal['order_id'] ?? null);
+
         $symbol = $this->normalizeExternalText($deal['symbol'] ?? null, 32);
         $rawType = $deal['type'] ?? null;
         $type = is_string($rawType) && strlen($rawType) <= 50 ? strtolower(trim($rawType)) : '';
@@ -159,38 +185,73 @@ final class MetaApiService
             'sell', 'deal_type_sell' => 'sell',
             default => null,
         };
+        $entryType = $this->normalizeEntryType($deal['entryType'] ?? $deal['entry_type'] ?? null);
 
-        $entry = $this->normalizeExternalDecimal($deal['openPrice'] ?? $deal['open_price'] ?? $deal['price'] ?? null, 10, 8);
-        $exit = $this->normalizeExternalDecimal($deal['closePrice'] ?? $deal['close_price'] ?? $deal['price'] ?? null, 10, 8);
+        $price = $this->normalizeExternalDecimal(
+            $deal['price'] ?? $deal['openPrice'] ?? $deal['open_price'] ?? $deal['closePrice'] ?? $deal['close_price'] ?? null,
+            10,
+            8
+        );
         $volume = $this->normalizeExternalDecimal($deal['volume'] ?? null, 10, 8);
         $profit = $this->normalizeExternalDecimal($deal['profit'] ?? $deal['profit_loss'] ?? null, 16, 8);
-        $commission = $this->brokerAdjustmentToCost($deal['commission'] ?? 0);
-        $swap = $this->brokerAdjustmentToCost($deal['swap'] ?? 0);
-        $openTime = $this->normalizeMetaDateTime($deal['openTime'] ?? $deal['open_time'] ?? $deal['time'] ?? null);
-        $closeTime = $this->normalizeMetaDateTime($deal['closeTime'] ?? $deal['close_time'] ?? $deal['time'] ?? null);
+        // Normalize to a COST (negative reduces PnL; zero stays zero). MetaApi
+        // signs commission/swap variably across brokers, so canonicalize here.
+        $commissionCost = $this->brokerAdjustmentToCost($deal['commission'] ?? 0);
+        $swapCost = $this->brokerAdjustmentToCost($deal['swap'] ?? 0);
 
+        // Absolute instant ONLY from offset-explicit `time` (never brokerTime).
+        $timeRaw = is_string($deal['time'] ?? null) ? trim((string) $deal['time']) : null;
+        $timeUtc = $this->resolveMetaInstant($deal['time'] ?? null);
+        // Evidence only — never used to derive an instant.
+        $brokerTime = $this->normalizeExternalText($deal['brokerTime'] ?? $deal['broker_time'] ?? null, 64);
+
+        // A trade fill needs identity, symbol, direction, a positive price and
+        // volume. entryType may be absent on some payloads (assembler will skip
+        // if it cannot pair); time_utc may be null (unresolved) at this layer.
         if ($externalId === null || $symbol === null || $direction === null
-            || $entry === null || !$this->isPositiveDecimal($entry)
-            || $exit === null || !$this->isPositiveDecimal($exit)
-            || $volume === null || !$this->isPositiveDecimal($volume)
-            || $profit === null || $commission === null || $swap === null
-            || $openTime === null || $closeTime === null || $closeTime < $openTime) {
+            || $price === null || !$this->isPositiveDecimal($price)
+            || $volume === null || !$this->isPositiveDecimal($volume)) {
             return null;
         }
 
         return [
             'external_deal_id' => $externalId,
+            'position_id' => $positionId,
+            'order_id' => $orderId,
+            'entry_type' => $entryType,
             'symbol' => $symbol,
             'direction' => $direction,
-            'entry_price' => $entry,
-            'exit_price' => $exit,
+            'price' => $price,
             'volume' => $volume,
-            'profit_loss' => $profit,
-            'commission' => $commission,
-            'swap' => $swap,
-            'open_time' => $openTime,
-            'close_time' => $closeTime,
+            'profit' => $profit ?? '0',
+            'commission' => $commissionCost ?? '0',
+            'swap' => $swapCost ?? '0',
+            'time_raw' => $timeRaw,
+            'time_utc' => $timeUtc,
+            'broker_time' => $brokerTime,
         ];
+    }
+
+    /** Map MetaApi entryType to 'in' | 'out' | null (inout/balance/credit => null). */
+    private function normalizeEntryType(mixed $value): ?string
+    {
+        if (is_int($value)) {
+            // MT5 DEAL_ENTRY_IN=0, DEAL_ENTRY_OUT=1 (DEAL_ENTRY_INOUT=2, OUT_BY=3).
+            return match ($value) {
+                0 => 'in',
+                1 => 'out',
+                default => null,
+            };
+        }
+        if (!is_string($value)) {
+            return null;
+        }
+        $e = strtolower(trim($value));
+        return match ($e) {
+            'in', 'deal_entry_in', 'entry_in' => 'in',
+            'out', 'deal_entry_out', 'entry_out' => 'out',
+            default => null,
+        };
     }
 
     private function normalizeAccountInformation(array $data): array
@@ -542,7 +603,9 @@ final class MetaApiService
             if ($account === null || (int) $account['user_id'] !== $userId) {
                 throw new \RuntimeException('Account not found for sync.');
             }
-            $trades = $this->fetchHistoricalTrades($account, $job);
+            $deals = $this->fetchHistoricalTrades($account, $job);
+            $assembled = $this->assembler->assemble($deals);
+            $trades = $assembled['trades'];
             $inserted = Database::transaction(function (PDO $pdo) use (
                 $trades,
                 $userId,
@@ -560,7 +623,13 @@ final class MetaApiService
                 $this->accounts->markSynced($accountId);
                 return $inserted;
             });
-            return ['job_id' => $jobId, 'account_id' => $accountId, 'inserted' => $inserted];
+            return [
+                'job_id' => $jobId,
+                'account_id' => $accountId,
+                'inserted' => $inserted,
+                'assembled' => count($trades),
+                'skipped' => count($assembled['skipped']),
+            ];
         } catch (\Throwable $e) {
             $result = $this->jobs->fail($jobId, $leaseToken, $e->getMessage());
             $this->accounts->updateSyncStatus($accountId, 'ERROR', 'MetaApi sync attempt failed.');
@@ -585,10 +654,17 @@ final class MetaApiService
 
         $account = $this->accounts->findByMetaApiId($metaapiId);
         $inserted = 0;
+        $skipped = 0;
         if ($account !== null && in_array($type, ['deal', 'trade', 'history', 'order'], true)) {
-            $trade = $this->mapWebhookToTrade($payload);
-            if ($trade !== null) {
-                $inserted = $this->insertExternalTrade(
+            // Route webhook deal bodies through the SAME position assembler as
+            // historical sync. A single realtime fill (only one side) cannot
+            // form a closed round-trip: the assembler skips it rather than
+            // fabricating open=close. Only fully-paired positions are inserted.
+            $deals = $this->extractWebhookDeals($payload);
+            $assembled = $this->assembler->assemble($deals);
+            $skipped = count($assembled['skipped']);
+            foreach ($assembled['trades'] as $trade) {
+                $inserted += $this->insertExternalTrade(
                     Database::connection(),
                     (int) $account['user_id'],
                     (int) $account['id'],
@@ -596,7 +672,11 @@ final class MetaApiService
                 );
             }
         }
-        return ['account_id' => $account === null ? null : (int) $account['id'], 'inserted' => $inserted];
+        return [
+            'account_id' => $account === null ? null : (int) $account['id'],
+            'inserted' => $inserted,
+            'skipped' => $skipped,
+        ];
     }
 
     public function fetchAccountInformation(string $metaapiId): ?array
@@ -719,6 +799,12 @@ final class MetaApiService
         $this->requireSuccess($response, 'METAAPI_DELETE_FAILED');
     }
 
+    /**
+     * Fetch history deals and normalize each into the internal DEAL (fill)
+     * shape. Position pairing/assembly happens in {@see MetaApiDealAssembler}.
+     *
+     * @return array<int,array<string,mixed>> normalized deals
+     */
     private function fetchHistoricalTrades(array $account, array $job): array
     {
         $providerId = $this->requireExternalIdentifier($account['metaapi_account_id'] ?? null, 'account identifier');
@@ -726,11 +812,32 @@ final class MetaApiService
             if (!$this->isDevLikeEnvironment()) {
                 throw new \RuntimeException('Historical sync requires a real MetaApi provider account.');
             }
-            $now = gmdate('Y-m-d H:i:s');
-            $yesterday = gmdate('Y-m-d H:i:s', strtotime('-1 day'));
+            // Dev fixtures mirror the REAL history-deals shape: absolute `time`
+            // with trailing Z plus naive `brokerTime`, paired by positionId
+            // (DEAL_ENTRY_IN / DEAL_ENTRY_OUT). The assembler derives canonical
+            // UTC open/close from the Z instants and ignores brokerTime.
+            $day = gmdate('Ymd');
             return [
-                ['external_deal_id' => 'dev-xau-' . gmdate('Ymd'), 'symbol' => 'XAU/USD', 'direction' => 'buy', 'entry_price' => '2025.5', 'exit_price' => '2035.2', 'volume' => '0.1', 'profit_loss' => '97.00', 'commission' => '0', 'swap' => '0', 'open_time' => $yesterday, 'close_time' => $now],
-                ['external_deal_id' => 'dev-eur-' . gmdate('Ymd'), 'symbol' => 'EUR/USD', 'direction' => 'sell', 'entry_price' => '1.0850', 'exit_price' => '1.0820', 'volume' => '0.2', 'profit_loss' => '60.00', 'commission' => '0', 'swap' => '0', 'open_time' => $yesterday, 'close_time' => $now],
+                ['id' => 'dev-xau-in-' . $day, 'positionId' => 'dev-xau-' . $day, 'entryType' => 'DEAL_ENTRY_IN',
+                    'symbol' => 'XAU/USD', 'type' => 'buy', 'price' => '2025.5', 'volume' => '0.1',
+                    'profit' => '0', 'commission' => '0', 'swap' => '0',
+                    'time' => gmdate('Y-m-d\TH:i:s.000\Z', strtotime('-1 day')),
+                    'brokerTime' => gmdate('Y-m-d H:i:s.000', strtotime('-1 day +3 hours'))],
+                ['id' => 'dev-xau-out-' . $day, 'positionId' => 'dev-xau-' . $day, 'entryType' => 'DEAL_ENTRY_OUT',
+                    'symbol' => 'XAU/USD', 'type' => 'buy', 'price' => '2035.2', 'volume' => '0.1',
+                    'profit' => '97.00', 'commission' => '-0.5', 'swap' => '0',
+                    'time' => gmdate('Y-m-d\TH:i:s.000\Z'),
+                    'brokerTime' => gmdate('Y-m-d H:i:s.000', strtotime('+3 hours'))],
+                ['id' => 'dev-eur-in-' . $day, 'positionId' => 'dev-eur-' . $day, 'entryType' => 'DEAL_ENTRY_IN',
+                    'symbol' => 'EUR/USD', 'type' => 'sell', 'price' => '1.0850', 'volume' => '0.2',
+                    'profit' => '0', 'commission' => '0', 'swap' => '0',
+                    'time' => gmdate('Y-m-d\TH:i:s.000\Z', strtotime('-2 days')),
+                    'brokerTime' => gmdate('Y-m-d H:i:s.000', strtotime('-2 days +3 hours'))],
+                ['id' => 'dev-eur-out-' . $day, 'positionId' => 'dev-eur-' . $day, 'entryType' => 'DEAL_ENTRY_OUT',
+                    'symbol' => 'EUR/USD', 'type' => 'sell', 'price' => '1.0820', 'volume' => '0.2',
+                    'profit' => '60.00', 'commission' => '-0.5', 'swap' => '0',
+                    'time' => gmdate('Y-m-d\TH:i:s.000\Z', strtotime('-1 day')),
+                    'brokerTime' => gmdate('Y-m-d H:i:s.000', strtotime('-1 day +3 hours'))],
             ];
         }
 
@@ -751,20 +858,59 @@ final class MetaApiService
             30,
         );
         $this->requireSuccess($response, 'METAAPI_HISTORY_FAILED');
-        $deals = is_array($response['json']) ? ($response['json']['deals'] ?? []) : null;
-        if (!is_array($deals)) {
+        $rawDeals = is_array($response['json']) ? ($response['json']['deals'] ?? []) : null;
+        if (!is_array($rawDeals)) {
             throw new ProviderRequestException('METAAPI_INVALID_RESPONSE', true);
         }
-        $trades = [];
-        foreach ($deals as $deal) {
-            $trade = is_array($deal) ? $this->normalizeExternalTrade($deal) : null;
-            if ($trade !== null) {
-                $trades[] = $trade;
+        $deals = [];
+        foreach ($rawDeals as $deal) {
+            $normalized = is_array($deal) ? $this->normalizeExternalDeal($deal) : null;
+            if ($normalized !== null) {
+                $deals[] = $normalized;
             }
         }
-        return $trades;
+        return $deals;
     }
 
+    /**
+     * Collect normalized deals from a webhook payload. Accepts either a single
+     * deal object, a {deal:{...}}, or a {deals:[...]} / {data:[...]} batch.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private function extractWebhookDeals(array $payload): array
+    {
+        $candidates = [];
+        if (isset($payload['deals']) && is_array($payload['deals'])) {
+            $candidates = $payload['deals'];
+        } elseif (isset($payload['data']) && is_array($payload['data']) && array_is_list($payload['data'])) {
+            $candidates = $payload['data'];
+        } else {
+            $candidates = [$payload['deal'] ?? $payload['data'] ?? $payload];
+        }
+        $deals = [];
+        foreach ($candidates as $deal) {
+            $normalized = is_array($deal) ? $this->normalizeExternalDeal($deal) : null;
+            if ($normalized !== null) {
+                $deals[] = $normalized;
+            }
+        }
+        return $deals;
+    }
+
+    /**
+     * Persist one ASSEMBLED closed-position trade, including the canonical
+     * timestamp columns. Rows sourced from MetaApi carry:
+     *   - occurred_open_at_utc / occurred_close_at_utc = the offset-explicit
+     *     deal instants (true UTC), open/close independently resolved;
+     *   - time_status='resolved', source_calendar='gregorian',
+     *     source_timezone=NULL (no IANA zone exists), and
+     *     source_timezone_source='metaapi_instant';
+     *   - raw_open_text/raw_close_text = the verbatim absolute `time` strings.
+     * Legacy open_time/close_time are set to the SAME genuine UTC instants
+     * (they are NOT NULL) — for MetaApi these are real UTC, never a
+     * reinterpreted naive wall clock.
+     */
     private function insertExternalTrade(PDO $pdo, int $userId, int $accountId, array $trade): int
     {
         $driver = (string) $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
@@ -774,10 +920,16 @@ final class MetaApiService
         $stmt = $pdo->prepare(
             'INSERT INTO trades
              (user_id, account_id, external_deal_id, symbol, direction, entry_price, exit_price,
-              volume, commission, swap, profit_loss, open_time, close_time, source, created_at, updated_at)
+              volume, commission, swap, profit_loss, open_time, close_time, source,
+              occurred_open_at_utc, occurred_close_at_utc, time_status,
+              source_timezone, source_timezone_source, source_calendar,
+              raw_open_text, raw_close_text, created_at, updated_at)
              VALUES
              (:user_id,:account_id,:external,:symbol,:direction,:entry,:exit,:volume,
-              :commission,:swap,:profit,:open_time,:close_time,:source,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)' . $conflict
+              :commission,:swap,:profit,:open_time,:close_time,:source,
+              :occurred_open,:occurred_close,:time_status,
+              :source_tz,:source_tz_src,:source_calendar,
+              :raw_open,:raw_close,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)' . $conflict
         );
         $stmt->execute([
             'user_id' => $userId,
@@ -794,14 +946,16 @@ final class MetaApiService
             'open_time' => $trade['open_time'],
             'close_time' => $trade['close_time'],
             'source' => 'auto_sync',
+            'occurred_open' => $trade['occurred_open_at_utc'] ?? null,
+            'occurred_close' => $trade['occurred_close_at_utc'] ?? null,
+            'time_status' => $trade['time_status'] ?? 'unresolved',
+            'source_tz' => $trade['source_timezone'] ?? null,
+            'source_tz_src' => $trade['source_timezone_source'] ?? MetaApiInstantResolver::PROVENANCE,
+            'source_calendar' => $trade['source_calendar'] ?? 'gregorian',
+            'raw_open' => $trade['raw_open_text'] ?? null,
+            'raw_close' => $trade['raw_close_text'] ?? null,
         ]);
         return $stmt->rowCount() === 1 ? 1 : 0;
-    }
-
-    private function mapWebhookToTrade(array $payload): ?array
-    {
-        $deal = $payload['deal'] ?? $payload['data'] ?? $payload;
-        return is_array($deal) ? $this->normalizeExternalTrade($deal) : null;
     }
 
     /** @return array{status:int,json:mixed,body:string} */

@@ -102,9 +102,9 @@
       },
       "trades": {
         "path": "fa/trades.json",
-        "messages": 135,
-        "bytes": 10670,
-        "sha256": "fc4983915261850d3e03db46a41c2f4df7e8fcae0499b48502307d6ce9efabf2"
+        "messages": 124,
+        "bytes": 9906,
+        "sha256": "33dc97a46d34dca5c812dd587146d5c6cd801d6b14a214b32e4c9a36d5b9c19b"
       },
       "wallet": {
         "path": "fa/wallet.json",
@@ -212,9 +212,9 @@
       },
       "trades": {
         "path": "en/trades.json",
-        "messages": 135,
-        "bytes": 8836,
-        "sha256": "605f6cf91619ecd21d4d3ca477d7a768124bc584676ef55e0057b12b5bd2a1b7"
+        "messages": 124,
+        "bytes": 8161,
+        "sha256": "75b3f4eda1013c8314b2698651057c8fc5cf6ea15bfdf3ee647c4172415a5e66"
       },
       "wallet": {
         "path": "en/wallet.json",

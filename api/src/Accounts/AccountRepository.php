@@ -18,7 +18,8 @@ final class AccountRepository
          metaapi_account_id, sync_status, last_synced_at, connected_at, disconnected_at,
          auto_sync_enabled, last_incremental_at, connection_checked_at, consecutive_errors,
          last_error, starting_balance, current_balance, label, account_number_masked,
-         currency, leverage, status, balance, equity, created_at, updated_at';
+         currency, leverage, status, balance, equity, timezone, timezone_source,
+         created_at, updated_at';
 
     public function listByUser(int $userId): array
     {
@@ -99,12 +100,12 @@ final class AccountRepository
     {
         $stmt = Database::connection()->prepare(
             'INSERT INTO trading_accounts
-             (user_id, provider, platform, broker, server, mt_login, account_type,
+             (user_id, provider, platform, broker, server, timezone, timezone_source, mt_login, account_type,
               metaapi_account_id, sync_status, connection_credentials_encrypted,
               connected_at, auto_sync_enabled, label, account_number_masked,
               currency, leverage, status, balance, equity, starting_balance, current_balance)
              VALUES
-             (:user_id, :provider, :platform, :broker, :server, :mt_login, :account_type,
+             (:user_id, :provider, :platform, :broker, :server, :timezone, :timezone_source, :mt_login, :account_type,
               :metaapi_account_id, :sync_status, :credentials,
               CURRENT_TIMESTAMP, 1, :label, :masked, :currency, :leverage,
               :status, :balance, :equity, :starting_balance, :current_balance)'
@@ -115,6 +116,8 @@ final class AccountRepository
             'platform' => $data['platform'] ?? $data['provider'],
             'broker' => $data['broker'] ?? null,
             'server' => $data['server'] ?? null,
+            'timezone' => $data['timezone'] ?? null,
+            'timezone_source' => $data['timezone_source'] ?? 'unknown',
             'mt_login' => $data['mt_login'] ?? null,
             'account_type' => $data['account_type'] ?? 'STANDARD',
             'metaapi_account_id' => $data['metaapi_account_id'] ?? null,
@@ -131,6 +134,18 @@ final class AccountRepository
             'current_balance' => $data['current_balance'] ?? '0.00',
         ]);
         return (int) Database::connection()->lastInsertId();
+    }
+
+    /**
+     * Set/clear the broker/account SOURCE timezone (IANA) and its provenance.
+     * Distinct from users.timezone (display only).
+     */
+    public function updateTimezone(int $id, ?string $timezone, string $source = 'user_config'): void
+    {
+        $stmt = Database::connection()->prepare(
+            'UPDATE trading_accounts SET timezone = :tz, timezone_source = :source, updated_at = CURRENT_TIMESTAMP WHERE id = :id'
+        );
+        $stmt->execute(['tz' => $timezone, 'source' => $timezone === null ? 'unknown' : $source, 'id' => $id]);
     }
 
     public function updateSyncStatus(int $id, string $status, ?string $error = null): void
