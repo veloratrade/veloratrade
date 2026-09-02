@@ -38,6 +38,7 @@ AS-IS VERIFIED BASELINE • READ-ONLY • APPROVAL REQUIRED BEFORE CHANGE
     "login",
     "markets",
     "news",
+    "ops",
     "performance",
     "privacy",
     "profile",
