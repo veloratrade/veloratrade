@@ -102,6 +102,15 @@ $pdo->exec("CREATE TABLE sync_jobs (
     dedupe_key TEXT, locked_at TEXT, locked_by TEXT, lease_token TEXT,
     started_at TEXT, completed_at TEXT, dead_lettered_at TEXT, last_error TEXT,
     range_from TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)");
+$pdo->exec("CREATE TABLE metaapi_fills (
+    id INTEGER PRIMARY KEY, account_id INTEGER NOT NULL, user_id INTEGER NOT NULL,
+    external_deal_id TEXT NOT NULL, position_id TEXT, order_id TEXT, entry_type TEXT, direction TEXT,
+    symbol TEXT, volume TEXT, price TEXT, profit TEXT, commission TEXT, swap TEXT,
+    occurred_at_utc TEXT, time_status TEXT NOT NULL DEFAULT 'unresolved',
+    raw_time_text TEXT, broker_time_text TEXT, ingestion_source TEXT NOT NULL DEFAULT 'unknown',
+    event_ref TEXT, processing_state TEXT NOT NULL DEFAULT 'received', processed_trade_id INTEGER,
+    skip_reason TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (account_id, external_deal_id))");
 $pdo->exec("INSERT INTO users (id, email) VALUES (1, 'p4@example.test')");
 $pdo->exec("INSERT INTO trading_accounts
     (id, user_id, provider, platform, server, mt_login, metaapi_account_id, sync_status, account_type, label)
@@ -308,7 +317,12 @@ $result = $service->runNextSyncJob('p4-test-worker');
 check('C1 sync ran', is_array($result), var_export($result, true));
 check('C1 inserted 2 closed positions', ($result['inserted'] ?? -1) === 2, 'inserted=' . ($result['inserted'] ?? '?'));
 check('C1 assembled 2', ($result['assembled'] ?? -1) === 2, 'assembled=' . ($result['assembled'] ?? '?'));
-check('C1 skipped 2 (open P3 + naive P4)', ($result['skipped'] ?? -1) === 2, 'skipped=' . ($result['skipped'] ?? '?'));
+// Phase 5 fill-ledger: open P3 / naive P4 are DURABLY LEDGERED as 'received'
+// (waiting), not returned as terminal 'skipped' — they persist so a later fill
+// can complete them. Terminal skips here = 0; persistence assertions below prove
+// they never produced trades. fills = all 7 deal fills normalized.
+check('C1 fills ledgered (7)', ($result['fills'] ?? -1) === 7, 'fills=' . ($result['fills'] ?? '?'));
+check('C1 open/naive positions not terminal-skipped (await ledger completion)', ($result['skipped'] ?? -1) === 0, 'skipped=' . ($result['skipped'] ?? '?'));
 
 // Inspect persisted rows.
 $rows = $pdo->query("SELECT * FROM trades WHERE source='auto_sync' ORDER BY external_deal_id")->fetchAll(PDO::FETCH_ASSOC);
@@ -367,7 +381,10 @@ $webhookSingle = [
 ];
 $wres = $service->processWebhook($webhookSingle);
 check('C6 single webhook fill inserts 0 (no fabricated closed trade)', ($wres['inserted'] ?? -1) === 0, 'inserted=' . ($wres['inserted'] ?? '?'));
-check('C6 single webhook fill counted as skipped (unpaired)', ($wres['skipped'] ?? -1) === 1, 'skipped=' . ($wres['skipped'] ?? '?'));
+// Phase 5 ledger: the lone fill is DURABLY stored (waiting for its pair), not a
+// terminal skip and never fabricated into a trade. fills=1 ledgered.
+check('C6 single webhook fill is ledgered (fills=1) awaiting its pair', ($wres['fills'] ?? -1) === 1, 'fills=' . ($wres['fills'] ?? '?'));
+check('C6 single fill not terminal-skipped (ledgered received)', ($wres['skipped'] ?? -1) === 0, 'skipped=' . ($wres['skipped'] ?? '?'));
 
 // ---- Webhook: a paired IN+OUT batch DOES persist a canonical trade. ----
 $webhookPair = [

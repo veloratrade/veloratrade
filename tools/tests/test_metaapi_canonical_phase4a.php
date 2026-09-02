@@ -95,6 +95,15 @@ $pdo->exec("CREATE TABLE sync_jobs (
   dedupe_key TEXT, locked_at TEXT, locked_by TEXT, lease_token TEXT,
   started_at TEXT, completed_at TEXT, dead_lettered_at TEXT, last_error TEXT,
   range_from TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)");
+$pdo->exec("CREATE TABLE metaapi_fills (
+  id INTEGER PRIMARY KEY, account_id INTEGER NOT NULL, user_id INTEGER NOT NULL,
+  external_deal_id TEXT NOT NULL, position_id TEXT, order_id TEXT, entry_type TEXT, direction TEXT,
+  symbol TEXT, volume TEXT, price TEXT, profit TEXT, commission TEXT, swap TEXT,
+  occurred_at_utc TEXT, time_status TEXT NOT NULL DEFAULT 'unresolved',
+  raw_time_text TEXT, broker_time_text TEXT, ingestion_source TEXT NOT NULL DEFAULT 'unknown',
+  event_ref TEXT, processing_state TEXT NOT NULL DEFAULT 'received', processed_trade_id INTEGER,
+  skip_reason TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP, updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (account_id, external_deal_id))");
 $pdo->exec("INSERT INTO users (id,email,timezone) VALUES (1,'p4a@example.test','America/New_York')");
 // Account carries a broker/source timezone AND a broker/server name: the
 // MetaApi instant path must ignore ALL of these for canonical time.
@@ -322,7 +331,9 @@ check('C3 exit VWAP over partial outs (2016)', $t && bccomp($t['exit_price'], '2
 // F open position (IN only).
 fixture([d('f-in', 'F', 'DEAL_ENTRY_IN', 'DEAL_TYPE_BUY', 'XAU/USD', 2000, 0.1, 0, '2026-09-01T10:00:00Z')]);
 $r = sync($svc);
-check('F open position (IN only) -> skipped, no trade', $r['inserted'] === 0 && tradeFor('F') === null && ($r['skipped'] ?? 0) >= 1, json_encode($r));
+// Open position (IN only): ledgered as 'received' and WAITS for its OUT; it is
+// not terminal-skipped and never produces a fabricated trade.
+check('F open position (IN only) -> ledgered waiting, no trade', $r['inserted'] === 0 && tradeFor('F') === null && ($r['skipped'] ?? -1) === 0 && ($r['fills'] ?? 0) === 1, json_encode($r));
 
 // G OUT-only.
 fixture([d('g-out', 'G', 'DEAL_ENTRY_OUT', 'DEAL_TYPE_BUY', 'XAU/USD', 2010, 0.1, 5, '2026-09-01T14:00:00Z')]);
@@ -365,54 +376,70 @@ $t = tradeFor('N');
 check('N duplicate fills dedup -> 1 trade, volume 0.1 (not 0.2)', $r['inserted'] === 1 && $t && bccomp($t['volume'], '0.1', 8) === 0, json_encode(['ins' => $r['inserted'], 'vol' => $t['volume'] ?? 'null']));
 
 // =====================================================================
-// D. REALTIME CROSS-EVENT LIFECYCLE (Step 4 — the central audit)
-//    Ingress only sees the CURRENT payload; there is no fill ledger, so
-//    separate IN and OUT events cannot be paired. Historical sync is the
-//    durable reconciliation path. This section PROVES that.
+// D. REALTIME CROSS-EVENT LIFECYCLE (Phase 5 durable fill ledger)
+//    The ledger persists every fill by (account_id, external_deal_id), so IN
+//    and OUT arriving in SEPARATE webhooks now pair durably — across events,
+//    out-of-order delivery, retries and process restarts. A position waits
+//    until it is fully closed (open=earliest IN, close=latest OUT).
 // =====================================================================
 $inFill  = d('rt-in', 'RT', 'DEAL_ENTRY_IN', 'DEAL_TYPE_BUY', 'XAU/USD', 2000, 0.1, 0, '2026-09-01T10:00:00.000Z', '2026-09-01 13:00:00.000');
 $outFill = d('rt-out', 'RT', 'DEAL_ENTRY_OUT', 'DEAL_TYPE_BUY', 'XAU/USD', 2010, 0.1, 10, '2026-09-01T14:00:00.000Z', '2026-09-01 17:00:00.000');
 $before = autoCount();
 
-// Scenario A: IN webhook, then OUT webhook (separate events).
+// Scenario 1: IN webhook, then OUT webhook (separate events) -> one closed trade.
 $w1 = wh($svc, $inFill);
-check('RT-A IN-only webhook creates NO trade (pending, not persisted)', $w1['inserted'] === 0 && tradeFor('RT') === null, json_encode($w1));
+check('RT-1 IN-only webhook: no trade yet (fill ledgered, waiting)', $w1['inserted'] === 0 && tradeFor('RT') === null && $w1['fills'] === 1, json_encode($w1));
 $w2 = wh($svc, $outFill);
-check('RT-A then separate OUT webhook STILL creates NO trade (no cross-event state)', $w2['inserted'] === 0 && tradeFor('RT') === null, json_encode($w2));
-
-// Scenario G: "process restart" between events (brand-new service instance).
-$svc2 = makeService();
-$w3 = wh($svc2, $inFill);
-$svc3 = makeService(); // simulate restart
-$w4 = wh($svc3, $outFill);
-check('RT-G across simulated restart: IN then OUT still NOT paired', $w4['inserted'] === 0 && tradeFor('RT') === null, json_encode($w4));
-
-// Scenario B: OUT then IN (out of order), separate.
-$wb1 = wh($svc, d('bo-out', 'BO', 'DEAL_ENTRY_OUT', 'DEAL_TYPE_BUY', 'EUR/USD', 1.08, 0.1, 5, '2026-09-01T12:00:00Z'));
-$wb2 = wh($svc, d('bo-in', 'BO', 'DEAL_ENTRY_IN', 'DEAL_TYPE_BUY', 'EUR/USD', 1.09, 0.1, 0, '2026-09-01T08:00:00Z'));
-check('RT-B OUT-then-IN separate events: no trade', $wb2['inserted'] === 0 && tradeFor('BO') === null, json_encode($wb2));
-
-// Scenario H: multiple partial OUT events arrive separately (no IN seen).
-$wh1 = wh($svc, d('ph-o1', 'PH', 'DEAL_ENTRY_OUT', 'DEAL_TYPE_BUY', 'XAU/USD', 2010, 0.4, 4, '2026-09-01T11:00:00Z'));
-$wh2 = wh($svc, d('ph-o2', 'PH', 'DEAL_ENTRY_OUT', 'DEAL_TYPE_BUY', 'XAU/USD', 2020, 0.6, 12, '2026-09-01T12:00:00Z'));
-check('RT-H separate partial OUT events: no trade (no persisted IN)', $wh2['inserted'] === 0 && tradeFor('PH') === null, json_encode($wh2));
-
-// Reconciliation: a HISTORICAL sync returning the SAME complete deal set
-// durably creates the closed trade (this path survives restart/out-of-order/
-// duplicates because it re-reads the whole window from the provider).
-fixture([$inFill, $outFill]);
-$r = sync($svc);
-check('RT-RECONCILE historical sync of same fills creates the RT trade once', $r['inserted'] === 1 && tradeFor('RT') !== null, json_encode($r));
+check('RT-1 separate OUT webhook completes the position -> 1 trade', $w2['inserted'] === 1 && tradeFor('RT') !== null, json_encode($w2));
 $rt = tradeFor('RT');
-check('RT-RECONCILE canonical open/close correct', $rt && $rt['occurred_open_at_utc'] === '2026-09-01 10:00:00' && $rt['occurred_close_at_utc'] === '2026-09-01 14:00:00');
+check('RT-1 canonical open 10:00 / close 14:00', $rt && $rt['occurred_open_at_utc'] === '2026-09-01 10:00:00' && $rt['occurred_close_at_utc'] === '2026-09-01 14:00:00');
 
-// Scenario F: historical already created the trade; realtime then repeats the
-// fills (separately AND as a batch) -> no duplicate (position unique key).
-$wf1 = wh($svc, $inFill);
-$wf2 = wh($svc, $outFill);
-$wfBatch = wh($svc, [$inFill, $outFill], 'history');
-check('RT-F realtime repeats after historical: no duplicate trade', autoCount() === $before + 1, 'autoSyncCount=' . autoCount());
-check('RT-F repeated batch insert is idempotent (0)', $wfBatch['inserted'] === 0, json_encode($wfBatch));
+// Scenario 3: restart between events (brand-new service instance) — durability
+// lives in the DB, not process memory.
+
+$svc2 = makeService();
+wh($svc2, d('rs-in', 'RS', 'DEAL_ENTRY_IN', 'DEAL_TYPE_BUY', 'XAU/USD', 2000, 0.1, 0, '2026-09-01T10:00:00.000Z'));
+$svc3 = makeService(); // simulate worker/process restart
+$wrs = wh($svc3, d('rs-out', 'RS', 'DEAL_ENTRY_OUT', 'DEAL_TYPE_BUY', 'XAU/USD', 2010, 0.1, 10, '2026-09-01T14:00:00.000Z'));
+check('RT-3 across process restart: IN then OUT -> 1 trade (durability in DB)', $wrs['inserted'] === 1 && tradeFor('RS') !== null, json_encode($wrs));
+
+// Scenario 2: OUT then IN (out of order), separate -> one closed trade.
+wh($svc, d('bo-out', 'BO', 'DEAL_ENTRY_OUT', 'DEAL_TYPE_BUY', 'EUR/USD', 1.08, 0.1, 5, '2026-09-01T12:00:00Z'));
+$wb2 = wh($svc, d('bo-in', 'BO', 'DEAL_ENTRY_IN', 'DEAL_TYPE_BUY', 'EUR/USD', 1.09, 0.1, 0, '2026-09-01T08:00:00Z'));
+check('RT-2 OUT-then-IN out-of-order -> 1 trade (open=earliest IN 08:00)', $wb2['inserted'] === 1 && tradeFor('BO') !== null, json_encode($wb2));
+$bo = tradeFor('BO');
+check('RT-2 boundaries correct despite delivery order', $bo && $bo['occurred_open_at_utc'] === '2026-09-01 08:00:00' && $bo['occurred_close_at_utc'] === '2026-09-01 12:00:00');
+
+// Scenario 4: IN, duplicate IN, OUT -> no double-counting.
+wh($svc, d('dd-in', 'DD', 'DEAL_ENTRY_IN', 'DEAL_TYPE_BUY', 'XAU/USD', 2000, 0.1, 0, '2026-09-01T10:00:00Z'));
+wh($svc, d('dd-in', 'DD', 'DEAL_ENTRY_IN', 'DEAL_TYPE_BUY', 'XAU/USD', 2000, 0.1, 0, '2026-09-01T10:00:00Z')); // duplicate deal id
+$wdd = wh($svc, d('dd-out', 'DD', 'DEAL_ENTRY_OUT', 'DEAL_TYPE_BUY', 'XAU/USD', 2010, 0.1, 10, '2026-09-01T14:00:00Z'));
+$dd = tradeFor('DD');
+check('RT-4 duplicate IN fill -> 1 trade, volume 0.1 (not 0.2)', $wdd['inserted'] === 1 && $dd && bccomp($dd['volume'], '0.1', 8) === 0, ($dd['volume'] ?? 'null'));
+
+// Scenario 5: IN then separate PARTIAL OUTs -> one closed position at final OUT.
+wh($svc, d('pc-in', 'PC', 'DEAL_ENTRY_IN', 'DEAL_TYPE_BUY', 'XAU/USD', 2000, 1.0, 0, '2026-09-01T10:00:00Z'));
+$wpc1 = wh($svc, d('pc-o1', 'PC', 'DEAL_ENTRY_OUT', 'DEAL_TYPE_BUY', 'XAU/USD', 2010, 0.4, 4, '2026-09-01T11:00:00Z'));
+check('RT-5 partial OUT (0.4<1.0): position stays open, no trade yet', $wpc1['inserted'] === 0 && tradeFor('PC') === null, json_encode($wpc1));
+$wpc2 = wh($svc, d('pc-o2', 'PC', 'DEAL_ENTRY_OUT', 'DEAL_TYPE_BUY', 'XAU/USD', 2020, 0.6, 12, '2026-09-01T12:00:00Z'));
+$pc = tradeFor('PC');
+check('RT-5 remaining OUT closes position -> 1 trade, close = final 12:00', $wpc2['inserted'] === 1 && $pc && $pc['occurred_close_at_utc'] === '2026-09-01 12:00:00', json_encode($wpc2));
+
+// Scenario 9: retry/redelivery of the SAME events -> exactly-once (no dupes).
+$redeliver = wh($svc, $outFill);
+check('RT-9 redelivered event produces no duplicate', autoCount() === $before + 5 && $redeliver['inserted'] === 0, 'autoSyncCount=' . autoCount());
+
+// Scenario 6/7: historical sync overlapping realtime fills -> no duplicate.
+fixture([$inFill, $outFill]); // same RT fills now arrive via a historical window
+$r = sync($svc);
+check('RT-6/7 historical sync over already-ledgered realtime fills: 0 new', ($r['inserted'] ?? -1) === 0 && tradeFor('RT') !== null, json_encode($r));
+check('RT-6/7 no duplicate trade after historical overlap', autoCount() === $before + 5, 'autoSyncCount=' . autoCount());
+
+// Invalid/unknown fill (no recognizable entryType/identity) is rejected and
+// never fabricated into a trade.
+$wbad = wh($svc, ['id' => 'bad-1', 'positionId' => 'BADD', 'entryType' => 'DEAL_ENTRY_WAT', 'type' => 'DEAL_TYPE_BUY',
+    'symbol' => 'XAU/USD', 'volume' => 0.1, 'price' => 2000, 'profit' => 0, 'time' => '2026-09-01T10:00:00Z']);
+check('RT-10 unknown/invalid fill -> no trade, no fabricated row', $wbad['inserted'] === 0 && tradeFor('BADD') === null, json_encode($wbad));
 
 // =====================================================================
 // E. WORKER RETRY / RESTART (Step 4 scenario E; Step 10)
@@ -437,7 +464,8 @@ resetBackoff();
 $svcRetry2 = makeService(); fixture($retryDeals, 0); // fresh instance = restart
 $second = sync($svcRetry2);
 check('E2 retry after backoff+restart creates the trade exactly once', ($second['inserted'] ?? null) === 1 && tradeFor('E') !== null, json_encode($second));
-check('E2 no duplicate from the failed first attempt', autoCount() === $before + 2, 'autoSyncCount=' . autoCount());
+// No duplicate from the failed first attempt: exactly one trade for position E.
+check('E2 no duplicate trade for position E after retry', (int) $pdo->query("SELECT COUNT(*) FROM trades WHERE external_deal_id='pos-E'")->fetchColumn() === 1);
 
 // Dead-letter: a job that exhausts attempts is retained (terminal), not recycled.
 $svcDead = makeService(); fixture([], 99);

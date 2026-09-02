@@ -122,6 +122,16 @@ final class MetaApiDealAssembler
                 continue;
             }
 
+            // A CLOSED round-trip requires the exit volume to cover the opened
+            // volume. If OUT volume < IN volume the position is still partly
+            // open: never fabricate a closed trade (no fake close boundary).
+            $inVol = $this->sumDecimal($ins, 'volume');
+            $outVol = $this->sumDecimal($outs, 'volume');
+            if ($inVol === null || $outVol === null || bccomp($outVol, $inVol, 8) < 0) {
+                $skipped[] = ['key' => $key, 'reason' => 'position_partially_open'];
+                continue;
+            }
+
             $openInstant = $this->boundaryInstant($ins, false);  // earliest IN
             $closeInstant = $this->boundaryInstant($outs, true);  // LATEST OUT
 

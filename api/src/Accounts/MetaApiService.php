@@ -29,6 +29,7 @@ final class MetaApiService
     private ?Closure $transport;
     private MetaApiInstantResolver $instants;
     private MetaApiDealAssembler $assembler;
+    private MetaApiFillRepository $fills;
 
     public function __construct(
         ?AccountRepository $accounts = null,
@@ -37,6 +38,7 @@ final class MetaApiService
         ?callable $transport = null,
         ?MetaApiInstantResolver $instants = null,
         ?MetaApiDealAssembler $assembler = null,
+        ?MetaApiFillRepository $fills = null,
     ) {
         $this->accounts = $accounts ?? new AccountRepository();
         $this->jobs = $jobs ?? new SyncJobRepository();
@@ -44,6 +46,7 @@ final class MetaApiService
         $this->transport = $transport === null ? null : Closure::fromCallable($transport);
         $this->instants = $instants ?? new MetaApiInstantResolver();
         $this->assembler = $assembler ?? new MetaApiDealAssembler($this->instants);
+        $this->fills = $fills ?? new MetaApiFillRepository();
         $this->apiToken = (string) Config::env('METAAPI_TOKEN', '');
         $configured = rtrim((string) Config::env(
             'METAAPI_BASE_URL',
@@ -603,32 +606,35 @@ final class MetaApiService
             if ($account === null || (int) $account['user_id'] !== $userId) {
                 throw new \RuntimeException('Account not found for sync.');
             }
+            // Fetch + durably LEDGER every fill (one row per external deal),
+            // then reconcile closed positions from the durable ledger. This
+            // converges historical sync and realtime webhook delivery on the
+            // same fill set (cross-event pairing, restart/retry safe).
             $deals = $this->fetchHistoricalTrades($account, $job);
-            $assembled = $this->assembler->assemble($deals);
-            $trades = $assembled['trades'];
-            $inserted = Database::transaction(function (PDO $pdo) use (
-                $trades,
+            $result = Database::transaction(function (PDO $pdo) use (
+                $deals,
                 $userId,
                 $accountId,
                 $jobId,
                 $leaseToken,
-            ): int {
-                $inserted = 0;
-                foreach ($trades as $trade) {
-                    $inserted += $this->insertExternalTrade($pdo, $userId, $accountId, $trade);
+            ): array {
+                foreach ($deals as $deal) {
+                    $this->fills->recordFill($pdo, $accountId, $userId, $deal, 'historical');
                 }
+                $recon = $this->reconcileAccount($pdo, $userId, $accountId);
                 if (!$this->jobs->complete($jobId, $leaseToken)) {
                     throw new \RuntimeException('Sync lease was lost before completion.');
                 }
                 $this->accounts->markSynced($accountId);
-                return $inserted;
+                return $recon;
             });
             return [
                 'job_id' => $jobId,
                 'account_id' => $accountId,
-                'inserted' => $inserted,
-                'assembled' => count($trades),
-                'skipped' => count($assembled['skipped']),
+                'inserted' => $result['inserted'],
+                'assembled' => $result['assembled'],
+                'skipped' => $result['skipped'],
+                'fills' => count($deals),
             ];
         } catch (\Throwable $e) {
             $result = $this->jobs->fail($jobId, $leaseToken, $e->getMessage());
@@ -655,28 +661,99 @@ final class MetaApiService
         $account = $this->accounts->findByMetaApiId($metaapiId);
         $inserted = 0;
         $skipped = 0;
+        $fills = 0;
         if ($account !== null && in_array($type, ['deal', 'trade', 'history', 'order'], true)) {
-            // Route webhook deal bodies through the SAME position assembler as
-            // historical sync. A single realtime fill (only one side) cannot
-            // form a closed round-trip: the assembler skips it rather than
-            // fabricating open=close. Only fully-paired positions are inserted.
+            // Durable fill ledger + reconciliation: persist each incoming fill
+            // once (by account+deal id), then assemble closed positions from
+            // ALL ledgered fills for the account. This pairs IN/OUT that arrive
+            // in SEPARATE webhooks (or before/after a historical sync), and is
+            // restart/retry/multi-worker safe. A lone fill is ledgered and waits.
+            $eventRef = is_string($payload['eventId'] ?? null)
+                ? hash('sha256', $metaapiId . "\0" . $type . "\0" . (string) $payload['eventId'])
+                : null;
             $deals = $this->extractWebhookDeals($payload);
-            $assembled = $this->assembler->assemble($deals);
-            $skipped = count($assembled['skipped']);
-            foreach ($assembled['trades'] as $trade) {
-                $inserted += $this->insertExternalTrade(
-                    Database::connection(),
-                    (int) $account['user_id'],
-                    (int) $account['id'],
-                    $trade,
-                );
-            }
+            $recon = Database::transaction(function (PDO $pdo) use ($deals, $account, $eventRef): array {
+                foreach ($deals as $deal) {
+                    $this->fills->recordFill($pdo, (int) $account['id'], (int) $account['user_id'], $deal, 'webhook', $eventRef);
+                }
+                return $this->reconcileAccount($pdo, (int) $account['user_id'], (int) $account['id']);
+            });
+            $inserted = $recon['inserted'];
+            $skipped = $recon['skipped'];
+            $fills = count($deals);
         }
         return [
             'account_id' => $account === null ? null : (int) $account['id'],
             'inserted' => $inserted,
             'skipped' => $skipped,
+            'fills' => $fills,
         ];
+    }
+
+    /**
+     * Reconcile an account's DURABLE fill ledger into closed-position trades.
+     *
+     * Assembles ALL ledgered trade fills for the account in one transaction:
+     *   - fully-paired, fully-closed positions -> insert/upsert one trades row
+     *     (idempotent on account + pos-<positionId>); mark their fills aggregated;
+     *   - incomplete/open/naive positions -> leave their fills 'received' so a
+     *     later webhook or historical sync can complete them (never fabricate);
+     *   - positions the assembler definitively skips (missing open/out-of-order)
+     *     are marked skipped so they are not retried forever.
+     *
+     * Must be called inside a transaction.
+     *
+     * @return array{inserted:int,assembled:int,skipped:int}
+     */
+    private function reconcileAccount(PDO $pdo, int $userId, int $accountId): array
+    {
+        // Scope reconciliation to positions that still have unprocessed fills.
+        // Already-aggregated positions are not re-assembled (a new fill arriving
+        // later flips that position back to 'received' and reopens reassessment).
+        $positionIds = $this->fills->pendingPositionIds($pdo, $accountId);
+        if ($positionIds === []) {
+            return ['inserted' => 0, 'assembled' => 0, 'skipped' => 0];
+        }
+
+        $inserted = 0;
+        $assembledCount = 0;
+        $skippedCount = 0;
+
+        foreach ($positionIds as $positionId) {
+            $fills = $this->fills->fillsForPosition($pdo, $accountId, $positionId);
+            $result = $this->assembler->assemble($fills);
+            $fillIds = $this->fills->fillIdsForPosition($pdo, $accountId, $positionId);
+            $key = 'pos-' . $positionId;
+
+            if ($result['trades'] !== []) {
+                foreach ($result['trades'] as $trade) {
+                    $inserted += $this->insertExternalTrade($pdo, $userId, $accountId, $trade);
+                }
+                $tradeId = $this->findTradeIdByExternal($pdo, $accountId, $key);
+                $this->fills->markAggregated($pdo, $fillIds, $tradeId);
+                $assembledCount += count($result['trades']);
+            } else {
+                $reason = (string) ($result['skipped'][0]['reason'] ?? 'position_pending');
+                // Only mark terminal for data that a future fill cannot repair:
+                // bad chronology or an unusable direction. "missing" open/close
+                // and unresolved/partial positions must stay 'received' — the
+                // counterpart fill can arrive in a later webhook/sync.
+                if (in_array($reason, ['close_before_open', 'unknown_direction'], true)) {
+                    $this->fills->markSkipped($pdo, $fillIds, $reason);
+                    $skippedCount++;
+                }
+            }
+        }
+
+        return ['inserted' => $inserted, 'assembled' => $assembledCount, 'skipped' => $skippedCount];
+    }
+
+    private function findTradeIdByExternal(PDO $pdo, int $accountId, string $externalDealId): ?int
+    {
+        $stmt = $pdo->prepare('SELECT id FROM trades WHERE account_id=:a AND external_deal_id=:e LIMIT 1');
+        $stmt->execute(['a' => $accountId, 'e' => $externalDealId]);
+        $id = $stmt->fetchColumn();
+        return $id === false ? null : (int) $id;
     }
 
     public function fetchAccountInformation(string $metaapiId): ?array
