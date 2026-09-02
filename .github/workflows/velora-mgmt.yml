@@ -74,6 +74,7 @@ jobs:
   guard:
     name: Guard — validate target / mode / approval / backup
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     outputs:
       target_env: ${{ steps.v.outputs.target_env }}
       mode: ${{ steps.v.outputs.mode }}
@@ -216,4 +217,4 @@ jobs:
             inspect.json
             plan.json
           if-no-files-found: ignore
-          retention-days: 30
+          retention-days: 14
