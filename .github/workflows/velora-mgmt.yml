@@ -100,7 +100,7 @@ jobs:
             [[ -n "${FTP_SERVER:-}" && -n "${FTP_USERNAME:-}" && -n "${FTP_PASSWORD:-}" ]] || { echo "::error::missing production FTP_* secrets"; exit 1; }
           fi
           # Mutating gates
-          if [[ "$VRO" == "false" ]]; then
+          if [[ "$READONLY" == "false" ]]; then
             WANT="APPROVE-${ENVIRONMENT}-${MODE}"
             [[ "$APPROVAL" == "$WANT" ]] || { echo "::error::mutating op requires exact approval token '$WANT'"; exit 1; }
             [[ "$BACKUP_OK" == "true" ]] || { echo "::error::mutating op requires backup_verified=true (verified pre-change backup)"; exit 1; }
@@ -146,15 +146,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Refuse mutating op unless explicitly enabled (defense in depth)
+      - name: Refuse mutating op (defense in depth — read-only build)
+        if: needs.guard.outputs.readonly != 'true'
         run: |
-          if [[ "$VRO" != "true" ]]; then
-            echo "::error::Mutating operations ($VOP) are DISABLED in this workflow build."
-            echo "::error::Use the approved, backup-gated runbook; this path performs read-only probes only."
-            exit 2
-          fi
+          echo "::error::Mutating operations are DISABLED in this workflow build."
+          echo "::error::Use the approved, backup-gated runbook; this path performs read-only probes only."
+          exit 2
 
       - name: Build, upload, execute, remove one-use probe
+        env:
+          VOP: ${{ needs.guard.outputs.mode }}
+          VENV: ${{ needs.guard.outputs.env }}
         run: |
           set -euo pipefail
           sudo apt-get update -qq
@@ -191,12 +193,15 @@ jobs:
           cp /tmp/mgmt.json mgmt-result.json
 
       - name: Normalize / inspect / plan / verify (local engine, read-only)
+        env:
+          VOP: ${{ needs.guard.outputs.mode }}
+          VENV: ${{ needs.guard.outputs.env }}
         run: |
           set -euo pipefail
           SHA="${{ github.event.inputs.commit_sha }}"
           [ -z "$SHA" ] && SHA="$(git rev-parse HEAD)"
           python3 ops/velora-mgmt/velora_mgmt.py inspect --environment "$VENV" --metadata mgmt-result.json | tee inspect.json
-          if [[ "$OP" == "plan" || "$OP" == "verify" ]]; then
+          if [[ "${VOP:-}" == "plan" || "${VOP:-}" == "verify" ]]; then
             python3 ops/velora-mgmt/velora_mgmt.py plan --environment "$VENV" --metadata mgmt-result.json --commit-sha "$SHA" | tee plan.json
             python3 ops/velora-mgmt/velora_mgmt.py verify --environment "$VENV" --metadata mgmt-result.json || echo "::warning::verify reports pending migrations (expected pre-migration)"
           fi
