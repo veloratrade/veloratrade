@@ -1,0 +1,32 @@
+{
+  "environment": "staging",
+  "file_backups": {
+    "count": 0,
+    "gate": {
+      "allowed": false,
+      "decision": "STOP",
+      "backup_state": "UNVERIFIED",
+      "backup_id": null,
+      "reasons": [
+        "no file backup present",
+        "minimum required state = CREATED"
+      ]
+    },
+    "records": [],
+    "mechanism": "NOT IMPLEMENTED (deploy-staging.yml has no backup step)"
+  },
+  "database_backups": {
+    "count": 0,
+    "gate": {
+      "allowed": false,
+      "decision": "STOP",
+      "backup_state": "UNVERIFIED",
+      "backup_id": null,
+      "reasons": [
+        "NO VERIFIED DATABASE BACKUP MECHANISM / no database backup registered",
+        "minimum required state = INTEGRITY_VERIFIED"
+      ]
+    },
+    "mechanism": "NO VERIFIED DATABASE BACKUP MECHANISM FOUND (no mysqldump/snapshot workflow; preflight_v0_2 only verifies an operator-supplied dump and is not wired to CI)"
+  }
+}

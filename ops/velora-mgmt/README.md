@@ -13,7 +13,12 @@ deployment and database management. One architecture, strict environment isolati
 
 ## Layout
 - `velora_mgmt.py` — pure-logic engine (normalize, compare, plan, plan-hash, approval).
-  CLI: `inspect | plan | verify`. No network; consumes probe metadata JSON.
+  CLI: `inspect | plan | verify | backup-discover`. No network; consumes probe metadata
+  JSON / a read-only GitHub artifact listing.
+- `backup.py` — backup discovery, verification ladder (CREATED→INTEGRITY_VERIFIED→
+  RESTORE_VERIFIED / UNVERIFIED), mutation backup gate, approval↔backup-id binding, and
+  retention lifecycle (multiple history; cleanup only after success; never delete newest
+  verified). See `BACKUP_POLICY.md` and `ROLLBACK.md`.
 - `probe/mgmt_probe.php.tmpl` — one-use PHP probe template (fixed ops only; no arbitrary
   SQL/PHP; read-only metadata; self-deleting). Placeholders `__HASH__/__OP__/__ENV__`.
 - `tests/test_velora_mgmt.py` — read-only/dry-run unit tests (fixtures + synthetic).
@@ -23,10 +28,22 @@ deployment and database management. One architecture, strict environment isolati
 
 ## State machine
 ```
-INSPECT → PLAN → BACKUP(+VERIFY on prod) → APPROVAL → EXECUTE → VERIFY → COMPLETE
+INSPECT → PLAN → BACKUP REQUIRED? → CREATE → VERIFY → RECORD → APPROVAL
+   → EXECUTE → POST-VERIFY → RETENTION CLEANUP → COMPLETE
 ```
 Any failure → **STOP**. No auto-fallback, no auto-retry on production, no bypass of
-approval or backup. Read-only is the default.
+approval or backup. Read-only is the default. **New verified backup always precedes any
+retention cleanup;** old backups are never deleted before/during creation.
+
+## Backup discovery (read-only)
+```
+python3 ops/velora-mgmt/velora_mgmt.py backup-discover --environment production \
+  --artifacts <(curl ... actions/artifacts)   # read-only artifact listing JSON
+```
+Reports the real production file-backup artifacts (`pre-deploy-backup-<sha>`, 14d,
+multi-history — CREATED, not checksum/restore-verified) and explicitly reports
+**NO VERIFIED DATABASE BACKUP MECHANISM** for staging/production (gate STOP, never
+fabricated). See `BACKUP_POLICY.md` for verified findings.
 
 ## Local use (no DB access needed; works on a captured metadata file)
 ```

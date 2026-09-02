@@ -34,6 +34,13 @@ import os
 import re
 import sys
 from dataclasses import dataclass, field, asdict
+
+try:
+    import backup as bk  # sibling module in ops/velora-mgmt
+except ImportError:  # when imported as package / different cwd
+    import os as _os, sys as _sys
+    _sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+    import backup as bk
 from typing import Any
 
 # --------------------------------------------------------------------------- #
@@ -802,6 +809,41 @@ def _cmd_verify(args) -> int:
     return 0 if ok else 1
 
 
+
+def _cmd_backup_discover(args) -> int:
+    """Read-only backup discovery from a GitHub Actions artifact listing JSON.
+    Reports file + database backup manifests and the mutation gate decision, and
+    explicitly reports when no database backup mechanism exists (never fabricates)."""
+    artifacts = []
+    if args.artifacts:
+        data = json.load(open(args.artifacts, encoding="utf-8"))
+        artifacts = data.get("artifacts", data if isinstance(data, list) else [])
+    out = {"environment": args.environment, "file_backups": [], "database_backups": []}
+    # FILE backups (real mechanism = production deploy artifact)
+    fman = bk.manifest_from_github_artifacts(args.environment, artifacts)
+    fgate = bk.mutation_backup_gate(fman, args.environment, "file")
+    out["file_backups"] = {
+        "count": len(fman.records),
+        "gate": fgate.__dict__,
+        "records": [r.to_dict() for r in fman.sorted_newest_first()],
+        "mechanism": ("IMPLEMENTED (deploy.yml pre-deploy docroot tar -> GitHub "
+                      "artifact, retention 14d)") if args.environment == "production"
+                     else "NOT IMPLEMENTED (deploy-staging.yml has no backup step)",
+    }
+    # DATABASE backups (no implemented dump mechanism -> empty manifest => BLOCKED)
+    dman = bk.database_backup_manifest(args.environment)
+    dgate = bk.mutation_backup_gate(dman, args.environment, "database")
+    out["database_backups"] = {
+        "count": 0,
+        "gate": dgate.__dict__,
+        "mechanism": ("NO VERIFIED DATABASE BACKUP MECHANISM FOUND (no mysqldump/"
+                      "snapshot workflow; preflight_v0_2 only verifies an operator-"
+                      "supplied dump and is not wired to CI)"),
+    }
+    print(json.dumps(out, indent=2, ensure_ascii=False))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="velora-mgmt")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -815,6 +857,10 @@ def main(argv: list[str] | None = None) -> int:
     pp = sub.add_parser("plan"); common(pp)
     pp.add_argument("--commit-sha", required=True); pp.set_defaults(fn=_cmd_plan)
     pv = sub.add_parser("verify"); common(pv); pv.set_defaults(fn=_cmd_verify)
+    pb = sub.add_parser("backup-discover")
+    pb.add_argument("--environment", required=True, choices=ENVIRONMENTS)
+    pb.add_argument("--artifacts", help="read-only GitHub Actions artifact listing JSON")
+    pb.set_defaults(fn=_cmd_backup_discover)
 
     args = ap.parse_args(argv)
     require_environment(args.environment)
