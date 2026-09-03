@@ -31,8 +31,9 @@ deployment and database management. One architecture, strict environment isolati
   sha256+gzip integrity verify, guarded retention delete. Never fabricates a backup.
 - `backup_lifecycle.py` — lifecycle orchestrator DISCOVER→PLAN→APPROVE→CREATE→UPLOAD→VERIFY
   INTEGRITY→BIND→MUTATE→POST-VERIFY→RETENTION; BLOCKS without a real dump, production mutation
-  requires a bound approval, dry-run never writes/deletes. Workflow: `.github/workflows/velora-backup.yml`
-  (connectivity/dry-run; real backups disabled in this build). Tests: `tests/test_backup_repo_connection.py`.
+  requires a bound approval, dry-run never writes/deletes. Workflows: `.github/workflows/velora-db-backup.yml`
+  (production) / `.github/workflows/velora-db-backup-staging.yml` (staging) — fresh verified dump →
+  private-repo Release Asset, byte re-verified, `BACKUP_REPO_TOKEN` required. Tests: `tests/test_backup_repo_connection.py`.
 - `probe/mgmt_probe.php.tmpl` — one-use PHP probe template (fixed ops only; no arbitrary
   SQL/PHP; read-only metadata; self-deleting). Placeholders `__HASH__/__OP__/__ENV__`.
 - `tests/test_velora_mgmt.py` — read-only/dry-run unit tests (fixtures + synthetic).

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Static/security tests for the REAL staging backup path: the one-use PHP backup
-probe template and the velora-backup-staging.yml workflow. These tests do NOT run
-PHP or contact the server; they assert the security invariants of the artifacts."""
+probe template and the velora-db-backup-staging.yml reusable workflow (the wired,
+upload-and-verify path that deploy-staging.yml uses). These tests do NOT run PHP or
+contact the server; they assert the security invariants of the artifacts."""
 import os
 import re
 import unittest
@@ -11,7 +12,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 MGMT = os.path.abspath(os.path.join(HERE, ".."))
 ROOT = os.path.abspath(os.path.join(MGMT, "..", ".."))
 PROBE = os.path.join(MGMT, "probe", "db_backup_probe.php.tmpl")
-WF = os.path.join(ROOT, ".github", "workflows", "velora-backup-staging.yml")
+WF = os.path.join(ROOT, ".github", "workflows", "velora-db-backup-staging.yml")
 
 
 class ProbeSecurityTests(unittest.TestCase):
@@ -112,44 +113,54 @@ class WorkflowSecurityTests(unittest.TestCase):
             cls.text = f.read()
         cls.yaml = yaml.safe_load(cls.text)
 
-    def test_10_trigger_is_dispatch_only(self):
+    def test_10_is_a_reusable_workflow_no_untrusted_triggers(self):
+        # Invoked via workflow_call from deploy-staging; may also be dispatched
+        # manually. Never triggered by untrusted PR/fork events.
         tr = self.yaml.get("on", self.yaml.get(True))
         keys = list(tr.keys()) if isinstance(tr, dict) else [tr]
-        self.assertIn("workflow_dispatch", keys)
-        for bad in ["pull_request", "pull_request_target", "push", "issue_comment"]:
+        self.assertIn("workflow_call", keys)
+        for bad in ["pull_request", "pull_request_target", "issue_comment", "fork"]:
             self.assertNotIn(bad, keys)
 
-    def test_11_environment_choice_locked_to_staging(self):
-        opts = self.yaml[True]["workflow_dispatch"]["inputs"]["environment"]["options"]
-        self.assertEqual(opts, ["staging"])
+    def test_11_hard_locked_to_staging_target(self):
+        # staging host/docroot only; never production.
+        self.assertIn("https://staging.veloratrade.ir", self.text)
+        self.assertIn("public_html/staging.veloratrade.ir", self.text)
+        self.assertNotIn("https://veloratrade.ir", self.text.replace("staging.veloratrade.ir", ""))
+        self.assertNotIn('DOCROOT: "public_html"', self.text)
 
     def test_12_uses_only_staging_ftp_secrets(self):
         self.assertIn("secrets.STAGING_FTP_SERVER", self.text)
         self.assertIn("secrets.STAGING_FTP_USERNAME", self.text)
         self.assertIn("secrets.STAGING_FTP_PASSWORD", self.text)
-        # must NOT reference production FTP secrets or any GitHub upload token
+        # must NOT reference production FTP secrets.
         self.assertNotIn("secrets.FTP_SERVER", self.text.replace("STAGING_", "X"))
-        self.assertNotIn("secrets.BACKUP_REPO_TOKEN", self.text)
+        self.assertNotIn("secrets.FTP_USERNAME", self.text.replace("STAGING_", "X"))
+
+    def test_13_requires_backup_repo_token_and_no_github_token_fallback(self):
+        # Cross-repo private upload MUST use BACKUP_REPO_TOKEN and fail closed
+        # without it; never fall back to GITHUB_TOKEN.
+        self.assertIn("secrets.BACKUP_REPO_TOKEN", self.text)
         self.assertNotIn("secrets.GITHUB_TOKEN", self.text)
+        self.assertNotIn("github.token", self.text)
+        self.assertRegex(self.text, r"BACKUP_REPO_TOKEN is required")
 
-    def test_13_no_embedded_token_and_no_upload_call(self):
-        for bad in ["gh ", "gh api", "curl -H \"Authorization", "uploads.github.com",
-                    "/releases", "x-access-token", "github_pat_", "ghp_"]:
-            self.assertNotIn(bad, self.text, f"unexpected GitHub-write surface: {bad}")
-
-    def test_14_stops_at_upload_boundary(self):
-        self.assertIn("requires a separate credential to upload to velora-backups", self.text)
-        # the boundary step fails the job (exit non-zero) without uploading
-        self.assertRegex(self.text, r"exit 2")
+    def test_14_probe_self_deletes_and_uploads_to_private_repo(self):
+        # the wired workflow DOES upload to the private repo (unlike the old
+        # boundary prototype) and byte-verifies; the dump is still never in git.
+        self.assertIn("velora_staging_backup_upload.py", self.text)
+        self.assertIn("add-mask", self.text)
 
     def test_15_probe_token_and_filename_masked(self):
         self.assertIn("add-mask", self.text)
         self.assertIn("openssl rand -hex 32", self.text)
 
     def test_16_dump_never_committed_and_artifact_is_transient(self):
-        # dump is fetched as dump.sql.gz at workspace root, never git-added
+        # dump is fetched as dump.sql.gz at workspace root, never git-added to the
+        # PUBLIC repo. Only metadata goes to the private repo; run artifacts are
+        # transient (14d).
         self.assertNotIn("git add", self.text)
-        self.assertIn("upload-artifact@v4", self.text)  # transient run artifact only
+        self.assertIn("upload-artifact@v4", self.text)
         self.assertIn("retention-days: 14", self.text)
 
 

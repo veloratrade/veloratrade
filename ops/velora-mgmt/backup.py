@@ -61,6 +61,38 @@ MIN_STATE_FOR_MUTATION = {
     "staging":    {"file": STATE_CREATED,           "database": STATE_INTEGRITY_VERIFIED},
 }
 
+# Operations that change the DATABASE SCHEMA (as opposed to shipping application code).
+# A schema migration is the highest-risk mutation: if it goes wrong the rollback path
+# is a DATABASE RESTORE, so the pre-change backup must be proven RESTORE-able, not
+# merely checksum-verified. An ordinary code-only deploy can roll back by re-uploading
+# the previous build + file/docroot backup, so INTEGRITY_VERIFIED remains its bar.
+SCHEMA_MUTATING_OPERATIONS = frozenset({"migrate"})
+
+
+def required_state_for_mutation(environment: str, backup_type: str,
+                                operation: str = "deploy") -> str:
+    """Return the minimum backup verification state that must be reached before a
+    mutation is allowed.
+
+    Explicit policy:
+      * production DATABASE SCHEMA migration ('migrate')  -> RESTORE_VERIFIED
+        (the backup must have been proven to restore; checksum-only is insufficient
+        because schema rollback = DB restore).
+      * production code-only deploy / file mutation      -> INTEGRITY_VERIFIED
+        (rollback = re-ship previous build + file backup).
+      * staging                                           -> lighter ladder
+        (integrity-verified DB backup; staging is disposable and validated separately).
+
+    `operation` uses the same vocabulary as private_backup_repo.require_operation
+    (inspect|plan|verify|backup|migrate|deploy). Read-only ops never mutate and are
+    not expected here, but default to the ordinary bar rather than raising.
+    """
+    base = MIN_STATE_FOR_MUTATION[environment][backup_type]
+    is_schema = (operation in SCHEMA_MUTATING_OPERATIONS)
+    if environment == "production" and backup_type == "database" and is_schema:
+        return STATE_RESTORE_VERIFIED
+    return base
+
 
 class BackupError(Exception):
     pass
@@ -249,7 +281,7 @@ class GateDecision:
 
 
 def mutation_backup_gate(manifest: BackupManifest, environment: str,
-                         backup_type: str) -> GateDecision:
+                         backup_type: str, operation: str = "deploy") -> GateDecision:
     if environment not in ENVIRONMENTS:
         return GateDecision(False, "STOP", STATE_UNVERIFIED, None, [f"bad environment {environment}"])
     if backup_type not in BACKUP_TYPES:
@@ -257,7 +289,9 @@ def mutation_backup_gate(manifest: BackupManifest, environment: str,
     if manifest.environment != environment or manifest.backup_type != backup_type:
         return GateDecision(False, "STOP", STATE_UNVERIFIED, None,
                             ["manifest does not match requested environment/type"])
-    required = MIN_STATE_FOR_MUTATION[environment][backup_type]
+    # Production DATABASE SCHEMA migration requires a RESTORE_VERIFIED backup;
+    # ordinary code deploys keep the INTEGRITY_VERIFIED bar.
+    required = required_state_for_mutation(environment, backup_type, operation)
     newest = manifest.newest_verified(minimum=STATE_CREATED)
     if newest is None:
         if backup_type == "database":

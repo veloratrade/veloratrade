@@ -36,14 +36,18 @@ header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
 $MODE = '__MODE__';   // check | apply
-$ENV  = '__ENV__';    // staging | production
+$ENV  = '__ENV__';    // HARD-LOCKED to staging (this probe is staging-only)
 
 $result = ['probe' => 'velora-trade-migration', 'mode' => $MODE, 'env' => $ENV,
            'applied' => [], 'errors' => [], 'ok' => true];
 
-if (!in_array($MODE, ['check', 'apply'], true) || !in_array($ENV, ['staging', 'production'], true)) {
+if (!in_array($MODE, ['check', 'apply'], true) || $ENV !== 'staging') {
+    // This trade-schema migration probe is STAGING-ONLY. It must never execute
+    // against production even if a future caller accidentally renders it with
+    // another environment — fail closed with a generic 400 and no DB access.
     http_response_code(400);
-    echo json_encode(['ok' => false, 'error' => 'bad mode/env'], JSON_UNESCAPED_SLASHES);
+    echo json_encode(['ok' => false, 'error' => 'bad mode/env (staging-only probe)'],
+                     JSON_UNESCAPED_SLASHES);
     exit;
 }
 

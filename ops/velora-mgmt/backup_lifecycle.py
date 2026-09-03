@@ -133,9 +133,16 @@ def run_backup_lifecycle(client: "bc.Client", req: LifecycleRequest) -> dict:
     created["restore_test_status"] = bk.STATE_UNVERIFIED
 
     # 7) BIND BACKUP TO OPERATION: the gate requires the SAME env + private repo + state.
-    gate = pb.private_backup_gate(created, req.environment, req.operation, bk.STATE_INTEGRITY_VERIFIED)
+    #    The required state depends on the operation: a PRODUCTION database SCHEMA
+    #    migration needs a RESTORE_VERIFIED backup (rollback = DB restore); ordinary
+    #    code deploys use INTEGRITY_VERIFIED. Staging uses the lighter ladder.
+    required_state = bk.required_state_for_mutation(
+        req.environment, "database", req.operation)
+    gate = pb.private_backup_gate(created, req.environment, req.operation, required_state)
     if not gate["allowed"]:
-        return _stop("bind_backup", gate["reasons"])
+        return _stop("bind_backup",
+                     gate["reasons"] + [f"required minimum backup state for "
+                                        f"{req.environment}/{req.operation} = {required_state}"])
 
     # re-commit the VERIFIED metadata (small text) in non-dry mode after integrity check
     if not req.dry_run:

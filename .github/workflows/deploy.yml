@@ -147,11 +147,22 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     environment: production
+    env:
+      BACKUP_REPO_TOKEN: ${{ secrets.BACKUP_REPO_TOKEN }}
     steps:
       - uses: actions/checkout@v4
-      - name: اتصال و راستی‌آزمایی بکاپ (fail-closed)
+      - name: اتصال و راستی‌آزمایی مستقل بکاپ در مخزن خصوصی (fail-closed)
         run: |
           set -euo pipefail
+          # این گارد فقط خروجی‌های workflow بالا را باور نمی‌کند؛ مستقیماً مخزن
+          # PRIVATE را دوباره می‌خواند و وجود/namespace/وضعیت/sha/commit بکاپ را
+          # مستقل راستی‌آزمایی می‌کند. بدون BACKUP_REPO_TOKEN ⇒ fail closed
+          # (هیچ fallback به GITHUB_TOKEN وجود ندارد).
+          if [ -z "${BACKUP_REPO_TOKEN:-}" ]; then
+            echo "::error::BACKUP_REPO_TOKEN برای راستی‌آزمایی مستقل بکاپ لازم است (fail closed)."
+            exit 1
+          fi
+          echo "::add-mask::${BACKUP_REPO_TOKEN}"
           BID="${{ needs.prod_db_backup.outputs.backup_id }}"
           TAG="${{ needs.prod_db_backup.outputs.release_tag }}"
           SHA="${{ needs.prod_db_backup.outputs.sha256 }}"
@@ -159,14 +170,20 @@ jobs:
           python3 ops/velora-mgmt/velora_prod_backup_gate.py \
             --backup-id "$BID" --release-tag "$TAG" --sha256 "$SHA" \
             --source-commit "$CMT" --expected-commit "$GITHUB_SHA"
-          echo "✅ بکاپ تأییدشدهٔ Production به این استقرار متصل شد: $BID"
-          echo "| بکاپ دیتابیس Production | $BID | INTEGRITY_VERIFIED |" >> $GITHUB_STEP_SUMMARY
+          echo "✅ بکاپ تأییدشدهٔ Production مستقل راستی‌آزمایی و به این استقرار متصل شد: $BID"
+          echo "| بکاپ دیتابیس Production | $BID | INTEGRITY_VERIFIED (re-verified) |" >> $GITHUB_STEP_SUMMARY
 
   # ── ۳. ساخت بسته + بکاپ + انتقال ───────────────────────────────
   deploy:
     name: آپلود روی هاست
-    # وابستگیٔ سخت: بکاپ فایل (درون همین job) و بکاپ دیتابیس تأییدشدهٔ متصل.
+    # وابستگیٔ سخت برای استقرار واقعی: بکاپ فایل (درون همین job) و بکاپ دیتابیس
+    # تأییدشدهٔ متصل. در dry_run بکاپ DB اجرا نمی‌شود (هیچ جهشی روی Production رخ
+    # نمی‌دهد)، بنابراین این job در حالت پیش‌نمایش با «فقط فهرست/بدون نوشتن» اجرا
+    # می‌شود و در استقرار واقعی فقط وقتی پیش می‌رود که prod_backup_gate موفق باشد.
+    # این if هرگز مسیر واقعی را تضعیف نمی‌کند: نگارش واقعی فایل همچنان پشت
+    # !inputs.dry_run و موفقیت prod_backup_gate است.
     needs: [guard, prod_backup_gate]
+    if: ${{ inputs.dry_run || needs.prod_backup_gate.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     environment: production

@@ -190,9 +190,11 @@ Added components (branch only):
 - `backup_lifecycle.py` — orchestrates DISCOVER→PLAN→APPROVE→CREATE→UPLOAD→VERIFY→BIND→MUTATE→
   POST-VERIFY→RETENTION; BLOCKS (never fabricates) when no dump is supplied; production mutate
   requires a bound approval; failures STOP with no retention/deletion; dry-run never uploads/deletes.
-- `.github/workflows/velora-backup.yml` — `workflow_dispatch`, explicit env, requires
-  `BACKUP_REPO_TOKEN`, routes production through the protected `production` environment, and
-  refuses `do_real_backup=true` in this build (connectivity/dry-run only).
+- `.github/workflows/velora-db-backup.yml` (production) / `.github/workflows/velora-db-backup-staging.yml`
+  (staging) — reusable `workflow_call` (+ manual dispatch), explicit hard-locked environment,
+  require `BACKUP_REPO_TOKEN` (no GITHUB_TOKEN fallback; fail closed), produce a FRESH verified
+  dump → private-repo Release Asset → byte re-verify, and route production through the protected
+  `production` environment. Invoked by `deploy.yml` / `deploy-staging.yml`.
 - Tests: `tests/test_backup_repo_connection.py` (18 cases with a MOCK transport; synthetic gzip
   blob, not database data) covering repo-exists/private, public refusal, missing-repo fail-closed,
   env isolation, no namespace collision, unverified blocks migrate, dump never enters contents/git,

@@ -334,9 +334,39 @@ class HardenedIntegrationTests(unittest.TestCase):
         c = bc.Client(transport=noauth_transport)
         with self.assertRaises(bc.BackupRepoClientError):
             c.check_repository()
-        # default token resolver returns None when env lacks the secret
+
+    def test_22b_github_token_is_never_a_fallback(self):
+        # BACKUP_REPO_TOKEN is the ONLY accepted credential. GITHUB_TOKEN must be
+        # ignored even when BACKUP_REPO_TOKEN is absent (fail closed, no fallback).
         import backup_repo_client as _bc
-        self.assertIsNone(_bc.default_token()) if not os.environ.get("BACKUP_REPO_TOKEN") else None
+        real_env = dict(os.environ)
+        try:
+            os.environ.pop("BACKUP_REPO_TOKEN", None)
+            os.environ["GITHUB_TOKEN"] = "tok_github_token_value_ignored"
+            # the resolver must NOT pick up GITHUB_TOKEN
+            self.assertIsNone(_bc.default_token())
+            # and constructing a default (real-network) client without
+            # BACKUP_REPO_TOKEN must raise even though GITHUB_TOKEN is set
+            with self.assertRaises(bc.BackupRepoClientError):
+                bc.Client()  # no injected transport => default transport path
+            # when BACKUP_REPO_TOKEN is present it IS used
+            os.environ["BACKUP_REPO_TOKEN"] = "tok_backup_repo_token_value"
+            self.assertEqual(_bc.default_token(), "tok_backup_repo_token_value")
+        finally:
+            os.environ.clear()
+            os.environ.update(real_env)
+
+    def test_22c_default_client_requires_backup_repo_token(self):
+        # Without any injected transport and without BACKUP_REPO_TOKEN, the client
+        # fails closed at construction (no silent unauthenticated default transport).
+        real_env = dict(os.environ)
+        try:
+            os.environ.pop("BACKUP_REPO_TOKEN", None)
+            with self.assertRaises(bc.BackupRepoClientError):
+                bc.Client()
+        finally:
+            os.environ.clear()
+            os.environ.update(real_env)
 
     def test_23_token_never_leaks_into_error_messages(self):
         secret = "github_pat_SUPERSECRETVALUE123"
@@ -371,7 +401,7 @@ class HardenedIntegrationTests(unittest.TestCase):
 
     def test_24_workflow_has_no_pull_request_trigger(self):
         wf_path = os.path.abspath(os.path.join(HERE, "..", "..", "..",
-                                              ".github", "workflows", "velora-backup.yml"))
+                                              ".github", "workflows", "velora-db-backup.yml"))
         with open(wf_path) as f:
             wf = f.read()
         d = yaml.safe_load(wf)

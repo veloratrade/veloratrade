@@ -15,9 +15,10 @@
  *     never inside the public docroot;
  *   - self-deletes; prints JSON metadata only (no credentials, DSN, .env, or row data).
  *
- * The workflow (velora-backup.yml) uploads this over FTP to the docroot, invokes it once
- * over HTTPS with X-Velora-Mgmt, then retrieves the .sql.gz over FTP from the private
- * root (velora_private_staging/backups/...) and removes the remote temp file after the
+ * The wired workflow (velora-db-backup-staging.yml for staging / velora-db-backup.yml
+ * for production) uploads this over FTP to the docroot, invokes it once over HTTPS
+ * with X-Velora-Mgmt, then retrieves the .sql.gz over FTP from the private root
+ * (velora_private[_staging]/backups/...) and removes the remote temp file after the
  * local copy is verified.
  */
 declare(strict_types=1);

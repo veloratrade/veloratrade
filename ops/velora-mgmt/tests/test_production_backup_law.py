@@ -191,6 +191,57 @@ class UploadAndGateScriptTests(unittest.TestCase):
             for bad in ["github_pat_", "ghp_", "BEGIN PRIVATE KEY", "FTP_PASSWORD="]:
                 self.assertNotIn(bad, src)
 
+    def test_21_gate_independently_verifies_against_private_repo(self):
+        # The gate must RE-READ the private repository (not trust upstream outputs).
+        self.assertIn("get_backup_metadata", self.gate)
+        self.assertIn("get_release_by_tag", self.gate)
+        self.assertIn("verify_bound_backup", self.gate)
+        self.assertIn("PRIVATE_BACKUP_REPO", self.gate)
+        self.assertIn("STATE_INTEGRITY_VERIFIED", self.gate)
+        # and must build a real client (fails closed without BACKUP_REPO_TOKEN)
+        self.assertIn("build_client", self.gate)
+
+    def test_22_production_schema_migration_requires_restore_verified(self):
+        import backup as _bk
+        self.assertEqual(
+            _bk.required_state_for_mutation("production", "database", "migrate"),
+            _bk.STATE_RESTORE_VERIFIED)
+        # ordinary code deploy keeps the lighter (integrity) bar
+        self.assertEqual(
+            _bk.required_state_for_mutation("production", "database", "deploy"),
+            _bk.STATE_INTEGRITY_VERIFIED)
+
+
+class DeployDryRunTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        wf = os.path.join(ROOT, ".github", "workflows", "deploy.yml")
+        with open(wf) as f:
+            cls.text = f.read()
+        cls.yaml = yaml.safe_load(cls.text)
+
+    def test_23_dry_run_preview_runs_but_real_gate_still_required(self):
+        self.assertIn("inputs.dry_run || needs.prod_backup_gate.result == 'success'",
+                      self.text)
+        # real deploy still hard-depends on the gate
+        self.assertIn("needs: [guard, prod_backup_gate]", self.text)
+
+    def test_24_gate_job_has_backup_repo_token_for_independent_verify(self):
+        self.assertIn("secrets.BACKUP_REPO_TOKEN", self.text)
+
+
+class TradeMigrationProbeStagingLockTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        p = os.path.join(MGMT, "probe", "trade_migration_probe.php.tmpl")
+        with open(p) as f:
+            cls.text = f.read()
+
+    def test_25_probe_hard_locked_to_staging(self):
+        # must refuse anything that is not staging (no 'production' in the accepted env)
+        self.assertIn("$ENV !== 'staging'", self.text)
+        self.assertNotIn("'staging', 'production'", self.text)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

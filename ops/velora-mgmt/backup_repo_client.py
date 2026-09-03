@@ -55,10 +55,17 @@ class BackupRepoClientError(Exception):
 # --------------------------------------------------------------------------- #
 
 def default_token() -> Optional[str]:
-    """Preferred: a GitHub App installation token is provided by the workflow and
-    exposed as BACKUP_REPO_TOKEN (resolved from BACKUP_REPO_APP_* before this runs).
-    Fallback: a fine-grained PAT scoped to velora-backups. Never printed."""
-    return os.environ.get("BACKUP_REPO_TOKEN") or os.environ.get("GITHUB_TOKEN")
+    """Return the ONLY accepted credential for the private backup repository:
+    BACKUP_REPO_TOKEN (a fine-grained PAT/App installation token scoped to
+    veloratrade/velora-backups, supplied by the workflow via secrets).
+
+    There is intentionally NO fallback to GITHUB_TOKEN: the workflow's built-in
+    GITHUB_TOKEN cannot cross repositories and can never write the private backup
+    repo, so silently using it would mask a missing BACKUP_REPO_TOKEN and then fail
+    in a non-obvious place. We therefore fail closed at the credential boundary —
+    return None when BACKUP_REPO_TOKEN is absent so every caller errors explicitly.
+    Never printed."""
+    return os.environ.get("BACKUP_REPO_TOKEN")
 
 
 def make_default_transport(token: Optional[str] = None) -> Callable[..., dict]:
@@ -113,6 +120,13 @@ class Client:
 
     def __post_init__(self):
         if self.transport is None:
+            # Fail closed at construction: the default (real-network) transport has
+            # NO credential fallback — BACKUP_REPO_TOKEN must be present. Tests inject
+            # their own mock transport and are unaffected.
+            if not default_token():
+                raise BackupRepoClientError(
+                    "BACKUP_REPO_TOKEN is required for the private backup repository "
+                    "and is not set; there is no GITHUB_TOKEN fallback (fail closed).")
             self.transport = make_default_transport()
 
     def _api(self, path: str, method: str = "GET", data: Any = None) -> dict:
@@ -145,6 +159,46 @@ class Client:
             raise BackupRepoClientError(f"list releases failed HTTP {r.get('status')}")
         return [{"tag": x.get("tag_name"), "id": x.get("id"), "draft": x.get("draft")}
                 for x in r.get("json", []) if (x.get("tag_name") or "").startswith(prefix)]
+
+    # ---- read-only verification: independently re-read committed metadata ----
+    def get_backup_metadata(self, environment: str, backup_id: str) -> dict:
+        """Read the committed backups/<env>/<id>.json metadata from the PRIVATE repo.
+        Raises if the metadata is absent (a backup that exists only as an upstream
+        workflow output but was never committed must NOT be trusted)."""
+        pb.require_environment(environment)
+        path = f"backups/{environment}/{backup_id}.json"
+        if not path.startswith(f"backups/{environment}/"):
+            raise BackupRepoClientError(f"refusing to read outside env namespace: {path}")
+        import base64
+        r = self._api(f"contents/{urllib.parse.quote(path)}")
+        if r.get("status") != 200:
+            raise BackupRepoClientError(
+                f"backup metadata not found in private repo for {backup_id} "
+                f"(HTTP {r.get('status')}); backup is not independently verifiable")
+        j = r.get("json", {})
+        try:
+            content = base64.b64decode(j.get("content", "")).decode()
+            return json.loads(content)
+        except Exception as e:  # malformed/unreadable => fail closed
+            raise BackupRepoClientError(f"backup metadata for {backup_id} unreadable: {e}")
+
+    def get_release_by_tag(self, environment: str, tag: str) -> dict:
+        """Look up a release (and its assets) by tag in the PRIVATE repo. Raises if
+        the release does not exist (a gate must never trust an unbacked tag)."""
+        pb.require_environment(environment)
+        if not tag.startswith(f"db-backup-{environment}-"):
+            raise BackupRepoClientError(
+                f"refuse cross-environment release lookup: tag {tag!r} for {environment!r}")
+        r = self._api(f"releases/tags/{urllib.parse.quote(tag)}")
+        if r.get("status") != 200:
+            raise BackupRepoClientError(
+                f"release {tag} not found in private repo (HTTP {r.get('status')})")
+        j = r.get("json", {})
+        assets = [{"name": a.get("name"), "id": a.get("id"),
+                   "size": a.get("size"), "state": a.get("state")}
+                  for a in (j.get("assets") or [])]
+        return {"id": j.get("id"), "tag_name": j.get("tag_name"),
+                "draft": j.get("draft"), "assets": assets}
 
     # ---- metadata (small text committed to git; never dumps) ----------------
     def commit_metadata(self, environment: str, metadata: dict, branch: str = "main",
