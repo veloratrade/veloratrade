@@ -30,12 +30,41 @@ def need(passed: bool, label: str, failed: list[str]) -> None:
         failed.append(label)
 
 
+def synthetic_github_pat() -> str:
+    """Return a realistic but fully SYNTHETIC GitHub-PAT-shaped value, built at
+    RUNTIME. No real credential is ever stored in this file: the token body is
+    derived deterministically from a fixed, non-secret seed, so it is reproducible
+    in tests yet is NOT a valid GitHub token and never appears as a literal in the
+    source. The body is high-entropy with no long single-character run, so the
+    scanner classifies it as 'real-looking' material — exactly what these tests
+    must prove is caught."""
+    import hashlib
+    import string
+
+    alphabet = string.ascii_letters + string.digits
+    seed = b"velora-synthetic-secret-scan-fixture-not-a-credential:"
+    body = ""
+    i = 0
+    while len(body) < 71:
+        digest = hashlib.sha256(seed + str(i).encode()).digest()
+        for byte in digest:
+            ch = alphabet[byte % len(alphabet)]
+            if len(body) >= 71:
+                break
+            if body and ch == body[-1]:  # avoid a >=10 repeated run (would look 'synthetic')
+                continue
+            body += ch
+        i += 1
+    return "github_pat_" + body
+
+
 def main() -> int:
     failed: list[str] = []
 
     # ── MUST FAIL: real-looking secret material (built at runtime) ──────
-    # Realistic GitHub PAT (high entropy, no repeated-run).
-    real_pat = "github_pat_" + "LRBos8oXrBXS0XlMQcPafIT098E2LS9ewEJnYLf6KjPHpwIpIvV1ZprDAl7b1szh7sPIjdyGEbncovjp15"
+    # Realistic GitHub PAT: SYNTHETIC and generated at runtime from a non-secret
+    # seed, so this file never holds a real token (or a full token literal).
+    real_pat = synthetic_github_pat()
     need(bool(scan_text("token=" + real_pat)), "catches_real_pat", failed)
 
     # Realistic n8n API key.
