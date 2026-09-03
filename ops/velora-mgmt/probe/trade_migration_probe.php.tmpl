@@ -82,7 +82,10 @@ try {
         if (tm_col_exists($pdo, $table, $col)) { return; }
         if (!$apply) { return; }
         try { $pdo->exec($ddl); $result['applied'][] = "$table.$col"; }
-        catch (Throwable $e) { $result['errors'][] = "$table.$col: ".$e->getMessage(); }
+        catch (Throwable $e) {
+            error_log('velora-trade-migration probe: add column failed: ' . $e->getMessage());
+            $result['errors'][] = "$table.$col (internal error)";
+        }
     };
     $addIndex = function (string $table, string $idx, string $ddl) use ($pdo, $apply, &$result) {
         if (tm_index_exists($pdo, $table, $idx)) { return; }
@@ -90,14 +93,20 @@ try {
         try { $pdo->exec($ddl); $result['applied'][] = "index:$idx"; }
         catch (Throwable $e) {
             // duplicate index name from a partial run is acceptable
-            if (stripos($e->getMessage(), 'Duplicate') === false) { $result['errors'][] = "index:$idx: ".$e->getMessage(); }
+            if (stripos($e->getMessage(), 'Duplicate') === false) {
+                error_log('velora-trade-migration probe: add index failed: ' . $e->getMessage());
+                $result['errors'][] = "index:$idx (internal error)";
+            }
         }
     };
     $createTable = function (string $table, string $ddl) use ($pdo, $apply, &$result) {
         if (tm_table_exists($pdo, $table)) { return; }
         if (!$apply) { return; }
         try { $pdo->exec($ddl); $result['applied'][] = "create:$table"; }
-        catch (Throwable $e) { $result['errors'][] = "create:$table: ".$e->getMessage(); }
+        catch (Throwable $e) {
+            error_log('velora-trade-migration probe: create table failed: ' . $e->getMessage());
+            $result['errors'][] = "create:$table (internal error)";
+        }
     };
 
     // ---- v1.0 Phase 2A: trades canonical-UTC + provenance columns ----
@@ -183,8 +192,10 @@ try {
 
     echo json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 } catch (Throwable $e) {
+    error_log('velora-trade-migration probe error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['ok' => false, 'env' => $ENV, 'mode' => $MODE,
-                      'error' => 'migration probe failed: ' . $e->getMessage()],
+                      'error' => 'migration probe failed (internal error)',
+                      'error_code' => 'VELORA_MIGRATION_FAILED'],
                      JSON_UNESCAPED_SLASHES);
 }

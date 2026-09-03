@@ -4,8 +4,11 @@ name: Velora Environment Management (inspect/plan/verify; migrate/deploy gated)
 # REUSABLE, ENVIRONMENT-AWARE management system for STAGING and PRODUCTION.
 #
 #   Target is ALWAYS explicit via input `environment` (staging|production).
-#   Modes: inspect | plan | verify   -> READ-ONLY (default; safe to run).
-#          backup | migrate | deploy -> MUTATING; locked behind explicit gates:
+#   Modes: inspect | plan | verify | backup -> READ-ONLY (default; safe to run).
+#          backup here is read-only DISCOVERY only: the probe reports that in-probe
+#          dumps are unsupported. The authoritative backup path is the dedicated
+#          velora-db-backup / velora-db-backup-staging workflows.
+#          migrate | deploy -> MUTATING; locked behind explicit gates:
 #             * staging migrate: BLOCKED in CI until a verified backup/rollback is
 #               supplied (input backup_verified must be true AND the probe re-checks).
 #             * production anything: job uses the protected GitHub ENVIRONMENT
@@ -31,7 +34,7 @@ on:
           - staging
           - production
       mode:
-        description: "Operation: inspect | plan | verify (read-only); backup | migrate | deploy (gated)"
+        description: "Operation: inspect | plan | verify | backup (read-only); migrate | deploy (gated/refused in this build)"
         required: true
         type: choice
         options:
@@ -91,7 +94,10 @@ jobs:
           APPROVAL="${{ github.event.inputs.approval }}"
           [[ "$ENVIRONMENT" == "staging" || "$ENVIRONMENT" == "production" ]] || { echo "::error::environment must be staging|production"; exit 1; }
           case "$MODE" in inspect|plan|verify|backup|migrate|deploy) ;; *) echo "::error::bad mode"; exit 1;; esac
-          if [[ "$MODE" == "inspect" || "$MODE" == "plan" || "$MODE" == "verify" ]]; then READONLY=true; else READONLY=false; fi
+          # `backup` is READ-ONLY here: this workflow never creates a DB dump. The
+          # authoritative backup path is the dedicated DB backup workflow; in this
+          # workflow mode=backup only performs read-only discovery via the probe.
+          if [[ "$MODE" == "inspect" || "$MODE" == "plan" || "$MODE" == "verify" || "$MODE" == "backup" ]]; then READONLY=true; else READONLY=false; fi
           # environment-specific transport (NO mixing, NO fallback)
           if [[ "$ENVIRONMENT" == "staging" ]]; then
             DOCROOT="public_html/staging.veloratrade.ir"; BASE="https://staging.veloratrade.ir"
@@ -175,14 +181,14 @@ jobs:
           PY
           cleanup() {
             lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
-              -e "set ftp:ssl-allow no; set net:max-retries 1; set net:timeout 20; glob -a rm -f $DOCROOT/public/_velora_mgmt_*.php; bye" >/dev/null 2>&1 || true
+              -e "set ftp:ssl-allow yes; set ftp:ssl-force yes; set ftp:ssl-protect-data yes; set ssl:verify-certificate yes; set net:max-retries 1; set net:timeout 20; glob -a rm -f $DOCROOT/public/_velora_mgmt_*.php; bye" >/dev/null 2>&1 || true
             shred -u /tmp/probe.php /tmp/mgmt.json 2>/dev/null || rm -f /tmp/probe.php /tmp/mgmt.json
           }
           trap cleanup EXIT
           uploaded=0
           for attempt in $(seq 1 15); do
             if lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
-              -e "set ftp:ssl-allow no; set net:max-retries 2; set net:timeout 30; glob -a rm -f $DOCROOT/public/_velora_mgmt_*.php; put /tmp/probe.php -o $DOCROOT/public/$NAME; bye"; then
+              -e "set ftp:ssl-allow yes; set ftp:ssl-force yes; set ftp:ssl-protect-data yes; set ssl:verify-certificate yes; set net:max-retries 2; set net:timeout 30; glob -a rm -f $DOCROOT/public/_velora_mgmt_*.php; put /tmp/probe.php -o $DOCROOT/public/$NAME; bye"; then
               uploaded=1; break
             fi
             sleep 5

@@ -97,7 +97,8 @@ try {
             ->fetchAll(PDO::FETCH_KEY_PAIR);
         $checks['representative_queries'] = ['ok' => true, 'summary' => $rep];
     } catch (Throwable $e) {
-        $checks['representative_queries'] = ['ok' => false, 'error' => $e->getMessage()];
+        error_log('velora-db-verify probe: representative queries failed: ' . $e->getMessage());
+        $checks['representative_queries'] = ['ok' => false, 'error' => 'read-check failed (internal error)'];
     }
 
     // 4) basic schema integrity — tables readable, no FK definition errors
@@ -107,7 +108,8 @@ try {
             . "AND TABLE_TYPE='BASE TABLE'")->fetchColumn();
         $checks['schema_read'] = ['ok' => $baseTables > 0, 'base_tables' => $baseTables];
     } catch (Throwable $e) {
-        $checks['schema_read'] = ['ok' => false, 'error' => $e->getMessage()];
+        error_log('velora-db-verify probe: schema read failed: ' . $e->getMessage());
+        $checks['schema_read'] = ['ok' => false, 'error' => 'schema read failed (internal error)'];
     }
 
     // 5) READ-ONLY migration schema inventory (Phase 2A v1.0 + Phase 5 v1.1).
@@ -149,8 +151,9 @@ try {
         // advisory only: present here for evidence, not used in $allOk below
         $checks['migration_schema'] = ['ok' => true, 'advisory' => true, 'detail' => $migration];
     } catch (Throwable $e) {
+        error_log('velora-db-verify probe: migration inventory skipped: ' . $e->getMessage());
         $checks['migration_schema'] = ['ok' => true, 'advisory' => true,
-                                       'note' => 'migration inventory skipped: ' . $e->getMessage()];
+                                       'note' => 'migration inventory skipped (internal error)'];
     }
 
     $allOk = true;
@@ -164,10 +167,12 @@ try {
         'checks' => $checks,
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 } catch (Throwable $e) {
+    error_log('velora-db-verify probe error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode([
         'ok' => false, 'env' => $ENV,
         'verification' => 'POSTDEPLOY_DB_FAILED',
-        'error' => 'post-deploy DB verification failed: ' . $e->getMessage(),
+        'error' => 'post-deploy DB verification failed (internal error)',
+        'error_code' => 'VELORA_VERIFY_FAILED',
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 }

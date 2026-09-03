@@ -57,7 +57,9 @@ function vmg_q(PDO $pdo, string $sql): array {
     try {
         return ['ok' => true, 'rows' => $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC)];
     } catch (Throwable $e) {
-        return ['ok' => false, 'error' => $e->getMessage()];
+        // server-side log only; never echo raw DB/PHP exception text into the JSON
+        error_log('velora-mgmt probe: metadata query failed: ' . $e->getMessage());
+        return ['ok' => false, 'error' => 'query failed (internal error)'];
     }
 }
 
@@ -179,7 +181,9 @@ try {
 
     echo json_encode($out, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 } catch (Throwable $e) {
+    error_log('velora-mgmt probe error: ' . $e->getMessage());
     $out['ok'] = false;
-    $out['fatal'] = $e->getMessage();
+    $out['fatal'] = 'internal error';
+    $out['error_code'] = 'VELORA_MGMT_FAILED';
     echo json_encode($out, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 }

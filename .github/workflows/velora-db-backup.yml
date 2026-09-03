@@ -109,16 +109,21 @@ jobs:
           pathlib.Path('/tmp/db_backup_probe.php').write_text(tpl)
           PY
 
+          FTP_REL=""   # populated after the dump is produced; removed remotely on ANY exit
           cleanup_remote() {
             lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
-              -e "set ftp:ssl-allow no; set net:max-retries 1; set net:timeout 20; glob -a rm -f $DOCROOT/public/_velora_bk_*.php; bye" >/dev/null 2>&1 || true
+              -e "set ftp:ssl-allow yes; set ftp:ssl-force yes; set ftp:ssl-protect-data yes; set ssl:verify-certificate yes; set net:max-retries 1; set net:timeout 20; glob -a rm -f $DOCROOT/public/_velora_bk_*.php; bye" >/dev/null 2>&1 || true
+            if [ -n "${FTP_REL:-}" ]; then
+              lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+                -e "set ftp:ssl-allow yes; set ftp:ssl-force yes; set ftp:ssl-protect-data yes; set ssl:verify-certificate yes; set net:max-retries 2; set net:timeout 30; rm -f \"$FTP_REL\"; bye" >/dev/null 2>&1 || true
+            fi
             shred -u /tmp/db_backup_probe.php /tmp/bk.json 2>/dev/null || rm -f /tmp/db_backup_probe.php /tmp/bk.json
           }
           trap cleanup_remote EXIT
 
           # 1) ensure production private backups dir (outside docroot); upload probe
           lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
-            -e "set ftp:ssl-allow no; set net:max-retries 2; set net:timeout 30; mkdir -p velora_private/backups; glob -a rm -f $DOCROOT/public/_velora_bk_*.php; put /tmp/db_backup_probe.php -o $DOCROOT/public/$NAME; bye"
+            -e "set ftp:ssl-allow yes; set ftp:ssl-force yes; set ftp:ssl-protect-data yes; set ssl:verify-certificate yes; set net:max-retries 2; set net:timeout 30; mkdir -p velora_private/backups; glob -a rm -f $DOCROOT/public/_velora_bk_*.php; put /tmp/db_backup_probe.php -o $DOCROOT/public/$NAME; bye"
 
           # 2) invoke once over HTTPS (one-time bearer token)
           code=$(curl -sS -o /tmp/bk.json -w '%{http_code}' --max-time 240 \
@@ -145,7 +150,7 @@ jobs:
           FTP_REL=$(python3 -c "import json;print(json.load(open('bk-prod-probe-result.json'))['private_ftp_path'])")
           echo "retrieving $FTP_REL"
           lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
-            -e "set ftp:ssl-allow no; set net:max-retries 3; set net:timeout 60; get $FTP_REL -o dump.sql.gz; bye"
+            -e "set ftp:ssl-allow yes; set ftp:ssl-force yes; set ftp:ssl-protect-data yes; set ssl:verify-certificate yes; set net:max-retries 3; set net:timeout 60; get $FTP_REL -o dump.sql.gz; bye"
           [ -s dump.sql.gz ] || { echo "::error::dump missing/empty"; exit 1; }
 
           # 4) local integrity verification (gzip + sha256 + size)
@@ -177,7 +182,7 @@ jobs:
 
           # 7) remove the temporary server-side dump AFTER verified upload (keep probe self-deleted)
           lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
-            -e "set ftp:ssl-allow no; set net:max-retries 2; set net:timeout 30; rm -f \"$FTP_REL\"; bye"
+            -e "set ftp:ssl-allow yes; set ftp:ssl-force yes; set ftp:ssl-protect-data yes; set ssl:verify-certificate yes; set net:max-retries 2; set net:timeout 30; rm -f \"$FTP_REL\"; bye"
           echo "remote temp dump removed: $FTP_REL"
 
       - name: Audit artifact (metadata only; never the dump)

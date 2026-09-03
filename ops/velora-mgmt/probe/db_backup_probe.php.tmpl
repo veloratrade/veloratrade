@@ -229,9 +229,14 @@ try {
     if ($pdo instanceof PDO && $pdo->inTransaction()) {
         try { $pdo->rollBack(); } catch (Throwable $ignore) {}
     }
+    // Log the real cause SERVER-SIDE only. Never echo raw exception text into the
+    // JSON (which the workflow may surface in logs): it can contain host/DSN/SQL or
+    // other infrastructure details.
+    error_log('velora-db-backup probe error: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode([
         'ok' => false, 'env' => $ENV, 'op' => $OP,
-        'error' => 'backup failed: ' . $e->getMessage(),
+        'error' => 'backup failed (internal error)',
+        'error_code' => 'VELORA_BACKUP_FAILED',
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 }

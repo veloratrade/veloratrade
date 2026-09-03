@@ -131,11 +131,9 @@ jobs:
     needs: [gate, guard]
     uses: ./.github/workflows/velora-db-backup.yml
     secrets: inherit
-    outputs:
-      backup_id: ${{ jobs.backup.outputs.backup_id }}
-      release_tag: ${{ jobs.backup.outputs.release_tag }}
-      sha256: ${{ jobs.backup.outputs.sha256 }}
-      source_commit_sha: ${{ jobs.backup.outputs.source_commit_sha }}
+    # NOTE: the called reusable workflow's outputs are exposed automatically as
+    # needs.prod_db_backup.outputs.<name> (defined in velora-db-backup.yml's
+    # on.workflow_call.outputs). The caller MUST NOT re-map them via `outputs:`.
 
   # ── ۴٫۶ گارد اتصال بکاپ تأییدشده به همین استقرار (binding gate) ──
   # تضمین می‌کند بکاپ: همین محیط (production)، همین run/commit، و دارای
@@ -147,11 +145,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     environment: production
+    outputs:
+      # Exposed for the final deployment report; sourced ONLY from the step that
+      # re-reads the private repo and confirms the bound backup (never an untrusted
+      # input). The gate script exits 0 only after that independent verification.
+      backup_id: ${{ steps.gate.outputs.backup_id }}
     env:
       BACKUP_REPO_TOKEN: ${{ secrets.BACKUP_REPO_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - name: اتصال و راستی‌آزمایی مستقل بکاپ در مخزن خصوصی (fail-closed)
+        id: gate
         run: |
           set -euo pipefail
           # این گارد فقط خروجی‌های workflow بالا را باور نمی‌کند؛ مستقیماً مخزن
@@ -170,6 +174,10 @@ jobs:
           python3 ops/velora-mgmt/velora_prod_backup_gate.py \
             --backup-id "$BID" --release-tag "$TAG" --sha256 "$SHA" \
             --source-commit "$CMT" --expected-commit "$GITHUB_SHA"
+          # The gate above exits 0 only after independently re-reading the private
+          # repo and confirming BID is the INTEGRITY_VERIFIED backup bound to this
+          # commit. Emit that verified id as the job output for the final report.
+          echo "backup_id=$BID" >> "$GITHUB_OUTPUT"
           echo "✅ بکاپ تأییدشدهٔ Production مستقل راستی‌آزمایی و به این استقرار متصل شد: $BID"
           echo "| بکاپ دیتابیس Production | $BID | INTEGRITY_VERIFIED (re-verified) |" >> $GITHUB_STEP_SUMMARY
 

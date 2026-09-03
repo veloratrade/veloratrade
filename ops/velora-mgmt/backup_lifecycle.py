@@ -17,9 +17,17 @@ Hard guarantees encoded here:
   * the orchestrator never fabricates a backup: a missing dump bytes/credential/repo
     yields BLOCKED, not success.
 
-The actual DB dump and the actual mutation (migration/deploy) are performed by external,
-separately-authorized steps; they are passed here as callables or their recorded results.
-"""
+    The actual DB dump and the actual mutation (migration/deploy) are performed by external,
+    separately-authorized steps; they are passed here as callables or their recorded results.
+
+    ROLE / STATUS: this module is an intentionally retained library. It models and tests the
+    full backup/mutation state machine (create -> verify -> record -> approve -> mutate ->
+    post-verify -> retention) and is covered by tests/test_backup_repo_connection.py. The
+    wired CI path does NOT call run_backup_lifecycle(); it composes the same stages through
+    the dedicated scripts velora_prod_backup_upload.py / velora_prod_backup_gate.py /
+    velora_prod_retention.py (and their staging counterparts). This module remains the
+    reference implementation and test harness for the lifecycle invariants, not dead code.
+    """
 from __future__ import annotations
 
 from dataclasses import dataclass, field

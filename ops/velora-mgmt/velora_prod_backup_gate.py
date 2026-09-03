@@ -93,9 +93,6 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--source-commit", required=True)
     ap.add_argument("--expected-commit", required=True)
     ap.add_argument("--environment", default="production")
-    ap.add_argument("--no-remote-verify", action="store_true",
-                    help="TEST ONLY: skip the independent private-repo re-read. "
-                         "Never used by the real deploy workflow.")
     args = ap.parse_args(argv[1:])
 
     # explicit production environment only
@@ -128,28 +125,25 @@ def main(argv: list[str]) -> int:
             f"{args.expected_commit[:12]} (stale or unrelated backup)")
 
     # Independent verification against the PRIVATE backup repository. This is the
-    # strengthening step: do not trust upstream workflow outputs alone.
-    if not args.no_remote_verify:
-        try:
-            client = build_client()
-        except Exception as e:  # missing credential / misconfiguration => fail closed
-            die(f"cannot establish private backup-repository verification: {e}")
-        try:
-            verify_bound_backup(client, backup_id=bid, release_tag=tag,
-                                sha256=sha, expected_commit=args.expected_commit)
-        except bc.BackupRepoClientError as e:
-            die(f"independent backup verification failed: {e}")
-    else:
-        print("WARNING: --no-remote-verify supplied; independent private-repo "
-              "re-read SKIPPED (test-only path, never used by real deploy).")
+    # strengthening step: do not trust upstream workflow outputs alone. There is
+    # intentionally NO bypass flag — the gate ALWAYS re-reads the private repo and
+    # fails closed if that verification cannot be performed.
+    try:
+        client = build_client()
+    except Exception as e:  # missing credential / misconfiguration => fail closed
+        die(f"cannot establish private backup-repository verification: {e}")
+    try:
+        verify_bound_backup(client, backup_id=bid, release_tag=tag,
+                            sha256=sha, expected_commit=args.expected_commit)
+    except bc.BackupRepoClientError as e:
+        die(f"independent backup verification failed: {e}")
 
     print("PRODUCTION BACKUP GATE PASSED")
     print(f"  backup_id        = {bid}")
     print(f"  release_tag      = {tag}")
     print(f"  sha256           = {sha}")
     print(f"  bound to commit  = {args.source_commit}")
-    print(f"  state            = INTEGRITY_VERIFIED "
-          f"({'independently re-verified vs private repo' if not args.no_remote_verify else 'claimed upstream; remote verify SKIPPED'})")
+    print("  state            = INTEGRITY_VERIFIED (independently re-verified vs private repo)")
     return 0
 
 
