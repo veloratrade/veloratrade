@@ -116,10 +116,82 @@ jobs:
     needs: quality_gate
     uses: ./.github/workflows/csp-guard.yml
 
+  # ── ۴٫۵ بکاپ تازهٔ دیتابیس Production (الزام دائمی قانون بکاپ) ──
+  # یک workflow reusable است که تازه‌ترین بکاپ DB تولید را می‌سازد، در
+  # مخزن PRIVATE velora-backups به‌صورت Release Asset ذخیره می‌کند، و
+  # بایت‌به‌بایت راستی‌آزمایی می‌کند. اگر BACKUP_REPO_TOKEN نباشد یا
+  # هر مرحله شکست بخورد، این job با خطا متوقف می‌شود و چون deploy به آن
+  # needs دارد، انتشار Production هرگز اجرا نخواهد شد (fail-closed).
+  prod_db_backup:
+    name: بکاپ تازهٔ دیتابیس Production → مخزن خصوصی (الزامی برای استقرار واقعی)
+    # در dry_run هیچ جهشی روی Production رخ نمی‌دهد؛ بنابراین بکاپ DB (و نیاز به
+    # BACKUP_REPO_TOKEN) فقط برای استقرار واقعی الزامی است. در استقرار واقعی، شکست
+    # این job ⇒ deploy اجرا نمی‌شود.
+    if: ${{ !inputs.dry_run }}
+    needs: [gate, guard]
+    uses: ./.github/workflows/velora-db-backup.yml
+    secrets: inherit
+    # NOTE: the called reusable workflow's outputs are exposed automatically as
+    # needs.prod_db_backup.outputs.<name> (defined in velora-db-backup.yml's
+    # on.workflow_call.outputs). The caller MUST NOT re-map them via `outputs:`.
+
+  # ── ۴٫۶ گارد اتصال بکاپ تأییدشده به همین استقرار (binding gate) ──
+  # تضمین می‌کند بکاپ: همین محیط (production)، همین run/commit، و دارای
+  # وضعیت INTEGRITY_VERIFIED است. صرفِ «بکاپ گرفته‌ام» پذیرفته نیست؛
+  # سامانه مستقلاً backup_id/sha/commit را بررسی می‌کند.
+  prod_backup_gate:
+    name: گارد اتصال بکاپ تأییدشده به استقرار
+    needs: [guard, prod_db_backup]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: production
+    outputs:
+      # Exposed for the final deployment report; sourced ONLY from the step that
+      # re-reads the private repo and confirms the bound backup (never an untrusted
+      # input). The gate script exits 0 only after that independent verification.
+      backup_id: ${{ steps.gate.outputs.backup_id }}
+    env:
+      BACKUP_REPO_TOKEN: ${{ secrets.BACKUP_REPO_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: اتصال و راستی‌آزمایی مستقل بکاپ در مخزن خصوصی (fail-closed)
+        id: gate
+        run: |
+          set -euo pipefail
+          # این گارد فقط خروجی‌های workflow بالا را باور نمی‌کند؛ مستقیماً مخزن
+          # PRIVATE را دوباره می‌خواند و وجود/namespace/وضعیت/sha/commit بکاپ را
+          # مستقل راستی‌آزمایی می‌کند. بدون BACKUP_REPO_TOKEN ⇒ fail closed
+          # (هیچ fallback به GITHUB_TOKEN وجود ندارد).
+          if [ -z "${BACKUP_REPO_TOKEN:-}" ]; then
+            echo "::error::BACKUP_REPO_TOKEN برای راستی‌آزمایی مستقل بکاپ لازم است (fail closed)."
+            exit 1
+          fi
+          echo "::add-mask::${BACKUP_REPO_TOKEN}"
+          BID="${{ needs.prod_db_backup.outputs.backup_id }}"
+          TAG="${{ needs.prod_db_backup.outputs.release_tag }}"
+          SHA="${{ needs.prod_db_backup.outputs.sha256 }}"
+          CMT="${{ needs.prod_db_backup.outputs.source_commit_sha }}"
+          python3 ops/velora-mgmt/velora_prod_backup_gate.py \
+            --backup-id "$BID" --release-tag "$TAG" --sha256 "$SHA" \
+            --source-commit "$CMT" --expected-commit "$GITHUB_SHA"
+          # The gate above exits 0 only after independently re-reading the private
+          # repo and confirming BID is the INTEGRITY_VERIFIED backup bound to this
+          # commit. Emit that verified id as the job output for the final report.
+          echo "backup_id=$BID" >> "$GITHUB_OUTPUT"
+          echo "✅ بکاپ تأییدشدهٔ Production مستقل راستی‌آزمایی و به این استقرار متصل شد: $BID"
+          echo "| بکاپ دیتابیس Production | $BID | INTEGRITY_VERIFIED (re-verified) |" >> $GITHUB_STEP_SUMMARY
+
   # ── ۳. ساخت بسته + بکاپ + انتقال ───────────────────────────────
   deploy:
     name: آپلود روی هاست
-    needs: guard
+    # وابستگیٔ سخت برای استقرار واقعی: بکاپ فایل (درون همین job) و بکاپ دیتابیس
+    # تأییدشدهٔ متصل. در dry_run بکاپ DB اجرا نمی‌شود (هیچ جهشی روی Production رخ
+    # نمی‌دهد)، بنابراین این job در حالت پیش‌نمایش با «فقط فهرست/بدون نوشتن» اجرا
+    # می‌شود و در استقرار واقعی فقط وقتی پیش می‌رود که prod_backup_gate موفق باشد.
+    # این if هرگز مسیر واقعی را تضعیف نمی‌کند: نگارش واقعی فایل همچنان پشت
+    # !inputs.dry_run و موفقیت prod_backup_gate است.
+    needs: [guard, prod_backup_gate]
+    if: ${{ inputs.dry_run || needs.prod_backup_gate.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     environment: production
@@ -479,8 +551,60 @@ jobs:
           echo "دست‌نخورده روی هاست: \`api/.env\`، \`api/storage/\`، \`velora_private/\`" >> $GITHUB_STEP_SUMMARY
           echo "بازگشت: artifact \`pre-deploy-backup-${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
 
+  # ── راستی‌آزمایی دیتابیس پس از استقرار Production (read-only، یک‌بارمصرف) ──
+  # اتصال، جدول‌های بحرانی، کوئری‌های نماینده و سلامت اسکیمای Production را پس از
+  # استقرار بررسی می‌کند. شکست آن ⇒ استقرار ناموفق تلقی می‌شود.
+  prod_db_verify:
+    name: راستی‌آزمایی DATABASE پس از استقرار Production
+    needs: [deploy, prod_backup_gate]
+    if: ${{ !inputs.dry_run }}
+    uses: ./.github/workflows/velora-db-verify.yml
+    with:
+      environment_name: production
+      base_url: https://veloratrade.ir
+    secrets: inherit
+
   healthcheck:
-    name: تست سلامت سایت واقعی
-    needs: deploy
+    name: تست سلامت سایت واقعی (HTTP/CSP)
+    needs: [deploy, prod_db_verify]
     if: ${{ !inputs.dry_run }}
     uses: ./.github/workflows/healthcheck-production.yml
+
+  # ── نگهداری بکاپ‌های دیتابیس Production (فقط پس از موفقیت کامل) ───────────
+  # جدیدترین بکاپ تأییدشده هرگز حذف نمی‌شود؛ بکاپ‌های >۱۴روز فقط وقتی واجد شرایطند
+  # که استقرار و راستی‌آزمایی پس از استقرار موفق بوده باشند. در فاز فعلی این
+  # مرحله فقط PLAN خواندنی می‌دهد (بدون credential حذف انجام نمی‌شود).
+  retention:
+    name: نگهداری بکاپ دیتابیس Production (auditable)
+    needs: [deploy, prod_db_verify, healthcheck]
+    if: ${{ !inputs.dry_run }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    env:
+      BACKUP_REPO_TOKEN: ${{ secrets.BACKUP_REPO_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: برنامهٔ نگهداری (حذف تنها پس از موفقیت کامل)
+        run: |
+          set -euo pipefail
+          # هر دو گیت موفقیت از وضعیت jobهای بالادست می‌آیند؛ این job فقط زمانی
+          # اجرا می‌شود که deploy و prod_db_verify و healthcheck موفق بوده‌اند.
+          python3 ops/velora-mgmt/velora_prod_retention.py \
+            --mutation-succeeded --post-verify-passed
+
+  # ── گزارش نهایی استقرار (شامل backup_id متصل) ────────────────────────────
+  deployment_report:
+    name: گزارش کامل استقرار Production
+    needs: [deploy, prod_db_verify, healthcheck, retention, prod_backup_gate]
+    if: ${{ !inputs.dry_run }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    steps:
+      - run: |
+          set -euo pipefail
+          echo "### گزارش استقرار Production" >> $GITHUB_STEP_SUMMARY
+          echo "- backup_id متصل: \`${{ needs.prod_backup_gate.outputs.backup_id || 'n/a' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- راستی‌آزمایی دیتابیس پس از استقرار: انجام شد" >> $GITHUB_STEP_SUMMARY
+          echo "- نگهداری: فقط پس از موفقیت کامل اجرا شد" >> $GITHUB_STEP_SUMMARY

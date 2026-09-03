@@ -1,0 +1,185 @@
+name: Velora DB Backup (STAGING) — reusable, enforced, uploads to private repo
+
+# ============================================================================
+# STAGING database backup — the staging counterpart of velora-db-backup.yml.
+# Produces a FRESH, verified, byte-checked Staging DB backup and stores it as a
+# GitHub Release Asset in veloratrade/velora-backups (staging namespace), with
+# secret-free committed metadata. It is HARD-LOCKED to staging:
+#   * FTP secrets are STAGING_FTP_* only (never production FTP_*);
+#   * BASE_URL is https://staging.veloratrade.ir; docroot public_html/staging...;
+#   * private root velora_private_staging; backup id prefix db-backup-staging-;
+#   * the probe is rendered with __ENV__=staging and asserts env == 'staging'.
+# It reads BACKUP_REPO_TOKEN via secrets: inherit (the cross-repo credential). If
+# BACKUP_REPO_TOKEN is absent it FAILS CLOSED — no GITHUB_TOKEN fallback, no skip.
+# This workflow does NOT deploy/migrate/mutate: the dump is a read-only logical
+# backup (see db_backup_probe.php.tmpl). Triggered via workflow_call from
+# deploy-staging.yml so a staging deploy is gated on a fresh verified backup.
+# ============================================================================
+
+on:
+  workflow_call:
+    outputs:
+      backup_id:
+        description: "Deterministic verified staging backup id bound to this run"
+        value: ${{ jobs.backup.outputs.backup_id }}
+      release_tag:
+        value: ${{ jobs.backup.outputs.release_tag }}
+      sha256:
+        value: ${{ jobs.backup.outputs.sha256 }}
+      source_commit_sha:
+        value: ${{ jobs.backup.outputs.source_commit_sha }}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: velora-db-backup-staging
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: staging — fresh verified DB backup → private repo (release asset)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    outputs:
+      backup_id: ${{ steps.run.outputs.backup_id }}
+      release_tag: ${{ steps.run.outputs.release_tag }}
+      sha256: ${{ steps.run.outputs.sha256 }}
+      source_commit_sha: ${{ steps.run.outputs.source_commit_sha }}
+    env:
+      FTP_SERVER:   ${{ secrets.STAGING_FTP_SERVER }}
+      FTP_USERNAME: ${{ secrets.STAGING_FTP_USERNAME }}
+      FTP_PASSWORD: ${{ secrets.STAGING_FTP_PASSWORD }}
+      BACKUP_REPO_TOKEN: ${{ secrets.BACKUP_REPO_TOKEN }}
+      DOCROOT: "public_html/staging.veloratrade.ir"
+      BASE_URL: "https://staging.veloratrade.ir"
+      VENV: "staging"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Guard — staging FTP + BACKUP_REPO_TOKEN present (fail closed)
+        run: |
+          set -euo pipefail
+          [ -n "${FTP_SERVER:-}" ] && [ -n "${FTP_USERNAME:-}" ] && [ -n "${FTP_PASSWORD:-}" ] \
+            || { echo "::error::missing STAGING_FTP_* secrets (staging-only)"; exit 1; }
+          # Cross-repo upload requires BACKUP_REPO_TOKEN; GITHUB_TOKEN cannot reach
+          # veloratrade/velora-backups. No fallback, no skip — fail closed.
+          if [ -z "${BACKUP_REPO_TOKEN:-}" ]; then
+            echo "::error::BACKUP_REPO_TOKEN is required but not currently available to the staging backup workflow."
+            echo "::error::Set a credential scoped to veloratrade/velora-backups (Contents:RW + Metadata:R) as secret BACKUP_REPO_TOKEN."
+            exit 1
+          fi
+          echo "::add-mask::${BACKUP_REPO_TOKEN}"
+          echo "staging backup guard OK (STAGING_FTP_* present; BACKUP_REPO_TOKEN present, length ${#BACKUP_REPO_TOKEN})"
+
+      - name: Install lftp
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -q lftp >/dev/null
+
+      - name: Fresh staging dump via one-use probe; retrieve; verify; upload; bind
+        id: run
+        run: |
+          set -euo pipefail
+          NAME="_velora_bk_$(openssl rand -hex 8).php"
+          TOKEN="$(openssl rand -hex 32)"
+          HASH="$(printf '%s' "$TOKEN" | sha256sum | awk '{print $1}')"
+          echo "::add-mask::$NAME"; echo "::add-mask::$TOKEN"; echo "::add-mask::$HASH"
+          export NAME HASH
+          python3 - <<'PY'
+          import os, pathlib
+          tpl = pathlib.Path('ops/velora-mgmt/probe/db_backup_probe.php.tmpl').read_text()
+          tpl = (tpl.replace('__HASH__', os.environ['HASH'])
+                     .replace('__OP__', 'backup')
+                     .replace('__ENV__', 'staging'))
+          pathlib.Path('/tmp/db_backup_probe.php').write_text(tpl)
+          PY
+
+          FTP_REL=""   # populated after the dump is produced; removed remotely on ANY exit
+          cleanup_remote() {
+            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+              -e "set ftp:ssl-allow yes; set ftp:ssl-force yes; set ftp:ssl-protect-data yes; set ssl:verify-certificate yes; set net:max-retries 1; set net:timeout 20; glob -a rm -f $DOCROOT/public/_velora_bk_*.php; bye" >/dev/null 2>&1 || true
+            if [ -n "${FTP_REL:-}" ]; then
+              lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+                -e "set ftp:ssl-allow yes; set ftp:ssl-force yes; set ftp:ssl-protect-data yes; set ssl:verify-certificate yes; set net:max-retries 2; set net:timeout 30; rm -f \"$FTP_REL\"; bye" >/dev/null 2>&1 || true
+            fi
+            shred -u /tmp/db_backup_probe.php /tmp/bk.json 2>/dev/null || rm -f /tmp/db_backup_probe.php /tmp/bk.json
+          }
+          trap cleanup_remote EXIT
+
+          # 1) staging private backups dir (outside docroot); upload one-use probe
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+            -e "set ftp:ssl-allow yes; set ftp:ssl-force yes; set ftp:ssl-protect-data yes; set ssl:verify-certificate yes; set net:max-retries 2; set net:timeout 30; mkdir -p velora_private_staging/backups; glob -a rm -f $DOCROOT/public/_velora_bk_*.php; put /tmp/db_backup_probe.php -o $DOCROOT/public/$NAME; bye"
+
+          # 2) invoke once over HTTPS (one-time bearer token)
+          code=$(curl -sS -o /tmp/bk.json -w '%{http_code}' --max-time 240 \
+                  -H "X-Velora-Mgmt: $TOKEN" "$BASE_URL/public/$NAME")
+          echo "probe HTTP: $code"
+          [[ "$code" == "200" ]] || { echo "::error::staging backup probe HTTP $code"; head -c 1500 /tmp/bk.json; exit 1; }
+          cp /tmp/bk.json bk-staging-probe-result.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('bk-staging-probe-result.json'))
+          assert d.get('ok') is True, d
+          assert d.get('env') == 'staging', 'environment must be staging'
+          assert d.get('gzip_valid') is True, 'server-side gzip integrity failed'
+          assert d.get('verification_status') == 'INTEGRITY_VERIFIED', d.get('verification_status')
+          assert d['backup_id'].startswith('db-backup-staging-'), d['backup_id']
+          print('backup_id :', d['backup_id'])
+          print('engine    :', d['engine'], d['engine_version'])
+          print('tables    :', d['table_count'])
+          print('dump bytes:', d['dump_size_bytes'])
+          print('sha256    :', d['sha256'])
+          PY
+
+          # 3) retrieve the dump from the STAGING private root (never the docroot)
+          FTP_REL=$(python3 -c "import json;print(json.load(open('bk-staging-probe-result.json'))['private_ftp_path'])")
+          echo "retrieving $FTP_REL"
+          case "$FTP_REL" in
+            velora_private_staging/backups/*) : ;;
+            *) echo "::error::unexpected private path (not staging namespace): $FTP_REL"; exit 1 ;;
+          esac
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+            -e "set ftp:ssl-allow yes; set ftp:ssl-force yes; set ftp:ssl-protect-data yes; set ssl:verify-certificate yes; set net:max-retries 3; set net:timeout 60; get $FTP_REL -o dump.sql.gz; bye"
+          [ -s dump.sql.gz ] || { echo "::error::dump missing/empty"; exit 1; }
+
+          # 4) local integrity verification (gzip + sha256 + size)
+          gzip -t dump.sql.gz || { echo "::error::gzip integrity failed"; exit 1; }
+          LOCAL_SHA=$(sha256sum dump.sql.gz | awk '{print $1}')
+          REMOTE_SHA=$(python3 -c "import json;print(json.load(open('bk-staging-probe-result.json'))['sha256'])")
+          LOCAL_SIZE=$(stat -c%s dump.sql.gz)
+          REMOTE_SIZE=$(python3 -c "import json;print(json.load(open('bk-staging-probe-result.json'))['dump_size_bytes'])")
+          [ "$LOCAL_SHA" == "$REMOTE_SHA" ] || { echo "::error::SHA-256 mismatch"; exit 1; }
+          [ "$LOCAL_SIZE" == "$REMOTE_SIZE" ] || { echo "::error::size mismatch"; exit 1; }
+          echo "local verify: gzip OK, sha256 match, size match (INTEGRITY_VERIFIED)"
+
+          # 5) store in the PRIVATE repo (staging namespace) as a Release Asset +
+          #    secret-free metadata; byte-verify the uploaded asset. Uses BACKUP_REPO_TOKEN.
+          python3 ops/velora-mgmt/velora_staging_backup_upload.py bk-staging-probe-result.json \
+              "$GITHUB_SHA" "$GITHUB_RUN_ID" dump.sql.gz
+
+          # 6) emit outputs bound to THIS run/deployment commit
+          python3 - <<'PY'
+          import json, os
+          d=json.load(open('bk-staging-probe-result.json'))
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:
+              f.write(f"backup_id={d['backup_id']}\n")
+              f.write(f"release_tag={d['release_tag']}\n")
+              f.write(f"sha256={d['sha256']}\n")
+              f.write(f"source_commit_sha={os.environ['GITHUB_SHA']}\n")
+          PY
+
+          # 7) remove the temporary server-side dump AFTER verified upload (probe self-deleted)
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+            -e "set ftp:ssl-allow yes; set ftp:ssl-force yes; set ftp:ssl-protect-data yes; set ssl:verify-certificate yes; set net:max-retries 2; set net:timeout 30; rm -f \"$FTP_REL\"; bye"
+          echo "remote temp dump removed: $FTP_REL"
+
+      - name: Audit artifact (metadata only; never the dump)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: velora-staging-db-backup-meta-${{ github.run_id }}
+          path: bk-staging-probe-result.json
+          if-no-files-found: ignore
+          retention-days: 14

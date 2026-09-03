@@ -1,0 +1,201 @@
+<?php
+/**
+ * VELORA — ONE-USE TRADE SCHEMA MIGRATION probe (STAGING first): v1.0 Phase 2A
+ * canonical trade-time + v1.1 Phase 5 MetaApi fill ledger.
+ *
+ * SAFETY MODEL (identical to the backup/verify probes):
+ *   - token-gated (hash_equals timing-safe), random filename, single execution,
+ *     self-deletes immediately on authorized execution;
+ *   - fixed operation and fixed environment (__ENV__ = staging|production);
+ *   - STAGING is the intended target; the workflow only ever renders staging here;
+ *   - ADDITIVE + IDEMPOTENT ONLY: every ADD COLUMN / ADD INDEX / CREATE TABLE is
+ *     guarded by information_schema so re-running is a no-op;
+ *   - NO destructive data operation is executed (no table removal, no row
+ *     erasure/emptying, no bulk UPDATE of application rows). Rollback is handled by
+ *     the separate *_rollback.sql files, never by this forward probe.
+ *   - __MODE__ = check  -> report presence, change nothing;
+ *     __MODE__ = apply  -> apply missing additive objects, then re-report.
+ *
+ * Prints JSON metadata only (no credentials/DSN/row data).
+ */
+declare(strict_types=1);
+
+$expected = '__HASH__';
+$provided = (string)($_SERVER['HTTP_X_VELORA_MIG'] ?? '');
+if ($provided === '' || !hash_equals($expected, hash('sha256', $provided))) {
+    http_response_code(404);
+    exit('Not found');
+}
+@unlink(__FILE__); // single-use
+
+require dirname(__DIR__) . '/api/src/bootstrap.php';
+
+use Velora\Core\Database;
+
+header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store');
+
+$MODE = '__MODE__';   // check | apply
+$ENV  = '__ENV__';    // HARD-LOCKED to staging (this probe is staging-only)
+
+$result = ['probe' => 'velora-trade-migration', 'mode' => $MODE, 'env' => $ENV,
+           'applied' => [], 'errors' => [], 'ok' => true];
+
+if (!in_array($MODE, ['check', 'apply'], true) || $ENV !== 'staging') {
+    // This trade-schema migration probe is STAGING-ONLY. It must never execute
+    // against production even if a future caller accidentally renders it with
+    // another environment — fail closed with a generic 400 and no DB access.
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'error' => 'bad mode/env (staging-only probe)'],
+                     JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
+function tm_table_exists(PDO $pdo, string $t): bool {
+    $st = $pdo->prepare('SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=?');
+    $st->execute([$t]);
+    return (int)$st->fetchColumn() === 1;
+}
+function tm_col_exists(PDO $pdo, string $t, string $c): bool {
+    $st = $pdo->prepare('SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? AND COLUMN_NAME=?');
+    $st->execute([$t, $c]);
+    return (int)$st->fetchColumn() === 1;
+}
+function tm_index_exists(PDO $pdo, string $t, string $i): bool {
+    $st = $pdo->prepare('SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? AND INDEX_NAME=?');
+    $st->execute([$t, $i]);
+    return (int)$st->fetchColumn() > 0;
+}
+
+try {
+    $pdo = Database::connection();
+    if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) !== 'mysql') {
+        // Non-mysql (CI/SQLite) — report and stop without mutating.
+        echo json_encode(['ok' => false, 'env' => $ENV, 'error' => 'migration requires mysql driver'], JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
+    $apply = ($MODE === 'apply');
+
+    // idempotent additive DDL runner
+    $addColumn = function (string $table, string $col, string $ddl) use ($pdo, $apply, &$result) {
+        if (tm_col_exists($pdo, $table, $col)) { return; }
+        if (!$apply) { return; }
+        try { $pdo->exec($ddl); $result['applied'][] = "$table.$col"; }
+        catch (Throwable $e) {
+            error_log('velora-trade-migration probe: add column failed: ' . $e->getMessage());
+            $result['errors'][] = "$table.$col (internal error)";
+        }
+    };
+    $addIndex = function (string $table, string $idx, string $ddl) use ($pdo, $apply, &$result) {
+        if (tm_index_exists($pdo, $table, $idx)) { return; }
+        if (!$apply) { return; }
+        try { $pdo->exec($ddl); $result['applied'][] = "index:$idx"; }
+        catch (Throwable $e) {
+            // duplicate index name from a partial run is acceptable
+            if (stripos($e->getMessage(), 'Duplicate') === false) {
+                error_log('velora-trade-migration probe: add index failed: ' . $e->getMessage());
+                $result['errors'][] = "index:$idx (internal error)";
+            }
+        }
+    };
+    $createTable = function (string $table, string $ddl) use ($pdo, $apply, &$result) {
+        if (tm_table_exists($pdo, $table)) { return; }
+        if (!$apply) { return; }
+        try { $pdo->exec($ddl); $result['applied'][] = "create:$table"; }
+        catch (Throwable $e) {
+            error_log('velora-trade-migration probe: create table failed: ' . $e->getMessage());
+            $result['errors'][] = "create:$table (internal error)";
+        }
+    };
+
+    // ---- v1.0 Phase 2A: trades canonical-UTC + provenance columns ----
+    $addColumn('trades', 'occurred_open_at_utc',
+        "ALTER TABLE trades ADD COLUMN occurred_open_at_utc DATETIME NULL AFTER close_time");
+    $addColumn('trades', 'occurred_close_at_utc',
+        "ALTER TABLE trades ADD COLUMN occurred_close_at_utc DATETIME NULL AFTER occurred_open_at_utc");
+    $addColumn('trades', 'time_status',
+        "ALTER TABLE trades ADD COLUMN time_status VARCHAR(16) NOT NULL DEFAULT 'unresolved' AFTER occurred_close_at_utc");
+    $addColumn('trades', 'source_timezone',
+        "ALTER TABLE trades ADD COLUMN source_timezone VARCHAR(64) NULL AFTER time_status");
+    $addColumn('trades', 'source_timezone_source',
+        "ALTER TABLE trades ADD COLUMN source_timezone_source VARCHAR(20) NOT NULL DEFAULT 'unknown' AFTER source_timezone");
+    $addColumn('trades', 'source_calendar',
+        "ALTER TABLE trades ADD COLUMN source_calendar VARCHAR(16) NOT NULL DEFAULT 'unknown' AFTER source_timezone_source");
+    $addColumn('trades', 'raw_open_text',
+        "ALTER TABLE trades ADD COLUMN raw_open_text VARCHAR(64) NULL AFTER source_calendar");
+    $addColumn('trades', 'raw_close_text',
+        "ALTER TABLE trades ADD COLUMN raw_close_text VARCHAR(64) NULL AFTER raw_open_text");
+
+    $addIndex('trades', 'idx_trades_occurred_open',
+        "ALTER TABLE trades ADD KEY idx_trades_occurred_open (user_id, occurred_open_at_utc)");
+    $addIndex('trades', 'idx_trades_time_status',
+        "ALTER TABLE trades ADD KEY idx_trades_time_status (time_status)");
+
+    // trading_accounts: broker/account SOURCE timezone (distinct from users.timezone display pref)
+    $addColumn('trading_accounts', 'timezone',
+        "ALTER TABLE trading_accounts ADD COLUMN timezone VARCHAR(64) NULL AFTER server");
+    $addColumn('trading_accounts', 'timezone_source',
+        "ALTER TABLE trading_accounts ADD COLUMN timezone_source VARCHAR(20) NOT NULL DEFAULT 'unknown' AFTER timezone");
+
+    // ---- v1.1 Phase 5: MetaApi fill ledger ----
+    $createTable('metaapi_fills',
+        "CREATE TABLE IF NOT EXISTS metaapi_fills (
+            id                   BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            account_id           BIGINT UNSIGNED NOT NULL,
+            user_id              BIGINT UNSIGNED NOT NULL,
+            external_deal_id     VARCHAR(64)     NOT NULL,
+            position_id          VARCHAR(64)     NULL,
+            order_id             VARCHAR(64)     NULL,
+            entry_type           VARCHAR(16)     NULL,
+            direction            VARCHAR(8)      NULL,
+            symbol               VARCHAR(32)     NULL,
+            volume               DECIMAL(18,8)   NULL,
+            price                DECIMAL(18,8)   NULL,
+            profit               DECIMAL(24,8)   NULL,
+            commission           DECIMAL(18,8)   NULL,
+            swap                 DECIMAL(18,8)   NULL,
+            occurred_at_utc      DATETIME        NULL,
+            time_status          VARCHAR(16)     NOT NULL DEFAULT 'unresolved',
+            raw_time_text        VARCHAR(64)     NULL,
+            broker_time_text     VARCHAR(64)     NULL,
+            ingestion_source     VARCHAR(16)     NOT NULL DEFAULT 'unknown',
+            event_ref            CHAR(64)        NULL,
+            processing_state     VARCHAR(16)     NOT NULL DEFAULT 'received',
+            processed_trade_id   BIGINT UNSIGNED NULL,
+            skip_reason          VARCHAR(48)     NULL,
+            created_at           DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at           DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY uq_metaapi_fills_deal (account_id, external_deal_id),
+            KEY idx_metaapi_fills_position (account_id, position_id, processing_state),
+            KEY idx_metaapi_fills_state (processing_state),
+            KEY idx_metaapi_fills_user (user_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    // ---- Re-report (post-apply) state ----
+    $phase2a = ['occurred_open_at_utc','occurred_close_at_utc','time_status','source_timezone',
+                'source_timezone_source','source_calendar','raw_open_text','raw_close_text'];
+    $present = []; $missing = [];
+    foreach ($phase2a as $c) { (tm_col_exists($pdo, 'trades', $c) ? $present[] = $c : $missing[] = $c); }
+    $result['state'] = [
+        'phase2a_columns_present'   => $present,
+        'phase2a_columns_missing'   => $missing,
+        'phase2a_applied'           => count($missing) === 0 && tm_table_exists($pdo, 'trades'),
+        'idx_occurred_open'         => tm_index_exists($pdo, 'trades', 'idx_trades_occurred_open'),
+        'idx_time_status'           => tm_index_exists($pdo, 'trades', 'idx_trades_time_status'),
+        'trading_accounts_timezone' => tm_col_exists($pdo, 'trading_accounts', 'timezone'),
+        'trading_accounts_timezone_source' => tm_col_exists($pdo, 'trading_accounts', 'timezone_source'),
+        'metaapi_fills_exists'      => tm_table_exists($pdo, 'metaapi_fills'),
+    ];
+    $result['ok'] = count($result['errors']) === 0;
+
+    echo json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+} catch (Throwable $e) {
+    error_log('velora-trade-migration probe error: ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['ok' => false, 'env' => $ENV, 'mode' => $MODE,
+                      'error' => 'migration probe failed (internal error)',
+                      'error_code' => 'VELORA_MIGRATION_FAILED'],
+                     JSON_UNESCAPED_SLASHES);
+}

@@ -1,0 +1,178 @@
+<?php
+/**
+ * VELORA — ONE-USE POST-DEPLOY DATABASE VERIFICATION probe TEMPLATE.
+ *
+ * READ-ONLY. It connects through the SAME application connection the app uses
+ * (Velora\Core\Database::connection()) and runs a FIXED set of metadata/read checks.
+ * It NEVER runs INSERT/UPDATE/DELETE/ALTER/DROP/CREATE, accepts NO SQL/PHP/shell input,
+ * and self-deletes after authorized execution. It is NOT a permanent endpoint.
+ *
+ * Security model mirrors db_backup_probe.php.tmpl:
+ *   - token-gated with hash_equals() (timing-safe); random filename; single execution;
+ *   - fixed op=verify, fixed explicit env (staging|production);
+ *   - emits metadata + pass/fail only; no credentials, DSN, .env, or row payloads beyond
+ *     small counts/representative reads;
+ *   - the calling workflow treats any non-200 / ok=false as a FAILED deployment.
+ */
+declare(strict_types=1);
+
+$expected = '__HASH__';
+$provided = (string)($_SERVER['HTTP_X_VELORA_MGMT'] ?? '');
+if ($provided === '' || !hash_equals($expected, hash('sha256', $provided))) {
+    http_response_code(404);
+    exit('Not found');
+}
+@unlink(__FILE__);
+
+require dirname(__DIR__) . '/api/src/bootstrap.php';
+
+use Velora\Core\Database;
+
+header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store');
+
+$OP  = '__OP__';   // must be 'verify'
+$ENV = '__ENV__';  // staging | production
+
+$out = ['probe' => 'velora-db-verify', 'op' => 'verify', 'env' => $ENV, 'time' => gmdate('c')];
+
+if ($OP !== 'verify') {
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'error' => 'this probe only performs op=verify'],
+        JSON_UNESCAPED_SLASHES);
+    exit;
+}
+if ($ENV !== 'staging' && $ENV !== 'production') {
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'error' => 'unsupported environment'], JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
+try {
+    $pdo = Database::connection();
+    $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+    $checks = [];
+    $fatal  = null;
+
+    if ($driver !== 'mysql') {
+        // SQLite/CI fallback: minimal connectivity signal (never used for a prod gate).
+        $checks['connectivity'] = ['ok' => true, 'note' => 'non-mysql driver: ' . $driver];
+        echo json_encode(['ok' => true, 'env' => $ENV, 'checks' => $checks,
+            'warning' => 'non-mysql post-verify'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
+    // 1) connectivity + identity (read-only scalars)
+    $version = (string)$pdo->query('SELECT VERSION()')->fetchColumn();
+    $checks['connectivity'] = ['ok' => true, 'engine_version' => $version];
+
+    // 2) expected critical tables exist
+    $critical = ['users', 'trades', 'trading_accounts', 'trade_exits',
+                 'ai_jobs', 'ai_feature_flags'];
+    $missing = [];
+    $tableCounts = [];
+    foreach ($critical as $t) {
+        $exists = (int)$pdo->query(
+            'SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() '
+            . 'AND TABLE_NAME=' . $pdo->quote($t))->fetchColumn();
+        if ($exists === 0) { $missing[] = $t; }
+        // representative READ count (no row payload emitted)
+        try {
+            $tableCounts[$t] = (int)$pdo->query('SELECT COUNT(*) FROM `' . $t . '`')->fetchColumn();
+        } catch (Throwable $e) {
+            $missing[] = $t . '(uncountable)';
+            $tableCounts[$t] = -1;
+        }
+    }
+    $checks['critical_tables'] = ['ok' => count($missing) === 0, 'missing' => $missing,
+                                  'counts' => $tableCounts];
+
+    // 3) representative critical queries actually run (read-only)
+    $rep = [];
+    try {
+        $rep['trades_total'] = (int)$pdo->query('SELECT COUNT(*) FROM trades')->fetchColumn();
+        $rep['users_total']  = (int)$pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
+        $rep['trades_by_symbol'] = $pdo->query(
+            'SELECT symbol, COUNT(*) c FROM trades GROUP BY symbol ORDER BY c DESC LIMIT 5')
+            ->fetchAll(PDO::FETCH_KEY_PAIR);
+        $checks['representative_queries'] = ['ok' => true, 'summary' => $rep];
+    } catch (Throwable $e) {
+        error_log('velora-db-verify probe: representative queries failed: ' . $e->getMessage());
+        $checks['representative_queries'] = ['ok' => false, 'error' => 'read-check failed (internal error)'];
+    }
+
+    // 4) basic schema integrity — tables readable, no FK definition errors
+    try {
+        $baseTables = (int)$pdo->query(
+            'SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() '
+            . "AND TABLE_TYPE='BASE TABLE'")->fetchColumn();
+        $checks['schema_read'] = ['ok' => $baseTables > 0, 'base_tables' => $baseTables];
+    } catch (Throwable $e) {
+        error_log('velora-db-verify probe: schema read failed: ' . $e->getMessage());
+        $checks['schema_read'] = ['ok' => false, 'error' => 'schema read failed (internal error)'];
+    }
+
+    // 5) READ-ONLY migration schema inventory (Phase 2A v1.0 + Phase 5 v1.1).
+    //    This NEVER fails the core post-deploy check on its own: it reports which
+    //    expected migration columns/indexes/tables are present so a caller can compare
+    //    BEFORE vs AFTER a migration. Pure information_schema reads; no DDL/DML.
+    try {
+        $colsOf = function (string $table) use ($pdo): array {
+            $st = $pdo->prepare(
+                'SELECT COLUMN_NAME FROM information_schema.COLUMNS '
+                . 'WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? ORDER BY ORDINAL_POSITION');
+            $st->execute([$table]);
+            return $st->fetchAll(PDO::FETCH_COLUMN);
+        };
+        $tableExists = function (string $table) use ($pdo): bool {
+            $st = $pdo->prepare(
+                'SELECT COUNT(*) FROM information_schema.TABLES '
+                . 'WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=?');
+            $st->execute([$table]);
+            return (int)$st->fetchColumn() > 0;
+        };
+        $phase2a = ['occurred_open_at_utc', 'occurred_close_at_utc', 'time_status',
+                    'source_timezone', 'source_timezone_source', 'source_calendar',
+                    'raw_open_text', 'raw_close_text'];
+        $tradeCols = $tableExists('trades') ? $colsOf('trades') : [];
+        $acctCols  = $tableExists('trading_accounts') ? $colsOf('trading_accounts') : [];
+        $migration = [
+            'trades_table_exists'       => $tableExists('trades'),
+            'phase2a_columns_expected'  => $phase2a,
+            'phase2a_columns_present'   => array_values(array_intersect($phase2a, $tradeCols)),
+            'phase2a_columns_missing'   => array_values(array_diff($phase2a, $tradeCols)),
+            'trading_accounts_timezone'          => in_array('timezone', $acctCols, true),
+            'trading_accounts_timezone_source'   => in_array('timezone_source', $acctCols, true),
+            // Phase 5 (v1.1) ledger table
+            'metaapi_fills_exists'      => $tableExists('metaapi_fills'),
+        ];
+        $migration['phase2a_applied'] = count($migration['phase2a_columns_missing']) === 0
+                                        && $migration['trades_table_exists'];
+        // advisory only: present here for evidence, not used in $allOk below
+        $checks['migration_schema'] = ['ok' => true, 'advisory' => true, 'detail' => $migration];
+    } catch (Throwable $e) {
+        error_log('velora-db-verify probe: migration inventory skipped: ' . $e->getMessage());
+        $checks['migration_schema'] = ['ok' => true, 'advisory' => true,
+                                       'note' => 'migration inventory skipped (internal error)'];
+    }
+
+    $allOk = true;
+    foreach ($checks as $c) { if (empty($c['ok'])) { $allOk = false; break; } }
+
+    echo json_encode([
+        'ok' => $allOk,
+        'probe' => 'velora-db-verify',
+        'env' => $ENV,
+        'verification' => $allOk ? 'POSTDEPLOY_DB_OK' : 'POSTDEPLOY_DB_FAILED',
+        'checks' => $checks,
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+} catch (Throwable $e) {
+    error_log('velora-db-verify probe error: ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode([
+        'ok' => false, 'env' => $ENV,
+        'verification' => 'POSTDEPLOY_DB_FAILED',
+        'error' => 'post-deploy DB verification failed (internal error)',
+        'error_code' => 'VELORA_VERIFY_FAILED',
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+}

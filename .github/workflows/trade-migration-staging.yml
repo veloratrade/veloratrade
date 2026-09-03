@@ -1,0 +1,161 @@
+name: Trade Schema Migration (Staging) — v1.0 Phase 2A + v1.1 Phase 5
+
+# ============================================================================
+# STAGING-ONLY additive, idempotent trade-schema migration via the one-use probe
+# pattern (token-gated, random-named, self-deleting). Runs the exact additive
+# DDL guarded by information_schema:
+#   * v1.0 Phase 2A — trades canonical-UTC + provenance columns + indexes, and
+#     trading_accounts.timezone / timezone_source;
+#   * v1.1 Phase 5  — metaapi_fills ledger table (idempotency/aggregation).
+# No DROP/TRUNCATE/DELETE of data. check mode changes nothing; apply mode
+# requires the exact confirmation phrase. Uses STAGING_FTP_* / staging host only.
+# Dispatched workflow_dispatch (registered on the default branch; runs the file
+# from the requested ref).
+# ============================================================================
+
+on:
+  workflow_call:
+    inputs:
+      mode:
+        description: 'check (report only) or apply (additive migration)'
+        type: string
+        required: true
+      confirm:
+        description: 'must be APPLY-TRADE-MIGRATION when mode=apply'
+        type: string
+        required: false
+        default: ''
+    outputs:
+      result:
+        value: ${{ jobs.migrate.outputs.result }}
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Mode: check (report only) or apply (additive migration)'
+        required: true
+        default: check
+      confirm:
+        description: 'Type APPLY-TRADE-MIGRATION to confirm apply on STAGING'
+        required: false
+        default: ''
+
+permissions: { contents: read }
+
+concurrency:
+  group: trade-migration-staging
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: Trade migration check/apply on STAGING
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      result: ${{ steps.runsql.outputs.state }}
+    env:
+      FTP_SERVER:   ${{ secrets.STAGING_FTP_SERVER }}
+      FTP_USERNAME: ${{ secrets.STAGING_FTP_USERNAME }}
+      FTP_PASSWORD: ${{ secrets.STAGING_FTP_PASSWORD }}
+      BASE: https://staging.veloratrade.ir
+      DOCROOT: public_html/staging.veloratrade.ir
+      INPUT_MODE: ${{ inputs.mode || github.event.inputs.mode }}
+      INPUT_CONFIRM: ${{ inputs.confirm || github.event.inputs.confirm }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install lftp
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -q lftp >/dev/null
+
+      - name: Guard — staging-only, mode, and apply confirmation
+        run: |
+          set -euo pipefail
+          [ -n "${FTP_SERVER:-}" ] && [ -n "${FTP_USERNAME:-}" ] && [ -n "${FTP_PASSWORD:-}" ] \
+            || { echo "::error::missing STAGING_FTP_* secrets (staging-only)"; exit 1; }
+          case "$INPUT_MODE" in
+            check) echo "mode=check (read-only; no schema change)";;
+            apply)
+              [ "$INPUT_CONFIRM" = "APPLY-TRADE-MIGRATION" ] \
+                || { echo "::error::for apply mode, confirm must be exactly APPLY-TRADE-MIGRATION"; exit 1; }
+              echo "mode=apply (STAGING; additive, idempotent)";;
+            *) echo "::error::mode must be check|apply"; exit 1;;
+          esac
+
+      - name: Create, upload, execute, and remove one-use probe
+        id: runsql
+        run: |
+          set -euo pipefail
+          NAME="_velora_tmig_$(openssl rand -hex 8).php"
+          TOKEN="$(openssl rand -hex 32)"
+          HASH="$(printf '%s' "$TOKEN" | sha256sum | awk '{print $1}')"
+          echo "::add-mask::$NAME"; echo "::add-mask::$TOKEN"; echo "::add-mask::$HASH"
+          export NAME HASH
+          python3 - <<'PY'
+          import os, pathlib
+          tpl = pathlib.Path('ops/velora-mgmt/probe/trade_migration_probe.php.tmpl').read_text()
+          tpl = (tpl.replace('__HASH__', os.environ['HASH'])
+                     .replace('__MODE__', os.environ['INPUT_MODE'])
+                     .replace('__ENV__', 'staging'))
+          pathlib.Path('/tmp/probe.php').write_text(tpl)
+          PY
+          cleanup() {
+            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+              -e "set ftp:ssl-allow yes; set ftp:ssl-force yes; set ftp:ssl-protect-data yes; set ssl:verify-certificate yes; set net:max-retries 1; set net:timeout 20; glob -a rm -f $DOCROOT/public/_velora_tmig_*.php; bye" >/dev/null 2>&1 || true
+            shred -u /tmp/probe.php /tmp/status.json 2>/dev/null || rm -f /tmp/probe.php /tmp/status.json
+          }
+          trap cleanup EXIT
+          uploaded=0
+          for attempt in $(seq 1 15); do
+            if lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+              -e "set ftp:ssl-allow yes; set ftp:ssl-force yes; set ftp:ssl-protect-data yes; set ssl:verify-certificate yes; set net:max-retries 2; set net:timeout 30; glob -a rm -f $DOCROOT/public/_velora_tmig_*.php; put /tmp/probe.php -o $DOCROOT/public/$NAME; bye"; then
+              uploaded=1; break
+            fi
+            sleep 5
+          done
+          [ "$uploaded" = 1 ] || { echo "::error::probe upload failed"; exit 1; }
+          code=$(curl -sS -o /tmp/status.json -w '%{http_code}' --max-time 90 -H "X-Velora-Mig: $TOKEN" "$BASE/public/$NAME")
+          echo "probe HTTP: $code"
+          [ "$code" = 200 ] || { echo "::error::migration probe HTTP $code"; cat /tmp/status.json; exit 1; }
+          cp /tmp/status.json trade-migration-result.json
+          python3 - <<'PY'
+          import json, sys
+          d = json.load(open('trade-migration-result.json'))
+          assert d.get('env') == 'staging', 'probe did not report staging'
+          print("=== Trade Migration (%s) ===" % d.get('mode'))
+          print("applied:", d.get('applied'))
+          st = d.get('state', {})
+          print("phase2a_applied      :", st.get('phase2a_applied'))
+          print("phase2a_present      :", st.get('phase2a_columns_present'))
+          print("phase2a_missing      :", st.get('phase2a_columns_missing'))
+          print("idx_occurred_open    :", st.get('idx_occurred_open'))
+          print("idx_time_status      :", st.get('idx_time_status'))
+          print("trading_accounts tz  :", st.get('trading_accounts_timezone'), '/', st.get('trading_accounts_timezone_source'))
+          print("metaapi_fills_exists :", st.get('metaapi_fills_exists'))
+          if d.get('errors'):
+              print("ERRORS:", d.get('errors'))
+          if not d.get('ok') or d.get('errors'):
+              sys.exit("::error::trade migration probe reported errors")
+          print("PASS: migration probe ok (mode=%s)" % d.get('mode'))
+          PY
+          # emit a compact post-state for reusable-workflow callers
+          python3 - <<'PY'
+          import json, os
+          d=json.load(open('trade-migration-result.json'))
+          st=d.get('state',{})
+          line="applied=%s phase2a=%s metaapi_fills=%s ta_timezone=%s" % (
+              d.get('applied'), st.get('phase2a_applied'), st.get('metaapi_fills_exists'),
+              st.get('trading_accounts_timezone'))
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:
+              f.write("state="+line.replace('\n',' ')+"\n")
+          PY
+
+      - name: Keep migration result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trade-migration-staging-${{ github.run_id }}
+          path: trade-migration-result.json
+          if-no-files-found: ignore
+          retention-days: 14

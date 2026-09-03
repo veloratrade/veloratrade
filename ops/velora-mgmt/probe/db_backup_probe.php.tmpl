@@ -1,0 +1,242 @@
+<?php
+/**
+ * VELORA — ONE-USE DATABASE BACKUP probe TEMPLATE (STAGING first).
+ *
+ * PURPOSE-BUILT for the backup operation ONLY. It is NOT a remote shell:
+ *   - token-gated with hash_equals() (timing-safe), random filename, single execution;
+ *   - fixed operation (backup) and fixed explicit environment (__ENV__ = staging|
+ *     production); any other environment/operation is refused;
+ *   - NO arbitrary PHP, NO arbitrary SQL input, NO arbitrary shell input. All SQL is
+ *     FIXED metadata (information_schema / SHOW CREATE) plus row READS for the dump;
+ *   - performs ONLY a read-only, transaction-consistent logical dump — never INSERT/
+ *     UPDATE/DELETE/ALTER/DROP/CREATE against the live application database (the DROP/
+ *     CREATE statements are written INTO THE DUMP FILE, never executed);
+ *   - writes the compressed dump OUTSIDE the web root (VELORA_PRIVATE_ROOT/backups),
+ *     never inside the public docroot;
+ *   - self-deletes; prints JSON metadata only (no credentials, DSN, .env, or row data).
+ *
+ * The wired workflow (velora-db-backup-staging.yml for staging / velora-db-backup.yml
+ * for production) uploads this over FTP to the docroot, invokes it once over HTTPS
+ * with X-Velora-Mgmt, then retrieves the .sql.gz over FTP from the private root
+ * (velora_private[_staging]/backups/...) and removes the remote temp file after the
+ * local copy is verified.
+ */
+declare(strict_types=1);
+
+$expected = '__HASH__';
+$provided = (string)($_SERVER['HTTP_X_VELORA_MGMT'] ?? '');
+if ($provided === '' || !hash_equals($expected, hash('sha256', $provided))) {
+    http_response_code(404);
+    exit('Not found');
+}
+@unlink(__FILE__); // single-use: remove self immediately on authorized execution
+
+require dirname(__DIR__) . '/api/src/bootstrap.php';
+
+use Velora\Core\Database;
+use Velora\Core\Config;
+
+header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store');
+
+$OP  = '__OP__';    // must be 'backup'
+$ENV = '__ENV__';   // staging | production
+
+$out = ['probe' => 'velora-db-backup', 'op' => $OP, 'env' => $ENV, 'time' => gmdate('c')];
+
+function bk_fail(array $out, int $code, string $msg): void {
+    http_response_code($code);
+    $out['ok'] = false;
+    $out['error'] = $msg;
+    echo json_encode($out, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
+if ($OP !== 'backup') {
+    bk_fail($out, 400, 'this probe only performs op=backup');
+}
+// Explicit environment ONLY. Staging and production have separate namespaces, separate
+// private roots, separate credentials (chosen by the calling workflow), and separate
+// deterministic IDs; production is additionally gated by the protected GitHub environment.
+if ($ENV !== 'staging' && $ENV !== 'production') {
+    bk_fail($out, 400, "unsupported environment for backup: {$ENV}");
+}
+// Per-environment deterministic identity + private root (never inferred, never mixed).
+$ftpBaseDir = ($ENV === 'production') ? 'velora_private' : 'velora_private_staging';
+$dbIdentity = ($ENV === 'production') ? '***_velora_production' : '***_velora_staging';
+
+/** Quote a MySQL identifier (schema/table/column) safely. */
+function bk_ident(string $name): string {
+    return '`' . str_replace('`', '``', $name) . '`';
+}
+
+$pdo = null;
+try {
+    $pdo = Database::connection();
+    $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+    if ($driver !== 'mysql') {
+        bk_fail($out, 500, "logical DB backup requires mysql driver, got: {$driver}");
+    }
+
+    $version = (string)$pdo->query('SELECT VERSION()')->fetchColumn();
+
+    // Table inventory + engine + approximate size (read-only metadata).
+    $tables = $pdo->query(
+        "SELECT TABLE_NAME, TABLE_TYPE, ENGINE, TABLE_ROWS
+         FROM information_schema.TABLES
+         WHERE TABLE_SCHEMA = DATABASE()
+         ORDER BY TABLE_TYPE, TABLE_NAME"
+    )->fetchAll(PDO::FETCH_ASSOC);
+
+    $dbName  = (string)$pdo->query('SELECT DATABASE()')->fetchColumn();
+    $sizeRow = $pdo->query(
+        "SELECT COALESCE(ROUND(SUM(DATA_LENGTH+INDEX_LENGTH)),0) AS bytes
+         FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE()"
+    )->fetch(PDO::FETCH_ASSOC);
+
+    // ---- Deterministic backup identity (environment is part of the id) -------
+    $tsUtc    = gmdate('YmdHis');                       // UTC timestamp
+    $rand12   = bin2hex(random_bytes(6));              // 12-hex unique suffix
+    $backupId = "db-backup-{$ENV}-{$tsUtc}-{$rand12}";
+    $assetName = "{$ENV}/{$backupId}.sql.gz";
+
+    // ---- Destination: OUTSIDE the web root (VELORA_PRIVATE_ROOT/backups) -----
+    $absDir = Config::privatePath('backups');          // validated outside docroot
+    if (!is_dir($absDir)) { @mkdir($absDir, 0700, true); }
+    if (!is_dir($absDir)) { bk_fail($out, 500, 'cannot create private backup dir'); }
+    @chmod($absDir, 0700);
+    $absFile = $absDir . '/' . $backupId . '.sql.gz';
+    // FTP-relative retrieval path (sibling of public_html): <env private root>/backups/...
+    $ftpRel  = $ftpBaseDir . '/backups/' . $backupId . '.sql.gz';
+
+    $gz = gzopen($absFile, 'wb9');
+    if ($gz === false) { bk_fail($out, 500, 'cannot open gz for write in private root'); }
+    $w = function (string $s) use ($gz): void { gzwrite($gz, $s); };
+
+    $w("-- Velora database logical backup\n");
+    $w("-- backup_id: {$backupId}\n");
+    $w("-- environment: {$ENV}\n");
+    $w("-- created_utc: " . gmdate('c') . "\n");
+    $w("-- engine: MySQL {$version}\n");
+    $w("-- schema: " . str_repeat('*', 6) . " (name redacted)\n");
+    $w("SET FOREIGN_KEY_CHECKS=0;\n");
+    $w("SET NAMES utf8mb4;\n\n");
+
+    // Consistent read snapshot for InnoDB (read-only; does not lock or modify).
+    $pdo->exec('SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+    $pdo->beginTransaction();
+
+    $baseTables = [];
+    $viewTables = [];
+    foreach ($tables as $t) {
+        if (($t['TABLE_TYPE'] ?? '') === 'VIEW') { $viewTables[] = $t; }
+        else { $baseTables[] = $t; }
+    }
+
+    $dumpStructure = function (array $t) use ($pdo, $w) {
+        $name  = (string)$t['TABLE_NAME'];
+        $qName = bk_ident($name);
+        $ddl   = $pdo->query('SHOW CREATE TABLE ' . $qName)->fetch(PDO::FETCH_ASSOC);
+        $createSql = $ddl['Create Table'] ?? ($ddl['Create View'] ?? '');
+        $kind = (($t['TABLE_TYPE'] ?? '') === 'VIEW') ? 'View' : 'Table';
+        $w("--\n-- Structure for {$kind}: {$name}\n--\n");
+        $w("DROP " . $kind . " IF EXISTS {$qName};\n");
+        $w($createSql . ";\n\n");
+    };
+
+    // Base tables first (structure + data), then views (structure only).
+    foreach ($baseTables as $t) { $dumpStructure($t); }
+    $tableCount = count($baseTables);
+
+    // Data dump for base tables (streamed, batched extended INSERTs; read-only).
+    $BATCH = 200;
+    foreach ($baseTables as $t) {
+        $name  = (string)$t['TABLE_NAME'];
+        $qName = bk_ident($name);
+        $cols = $pdo->query(
+            'SELECT COLUMN_NAME FROM information_schema.COLUMNS '
+            . 'WHERE TABLE_SCHEMA=' . $pdo->quote($dbName) . ' AND TABLE_NAME=' . $pdo->quote($name)
+            . ' ORDER BY ORDINAL_POSITION'
+        )->fetchAll(PDO::FETCH_COLUMN);
+        if (!$cols) { continue; }
+        $colList = implode(',', array_map('bk_ident', $cols));
+
+        $pdo->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false);
+        $res = $pdo->query('SELECT ' . $colList . ' FROM ' . $qName);
+        $inStmt = false; $n = 0;
+        while ($row = $res->fetch(PDO::FETCH_NUM)) {
+            if (!$inStmt) { $w("INSERT INTO {$qName} ({$colList}) VALUES\n"); $inStmt = true; }
+            elseif ($n % $BATCH !== 0) { $w(",\n"); }
+            else { $w(";\nINSERT INTO {$qName} ({$colList}) VALUES\n"); }
+            $vals = [];
+            foreach ($row as $v) { $vals[] = ($v === null) ? 'NULL' : $pdo->quote((string)$v); }
+            $w('(' . implode(',', $vals) . ')');
+            $n++;
+        }
+        if ($inStmt) { $w(";\n\n"); }
+        $res->closeCursor();
+        $pdo->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, true);
+    }
+
+    // Views last (no row data).
+    foreach ($viewTables as $t) { $dumpStructure($t); }
+    $viewCount = count($viewTables);
+
+    $pdo->commit();
+    $w("SET FOREIGN_KEY_CHECKS=1;\n");
+    $w("-- end of backup {$backupId}\n");
+    gzclose($gz);
+    @chmod($absFile, 0600);
+
+    // ---- Verify the artifact just written (gzip integrity + sha256) ----------
+    $size = filesize($absFile);
+    $sha  = (string)hash_file('sha256', $absFile);
+    $gzipOk = false;
+    $z = @gzopen($absFile, 'rb');
+    if ($z !== false) {
+        $gzipOk = true;
+        while (!gzeof($z)) {
+            $chunk = gzread($z, 65536);
+            if ($chunk === false || ($chunk === '' && !gzeof($z))) { $gzipOk = false; break; }
+        }
+        gzclose($z);
+    }
+
+    echo json_encode([
+        'ok' => true,
+        'probe' => 'velora-db-backup',
+        'op' => 'backup',
+        'env' => $ENV,
+        'backup_id' => $backupId,
+        'release_tag' => $backupId,
+        'release_asset' => $assetName,
+        'engine' => 'mysql',
+        'engine_version' => $version,
+        'database_identity' => $dbIdentity,
+        'table_count' => $tableCount,
+        'view_count' => $viewCount,
+        'approx_db_size_bytes' => (int)($sizeRow['bytes'] ?? 0),
+        'dump_size_bytes' => (int)$size,
+        'sha256' => $sha,
+        'gzip_valid' => (bool)$gzipOk,
+        'verification_status' => $gzipOk ? 'INTEGRITY_VERIFIED' : 'UNVERIFIED',
+        'restore_test_status' => 'UNVERIFIED',
+        'created_utc' => gmdate('c'),
+        'private_ftp_path' => $ftpRel,
+        'note' => 'dump stored outside web root; retrieve over FTP, verify, upload as Release Asset',
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+} catch (Throwable $e) {
+    if ($pdo instanceof PDO && $pdo->inTransaction()) {
+        try { $pdo->rollBack(); } catch (Throwable $ignore) {}
+    }
+    // Log the real cause SERVER-SIDE only. Never echo raw exception text into the
+    // JSON (which the workflow may surface in logs): it can contain host/DSN/SQL or
+    // other infrastructure details.
+    error_log('velora-db-backup probe error: ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode([
+        'ok' => false, 'env' => $ENV, 'op' => $OP,
+        'error' => 'backup failed (internal error)',
+        'error_code' => 'VELORA_BACKUP_FAILED',
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+}
