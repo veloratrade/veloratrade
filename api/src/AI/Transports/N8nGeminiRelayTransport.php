@@ -35,8 +35,12 @@ final class N8nGeminiRelayTransport implements GeminiTransportInterface
         ?string $url = null,
         ?string $token = null
     ) {
-        $this->url = trim($url ?? Config::env('GEMINI_RELAY_URL', ''));
-        $this->token = trim($token ?? Config::env('GEMINI_RELAY_TOKEN', ''));
+        // Runtime resolution: Admin-managed encrypted secret > process ENV >
+        // private velora.env > unavailable (RelayConfigResolver). This is what
+        // makes a relay config saved from the Admin Panel effective without a
+        // file edit, while preserving env fallback for existing deployments.
+        $this->url = trim($url ?? \Velora\Admin\RelayConfigResolver::url());
+        $this->token = trim($token ?? \Velora\Admin\RelayConfigResolver::token());
     }
 
     private string $url;

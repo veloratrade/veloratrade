@@ -24,6 +24,51 @@ $result = null;
 /* ---------- کمکی‌ها ---------- */
 function h(?string $s): string { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 
+/**
+ * Split a SQL script into individual statements on top-level semicolons only.
+ * The schema.sql contains string literals (e.g. COMMENT '...; ...') that may
+ * themselves contain a semicolon. A naive explode(";") would cut the statement
+ * mid-string and produce a syntax error, so we walk the script tracking quote
+ * state ('...', "...", and `...` identifiers) and only split when outside them.
+ */
+function splitSqlStatements(string $sql): array
+{
+    $stmts = [];
+    $buf = '';
+    $n = strlen($sql);
+    $quote = '';      // one of "'", '"', '`', or '' when outside a quote
+    for ($i = 0; $i < $n; $i++) {
+        $ch = $sql[$i];
+        if ($quote !== '') {
+            $buf .= $ch;
+            // handle backslash escape inside quoted strings
+            if ($ch === '\\' && $quote !== '`' && $i + 1 < $n) {
+                $buf .= $sql[++$i];
+                continue;
+            }
+            if ($ch === $quote) {
+                $quote = ''; // close quote
+            }
+            continue;
+        }
+        if ($ch === "'" || $ch === '"' || $ch === '`') {
+            $quote = $ch;
+            $buf .= $ch;
+            continue;
+        }
+        if ($ch === ';') {
+            $stmts[] = $buf;
+            $buf = '';
+            continue;
+        }
+        $buf .= $ch;
+    }
+    if (trim($buf) !== '') {
+        $stmts[] = $buf;
+    }
+    return $stmts;
+}
+
 function runSchema(PDO $pdo, string $schemaFile): array
 {
     $errors = [];
@@ -37,7 +82,7 @@ function runSchema(PDO $pdo, string $schemaFile): array
     $sql = preg_replace('/\s+--[^\r\n]*/', ' ', $sql); // کامنت‌های انتهای خط
 
     $pdo->exec("SET FOREIGN_KEY_CHECKS=0");
-    foreach (explode(";", $sql) as $stmt) {
+    foreach (splitSqlStatements($sql) as $stmt) {
         $stmt = trim($stmt);
         if ($stmt === '' || $stmt === "\n") continue;
         try {

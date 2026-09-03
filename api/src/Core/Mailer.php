@@ -38,11 +38,32 @@ final class Mailer
     /** شناسهٔ غیرمحرمانهٔ پیام که provider پس از پذیرش برمی‌گرداند. */
     public static ?string $lastMessageId = null;
 
+    /**
+     * Resolve a mail setting: highest precedence is the Admin-managed value via
+     * IntegrationConfigResolver (when the class is loaded). This guard also keeps
+     * the dependency-free mock contract (which loads Mailer.php without the
+     * resolver) working by falling back to Config::env.
+     */
+    private static function mailCfg(string $resolverMethod, string $envKey, string $default): string
+    {
+        if (class_exists(IntegrationConfigResolver::class)) {
+            return trim((string) IntegrationConfigResolver::{$resolverMethod}());
+        }
+        return trim(Config::env($envKey, $default));
+    }
+
+    /** Effective mail driver ('mail' | 'log' | 'smtp' | 'resend'), normalized. */
+    private static function mailDriverValue(): string
+    {
+        $driver = self::mailCfg('mailDriver', 'MAIL_DRIVER', 'mail');
+        return strtolower(trim($driver));
+    }
+
     public static function send(string $to, string $subject, string $htmlBody, ?string $plainBody = null): bool
     {
         self::$lastError = null;
         self::$lastMessageId = null;
-        $driver = strtolower(trim(Config::env('MAIL_DRIVER', 'mail')));
+        $driver = self::mailDriverValue();
 
         switch ($driver) {
             case 'log':
@@ -67,7 +88,7 @@ final class Mailer
     ): bool {
         self::$lastError = null;
         self::$lastMessageId = null;
-        $driver = strtolower(trim(Config::env('MAIL_DRIVER', 'mail')));
+        $driver = self::mailDriverValue();
         if ($driver === 'resend') {
             return self::sendResend($to, $subject, $htmlBody, $images, $plainBody);
         }
@@ -170,7 +191,7 @@ final class Mailer
         array $inlineImages = [],
         ?string $plainBody = null
     ): bool {
-        $apiKey = trim(Config::env('RESEND_API_KEY', ''));
+        $apiKey = self::mailCfg('mailResendApiKey', 'RESEND_API_KEY', '');
         if ($apiKey === '') {
             self::$lastError = 'Resend API key is not configured';
             return false;
@@ -296,8 +317,8 @@ final class Mailer
 
     private static function sendMail(string $to, string $subject, string $htmlBody, ?string $plainBody = null): bool
     {
-        $from = Config::env('MAIL_FROM', 'no-reply@veloratrade.ir');
-        $fromName = Config::env('MAIL_FROM_NAME', 'VELORA TRADE');
+        $from = self::mailCfg('mailFrom', 'MAIL_FROM', 'no-reply@veloratrade.ir');
+        $fromName = self::mailCfg('mailFromName', 'MAIL_FROM_NAME', 'VELORA TRADE');
 
         $encodedSubject = self::encodeHeader($subject);
         $encodedFromName = self::encodeHeader($fromName);
@@ -348,12 +369,12 @@ final class Mailer
         array $inlineImages = [],
         ?string $plainBody = null
     ): bool {
-        $host = Config::env('MAIL_HOST', '');
-        $port = (int) Config::env('MAIL_PORT', '587');
-        $user = Config::env('MAIL_USER', '');
-        $pass = Config::env('MAIL_PASS', '');
-        $from = Config::env('MAIL_FROM', 'no-reply@veloratrade.ir');
-        $fromName = Config::env('MAIL_FROM_NAME', 'VELORA TRADE');
+        $host = self::mailCfg('mailSmtpHost', 'MAIL_HOST', '');
+        $port = (int) self::mailCfg('mailSmtpPort', 'MAIL_PORT', '587');
+        $user = self::mailCfg('mailSmtpUser', 'MAIL_USER', '');
+        $pass = self::mailCfg('mailSmtpPassword', 'MAIL_PASS', '');
+        $from = self::mailCfg('mailFrom', 'MAIL_FROM', 'no-reply@veloratrade.ir');
+        $fromName = self::mailCfg('mailFromName', 'MAIL_FROM_NAME', 'VELORA TRADE');
 
         if ($host === '' || $user === '' || $pass === '') {
             self::logEmail($to, $subject, $htmlBody . "\n[SMTP not configured]");

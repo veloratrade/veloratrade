@@ -650,6 +650,39 @@
           "public/assets/velora-smart-import.js"
         ],
         "match_count": 1
+      },
+      {
+        "id": "LIT-148",
+        "kind": "exact",
+        "category": "technical-identifier",
+        "value": "SUCCESS",
+        "reason": "integration connectivity probe machine status code (SUCCESS / AUTH_FAILED / TIMEOUT / NETWORK_ERROR / SERVICE_UNAVAILABLE / NOT_CONFIGURED); not displayed copy",
+        "sources": [
+          "public/assets/velora-admin-integrations.js"
+        ],
+        "match_count": 1
+      },
+      {
+        "id": "LIT-149",
+        "kind": "exact",
+        "category": "technical-identifier",
+        "value": "AUTH_FAILED",
+        "reason": "integration connectivity probe machine status code (SUCCESS / AUTH_FAILED / TIMEOUT / NETWORK_ERROR / SERVICE_UNAVAILABLE / NOT_CONFIGURED); not displayed copy",
+        "sources": [
+          "public/assets/velora-admin-integrations.js"
+        ],
+        "match_count": 1
+      },
+      {
+        "id": "LIT-150",
+        "kind": "regex",
+        "category": "technical-identifier",
+        "pattern": "^(?:VALID|SUCCESS|UNVERIFIED|NOT_CONFIGURED|INVALID_CREDENTIAL|AUTH_FAILED|EXPIRED|REVOKED|DISABLED|INSUFFICIENT_PERMISSION|QUOTA_EXCEEDED|RATE_LIMITED|REGION_RESTRICTED|PROVIDER_UNAVAILABLE|SERVICE_UNAVAILABLE|UNKNOWN|NETWORK_ERROR|TIMEOUT|PROVIDER_ERROR)$",
+        "reason": "backend provider/integration machine status enums (CredentialStatus states + probe results); they are protocol values, not displayed copy — the UI maps them to catalog keys",
+        "sources": [
+          "public/assets/velora-admin-ai.js",
+          "public/assets/velora-admin-integrations.js"
+        ]
       }
     ]
   },

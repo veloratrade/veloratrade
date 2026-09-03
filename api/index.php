@@ -106,7 +106,7 @@ $router->post('/api/v1/ai/weekly-report', [AIController::class, 'weeklyReport'],
 $router->post('/api/v1/ai/feedback', [AIController::class, 'feedback'], $auth);
 
 // ---- Admin (RBAC) ----------------------------------------------------
-$router->get('/api/v1/admin/users', [\Velora\Admin\AdminController::class, 'users'], $admin);
+$router->get('/api/v1/admin/users', [\Velora\Admin\AdminController::class, 'users'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_USERS_VIEW)]);
 
 // ---- Admin AI configuration (RBAC; real persisted state only) ---------
 $router->get('/api/v1/admin/ai/overview', [\Velora\Admin\AIConfigController::class, 'overview'], $admin);
@@ -116,6 +116,83 @@ $router->add('PATCH', '/api/v1/admin/ai/feature-providers/{id}', [\Velora\Admin\
 $router->delete('/api/v1/admin/ai/feature-providers/{id}', [\Velora\Admin\AIConfigController::class, 'delete'], $admin);
 $router->post('/api/v1/admin/ai/credentials/{provider}', [\Velora\Admin\AIConfigController::class, 'replaceCredential'], $admin);
 $router->delete('/api/v1/admin/ai/credentials/{provider}', [\Velora\Admin\AIConfigController::class, 'deleteCredential'], $admin);
+
+// ---- Phase B: Admin-managed GLOBAL AI route (view=admin; write=super_admin only) ----
+$router->get('/api/v1/admin/ai/route', [\Velora\Admin\AiGlobalRouteController::class, 'show'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_AI_MANAGE)]);
+$router->put('/api/v1/admin/ai/route', [\Velora\Admin\AiGlobalRouteController::class, 'update'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_AI_ROUTE_MANAGE)]);
+$router->delete('/api/v1/admin/ai/route', [\Velora\Admin\AiGlobalRouteController::class, 'clear'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_AI_ROUTE_MANAGE)]);
+
+// ---- Admin: Phase 1 + Phase 2 (effective config + provider credential verification) ----
+$router->get('/api/v1/admin/config/effective', [\Velora\Admin\EffectiveConfigController::class, 'show'], $admin);
+$router->post('/api/v1/admin/providers/{provider}/verify', [\Velora\Admin\AIConfigController::class, 'verifyCredential'], $admin);
+$router->post('/api/v1/admin/providers/{provider}/test-connection', [\Velora\Admin\AIConfigController::class, 'testConnection'], $admin);
+
+// ---- Phase A: Admin-managed n8n Gemini Relay config ----
+// Read = view permission (admin + super_admin); write/clear = integrations.manage
+// (super_admin only, per Role::permissionMap). Token values are never returned.
+$router->get('/api/v1/admin/integrations/relay/config', [\Velora\Admin\RelayConfigController::class, 'show'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_INTEGRATIONS_VIEW)]);
+$router->put('/api/v1/admin/integrations/relay/config', [\Velora\Admin\RelayConfigController::class, 'update'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_INTEGRATIONS_MANAGE)]);
+$router->delete('/api/v1/admin/integrations/relay/config', [\Velora\Admin\RelayConfigController::class, 'clear'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_INTEGRATIONS_MANAGE)]);
+
+// ---- Phase C: Admin-managed external integrations (MetaAPI, Email) ----
+// Read/status = view (admin + super_admin); write/clear/test = manage (super_admin
+// only). Secrets never returned; connectivity only from a real probe.
+$router->get('/api/v1/admin/integrations', [\Velora\Admin\IntegrationsController::class, 'inventory'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_INTEGRATIONS_VIEW)]);
+$router->get('/api/v1/admin/integrations/metaapi', [\Velora\Admin\IntegrationsController::class, 'metaApi'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_INTEGRATIONS_VIEW)]);
+$router->put('/api/v1/admin/integrations/metaapi', [\Velora\Admin\IntegrationsController::class, 'updateMetaApi'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_INTEGRATIONS_MANAGE)]);
+$router->delete('/api/v1/admin/integrations/metaapi', [\Velora\Admin\IntegrationsController::class, 'clearMetaApi'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_INTEGRATIONS_MANAGE)]);
+$router->post('/api/v1/admin/integrations/metaapi/test', [\Velora\Admin\IntegrationsController::class, 'testMetaApi'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_INTEGRATIONS_MANAGE)]);
+$router->get('/api/v1/admin/integrations/email', [\Velora\Admin\IntegrationsController::class, 'email'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_INTEGRATIONS_VIEW)]);
+$router->put('/api/v1/admin/integrations/email', [\Velora\Admin\IntegrationsController::class, 'updateEmail'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_INTEGRATIONS_MANAGE)]);
+$router->delete('/api/v1/admin/integrations/email', [\Velora\Admin\IntegrationsController::class, 'clearEmail'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_INTEGRATIONS_MANAGE)]);
+$router->post('/api/v1/admin/integrations/email/test', [\Velora\Admin\IntegrationsController::class, 'testEmail'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_INTEGRATIONS_MANAGE)]);
+
+// ---- Phase G: Billing + Subscription (read-only observability) ----
+// Read-only; subscription mutation is NOT duplicated here — it lives on the
+// audited POST /api/v1/admin/users/{id}/subscription (P_USERS_MANAGE_SUBSCRIPTION).
+$router->get('/api/v1/admin/billing', [\Velora\Admin\BillingController::class, 'overview'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_BILLING_VIEW)]);
+$router->get('/api/v1/admin/billing/users/{id}', [\Velora\Admin\BillingController::class, 'user'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_USERS_VIEW)]);
+
+// ---- Phase H: Analytics + Revenue Intelligence (read-only, admin-only) ----
+// Every endpoint requires P_ANALYTICS_VIEW (admin + super_admin). Financial
+// analytics are deliberately ALWAYS unavailable (available:false,
+// reason:NO_BILLING_SOURCE) — the repository has no authoritative billing source.
+$router->get('/api/v1/admin/analytics/overview', [\Velora\Admin\AnalyticsController::class, 'overview'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_ANALYTICS_VIEW)]);
+$router->get('/api/v1/admin/analytics/users', [\Velora\Admin\AnalyticsController::class, 'users'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_ANALYTICS_VIEW)]);
+$router->get('/api/v1/admin/analytics/trading', [\Velora\Admin\AnalyticsController::class, 'trading'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_ANALYTICS_VIEW)]);
+$router->get('/api/v1/admin/analytics/ai', [\Velora\Admin\AnalyticsController::class, 'ai'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_ANALYTICS_VIEW)]);
+$router->get('/api/v1/admin/analytics/operations', [\Velora\Admin\AnalyticsController::class, 'operations'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_ANALYTICS_VIEW)]);
+$router->get('/api/v1/admin/analytics/revenue', [\Velora\Admin\AnalyticsController::class, 'revenue'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_ANALYTICS_VIEW)]);
+
+// ---- Phase F: centralized Feature Flag control plane ----
+// Read = feature_flags.view (admin + super_admin); write = feature_flags.edit
+// (super_admin only, per Role::permissionMap). Flags are server-authoritative
+// runtime switches for ALL users => privileged write. No secrets involved.
+$router->get('/api/v1/admin/feature-flags', [\Velora\Admin\FeatureFlagController::class, 'index'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_FEATURE_FLAGS_VIEW)]);
+$router->add('PATCH', '/api/v1/admin/feature-flags/{feature}', [\Velora\Admin\FeatureFlagController::class, 'update'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_FEATURE_FLAGS_EDIT)]);
+
+// ---- Admin panel (Professional Admin Panel, v1.3): RBAC-gated server-side ----
+$router->get('/api/v1/admin/overview', [\Velora\Admin\OverviewController::class, 'overview'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_OVERVIEW_VIEW)]);
+$router->get('/api/v1/admin/system/health', [\Velora\Admin\OverviewController::class, 'health'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_SYSTEM_HEALTH_VIEW)]);
+// ---- Phase D: System + Integration health (diagnostics) & System logs ----
+$router->get('/api/v1/admin/system/diagnostics', [\Velora\Admin\SystemHealthController::class, 'diagnostics'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_SYSTEM_HEALTH_VIEW)]);
+$router->post('/api/v1/admin/system/diagnostics/refresh', [\Velora\Admin\SystemHealthController::class, 'refresh'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_SYSTEM_HEALTH_VIEW)]);
+$router->get('/api/v1/admin/logs/system', [\Velora\Admin\SystemLogController::class, 'index'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_SYSTEM_LOGS_VIEW)]);
+$router->get('/api/v1/admin/logs/audit', [\Velora\Admin\AuditLogController::class, 'index'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_AUDIT_VIEW)]);
+$router->get('/api/v1/admin/me', [\Velora\Admin\SecurityController::class, 'me'], $admin);
+
+// Users list is defined above (Controller::users) under $admin; detail + actions below.
+$router->get('/api/v1/admin/users/{id}', [\Velora\Admin\UserManagementController::class, 'show'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_USERS_VIEW)]);
+$router->post('/api/v1/admin/users/{id}/status', [\Velora\Admin\UserManagementController::class, 'setStatus'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_USERS_SUSPEND)]);
+// Role assignment (authorization) is Super-Admin-only — subscription (plan) is a separate, RBAC-neutral concept.
+$router->post('/api/v1/admin/users/{id}/role', [\Velora\Admin\UserManagementController::class, 'setRole'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_USERS_CHANGE_ROLE)]);
+$router->post('/api/v1/admin/users/{id}/subscription', [\Velora\Admin\UserManagementController::class, 'setSubscription'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_USERS_MANAGE_SUBSCRIPTION)]);
+// ---- Phase E: User 360 detail endpoints (read = P_USERS_VIEW; action = its own perm) ----
+$router->get('/api/v1/admin/users/{id}/accounts', [\Velora\Admin\UserManagementController::class, 'accounts'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_USERS_VIEW)]);
+$router->get('/api/v1/admin/users/{id}/trades', [\Velora\Admin\UserManagementController::class, 'trades'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_USERS_VIEW)]);
+$router->get('/api/v1/admin/users/{id}/activity', [\Velora\Admin\UserManagementController::class, 'activity'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_USERS_VIEW)]);
+$router->get('/api/v1/admin/users/{id}/audit', [\Velora\Admin\UserManagementController::class, 'audit'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_AUDIT_VIEW)]);
+$router->post('/api/v1/admin/users/{id}/revoke-sessions', [\Velora\Admin\UserManagementController::class, 'revokeSessions'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_USERS_SUSPEND)]);
 
 // Dispatch
 try {

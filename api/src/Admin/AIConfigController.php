@@ -4,11 +4,17 @@ declare(strict_types=1);
 
 namespace Velora\Admin;
 
+use Velora\AI\Repositories\AICredentialMetadataRepository;
 use Velora\AI\Repositories\AIFeatureFlagRepository;
 use Velora\AI\Repositories\AIFeatureProviderRepository;
 use Velora\AI\Repositories\AIProviderQuotaRepository;
+use Velora\AI\Providers\CredentialStatus;
+use Velora\AI\Providers\VerificationResult;
 use Velora\AI\Services\FeatureRouter;
 use Velora\AI\Services\ProviderCatalog;
+use Velora\AI\Security\CredentialFingerprint;
+use Velora\AI\Services\ProviderVerifierRegistry;
+use Velora\Admin\AdminAuditLogRepository;
 use Velora\Core\Config;
 use Velora\Core\RateLimiter;
 use Velora\Core\Request;
@@ -38,6 +44,9 @@ final class AIConfigController
         private readonly AIFeatureFlagRepository $flags = new AIFeatureFlagRepository(),
         private readonly AIProviderQuotaRepository $quotas = new AIProviderQuotaRepository(),
         private readonly FeatureRouter $router = new FeatureRouter(),
+        private readonly AICredentialMetadataRepository $credMeta = new AICredentialMetadataRepository(),
+        private readonly ProviderVerifierRegistry $verifiers = new ProviderVerifierRegistry(),
+        private readonly AdminAuditLogRepository $audit = new AdminAuditLogRepository(),
     ) {
     }
 
@@ -108,6 +117,10 @@ final class AIConfigController
                 ? ['direct', 'n8n_relay']
                 : ($name === 'tesseract' ? [] : ['direct']);
             $entry['quota'] = $this->safeQuota($name);
+            // Safe credential metadata: presence + verification status. NEVER the
+            // credential value (presence ≠ validity).
+            $entry['credential'] = $this->credMeta->safeMetadata($name);
+            $entry['verificationCapabilities'] = $this->verifierCapabilities($name);
             $out[] = $entry;
         }
         return $out;
@@ -156,10 +169,32 @@ final class AIConfigController
                 'dailyUsed' => (int) ($q['daily_used'] ?? 0),
                 'quotaLimit' => (int) ($q['quota_limit'] ?? 0),
                 'resetAt' => $q['reset_at'] ?? null,
+                // Velora internal budget limit — NEVER presented as provider-reported.
+                'source' => 'internal',
             ];
         } catch (\Throwable $e) {
             return null;
         }
+    }
+
+    /** @return array<string,bool>|null explicit verification capability map */
+    private function verifierCapabilities(string $provider): ?array
+    {
+        $verifier = $this->verifiers->verifierFor($provider);
+        if ($verifier === null) {
+            return [
+                'validate_credentials' => false,
+                'connection_test' => false,
+                'health_check' => false,
+                'list_models' => false,
+                'get_usage' => false,
+                'get_quota' => false,
+                'get_rate_limits' => false,
+                'get_billing' => false,
+                'get_account_information' => false,
+            ];
+        }
+        return $verifier->capabilities();
     }
 
     // ------------------------------------------------------------- mutations
@@ -348,8 +383,17 @@ final class AIConfigController
             error_log('[VELORA_ADMIN_AI] credential replace failed for provider ' . $provider . ': ' . $e->getMessage());
             Response::error('Credential storage is unavailable on this host.', 503, 'AI_CREDENTIAL_STORE_UNAVAILABLE');
         }
+        // A newly-saved value has NOT been validated. It must never be reported
+        // as healthy/verified just because it was persisted — reset to
+        // UNVERIFIED so the distinction between configured and validated is
+        // preserved.
+        $this->credMeta->markUnverified($provider, 'replaced');
         // Authoritative read-back — boolean only, never the value.
-        Response::json(['provider' => $provider, 'configured' => SecureCredentialStore::status($keys[0])]);
+        Response::json([
+            'provider' => $provider,
+            'configured' => SecureCredentialStore::status($keys[0]),
+            'credential' => $this->credMeta->safeMetadata($provider),
+        ]);
     }
 
     public function deleteCredential(Request $request, array $params): never
@@ -367,6 +411,103 @@ final class AIConfigController
             Response::error('Credential storage is unavailable on this host.', 503, 'AI_CREDENTIAL_STORE_UNAVAILABLE');
         }
         Response::json(['provider' => $provider, 'configured' => SecureCredentialStore::status($keys[0])]);
+    }
+
+    // ----------------------------------------------------------- verification
+
+    /**
+     * POST /api/v1/admin/providers/{provider}/verify
+     *
+     * Runs a REAL provider-side credential verification (never fabricated).
+     * Returns safe metadata only; the credential value is never read into the
+     * response, and a non-VALID state is never reported as verified/healthy.
+     */
+    public function verifyCredential(Request $request, array $params): never
+    {
+        RateLimiter::hit('admin-provider-verify', 15, 300);
+        $providers = $this->normalizeProviderParam($params);
+        $result = $this->runVerifier($providers, 'verifyCredential');
+        // Persist safe metadata (with a non-reversible fingerprint). Never the secret.
+        $fingerprint = $this->fingerprintFor($providers);
+        if ($fingerprint !== null) {
+            $this->credMeta->record($providers, $result, $fingerprint);
+        }
+        // Privileged live provider verification MUST be audited (§L1.10). Record
+        // only safe metadata — provider, action, result, latency, correlation id,
+        // sanitized error code — never the credential or any provider body.
+        $this->audit->record(
+            (int) ($request->attributes['user_id'] ?? 0),
+            (string) ($request->attributes['user_role'] ?? ''),
+            'integration.connection_test',
+            'provider',
+            null,
+            $result->status() === CredentialStatus::VALID ? 'success' : 'denied',
+            'Admin ran a live provider credential verification (no secret).',
+            $request->clientIp() ?? null,
+            $request->headers['user-agent'] ?? null,
+            $request->contextId(),
+            ['provider' => $providers, 'operation' => 'verifyCredential', 'result' => $result->status(), 'error_code' => $result->code(), 'latency_ms' => $result->latencyMs()],
+        );
+        Response::json($result->toArray());
+    }
+
+    /**
+     * POST /api/v1/admin/providers/{provider}/test-connection
+     *
+     * Distinct from verifyCredential(): reports reachability/connectivity.
+     * RELAY_REACHABLE does NOT imply GEMINI_CREDENTIAL_VALID.
+     */
+    public function testConnection(Request $request, array $params): never
+    {
+        RateLimiter::hit('admin-provider-verify', 15, 300);
+        $providers = $this->normalizeProviderParam($params);
+        $result = $this->runVerifier($providers, 'testConnection');
+        // Privileged live connectivity test MUST be audited (§L1.10). Safe metadata only.
+        $this->audit->record(
+            (int) ($request->attributes['user_id'] ?? 0),
+            (string) ($request->attributes['user_role'] ?? ''),
+            'integration.connection_test',
+            'provider',
+            null,
+            $result->reachable() === true ? 'success' : 'denied',
+            'Admin ran a live provider connectivity test (no secret).',
+            $request->clientIp() ?? null,
+            $request->headers['user-agent'] ?? null,
+            $request->contextId(),
+            ['provider' => $providers, 'operation' => 'testConnection', 'result' => $result->status(), 'error_code' => $result->code(), 'latency_ms' => $result->latencyMs()],
+        );
+        Response::json($result->toArray());
+    }
+
+    private function normalizeProviderParam(array $params): string
+    {
+        $provider = strtolower(trim((string) ($params['provider'] ?? '')));
+        if (!ProviderCatalog::isRegisteredProvider($provider)) {
+            Response::error('Unsupported provider.', 422, 'VALIDATION_FAILED');
+        }
+        return $provider;
+    }
+
+    private function runVerifier(string $provider, string $method): VerificationResult
+    {
+        $verifier = $this->verifiers->verifierFor($provider);
+        if ($verifier === null) {
+            return $this->verifiers->unsupportedFor($provider, $method);
+        }
+        return $method === 'verifyCredential'
+            ? $verifier->verifyCredential()
+            : $verifier->testConnection();
+    }
+
+    /** Non-reversible HMAC fingerprint of the current credential (never the secret). */
+    private function fingerprintFor(string $provider): ?string
+    {
+        $keys = ProviderCatalog::credentialKeys($provider);
+        if ($keys === []) {
+            return null;
+        }
+        $value = Config::env($keys[0], '');
+        return $value === '' ? null : CredentialFingerprint::of($value);
     }
 
     // -------------------------------------------------------------- helpers

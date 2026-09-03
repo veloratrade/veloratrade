@@ -17,6 +17,7 @@ use Velora\AI\Providers\AIProviderInterface;
 use Velora\AI\Providers\GeminiProvider;
 use Velora\AI\Providers\TesseractProvider;
 use Velora\AI\Services\AIFailureClassifier;
+use Velora\AI\Services\CredentialVerificationGate;
 use Velora\AI\Services\FeatureRouter;
 use Velora\AI\Services\ProviderCatalog;
 use Velora\AI\Repositories\AIProviderLogRepository;
@@ -83,6 +84,13 @@ final class AIManager
      */
     private function providerFor(string $name): ?AIProviderInterface
     {
+        // Defense-in-depth: a provider whose credential is CONFIRMED-INVALID is
+        // never returned, so no invocation path can use an invalid-credential
+        // provider even if a caller bypasses the router chain.
+        if (CredentialVerificationGate::isBlocked($name)) {
+            $this->logRepo->log($name, 'failed', 0, 'CREDENTIAL_INVALID_GATED', 'provider', null, null, 0);
+            return null;
+        }
         if (isset($this->providerMap[$name])) {
             return $this->providerMap[$name];
         }

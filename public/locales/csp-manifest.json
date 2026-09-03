@@ -1,10 +1,10 @@
 {
   "algorithm": "sha256",
-  "commitSha": "11b113e91f85c30725557b97732ea0b743499fd1",
+  "commitSha": "742636930ae26cb6e645e1b59137c62b79fa8943",
   "localizationVersion": "2026.08.30.2",
   "policyVersion": 2,
-  "releaseHtmlSha256": "74d7f94afdd602faf7dfd339c8c80b0773f6503ebf329d168d8fe8ef4414ffb2",
-  "releaseId": "local-phase3f-20260902",
+  "releaseHtmlSha256": "66d75031877e67d0bcb790ffc792446d5cec20cea81368dc65f0e4a11f689a25",
+  "releaseId": "velora-phaseA-L2-2026.09.04",
   "routeCount": 61,
   "routeManifestSha256": "77c267b42c509fae6a9f070298df1548d94a669176ed74999d28945504bdc251",
   "routes": {
@@ -89,22 +89,24 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "en/admin/index.html",
-      "htmlSha256": "16b99e2c40b5c8330fcb48ddccbb984692108477da4faab532d45a4fceb4b71b",
+      "htmlSha256": "9180a0472bb1c863dc568d3402c3eb605dcc229d04da087d678d40ebfb8eb826",
       "inlineScriptCount": 5,
       "inlineScriptHashes": [
-        "sha256-1/HRaBWO1knsYQnDiwDw3zenau04tRdbVnIl2+zOs3A=",
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
-        "sha256-RA8T5wy0rT4WI6wAfZWnZwDEywXYFsmn9otX4w1qDa4=",
+        "sha256-LFRIiJ4Iui6kFdqv0VP0AmT/PTduMoqzRdVFB2zyayI=",
         "sha256-VVSQj8uRcSoK3TViPfAjMxzXKy/AftAJIr3gt3bG4Pg=",
-        "sha256-gx9+2WM9/a16IhJGOtxxr+oSYEuMkbHkx1pDzleTVtw="
+        "sha256-jV+X2EL/xjP0caOyESqqnIEmFFSFZ1kUDL5CeidMHck=",
+        "sha256-mFdjJY7kVPSQBg+wQUoUecEhuA1uZ5sKibnFzMjW1II="
       ],
-      "inlineStyleCount": 5,
+      "inlineStyleCount": 7,
       "inlineStyleHashes": [
+        "sha256-+/SaA5STO8QNEmz6EpDP3ksmT3SmnHCcS1BlqvVbT1o=",
+        "sha256-Ac7vI0pqJuLp9YbLhhtJ199wQy+aoA4bzYsId5Qv3MM=",
+        "sha256-H+MEfRKEdJCCaFW9jAIa+GpgBO7Ld86a6sMirpvnaUw=",
         "sha256-JKENlhDQ1Mtg1Ntl+CLnA1xjaHC3/EGLvgUs5yD7Ang=",
         "sha256-Ncsd7x3I5dghe8UuEeKid+AiCrg7Z7PGpuY4KmrhCOI=",
-        "sha256-Vi3Rb5zCd9qU9bKzj/EOBSPQq0/8W3PGc2r6s+GuWVU=",
         "sha256-YIJxlGw1GlETZz3usl63EXVCMLynXyGgFtVyLiJm0bY=",
-        "sha256-e+Qwl4B7obuRhSGpNipgmz84K83eS5ROcYUsKnaC2Vk="
+        "sha256-xRvAByE5HTMtezeWnMh1Em6D/sp8CH29juBlk+/YVm4="
       ],
       "styleAttributeCount": 12,
       "styleAttributeHashes": [
@@ -1069,22 +1071,24 @@
         "sha256-V/addRRUItZ6Hh4QTsUgihrxpszlRVTZBBCdeP43jeA="
       ],
       "file": "fa/admin/index.html",
-      "htmlSha256": "d49aa72f6949075f003bd363d7e78d9cb20efa999b742e304bda2a2cb3f61886",
+      "htmlSha256": "96afc4d6baccd25b069c2f0701269613122067d173200325f8d2e49640e12d6c",
       "inlineScriptCount": 5,
       "inlineScriptHashes": [
-        "sha256-1/HRaBWO1knsYQnDiwDw3zenau04tRdbVnIl2+zOs3A=",
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
-        "sha256-RA8T5wy0rT4WI6wAfZWnZwDEywXYFsmn9otX4w1qDa4=",
+        "sha256-LFRIiJ4Iui6kFdqv0VP0AmT/PTduMoqzRdVFB2zyayI=",
         "sha256-VVSQj8uRcSoK3TViPfAjMxzXKy/AftAJIr3gt3bG4Pg=",
-        "sha256-gx9+2WM9/a16IhJGOtxxr+oSYEuMkbHkx1pDzleTVtw="
+        "sha256-jV+X2EL/xjP0caOyESqqnIEmFFSFZ1kUDL5CeidMHck=",
+        "sha256-mFdjJY7kVPSQBg+wQUoUecEhuA1uZ5sKibnFzMjW1II="
       ],
-      "inlineStyleCount": 5,
+      "inlineStyleCount": 7,
       "inlineStyleHashes": [
+        "sha256-+/SaA5STO8QNEmz6EpDP3ksmT3SmnHCcS1BlqvVbT1o=",
+        "sha256-Ac7vI0pqJuLp9YbLhhtJ199wQy+aoA4bzYsId5Qv3MM=",
+        "sha256-H+MEfRKEdJCCaFW9jAIa+GpgBO7Ld86a6sMirpvnaUw=",
         "sha256-JKENlhDQ1Mtg1Ntl+CLnA1xjaHC3/EGLvgUs5yD7Ang=",
         "sha256-Ncsd7x3I5dghe8UuEeKid+AiCrg7Z7PGpuY4KmrhCOI=",
-        "sha256-Vi3Rb5zCd9qU9bKzj/EOBSPQq0/8W3PGc2r6s+GuWVU=",
         "sha256-YIJxlGw1GlETZz3usl63EXVCMLynXyGgFtVyLiJm0bY=",
-        "sha256-e+Qwl4B7obuRhSGpNipgmz84K83eS5ROcYUsKnaC2Vk="
+        "sha256-xRvAByE5HTMtezeWnMh1Em6D/sp8CH29juBlk+/YVm4="
       ],
       "styleAttributeCount": 12,
       "styleAttributeHashes": [
@@ -1909,5 +1913,5 @@
       ]
     }
   },
-  "sourceDigest": "dd6225b2d7454878f88baf48eac15c31b60608efdeaed20942f740358d6cbf6c"
+  "sourceDigest": "c6e1c9efe83d547b29b648d9701e67d72071e8a89498b8cd6632ff669225a151"
 }

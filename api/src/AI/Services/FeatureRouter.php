@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Velora\AI\Services;
 
 use Velora\AI\Providers\AIProviderInterface;
+use Velora\AI\Repositories\AICredentialMetadataRepository;
 use Velora\AI\Repositories\AIFeatureProviderRepository;
 use Velora\Core\Config;
 
@@ -20,6 +21,12 @@ use Velora\Core\Config;
  *      (AI_ENABLED_PROVIDERS + DEFAULT_PRIORITY) — byte-compatible with the
  *      pre-routing AIManager iteration.
  *
+ * Runtime activation gate: a provider whose credential is CONFIRMED-INVALID
+ * (verified invalid/expired/revoked/disabled) is excluded from BOTH chains via
+ * CredentialVerificationGate — an invalid credential can never be routed as a
+ * healthy provider. UNVERIFIED / UNKNOWN / no-metadata providers remain
+ * usable (backward compatible).
+ *
  * A chain entry never contains secrets — only routing metadata.
  */
 final class FeatureRouter
@@ -32,6 +39,7 @@ final class FeatureRouter
         private readonly ?AIProviderRegistry $registry = null,
         /** @var array<string,AIProviderInterface>|null injected instances (tests/DI); null = catalog classes */
         private readonly ?array $providers = null,
+        private readonly ?AICredentialMetadataRepository $credentialRepo = null,
     ) {
     }
 
@@ -125,6 +133,10 @@ final class FeatureRouter
             if (!$provider->isAvailable()) {
                 continue;
             }
+            // Runtime activation gate: confirmed-invalid credentials are routed.
+            if (CredentialVerificationGate::isBlocked($name, $this->credentialRepo)) {
+                continue;
+            }
             $chain[] = [
                 'provider' => $name,
                 'model' => ProviderCatalog::defaultModel($name),
@@ -156,6 +168,11 @@ final class FeatureRouter
     private function credentialAvailable(AIProviderInterface $provider, string $name, ?string $route): bool
     {
         if (!ProviderCatalog::isRegisteredProvider($name)) {
+            return false;
+        }
+        // Runtime activation gate: a confirmed-invalid credential is never routed,
+        // even when it is present in the environment.
+        if (CredentialVerificationGate::isBlocked($name, $this->credentialRepo)) {
             return false;
         }
         if ($route === null || $route === '') {

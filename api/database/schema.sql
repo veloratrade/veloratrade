@@ -20,12 +20,17 @@ CREATE TABLE IF NOT EXISTS users (
     email         VARCHAR(255)    NOT NULL,
     password_hash VARCHAR(255)    NOT NULL,                 -- bcrypt (cost 12)
     full_name     VARCHAR(120)    NOT NULL DEFAULT '',
-    role          ENUM('user','admin') NOT NULL DEFAULT 'user',
+    role          ENUM('user','admin','super_admin') NOT NULL DEFAULT 'user',  -- RBAC authorization only (v1.3); NOT a subscription
     timezone      VARCHAR(64)     NOT NULL DEFAULT 'UTC',
     locale        VARCHAR(35)     NOT NULL DEFAULT 'fa',          -- UI language preference (fa/en) — PR-03
     locale_source VARCHAR(16)     NOT NULL DEFAULT 'default',     -- default|browser|cookie|user — PR-03
     locale_updated_at DATETIME    NULL,                           -- last explicit preference write (UTC) — PR-03
     ai_consent_at   DATETIME    NULL,                           -- external AI processing consent (UTC) — v0.6
+    plan          ENUM('free','pro') NOT NULL DEFAULT 'free',     -- RBAC-neutral subscription plan (v1.3)
+    subscription_status ENUM('none','active','past_due','grace','expired','cancelled') NOT NULL DEFAULT 'none', -- RBAC-neutral subscription lifecycle (v1.3)
+    plan_started_at  DATETIME    NULL,                            -- v1.3
+    plan_expires_at  DATETIME    NULL,                            -- v1.3
+    plan_updated_at  DATETIME    NULL,                            -- v1.3
     status        ENUM('active','suspended') NOT NULL DEFAULT 'active',
     email_verified_at DATETIME    NULL,                       -- ستون تأیید ایمیل (لینک فعال‌سازی)
     created_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -159,6 +164,8 @@ CREATE TABLE IF NOT EXISTS trading_accounts (
     platform                         ENUM('MT4','MT5','MANUAL') NOT NULL DEFAULT 'MANUAL',
     broker                           VARCHAR(100)    NULL,
     server                           VARCHAR(100)    NULL,
+    timezone                         VARCHAR(64)     NULL,
+    timezone_source                  VARCHAR(20)     NOT NULL DEFAULT 'unknown',
     mt_login                         VARCHAR(50)     NULL,
     account_type                     VARCHAR(20)     NOT NULL DEFAULT 'STANDARD',
     metaapi_account_id               VARCHAR(64)     NULL,
@@ -456,6 +463,7 @@ CREATE TABLE IF NOT EXISTS ai_feature_flags (
     feature_name        VARCHAR(64)     NOT NULL,
     enabled             TINYINT(1)      NOT NULL DEFAULT 0,
     rollout_percentage  TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    updated_by          BIGINT UNSIGNED NULL COMMENT 'admin actor (0/unknown = system or migration)',
     created_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (feature_name)
@@ -568,5 +576,131 @@ CREATE TABLE IF NOT EXISTS ai_feature_providers (
     UNIQUE KEY uq_afp_feature_provider (feature, provider),
     KEY idx_afp_lookup (feature, enabled, priority)
 ) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS ai_global_settings (
+    setting_key     VARCHAR(64)     NOT NULL,
+    setting_value   VARCHAR(64)     NULL,
+    updated_by      BIGINT UNSIGNED NULL,
+    created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (setting_key)
+) ENGINE=InnoDB;
+
+-- ----------------------------------------------------------------------------
+-- Phase A–J runtime-required objects, ported verbatim from their authoritative
+-- migrations so a FRESH production install (install.php → schema.sql) is
+-- complete and does not depend on manual migration application or dev-only
+-- schema generation. Each CREATE TABLE IF NOT EXISTS is idempotent and safe to
+-- re-run; the per-object migrations remain the additive UPGRADE path for
+-- existing databases.
+-- ----------------------------------------------------------------------------
+
+-- v1.2 — Provider credential VERIFICATION metadata. Stores ONLY safe metadata
+-- (status, verified flag, non-reversible fingerprint, timestamps, error code,
+-- latency). NEVER stores a credential value / API key / token / secret.
+CREATE TABLE IF NOT EXISTS ai_provider_credentials (
+    provider        VARCHAR(32)     NOT NULL COMMENT 'gemini, openai, claude, ...',
+    status          VARCHAR(32)     NOT NULL DEFAULT 'UNVERIFIED'
+                    COMMENT 'VALID, INVALID_CREDENTIAL, EXPIRED, REVOKED, DISABLED, INSUFFICIENT_PERMISSION, QUOTA_EXCEEDED, RATE_LIMITED, PROVIDER_UNAVAILABLE, REGION_RESTRICTED, NETWORK_ERROR, UNKNOWN, UNVERIFIED',
+    verified        TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '1 only when status=VALID',
+    fingerprint     VARCHAR(128)    NULL COMMENT 'HMAC-SHA256 of credential (non-reversible, NEVER the secret)',
+    verified_at     DATETIME        NULL COMMENT 'last time status became VALID (UTC)',
+    last_checked_at DATETIME        NULL COMMENT 'last verification attempt (UTC)',
+    error_code      VARCHAR(64)     NULL COMMENT 'safe/sanitized provider error classification',
+    latency_ms      INT UNSIGNED    NOT NULL DEFAULT 0,
+    version         INT UNSIGNED    NOT NULL DEFAULT 1 COMMENT 'credential version (incremented on replacement)',
+    created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (provider),
+    KEY idx_ai_provider_credentials_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- v1.3 — Admin audit log (immutable-from-UI; no UPDATE/DELETE path in the code).
+-- Only sanitized summary text and sanitized metadata; never secrets.
+CREATE TABLE IF NOT EXISTS admin_audit_logs (
+    id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    actor_user_id BIGINT UNSIGNED NOT NULL COMMENT 'admin/super-admin actor; 0 = system',
+    actor_role    VARCHAR(32)     NOT NULL DEFAULT 'admin',
+    action        VARCHAR(64)     NOT NULL COMMENT 'user.suspend, provider.enabled, ...',
+    target_type   VARCHAR(32)     NOT NULL DEFAULT 'user' COMMENT 'user|provider|system|...',
+    target_id     BIGINT UNSIGNED NULL,
+    result        VARCHAR(16)     NOT NULL DEFAULT 'success' COMMENT 'success|denied|error',
+    summary       VARCHAR(500)    NULL COMMENT 'sanitized human-readable description (no secrets)',
+    ip_address    VARCHAR(45)     NULL,
+    user_agent    VARCHAR(250)    NULL,
+    context_id    VARCHAR(64)     NULL COMMENT 'request/context id for correlation',
+    metadata_json TEXT            NULL COMMENT 'sanitized safe metadata; never secrets',
+    created_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_audit_actor (actor_user_id),
+    KEY idx_audit_action (action),
+    KEY idx_audit_target (target_type, target_id),
+    KEY idx_audit_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- v1.5 — Structured application log (append-only, redacted) + integration health.
+-- system_logs is the SINGLE structured log store and does NOT hold secrets.
+CREATE TABLE IF NOT EXISTS system_logs (
+    id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    severity      VARCHAR(8)      NOT NULL DEFAULT 'INFO' COMMENT 'DEBUG|INFO|WARN|ERROR',
+    source        VARCHAR(64)     NOT NULL COMMENT 'component: api|database|auth|metaapi|n8n|ai|mailer|worker|...',
+    message       VARCHAR(1000)   NULL COMMENT 'sanitized message; never a secret',
+    request_id    VARCHAR(64)     NULL COMMENT 'correlation/request id (Request::contextId)',
+    correlation_id VARCHAR(64)    NULL COMMENT 'context id for traceability',
+    user_id       BIGINT UNSIGNED NULL COMMENT 'actor when safely available; NULL = system',
+    error_code    VARCHAR(64)     NULL COMMENT 'machine error/status code',
+    metadata_json TEXT            NULL COMMENT 'sanitized safe metadata; never secrets',
+    created_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_syslog_severity (severity),
+    KEY idx_syslog_source (source),
+    KEY idx_syslog_created (created_at),
+    KEY idx_syslog_request (request_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS integration_health (
+    integration   VARCHAR(32)     NOT NULL COMMENT 'metaapi|n8n_relay|ai|email',
+    status        VARCHAR(32)     NOT NULL COMMENT 'HEALTHY|DEGRADED|UNHEALTHY|NOT_CONFIGURED|UNKNOWN',
+    latency_ms    INT UNSIGNED    NULL,
+    error_code    VARCHAR(64)     NULL COMMENT 'machine classification (AUTH_FAILED|...|null)',
+    message       VARCHAR(500)    NULL COMMENT 'sanitized diagnostic (never a secret)',
+    checked_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (integration)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- v1.1 — MetaApi durable fill/deal ledger (webhook + historical-sync fills).
+-- One row per external FILL; identity = (account_id, external_deal_id).
+CREATE TABLE IF NOT EXISTS metaapi_fills (
+    id                   BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    account_id           BIGINT UNSIGNED NOT NULL,
+    user_id              BIGINT UNSIGNED NOT NULL,
+    external_deal_id     VARCHAR(64)     NOT NULL,
+    position_id          VARCHAR(64)     NULL,
+    order_id             VARCHAR(64)     NULL,
+    entry_type           VARCHAR(16)     NULL,                 -- in | out
+    direction            VARCHAR(8)      NULL,                 -- buy | sell
+    symbol               VARCHAR(32)     NULL,
+    volume               DECIMAL(18,8)   NULL,
+    price                DECIMAL(18,8)   NULL,
+    profit               DECIMAL(24,8)   NULL,
+    commission           DECIMAL(18,8)   NULL,                 -- normalized cost (signed)
+    swap                 DECIMAL(18,8)   NULL,                 -- normalized cost (signed)
+    occurred_at_utc      DATETIME        NULL,                 -- canonical instant, offset-explicit time only
+    time_status          VARCHAR(16)     NOT NULL DEFAULT 'unresolved',
+    raw_time_text        VARCHAR(64)     NULL,                 -- verbatim absolute `time`
+    broker_time_text     VARCHAR(64)     NULL,                 -- naive brokerTime, evidence only
+    ingestion_source     VARCHAR(16)     NOT NULL DEFAULT 'unknown', -- historical | webhook
+    event_ref            CHAR(64)        NULL,                 -- webhook_events.event_key when from webhook
+    processing_state     VARCHAR(16)     NOT NULL DEFAULT 'received',  -- received | aggregated | skipped | rejected
+    processed_trade_id   BIGINT UNSIGNED NULL,
+    skip_reason         VARCHAR(48)     NULL,
+    created_at           DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at           DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_metaapi_fills_deal (account_id, external_deal_id),
+    KEY idx_metaapi_fills_position (account_id, position_id, processing_state),
+    KEY idx_metaapi_fills_state (processing_state),
+    KEY idx_metaapi_fills_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;
