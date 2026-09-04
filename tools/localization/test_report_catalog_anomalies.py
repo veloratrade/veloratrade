@@ -106,6 +106,102 @@ class CatalogAnomalyReportTestCase(unittest.TestCase):
 
         self.assertEqual(exit_code, 1)
 
+    # ── Targeted false-positive fix (§7–§10): masked-secret placeholder + protected
+    #    technical terms must NOT block, while genuine English leakage MUST remain
+    #    detectable. These tests enforce the accuracy improvements without weakening
+    #    the fa.en.identical check. ──────────────────────────────────────────────
+
+    def test_masked_secret_placeholder_does_not_block(self) -> None:
+        # •••••••• is a redaction sentinel (no translatable text) and must not be
+        # reported as an untranslated-English fa.en.identical value.
+        mask = "\u2022" * 8
+        self.write_catalog("en", {"admin.relay.maskedToken": mask})
+        self.write_catalog("fa", {"admin.relay.maskedToken": mask})
+        exit_code = main(
+            ["--root", str(self.root), "--fail", "--fail-group", "fa.en.identical"]
+        )
+        self.assertEqual(exit_code, 0)
+
+    def test_protected_technical_term_still_allowlisted(self) -> None:
+        # Approved technical term remains in the FA catalog untranslated; it must be
+        # allowed only via the exact-key allowlist, matching existing convention.
+        self.write_catalog("en", {"admin.system.redis": "Redis"})
+        self.write_catalog("fa", {"admin.system.redis": "Redis"})
+        allowlist = self.write_allowlist(
+            {"catalogAnomalies": {"fa.en.identical": ["admin.system.redis"]}}
+        )
+        exit_code = main(
+            [
+                "--root",
+                str(self.root),
+                "--allowlist",
+                str(allowlist),
+                "--fail",
+                "--fail-group",
+                "fa.en.identical",
+            ]
+        )
+        self.assertEqual(exit_code, 0)
+
+    def test_protected_technical_term_without_allowlist_still_blocks(self) -> None:
+        # Same technical term is only tolerated because it is allowlisted. Without
+        # the allowlist it must STILL block — proving we never broadly exempt Latin.
+        self.write_catalog("en", {"admin.system.redis": "Redis"})
+        self.write_catalog("fa", {"admin.system.redis": "Redis"})
+        exit_code = main(
+            ["--root", str(self.root), "--fail", "--fail-group", "fa.en.identical"]
+        )
+        self.assertEqual(exit_code, 1)
+
+    def test_genuine_english_leakage_save_still_blocks(self) -> None:
+        # FA catalog accidentally contains untranslated English "Save" (should be
+        # Persian). This is genuine English leakage and MUST remain blocking.
+        self.write_catalog("en", {"common.save": "Save"})
+        self.write_catalog("fa", {"common.save": "Save"})
+        exit_code = main(
+            ["--root", str(self.root), "--fail", "--fail-group", "fa.en.identical"]
+        )
+        self.assertEqual(exit_code, 1)
+
+    def test_genuine_english_leakage_dashboard_still_blocks(self) -> None:
+        # Untranslated "Dashboard" is genuine English leakage and MUST remain blocking.
+        self.write_catalog("en", {"nav.dashboard": "Dashboard"})
+        self.write_catalog("fa", {"nav.dashboard": "Dashboard"})
+        exit_code = main(
+            ["--root", str(self.root), "--fail", "--fail-group", "fa.en.identical"]
+        )
+        self.assertEqual(exit_code, 1)
+
+    def test_genuine_english_leakage_settings_still_blocks(self) -> None:
+        # Untranslated "Settings" is genuine English leakage and MUST remain blocking.
+        self.write_catalog("en", {"nav.settings": "Settings"})
+        self.write_catalog("fa", {"nav.settings": "Settings"})
+        exit_code = main(
+            ["--root", str(self.root), "--fail", "--fail-group", "fa.en.identical"]
+        )
+        self.assertEqual(exit_code, 1)
+
+    def test_translated_persian_not_identical(self) -> None:
+        # FA="ذخیره" / EN="Save" are correctly different; this must NOT be flagged as
+        # fa.en.identical. Proves the fix does not over-fire.
+        self.write_catalog("en", {"common.save": "Save"})
+        self.write_catalog("fa", {"common.save": "ذخیره"})
+        exit_code = main(
+            ["--root", str(self.root), "--fail", "--fail-group", "fa.en.identical"]
+        )
+        self.assertEqual(exit_code, 0)
+
+    def test_arbitrary_repeated_punctuation_not_exempted(self) -> None:
+        # A string that is NOT the exact masked-secret representation (e.g. dashes)
+        # must still be treated as a value and flagged when FA==EN. The placeholder
+        # rule must not exempt arbitrary punctuation.
+        self.write_catalog("en", {"dash.separator": "----------"})
+        self.write_catalog("fa", {"dash.separator": "----------"})
+        exit_code = main(
+            ["--root", str(self.root), "--fail", "--fail-group", "fa.en.identical"]
+        )
+        self.assertEqual(exit_code, 1)
+
 
 if __name__ == "__main__":
     unittest.main()

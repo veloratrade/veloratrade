@@ -7,7 +7,7 @@
       "en.empty is allowlisted only for intentional landing-page title suffix keys.",
       "fa.en.identical is allowlisted only for approved do-not-translate brand, product, version, or token strings.",
       "orphanKeys baselines current repository debt; any new orphan key or stale allowlist entry fails CI.",
-    "The 11 pages.trades.new.p05.session_* keys are RESERVED for the proposed trading-session selector (Phase 3G). Phase 3G is NOT APPROVED and NOT active (MarketSessionSpec::APPROVED = false, zero configured windows), so no template references them yet. They are allowlisted by exact key until 3G is approved and wired, or removed if rejected; they are not wildcarded and do not relax detection of any other orphan."
+      "The 11 pages.trades.new.p05.session_* keys are RESERVED for the proposed trading-session selector (Phase 3G). Phase 3G is NOT APPROVED and NOT active (MarketSessionSpec::APPROVED = false, zero configured windows), so no template references them yet. They are allowlisted by exact key until 3G is approved and wired, or removed if rejected; they are not wildcarded and do not relax detection of any other orphan."
     ]
   },
   "catalogAnomalies": {
@@ -36,7 +36,12 @@
       "pages.checkout.p05.eyebrow",
       "pages.landing.ai.briefing.live",
       "pages.landing.ai.briefing.title",
-      "pages.landing.ai.briefing.weekly_insight"
+      "pages.landing.ai.briefing.weekly_insight",
+      "admin.integrations.metaapi",
+      "admin.system.metaapi",
+      "admin.system.api",
+      "admin.system.redis",
+      "admin.user360.ip"
     ]
   },
   "orphanKeys": [
