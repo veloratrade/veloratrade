@@ -112,7 +112,7 @@ jobs:
     # A FAILED or CANCELLED backup/migration blocks the deploy; jobs that are
     # intentionally off (mode=off) report 'skipped' and MUST NOT block. Only
     # success and skipped proceed. Fail closed on failure/cancelled.
-    if: ${{ github.repository == 'veloratrade/veloratrade' && (needs.db_backup.result == 'success' || needs.db_backup.result == 'skipped') && (needs.db_migration_check.result == 'success' || needs.db_migration_check.result == 'skipped') && (needs.db_migration_apply.result == 'success' || needs.db_migration_apply.result == 'skipped') }}
+    if: ${{ !cancelled() && github.repository == 'veloratrade/veloratrade' && needs.guard.result == 'success' && (needs.db_backup.result == 'success' || needs.db_backup.result == 'skipped') && (needs.db_migration_check.result == 'success' || needs.db_migration_check.result == 'skipped') && (needs.db_migration_apply.result == 'success' || needs.db_migration_apply.result == 'skipped') }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
