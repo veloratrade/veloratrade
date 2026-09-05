@@ -72,14 +72,14 @@ jobs:
           PY
           cleanup() {
             lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
-              -e "set ftp:ssl-allow yes; set ftp:ssl-force yes; set ftp:ssl-protect-data yes; set ssl:verify-certificate yes; set net:max-retries 1; set net:timeout 20; glob -a rm -f $DOCROOT/public/_velora_verify_*.php; bye" >/dev/null 2>&1 || true
+              -e "set ftp:ssl-allow no; set net:max-retries 1; set net:timeout 20; glob -a rm -f $DOCROOT/public/_velora_verify_*.php; bye" >/dev/null 2>&1 || true
             shred -u /tmp/db_verify_probe.php /tmp/verify.json 2>/dev/null || rm -f /tmp/db_verify_probe.php /tmp/verify.json
           }
           trap cleanup EXIT
           uploaded=0
           for attempt in $(seq 1 10); do
             if lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
-              -e "set ftp:ssl-allow yes; set ftp:ssl-force yes; set ftp:ssl-protect-data yes; set ssl:verify-certificate yes; set net:max-retries 2; set net:timeout 30; glob -a rm -f $DOCROOT/public/_velora_verify_*.php; put /tmp/db_verify_probe.php -o $DOCROOT/public/$NAME; bye"; then
+              -e "set ftp:ssl-allow no; set net:max-retries 2; set net:timeout 30; glob -a rm -f $DOCROOT/public/_velora_verify_*.php; put /tmp/db_verify_probe.php -o $DOCROOT/public/$NAME; bye"; then
               uploaded=1; break
             fi
             sleep 5
