@@ -1,4 +1,4 @@
-import json, os
+import json, os, time
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 import os
 REPO=os.path.abspath(os.path.join(os.path.dirname(__file__),"..","..",".."))
@@ -14,7 +14,93 @@ class H(SimpleHTTPRequestHandler):
     def _j(self,code,obj):
         b=json.dumps(obj).encode(); self.send_response(code)
         self.send_header("Content-Type","application/json"); self.send_header("Content-Length",str(len(b))); self.end_headers(); self.wfile.write(b)
+    def _users(self,qs):
+        from urllib.parse import parse_qs,unquote
+        q=parse_qs(qs)
+        DB=self.server.db_users
+        def keep(u):
+            if q.get("search"):
+                s=q["search"][0].lower()
+                if s not in u["email"].lower() and s not in (u["fullName"] or "").lower(): return False
+            if q.get("role") and u["role"]!=q["role"][0]: return False
+            if q.get("status") and u["status"]!=q["status"][0]: return False
+            if q.get("plan") and u["plan"]!=q["plan"][0]: return False
+            if q.get("verified"):
+                want=q["verified"][0]=="1"
+                if bool(u["emailVerified"])!=want: return False
+            return True
+        rows=[u for u in DB if keep(u)]
+        total=len(rows)
+        try: page=int(q.get("page",["1"])[0])
+        except: page=1
+        try: per=int(q.get("per_page",["10"])[0])
+        except: per=10
+        chunk=rows[(page-1)*per:page*per]
+        return {"users":chunk,"pagination":{"total":total,"page":page,"per_page":per,"has_more":page*per<total}}
+    def _find(self,uid):
+        return next((u for u in self.server.db_users if u["id"]==uid),None)
     def do_GET(self):
+        from urllib.parse import urlparse
+        up=urlparse(self.path)
+        if up.path=="/api/v1/admin/users":
+            m=loadmode()
+            if m["mode"]=="noauth": self._j(401,{"status":"error","error":{"code":"UNAUTHORIZED"}}); return
+            if m["mode"]=="users403": self._j(403,{"status":"error","error":{"code":"PERMISSION_DENIED"}}); return
+            self._j(200,self._users(up.query)); return
+        import re as _re
+        mm=_re.match(r"^/api/v1/admin/users/(\d+)$",up.path)
+        if mm:
+            u=self._find(int(mm.group(1)))
+            if not u: self._j(404,{"status":"error","error":{"code":"USER_NOT_FOUND"}}); return
+            self._j(200,{"user":u}); return
+        if up.path=="/api/v1/admin/overview":
+            m=loadmode()
+            if m.get("delay_overview"): time.sleep(0.8)
+            if m.get("ovr500"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
+            self._j(200,{"overview":{
+              "users":{"total":128,"active":110,"suspended":18,"newLast24h":3,"free":96,"pro":32,"admins":4,"planDistributionAvailable":True},
+              "trading":{"connectedAccounts":21,"metaapiConnected":17,"totalTrades":1523,"recentActivity":[{"symbol":"XAUUSD","direction":"BUY","profitLoss":12.4,"openTime":"2026-09-05 19:02:11"}]},
+              "ai":{"available":True,"providerStatus":[{"provider":"gemini","status":"VALID"},{"provider":"openai","status":"UNCONFIGURED"}],
+                    "enabledProviders":[{"provider":"gemini"}],"verifiedProviders":["gemini"],"blockedProviders":[],
+                    "requests":{"total":4210,"succeeded":4011,"failed":199,"tokensUsed":912345},
+                    "rateLimitEvents":7,"activeLimiterBuckets":2,"internalUsageLabel":"internal usage"},
+              "system":{"api":{"status":"ok","uptimeNote":"API responding"},
+                        "database":{"status":"ok","latencyMs":2,"lastCheck":"2026-09-05T21:00:00Z"},
+                        "metaapi":{"configured":True,"source":"db","status":"configured_only","note":"live connectivity is probed only via the Test Connection action"},
+                        "aiProviders":[{"provider":"gemini","status":"VALID","last_checked_at":"2026-09-05 20:58:00","error_code":None}],
+                        "email":{"driver":"resend","configured":True,"source":"db","sentLast24h":12,"failedLast24h":0},
+                        "workers":{"jobsPending":0,"jobsFailed":1,"syncFailed":0}},
+              "billing":{"available":True,"activeSubscriptions":32,
+                         "planDistribution":[{"plan":"free","count":96},{"plan":"pro","count":32}],
+                         "revenue":{"available":False,"reason":"No external payment/billing integration exists; revenue is not auditable/data-backed."}}
+            }}); return
+        if up.path=="/api/v1/admin/system/health":
+            self._j(200,{"health":{
+              "api":{"status":"ok","uptimeNote":"API responding"},
+              "database":{"status":"ok","latencyMs":3,"lastCheck":"2026-09-05T21:00:00Z"},
+              "metaapi":{"configured":True,"source":"db","status":"configured_only"},
+              "aiProviders":[{"provider":"gemini","status":"VALID","last_checked_at":"2026-09-05 20:58:00","error_code":None}],
+              "email":{"driver":"resend","configured":True,"source":"db","sentLast24h":12,"failedLast24h":0},
+              "workers":{"jobsPending":0,"jobsFailed":1,"syncFailed":0}}}); return
+        if up.path=="/api/v1/admin/ai/overview":
+            self._j(200,{
+             "providers":[
+               {"provider":"gemini","registered":True,"capabilities":["analyze-trades","weekly-report"],"available":True,
+                "credentialStatus":{"required":True,"configured":True,"envKey":"GEMINI_API_KEY"},
+                "relay":{"urlConfigured":True,"tokenConfigured":True},"effectiveRoute":"direct","quota":{"daily":1500,"used":420}},
+               {"provider":"openai","registered":True,"capabilities":[],"available":False,
+                "credentialStatus":{"required":True,"configured":False,"envKey":"OPENAI_API_KEY"}}],
+             "features":[{"feature":"analyze-trades","capability":"analyze","flag":{"enabled":True,"rolloutPercentage":100},
+                          "source":"admin","chain":["gemini"],"rows":[{"id":1,"provider":"gemini","enabled":True}]},
+                         {"feature":"weekly-report","capability":"report","flag":None,"source":"default","chain":["gemini"],"rows":[]}],
+             "routingTableExists":True,"routingRowCount":1}); return
+        if up.path=="/api/v1/admin/ai/route":
+            m=loadmode()
+            if m["mode"]=="noauth": self._j(401,{"status":"error","error":{"code":"UNAUTHORIZED"}}); return
+            self._j(200,{"route":{
+              "configured":self.server.ai_route,"effective":self.server.ai_route or "direct",
+              "source":("admin" if self.server.ai_route else "default"),
+              "allowed":["direct","n8n_relay"],"providerEffective":(self.server.ai_route or "direct")}}); return
         if self.path.split("?")[0] in ("/login","/login/"):
             b=b"<html><body>login</body></html>"; self.send_response(200)
             self.send_header("Content-Type","text/html"); self.send_header("Content-Length",str(len(b))); self.end_headers(); self.wfile.write(b); return
@@ -31,10 +117,96 @@ class H(SimpleHTTPRequestHandler):
             self._j(200,{"me":me,"recentAdminActions":rAA}); return
         super().do_GET()
     def do_POST(self):
+        import re as _re
+        from urllib.parse import urlparse
+        up=urlparse(self.path)
+        m0=loadmode()
+        mm=_re.match(r"^/api/v1/admin/users/(\d+)/(status|role|subscription|revoke-sessions|verify-email)$",up.path)
+        if mm:
+            uid=int(mm.group(1)); act=mm.group(2)
+            u=self._find(uid)
+            if m0.get("fail_actions"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
+            if not u: self._j(404,{"status":"error","error":{"code":"USER_NOT_FOUND"}}); return
+            if uid==4 and act in ("verify-email","status","role","subscription","revoke-sessions"):
+                self._j(403,{"status":"error","error":{"code":"SELF_ACTION_DENIED"}}); return
+            length=int(self.headers.get("Content-Length") or 0)
+            body={}
+            if length:
+                try: body=json.loads(self.rfile.read(length) or b"{}")
+                except: body={}
+            if act=="status":
+                st=body.get("status")
+                if st not in ("active","suspended"): self._j(422,{"status":"error","error":{"code":"VALIDATION_FAILED","details":{"status":{"code":"INVALID_STATUS"}}}}); return
+                u["status"]=st; self._j(200,{"ok":True,"user":u}); return
+            if act=="role":
+                r=body.get("role")
+                if r not in ("user","admin","super_admin"): self._j(422,{"status":"error","error":{"code":"VALIDATION_FAILED","details":{"role":{"code":"INVALID_ROLE"}}}}); return
+                u["role"]=r; self._j(200,{"ok":True,"user":u}); return
+            if act=="subscription":
+                pl=body.get("plan") or u["plan"] or "free"
+                if pl not in ("free","pro"): self._j(422,{"status":"error","error":{"code":"VALIDATION_FAILED","details":{"plan":{"code":"INVALID_PLAN"}}}}); return
+                u["plan"]=pl; u["subscriptionStatus"]=body.get("status") or u.get("subscriptionStatus") or "none"
+                self._j(200,{"ok":True,"user":{"id":uid,"plan":pl,"status":u["subscriptionStatus"]}}); return
+            if act=="revoke-sessions":
+                u["sessionsRevoked"]=u.get("sessionsRevoked",0)+1
+                self._j(200,{"ok":True,"revoked":u["sessionsRevoked"]}); return
+            if act=="verify-email":
+                changed=not u["emailVerified"]
+                u["emailVerified"]=True
+                u["emailVerifiedAt"]=u["emailVerifiedAt"] or "2026-09-05 21:10:00"
+                self._j(200,{"ok":True,"changed":changed,"user":u}); return
+        if up.path in ("/api/v1/admin/providers/gemini/verify","/api/v1/admin/providers/openai/verify",
+                       "/api/v1/admin/providers/gemini/test-connection","/api/v1/admin/providers/openai/test-connection"):
+            prov=up.path.split("/")[5]; op=up.path.split("/")[6]
+            if m0.get("fail_actions"): self._j(504,{"status":"error","error":{"code":"PROVIDER_TIMEOUT"}}); return
+            if prov=="openai":
+                self._j(200,{"provider":"openai","status":"UNCONFIGURED","verified":False,"reachable":None,
+                             "checked_at":"2026-09-05 21:12:00","latency_ms":None,"error_code":"CREDENTIAL_MISSING","message":"credential not configured","retryable":False,"source":"panel"}); return
+            self._j(200,{"provider":"gemini","status":"VALID","verified":True,"reachable":True if op=="test-connection" else None,
+                         "checked_at":"2026-09-05 21:12:00","latency_ms":318 if op=="test-connection" else None,
+                         "error_code":None,"message":None,"retryable":False,"source":"panel"}); return
         if self.path.startswith("/api/v1/auth/refresh"):
             if loadmode()["mode"]=="noauth": self._j(401,{"status":"error","error":{"code":"UNAUTHORIZED"}})
             else: self._j(200,{"tokens":{"accessToken":"stub-token","user":{"id":4,"role":"admin","locale":"fa"}}})
         elif self.path.startswith("/api/v1/auth/logout"):
             m=loadmode(); m["logout_called"]=True; json.dump(m,open(os.path.join(ROOT,"mode.json"),"w")); self._j(200,{"ok":True})
         else: self._j(404,{})
+    def do_PUT(self):
+        from urllib.parse import urlparse
+        up=urlparse(self.path)
+        if up.path=="/api/v1/admin/ai/route":
+            m0=loadmode()
+            if m0.get("fail_actions"): self._j(500,{"status":"error","error":{"code":"AI_ROUTE_PERSIST_FAILED"}}); return
+            length=int(self.headers.get("Content-Length") or 0)
+            body={}
+            if length:
+                try: body=json.loads(self.rfile.read(length) or b"{}")
+                except: body={}
+            r=str(body.get("route","")).lower().strip()
+            if r not in ("direct","n8n_relay"):
+                self._j(422,{"status":"error","error":{"code":"VALIDATION_FAILED","details":{"route":{"code":"INVALID_AI_ROUTE"}}}}); return
+            self.server.ai_route=r
+            self._j(200,{"route":{"configured":r,"effective":r,"source":"admin","allowed":["direct","n8n_relay"],"providerEffective":r}}); return
+        self._j(404,{})
+    def do_DELETE(self):
+        from urllib.parse import urlparse
+        up=urlparse(self.path)
+        if up.path=="/api/v1/admin/ai/route":
+            if loadmode().get("fail_actions"): self._j(500,{"status":"error","error":{"code":"AI_ROUTE_PERSIST_FAILED"}}); return
+            self.server.ai_route=None
+            self._j(200,{"route":{"configured":None,"effective":"direct","source":"default","allowed":["direct","n8n_relay"],"providerEffective":"direct"}}); return
+        self._j(404,{})
+class Srv(HTTPServer):
+    def __init__(self,*a,**kw):
+        super().__init__(*a,**kw)
+        self.ai_route=None
+        now="2026-09-01 10:00:00"
+        self.db_users=[
+         {"id":1,"email":"owner@velora.test","fullName":"Owner","role":"super_admin","status":"active","emailVerified":True,"emailVerifiedAt":now,"createdAt":now,"plan":"pro","subscriptionStatus":"active"},
+         {"id":2,"email":"sara@velora.test","fullName":"Sara Ahmadi","role":"user","status":"active","emailVerified":False,"emailVerifiedAt":None,"createdAt":"2026-09-04 12:00:00","plan":"free","subscriptionStatus":"none"},
+         {"id":3,"email":"reza@velora.test","fullName":"Reza Karami","role":"user","status":"suspended","emailVerified":True,"emailVerifiedAt":now,"createdAt":"2026-08-20 08:00:00","plan":"pro","subscriptionStatus":"past_due"},
+         {"id":4,"email":"admin4@velora.test","fullName":"Self Admin","role":"admin","status":"active","emailVerified":True,"emailVerifiedAt":now,"createdAt":"2026-07-01 08:00:00","plan":"pro","subscriptionStatus":"active"},
+         {"id":5,"email":"mina@velora.test","fullName":"Mina Nouri","role":"user","status":"active","emailVerified":False,"emailVerifiedAt":None,"createdAt":"2026-09-05 09:30:00","plan":None,"subscriptionStatus":None,"subscriptionAvailable":False},
+        ]
+HTTPServer=Srv
 HTTPServer(("127.0.0.1",8141),H).serve_forever()

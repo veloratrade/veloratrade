@@ -802,7 +802,7 @@ const SHELL_T={
       "shell.status.title":"Shell status","shell.status.ident":"Identity","shell.status.perms":"Permission count","shell.status.recent":"Your recent actions","shell.status.recent.empty":"Nothing recorded","shell.status.env":"Environment (real hostname)",
       "shell.menu.logout":"Sign out","shell.menu.lang":"Language FA/EN","shell.menu.theme":"Dark/Light theme","shell.conn.ready":"Connected","shell.conn.offline":"Offline","shell.conn.demo":"No data layer","search.placeholder":"Search routes…","search.hint":"Search admin console routes (F-2)","shell.p404.back":"Back to overview","shell.pending.badge":"route live · page pending","shell.user360.none":"No user data is fabricated here","nav.user360":"User360"}
 };
-const t=k=>(T[lang][k]??SHELL_T[lang][k]??T.fa[k]??k);
+const t=k=>(T[lang][k]??SHELL_T[lang][k]??F3T[lang][k]??T.fa[k]??F3T.fa[k]??k);
 
 /* ---------- helpers (VERBATIM) ---------- */
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -975,6 +975,455 @@ const canRoute=d=>!d.perm||can(d.perm);
 window.__VELORA_ROUTES__=REG;   /* deterministic introspection for the test suites */
 
 /* ------------------------------ navigation ------------------------------ */
+/* ==================== F-3 Batch 1 — real backend data pages ====================
+   Overview / Users / AI Providers / AI Route — wired to EXISTING endpoints via
+   the shared VeloraData layer. No fixtures, no fake success, no silent zeros:
+   unknown/unavailable values render an explicit unavailable state. */
+
+const F3T={
+ fa:{
+  "f3.load.err":"دریافت داده از سرور ناموفق بود","f3.retry":"تلاش دوباره","f3.loading":"در حال بارگذاری…",
+  "f3.unavailable":"داده‌ای موجود نیست","f3.notconfigured":"پیکربندی نشده","f3.noperm":"این بخش به پرمیشن زیر نیاز دارد:",
+  "f3.errprefix":"خطا","f3.none":"موردی نیست",
+  "ov.users":"کاربران","ov.total":"کل کاربران","ov.active":"فعال","ov.suspended":"مسدود","ov.new24":"جدید (۲۴ ساعت)",
+  "ov.admins":"مدیران","ov.trading":"معاملات","ov.accounts":"حساب‌های متصل","ov.trades":"کل معاملات",
+  "ov.ai":"هوش مصنوعی","ov.aireq":"درخواست‌ها","ov.aitok":"توکن‌های مصرفی","ov.aifail":"ناموفق","ov.aiunavail":"سرویس AI در دسترس نیست",
+  "ov.billing":"صورتحساب و اشتراک","ov.subs":"اشتراک‌های فعال","ov.plandist":"توزیع پلن","ov.revenue":"درآمد",
+  "ov.revenue.note":"منبع صورتحساب خارجی وجود ندارد؛ درآمد قابل‌حسابرسی نیست.","ov.billing.unavail":"لایهٔ صورتحساب در دسترس نیست (مهاجرت v1.3 اعمال نشده)",
+  "ov.health":"سلامت سیستم","ov.health.api":"API","ov.health.db":"پایگاه‌داده","ov.health.metaapi":"MetaAPI","ov.health.email":"ایمیل","ov.health.ai":"ارائه‌دهندگان AI","ov.health.workers":"کارگرها",
+  "ov.latency":"تأخیر","ov.sent24":"ارسالی (۲۴ ساعت)","ov.failed24":"ناموفق (۲۴ ساعت)","ov.jobsPending":"کارهای در انتظار","ov.jobsFailed":"کارهای ناموفق","ov.syncFailed":"همگام‌سازی ناموفق",
+  "ov.configured":"پیکربندی‌شده","ov.status.ok":"سالم","ov.status.error":"خطا","ov.status.configured_only":"فقط پیکربندی‌شده (بدون پروب زنده)",
+  "ov.recent":"اقدامات اخیر شما","ov.provider":"ارائه‌دهنده","ov.lastcheck":"آخرین بررسی",
+  "usr.col.id":"شناسه","usr.col.user":"کاربر","usr.col.role":"نقش","usr.col.status":"وضعیت","usr.col.plan":"پلن","usr.col.verified":"تأیید ایمیل","usr.col.actions":"اقدامات","usr.col.created":"ایجاد",
+  "usr.search":"جست‌وجوی ایمیل یا نام…","usr.role.all":"همهٔ نقش‌ها","usr.status.all":"همهٔ وضعیت‌ها","usr.plan.all":"همهٔ پلن‌ها","usr.verified.any":"تأیید: هر","usr.verified.yes":"تأییدشده","usr.verified.no":"تأییدنشده",
+  "usr.page":"صفحه","usr.of":"از","usr.prev":"قبلی","usr.next":"بعدی","usr.empty":"کاربری یافت نشد","usr.empty.desc":"با فیلترهای فعلی کاربری نیست. فیلترها را تغییر دهید.",
+  "usr.act.verify":"تأیید ایمیل","usr.act.suspend":"مسدودسازی","usr.act.activate":"فعال‌سازی","usr.act.role":"تغییر نقش","usr.act.plan":"پلن و اشتراک","usr.act.revoke":"لغو نشست‌ها",
+  "usr.md.verify.title":"تأیید ایمیل کاربر","usr.md.verify.body":"توکن‌های تأیید ایمیلی این کاربر باطل و ایمیل او تأیید می‌شود.",
+  "usr.md.suspend.title":"مسدودسازی کاربر","usr.md.suspend.body":"این کاربر از ورود مسدود خواهد شد.",
+  "usr.md.activate.title":"فعال‌سازی کاربر","usr.md.activate.body":"وضعیت کاربر به فعال تغییر می‌کند.",
+  "usr.md.revoke.title":"لغو همهٔ نشست‌ها","usr.md.revoke.body":"همهٔ نشست‌های فعال این کاربر باطل می‌شوند.",
+  "usr.md.role.title":"تغییر نقش","usr.md.plan.title":"پلن و اشتراک","usr.md.role.lbl":"نقش","usr.md.plan.lbl":"پلن","usr.md.substatus.lbl":"وضعیت اشتراک",
+  "usr.md.confirm":"انجام","usr.done.verify":"ایمیل کاربر تأیید شد","usr.done.verify.already":"ایمیل این کاربر قبلاً تأیید شده بود",
+  "usr.done.suspend":"کاربر مسدود شد","usr.done.activate":"کاربر فعال شد","usr.done.role":"نقش کاربر تغییر کرد","usr.done.plan":"اشتراک کاربر به‌روزرسانی شد","usr.done.revoke":"نشست‌های کاربر لغو شد",
+  "usr.self.err":"این اقدام روی حساب خودتان مجاز نیست",
+  "aip.title.desc":"وضعیت واقعی ارائه‌دهندگان از بک‌اند","aip.provider":"ارائه‌دهنده","aip.available":"در دسترس","aip.unavailable":"در دسترس نیست",
+  "aip.cred":"اعتبارنامه","aip.configured":"پیکربندی‌شده","aip.notconfigured":"پیکربندی نشده","aip.envkey":"نام متغیر محیطی","aip.caps":"قابلیت‌ها",
+  "aip.relay":"مسیر رله (Gemini)","aip.relay.url":"URL رله","aip.relay.token":"توکن رله","aip.effroute":"مسیر مؤثر","aip.quota":"سهمیه",
+  "aip.features":"زنجیرهٔ ویژگی‌ها","aip.feature":"ویژگی","aip.flag":"پرچم","aip.flag.on":"فعال","aip.flag.off":"غیرفعال","aip.flag.none":"بدون پرچم",
+  "aip.source":"منبع","aip.chain":"زنجیره","aip.rows":"ردیف‌های مسیر","aip.routing":"جدول مسیریابی","aip.routing.exists":"موجود","aip.routing.missing":"موجود نیست","aip.routing.rows":"تعداد ردیف",
+  "aip.verify":"راستی‌آزمایی اعتبارنامه","aip.test":"تست اتصال","aip.verify.running":"در حال اجرا…","aip.lastresult":"آخرین نتیجه","aip.latency":"تأخیر","aip.errorcode":"کد خطا","aip.checked":"زمان بررسی","aip.reachable":"قابل‌دسترس",
+  "aip.note":"هیچ مقدار اعتبارنامه‌ای هرگز از بک‌اند دریافت یا نمایش داده نمی‌شود — فقط وضعیت پیکربندی.",
+  "air.configured":"مسیر سراسری پیکربندی‌شده","air.effective":"مسیر مؤثر کنونی","air.source":"منبع تعیین","air.provider":"مسیر مؤثر ارائه‌دهنده",
+  "air.none":"تنظیم نشده — ارث‌بری از پیکربندی/پیش‌فرض","air.src.admin":"تنظیم مدیر","air.src.env":"متغیر محیطی","air.src.flag":"پرچم ویژگی","air.src.default":"پیش‌فرض",
+  "air.route.direct":"مستقیم (Gemini API)","air.route.relay":"رلهٔ n8n","air.save":"ذخیرهٔ مسیر","air.reset":"بازنشانی (ارث‌بری)","air.readonly":"برای تغییر این صفحه به پرمیشن مدیریت مسیر AI نیاز است؛ نمایش فقط‌خواندنی است.",
+  "air.done.save":"مسیر AI ذخیره شد","air.done.reset":"مسیر AI بازنشانی شد","air.choose":"انتخاب مسیر",
+  "role.user":"کاربر","role.admin":"مدیر","role.super_admin":"ابرمدیر",
+  "sub.none":"بدون اشتراک","sub.active":"فعال","sub.past_due":"سرسید گذشته","sub.grace":"مهلت","sub.expired":"منقضی","sub.cancelled":"لغوشده"
+ },
+ en:{
+  "f3.load.err":"Failed to load data from the server","f3.retry":"Retry","f3.loading":"Loading…",
+  "f3.unavailable":"No data available","f3.notconfigured":"Not configured","f3.noperm":"This section requires the following permission:",
+  "f3.errprefix":"Error","f3.none":"None",
+  "ov.users":"Users","ov.total":"Total users","ov.active":"Active","ov.suspended":"Suspended","ov.new24":"New (24h)",
+  "ov.admins":"Admins","ov.trading":"Trading","ov.accounts":"Connected accounts","ov.trades":"Total trades",
+  "ov.ai":"AI","ov.aireq":"Requests","ov.aitok":"Tokens used","ov.aifail":"Failed","ov.aiunavail":"AI service unavailable",
+  "ov.billing":"Billing & subscription","ov.subs":"Active subscriptions","ov.plandist":"Plan distribution","ov.revenue":"Revenue",
+  "ov.revenue.note":"No external payment/billing integration exists; revenue is not auditable/data-backed.","ov.billing.unavail":"Billing layer unavailable (v1.3 migration not applied)",
+  "ov.health":"System health","ov.health.api":"API","ov.health.db":"Database","ov.health.metaapi":"MetaAPI","ov.health.email":"Email","ov.health.ai":"AI providers","ov.health.workers":"Workers",
+  "ov.latency":"Latency","ov.sent24":"Sent (24h)","ov.failed24":"Failed (24h)","ov.jobsPending":"Jobs pending","ov.jobsFailed":"Jobs failed","ov.syncFailed":"Sync failed",
+  "ov.configured":"Configured","ov.status.ok":"OK","ov.status.error":"Error","ov.status.configured_only":"Configured only (no live probe)",
+  "ov.recent":"Your recent actions","ov.provider":"Provider","ov.lastcheck":"Last check",
+  "usr.col.id":"ID","usr.col.user":"User","usr.col.role":"Role","usr.col.status":"Status","usr.col.plan":"Plan","usr.col.verified":"Email verified","usr.col.actions":"Actions","usr.col.created":"Created",
+  "usr.search":"Search email or name…","usr.role.all":"All roles","usr.status.all":"All statuses","usr.plan.all":"All plans","usr.verified.any":"Verified: any","usr.verified.yes":"Verified","usr.verified.no":"Unverified",
+  "usr.page":"Page","usr.of":"of","usr.prev":"Previous","usr.next":"Next","usr.empty":"No users found","usr.empty.desc":"No users match the current filters.",
+  "usr.act.verify":"Verify email","usr.act.suspend":"Suspend","usr.act.activate":"Activate","usr.act.role":"Change role","usr.act.plan":"Plan & subscription","usr.act.revoke":"Revoke sessions",
+  "usr.md.verify.title":"Verify user email","usr.md.verify.body":"The user's email verification tokens will be invalidated and the email marked verified.",
+  "usr.md.suspend.title":"Suspend user","usr.md.suspend.body":"This user will be blocked from signing in.",
+  "usr.md.activate.title":"Activate user","usr.md.activate.body":"The user's status will change to active.",
+  "usr.md.revoke.title":"Revoke all sessions","usr.md.revoke.body":"All active sessions of this user will be invalidated.",
+  "usr.md.role.title":"Change role","usr.md.plan.title":"Plan & subscription","usr.md.role.lbl":"Role","usr.md.plan.lbl":"Plan","usr.md.substatus.lbl":"Subscription status",
+  "usr.md.confirm":"Apply","usr.done.verify":"User email verified","usr.done.verify.already":"This user's email was already verified",
+  "usr.done.suspend":"User suspended","usr.done.activate":"User activated","usr.done.role":"User role changed","usr.done.plan":"User subscription updated","usr.done.revoke":"User sessions revoked",
+  "usr.self.err":"This action is not allowed on your own account",
+  "aip.title.desc":"Real provider state from the backend","aip.provider":"Provider","aip.available":"Available","aip.unavailable":"Unavailable",
+  "aip.cred":"Credential","aip.configured":"Configured","aip.notconfigured":"Not configured","aip.envkey":"Env key name","aip.caps":"Capabilities",
+  "aip.relay":"Relay route (Gemini)","aip.relay.url":"Relay URL","aip.relay.token":"Relay token","aip.effroute":"Effective route","aip.quota":"Quota",
+  "aip.features":"Feature chains","aip.feature":"Feature","aip.flag":"Flag","aip.flag.on":"Enabled","aip.flag.off":"Disabled","aip.flag.none":"No flag",
+  "aip.source":"Source","aip.chain":"Chain","aip.rows":"Route rows","aip.routing":"Routing table","aip.routing.exists":"Exists","aip.routing.missing":"Missing","aip.routing.rows":"Row count",
+  "aip.verify":"Verify credential","aip.test":"Test connection","aip.verify.running":"Running…","aip.lastresult":"Last result","aip.latency":"Latency","aip.errorcode":"Error code","aip.checked":"Checked at","aip.reachable":"Reachable",
+  "aip.note":"Credential values are never fetched or displayed — configuration status only.",
+  "air.configured":"Configured global route","air.effective":"Current effective route","air.source":"Determination source","air.provider":"Provider effective route",
+  "air.none":"Not set — inherited from config/default","air.src.admin":"Admin setting","air.src.env":"Environment variable","air.src.flag":"Feature flag","air.src.default":"Default",
+  "air.route.direct":"Direct (Gemini API)","air.route.relay":"n8n relay","air.save":"Save route","air.reset":"Reset (inherit)","air.readonly":"Changing this page requires the AI route-manage permission; view is read-only.",
+  "air.done.save":"AI route saved","air.done.reset":"AI route reset","air.choose":"Choose route",
+  "role.user":"User","role.admin":"Admin","role.super_admin":"Super admin",
+  "sub.none":"No subscription","sub.active":"Active","sub.past_due":"Past due","sub.grace":"Grace","sub.expired":"Expired","sub.cancelled":"Cancelled"
+ }
+};
+const f3srcLabel=s=>({admin:t("air.src.admin"),env:t("air.src.env"),flag:t("air.src.flag"),default:t("air.src.default")}[s]||String(s||"—"));
+const f3num=v=>(v===null||v===undefined)?`<span class="cellsub">${esc(t("f3.unavailable"))}</span>`:String(v);
+const f3unavail=(note)=>`<span class="cellsub">${esc(t("f3.unavailable"))}${note?` — ${esc(note)}`:""}</span>`;
+const f3skel=(n,w)=>Array.from({length:n||4},(_,i)=>`<div class="skel" style="height:14px;margin:11px;max-width:${w||70}%"></div>`).join("");
+const f3errBox=(st)=>empty(VI.ban,t("f3.load.err"),(st&&st.code?esc(st.code)+" · ":"")+(st&&st.status?esc("HTTP "+st.status):""),`<button class="btn sm" onclick="f3ReloadCurrent()">${esc(t("f3.retry"))}</button>`);
+const f3Cur=()=>{const h=(location.hash||"#/overview").split("?")[0];return h.replace(/^#\//,"").replace(/\/+$/,"")};
+function f3RenderIf(route){if(f3Cur()===route)render()}
+function f3ReloadCurrent(){const c=f3Cur();
+ if(c==="overview"){OV.st="idle";OV.err=null;render()}
+ else if(c==="users"){US.st="idle";US.err=null;render()}
+ else if(c==="ai-providers"){AIP.st="idle";AIP.err=null;render()}
+ else if(c==="ai-route"){AIR.st="idle";AIR.err=null;render()}}
+
+/* ---------------- Overview (GET /api/v1/admin/overview) ---------------- */
+const OV={data:null,st:"idle",err:null,health:null,healthSt:"idle"};
+async function f3LoadOverview(){
+ OV.st="loading";f3RenderIf("overview");
+ try{const d=await VeloraData.request("/api/v1/admin/overview");OV.data=d&&d.overview?d.overview:{};OV.st="ok";}
+ catch(e){OV.err=e;OV.st="error";}
+ f3RenderIf("overview");
+ if(OV.st==="ok"&&can("system.health.view")&&!OV.health&&!OV.healthErr){
+  try{const h=await VeloraData.request("/api/v1/admin/system/health");OV.health=h&&h.health?h.health:null;OV.healthSt="ok";}
+  catch(e){OV.healthErr=e;OV.healthSt="error";}
+  f3RenderIf("overview");
+ }
+}
+function f3ovKpi(lbl,val,sub){return `<div class="kpi"><div class="lbl">${esc(lbl)}</div><div class="val num">${val}</div>${sub?`<div class="delta">${sub}</div>`:""}</div>`}
+function f3ovSystemRow(name,s){
+ if(!s)return `<div class="kv"><span class="k">${esc(name)}</span><span class="v">${f3unavail()}</span></div>`;
+ const st=s.status||"";
+ let b=st==="ok"?bdot("ok",t("ov.status.ok")):st==="error"?bdot("err",t("ov.status.error")):bdot("neutral",esc(st));
+ let sub="";
+ if(name===t("ov.health.db")&&s.latencyMs!=null)sub=` <span class="cellsub num">${esc(String(s.latencyMs))}ms</span>`;
+ if(name===t("ov.health.metaapi"))b=bdot(s.configured?"ok":"warn",s.configured?t("ov.configured"):t("f3.notconfigured"));
+ if(name===t("ov.health.email"))b=bdot(s.configured?"ok":"warn",s.configured?t("ov.configured"):t("f3.notconfigured"));
+ return `<div class="kv"><span class="k">${esc(name)}</span><span class="v">${b}${sub}</span></div>`;
+}
+function overviewPage(){
+ if(OV.st==="idle"){f3LoadOverview()}
+ if(OV.st==="loading"&&!OV.data)return pagehead(t("nav.overview"),t("f3.loading"),"")+`<div class="grid g2">${f3skel(6)}</div>`;
+ if(OV.st==="error")return pagehead(t("nav.overview"),"",`<span class="badge b-err">${esc(OV.err&&OV.err.status?"HTTP "+OV.err.status:"ERR")}</span>`)+f3errBox(OV.err);
+ const o=OV.data||{};const u=o.users||{};const tr=o.trading||{};const ai=o.ai||{};const bi=o.billing||{};
+ let h=pagehead(t("nav.overview"),"","");
+ h+=`<div class="grid g4" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">`;
+ h+=f3ovKpi(t("ov.total"),f3num(u.total));
+ h+=f3ovKpi(t("ov.active"),f3num(u.active));
+ h+=f3ovKpi(t("ov.suspended"),f3num(u.suspended));
+ h+=f3ovKpi(t("ov.new24"),f3num(u.newLast24h));
+ h+=`</div>`;
+ /* trading */
+ h+=`<div class="grid g2" style="margin-top:12px"><div class="card"><div class="ch"><h3>${esc(t("ov.trading"))}</h3></div><div class="cb">
+  <div class="kv"><span class="k">${esc(t("ov.accounts"))}</span><span class="v num">${f3num(tr.connectedAccounts)}</span></div>
+  <div class="kv"><span class="k">${esc(t("ov.trades"))}</span><span class="v num">${f3num(tr.totalTrades)}</span></div>
+ </div></div>`;
+ /* AI */
+ h+=`<div class="card"><div class="ch"><h3>${esc(t("ov.ai"))}</h3></div><div class="cb">`;
+ if(ai&&ai.available===false)h+=f3unavail();
+ else if(!ai)h+=f3unavail();
+ else{
+  h+=`<div class="kv"><span class="k">${esc(t("ov.aireq"))}</span><span class="v num">${ai.requests?f3num(ai.requests.total):f3unavail()}</span></div>`;
+  if(ai.requests){h+=`<div class="kv"><span class="k">${esc(t("ov.aifail"))}</span><span class="v num">${f3num(ai.requests.failed)}</span></div>`;
+   h+=`<div class="kv"><span class="k">${esc(t("ov.aitok"))}</span><span class="v num">${f3num(ai.requests.tokensUsed)}</span></div>`;}
+  h+=`<div class="kv"><span class="k">${esc(t("ov.configured"))}</span><span class="v num">${Array.isArray(ai.enabledProviders)?ai.enabledProviders.length:f3unavail()}</span></div>`;
+ }
+ h+=`</div></div></div>`;
+ /* billing (honest: revenue has NO source — never a zero) */
+ h+=`<div class="card" style="margin-top:12px"><div class="ch"><h3>${esc(t("ov.billing"))}</h3></div><div class="cb">`;
+ if(bi&&bi.available===false)h+=`<div class="kv"><span class="k">${esc(t("ov.billing"))}</span><span class="v">${f3unavail("v1.3")}</span></div><div class="note">${esc(t("ov.billing.unavail"))}</div>`;
+ else if(bi&&bi.available){
+  h+=`<div class="kv"><span class="k">${esc(t("ov.subs"))}</span><span class="v num">${f3num(bi.activeSubscriptions)}</span></div>`;
+  if(Array.isArray(bi.planDistribution)&&bi.planDistribution.length)
+   h+=`<div class="kv"><span class="k">${esc(t("ov.plandist"))}</span><span class="v num">${bi.planDistribution.map(p=>esc(String(p.plan))+": "+esc(String(p.count))).join(" · ")}</span></div>`;
+ }else h+=f3unavail();
+ const rev=bi&&bi.revenue;
+ h+=`<div class="kv"><span class="k">${esc(t("ov.revenue"))}</span><span class="v">${(rev&&rev.available===true)?`<span class="num">${esc(String(rev.value!=null?rev.value:""))}</span>`:bdot("warn",t("f3.unavailable"))}</span></div>`;
+ if(!rev||rev.available!==true)h+=`<div class="note">${esc(rev&&rev.reason?t("ov.revenue.note"):t("ov.revenue.note"))}</div>`;
+ h+=`</div></div>`;
+ /* system health (permission-gated card) */
+ h+=`<div class="card" style="margin-top:12px"><div class="ch"><h3>${esc(t("ov.health"))}</h3></div><div class="cb">`;
+ if(!can("system.health.view"))h+=`<div class="kv"><span class="k">${esc(t("f3.noperm"))}</span><span class="v mono">system.health.view</span></div>`;
+ else if(OV.healthSt==="loading"||OV.healthSt==="idle")h+=f3skel(3);
+ else if(OV.healthSt==="error")h+=`<div class="kv"><span class="k">${esc(t("f3.load.err"))}</span><span class="v"><button class="btn sm" onclick="f3ReloadCurrent()">${esc(t("f3.retry"))}</button></span></div>`;
+ else if(OV.health){const H=OV.health;
+  h+=f3ovSystemRow(t("ov.health.api"),H.api);
+  h+=f3ovSystemRow(t("ov.health.db"),H.database);
+  h+=f3ovSystemRow(t("ov.health.metaapi"),H.metaapi);
+  h+=f3ovSystemRow(t("ov.health.email"),H.email);
+  if(H.workers)h+=`<div class="kv"><span class="k">${esc(t("ov.jobsPending"))}</span><span class="v num">${f3num(H.workers.jobsPending)}</span></div>`;
+ }
+ h+=`</div></div>`;
+ /* recent actions (from /admin/me — real audit rows) */
+ const rec=Array.isArray(ME.recent)?ME.recent:[];
+ h+=`<div class="card" style="margin-top:12px"><div class="ch"><h3>${esc(t("ov.recent"))}</h3></div><div class="cb">`;
+ h+=rec.length?rec.map(a=>`<div class="evrow" tabindex="0"><span class="mono">${esc(a.action||"")}</span><span style="flex:1"></span><span class="cellsub">${esc(String(a.targetType||"")+(a.targetId!=null?":"+a.targetId:""))} · ${esc(a.result||"")}</span></div>`).join("")
+  :`<div class="cellsub">${esc(t("f3.none"))}</div>`;
+ h+=`</div></div>`;
+ return h;
+}
+
+/* ---------------- Users (GET /api/v1/admin/users + mutations) ---------------- */
+const US={data:null,st:"idle",err:null,page:1,per:10,search:"",role:"",status:"",plan:"",verified:"",total:0,hasMore:false,listBusy:false,actionBusy:false};
+function f3UsersQuery(){const q=new URLSearchParams({page:String(US.page),per_page:String(US.per)});
+ if(US.search)q.set("search",US.search);if(US.role)q.set("role",US.role);if(US.status)q.set("status",US.status);
+ if(US.plan)q.set("plan",US.plan);if(US.verified!=="")q.set("verified",US.verified);return q.toString()}
+async function f3LoadUsers(){
+ if(US.listBusy)return;US.listBusy=true;US.st=US.data?"refreshing":"loading";f3RenderIf("users");
+ try{const d=await VeloraData.request("/api/v1/admin/users?"+f3UsersQuery());
+  US.data=(d&&Array.isArray(d.users))?d.users:[];US.total=d&&d.pagination?Number(d.pagination.total||0):0;
+  US.hasMore=!!(d&&d.pagination&&d.pagination.has_more);US.st="ok";US.err=null;}
+ catch(e){US.err=e;US.st="error";}
+ US.listBusy=false;f3RenderIf("users");
+}
+let f3SearchT=null;
+function f3UsersSearch(v){US.search=v.trim();US.page=1;clearTimeout(f3SearchT);f3SearchT=setTimeout(f3LoadUsers,350)}
+function f3UsersFilter(k,v){US[k]=v;US.page=1;f3LoadUsers()}
+function f3UsersPage(p){US.page=Math.max(1,US.page+p);f3LoadUsers()}
+function f3SubLbl(s){return({none:t("sub.none"),active:t("sub.active"),past_due:t("sub.past_due"),grace:t("sub.grace"),expired:t("sub.expired"),cancelled:t("sub.cancelled")}[s]||String(s||"—"))}
+function f3RoleLbl(r){return({user:t("role.user"),admin:t("role.admin"),super_admin:t("role.super_admin")}[r]||String(r||"—"))}
+function usersPage(){
+ if(US.st==="idle")f3LoadUsers();
+ const canVerify=can("users.verify_email"),canStatus=can("users.suspend"),canRole=can("users.change_role"),canPlan=can("users.manage_subscription");
+ const anyActions=canVerify||canStatus||canRole||canPlan;
+ let h=pagehead(t("nav.users"),"",`<span class="badge b-neutral num">${esc(String(US.total))}</span>`);
+ /* toolbar (frozen .inp primitives) */
+ h+=`<div class="card" style="margin-bottom:12px"><div class="cb" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+  <input class="inp" id="usrSearch" placeholder="${esc(t("usr.search"))}" value="${esc(US.search)}" oninput="f3UsersSearch(this.value)" aria-label="${esc(t("usr.search"))}" style="flex:1;min-width:170px">
+  <select class="inp" onchange="f3UsersFilter('role',this.value)" aria-label="${esc(t("usr.col.role"))}">
+   <option value="">${esc(t("usr.role.all"))}</option>
+   <option value="user"${US.role==="user"?" selected":""}>${esc(t("role.user"))}</option>
+   <option value="admin"${US.role==="admin"?" selected":""}>${esc(t("role.admin"))}</option>
+   <option value="super_admin"${US.role==="super_admin"?" selected":""}>${esc(t("role.super_admin"))}</option></select>
+  <select class="inp" onchange="f3UsersFilter('status',this.value)" aria-label="${esc(t("usr.col.status"))}">
+   <option value="">${esc(t("usr.status.all"))}</option>
+   <option value="active"${US.status==="active"?" selected":""}>${esc(t("ov.active"))}</option>
+   <option value="suspended"${US.status==="suspended"?" selected":""}>${esc(t("ov.suspended"))}</option></select>
+  <select class="inp" onchange="f3UsersFilter('plan',this.value)" aria-label="${esc(t("usr.col.plan"))}">
+   <option value="">${esc(t("usr.plan.all"))}</option>
+   <option value="free"${US.plan==="free"?" selected":""}>Free</option>
+   <option value="pro"${US.plan==="pro"?" selected":""}>Pro</option></select>
+  <select class="inp" onchange="f3UsersFilter('verified',this.value)" aria-label="${esc(t("usr.col.verified"))}">
+   <option value=""${US.verified===""?" selected":""}>${esc(t("usr.verified.any"))}</option>
+   <option value="1"${US.verified==="1"?" selected":""}>${esc(t("usr.verified.yes"))}</option>
+   <option value="0"${US.verified==="0"?" selected":""}>${esc(t("usr.verified.no"))}</option></select>
+ </div></div>`;
+ if(US.st==="loading"&&!US.data)return h+`<div class="card"><div class="cb">${f3skel(8)}</div></div>`;
+ if(US.st==="error")return h+`<div class="card"><div class="cb">${f3errBox(US.err)}</div></div>`;
+ const rows=US.data||[];
+ if(!rows.length)return h+empty(NAVID_IC.users||VI.box,t("usr.empty"),t("usr.empty.desc"));
+ const acts=u=>{
+  const b=[];
+  if(canVerify&&!u.emailVerified)b.push(`<button class="btn sm primary" onclick="event.stopPropagation();usrVerify(${u.id})">${esc(t("usr.act.verify"))}</button>`);
+  if(canStatus)b.push(u.status==="active"
+    ?`<button class="btn sm danger" onclick="event.stopPropagation();usrConfirm('suspend',${u.id},'${esc(u.email)}')">${esc(t("usr.act.suspend"))}</button>`
+    :`<button class="btn sm" onclick="event.stopPropagation();usrConfirm('activate',${u.id},'${esc(u.email)}')">${esc(t("usr.act.activate"))}</button>`);
+  if(canRole)b.push(`<button class="btn sm" onclick="event.stopPropagation();usrRole(${u.id},'${esc(u.role)}')">${esc(t("usr.act.role"))}</button>`);
+  if(canPlan&&u.plan!==null&&u.plan!==undefined)b.push(`<button class="btn sm" onclick="event.stopPropagation();usrPlan(${u.id})">${esc(t("usr.act.plan"))}</button>`);
+  if(canStatus)b.push(`<button class="btn sm" onclick="event.stopPropagation();usrConfirm('revoke',${u.id},'${esc(u.email)}')">${esc(t("usr.act.revoke"))}</button>`);
+  return b.join("");
+ };
+ h+=`<div class="twrap"><table class="tbl" data-mstack><thead><tr>
+  <th class="nom">${esc(t("usr.col.id"))}</th><th>${esc(t("usr.col.user"))}</th><th>${esc(t("usr.col.role"))}</th><th>${esc(t("usr.col.status"))}</th><th>${esc(t("usr.col.plan"))}</th><th>${esc(t("usr.col.verified"))}</th><th class="nom">${esc(t("usr.col.created"))}</th>${anyActions?`<th>${esc(t("usr.col.actions"))}</th>`:""}</tr></thead><tbody>`;
+ h+=rows.map(u=>`<tr class="rowlink" data-uid="${u.id}" onclick="usrOpen360(${u.id})">
+  <td class="nom mono num">${u.id}</td>
+  <td><div style="display:flex;flex-direction:column"><span>${esc(u.fullName||"—")}</span><span class="cellsub mono">${esc(u.email)}</span></div></td>
+  <td>${bdot(u.role==="super_admin"?"accent":u.role==="admin"?"info":"neutral",f3RoleLbl(u.role))}</td>
+  <td>${u.status==="active"?bdot("ok",t("ov.active")):bdot("err",t("ov.suspended"))}</td>
+  <td>${(u.plan===null||u.plan===undefined)?f3unavail():bdot(u.plan==="pro"?"accent":"neutral",esc(String(u.plan)))}</td>
+  <td>${u.emailVerified?bdot("ok",t("usr.verified.yes")):bdot("warn",t("usr.verified.no"))}</td>
+  <td class="nom cellsub">${esc(String(u.createdAt||""))}</td>
+  ${anyActions?`<td><div style="display:flex;gap:5px;flex-wrap:wrap">${acts(u)}</div></td>`:""}</tr>`).join("");
+ h+=`</tbody></table></div>`;
+ const pages=Math.max(1,Math.ceil(US.total/US.per));
+ h+=`<div style="display:flex;gap:10px;align-items:center;margin-top:12px">
+  <button class="btn sm" onclick="f3UsersPage(-1)"${US.page<=1?" disabled":""}>${esc(t("usr.prev"))}</button>
+  <span class="cellsub">${esc(t("usr.page"))} <span class="num">${US.page}</span> ${esc(t("usr.of"))} <span class="num">${pages}</span> · <span class="num">${US.total}</span></span>
+  <button class="btn sm" onclick="f3UsersPage(1)"${US.hasMore?"":" disabled"}>${esc(t("usr.next"))}</button></div>`;
+ return h;
+}
+function usrOpen360(id){location.hash="#/users/"+id}
+/* --- user action modal (frozen .modalwrap/.modal primitives) --- */
+let f3ModalOpener=null;
+function f3OpenModal(html){f3ModalOpener=document.activeElement instanceof HTMLElement?document.activeElement:null;
+ $("#modal-root").innerHTML=`<div class="modalwrap" onclick="if(event.target===this)f3CloseModal()"><div class="modal" role="dialog" aria-modal="true">${html}</div></div>`;
+ const f=$("#modal-root input,#modal-root select,#modal-root .btn.primary,#modal-root .btn.danger");if(f)f.focus();}
+function f3CloseModal(){$("#modal-root").innerHTML="";const o=f3ModalOpener;f3ModalOpener=null;
+ if(o&&document.contains(o)){try{o.focus({preventScroll:true})}catch(e){o.focus()}}}
+function usrConfirm(kind,id,email){
+ const T={suspend:["usr.md.suspend.title","usr.md.suspend.body","usr.act.suspend","danger"],
+          activate:["usr.md.activate.title","usr.md.activate.body","usr.act.activate","primary"],
+          revoke:["usr.md.revoke.title","usr.md.revoke.body","usr.act.revoke","danger"]}[kind];
+ f3OpenModal(`<div class="mh">${esc(t(T[0]))}<button class="tbtn" onclick="f3CloseModal()" aria-label="${esc(t("act.close"))}">${VI.x||"×"}</button></div>
+  <div class="mb">${esc(t(T[1]))}<div class="note mono">${esc(email||("#"+id))}</div><div id="f3acterr"></div></div>
+  <div class="mf"><button class="btn" onclick="f3CloseModal()">${esc(t("act.cancel"))}</button>
+  <button class="btn ${T[3]}" id="f3actgo" onclick="usrDo('${kind}',${id})">${esc(t(T[2]))}</button></div>`);
+}
+function usrVerify(id){
+ f3OpenModal(`<div class="mh">${esc(t("usr.md.verify.title"))}<button class="tbtn" onclick="f3CloseModal()" aria-label="${esc(t("act.close"))}">${VI.x||"×"}</button></div>
+  <div class="mb">${esc(t("usr.md.verify.body"))}<div id="f3acterr"></div></div>
+  <div class="mf"><button class="btn" onclick="f3CloseModal()">${esc(t("act.cancel"))}</button>
+  <button class="btn primary" id="f3actgo" onclick="usrDo('verify',${id})">${esc(t("usr.act.verify"))}</button></div>`);
+}
+function usrRole(id,current){
+ const opt=r=>`<option value="${r}"${current===r?" selected":""}>${esc(f3RoleLbl(r))}</option>`;
+ f3OpenModal(`<div class="mh">${esc(t("usr.md.role.title"))}<button class="tbtn" onclick="f3CloseModal()" aria-label="${esc(t("act.close"))}">${VI.x||"×"}</button></div>
+  <div class="mb"><label class="cellsub" for="f3roleSel">${esc(t("usr.md.role.lbl"))}</label>
+  <select id="f3roleSel" class="inp" style="width:100%;margin-top:6px">${opt("user")}${opt("admin")}${opt("super_admin")}</select><div id="f3acterr"></div></div>
+  <div class="mf"><button class="btn" onclick="f3CloseModal()">${esc(t("act.cancel"))}</button>
+  <button class="btn primary" onclick="usrDo('role',${id})">${esc(t("usr.md.confirm"))}</button></div>`);
+}
+function usrPlan(id){
+ const cur=(US.data||[]).find(u=>u.id===id)||{};
+ const plans=["free","pro"].map(p=>`<option value="${p}"${cur.plan===p?" selected":""}>${esc(String(p))}</option>`).join("");
+ const subs=["none","active","past_due","grace","expired","cancelled"].map(s=>`<option value="${s}"${cur.subscriptionStatus===s?" selected":""}>${esc(f3SubLbl(s))}</option>`).join("");
+ f3OpenModal(`<div class="mh">${esc(t("usr.md.plan.title"))}<button class="tbtn" onclick="f3CloseModal()" aria-label="${esc(t("act.close"))}">${VI.x||"×"}</button></div>
+  <div class="mb"><label class="cellsub" for="f3planSel">${esc(t("usr.md.plan.lbl"))}</label>
+  <select id="f3planSel" class="inp" style="width:100%;margin:6px 0 10px">${plans}</select>
+  <label class="cellsub" for="f3subSel">${esc(t("usr.md.substatus.lbl"))}</label>
+  <select id="f3subSel" class="inp" style="width:100%;margin-top:6px">${subs}</select><div id="f3acterr"></div></div>
+  <div class="mf"><button class="btn" onclick="f3CloseModal()">${esc(t("act.cancel"))}</button>
+  <button class="btn primary" onclick="usrDo('plan',${id})">${esc(t("usr.md.confirm"))}</button></div>`);
+}
+function f3ActErr(msg){const d=$("#f3acterr");if(d)d.innerHTML=`<div class="alert warn" style="margin-top:8px"><span class="amark" aria-hidden="true">!</span><div>${esc(msg)}</div></div>`;
+ const g=$("#f3actgo");if(g){g.disabled=false}}
+async function usrDo(kind,id){
+ const g=$("#f3actgo");if(g){g.disabled=true}
+ let path=null,body=null,okMsg="";
+ if(kind==="verify"){path="/api/v1/admin/users/"+id+"/verify-email"}
+ else if(kind==="suspend"){path="/api/v1/admin/users/"+id+"/status";body={status:"suspended"};okMsg=t("usr.done.suspend")}
+ else if(kind==="activate"){path="/api/v1/admin/users/"+id+"/status";body={status:"active"};okMsg=t("usr.done.activate")}
+ else if(kind==="revoke"){path="/api/v1/admin/users/"+id+"/revoke-sessions";okMsg=t("usr.done.revoke")}
+ else if(kind==="role"){path="/api/v1/admin/users/"+id+"/role";body={role:($("#f3roleSel")||{}).value};okMsg=t("usr.done.role")}
+ else if(kind==="plan"){path="/api/v1/admin/users/"+id+"/subscription";body={plan:($("#f3planSel")||{}).value,status:($("#f3subSel")||{}).value};okMsg=t("usr.done.plan")}
+ if(!path)return;
+ try{
+  const r=await VeloraData.request(path,body!==null?{method:"POST",body}:{method:"POST"});
+  if(kind==="verify"){toast((r&&r.changed===false)?t("usr.done.verify.already"):t("usr.done.verify"))}
+  else toast(okMsg);
+  f3CloseModal();US.st="refreshing";render();f3LoadUsers();   /* server-truthful refresh; no optimistic mutation */
+ }catch(e){
+  const code=e&&e.code||"";
+  toast((code?esc(code)+" · ":"")+(e&&e.message?t("f3.errprefix"):""),"err");
+  f3ActErr((code?code+" — ":"")+(e&&e.message?String(e.message):t("f3.load.err")));
+ }
+}
+
+/* ---------------- AI Providers (GET /api/v1/admin/ai/overview) ---------------- */
+const AIP={data:null,st:"idle",err:null,results:{},busy:{}};
+async function f3LoadAIP(){
+ AIP.st="loading";f3RenderIf("ai-providers");
+ try{const d=await VeloraData.request("/api/v1/admin/ai/overview");AIP.data=d||{};AIP.st="ok";}
+ catch(e){AIP.err=e;AIP.st="error";}
+ f3RenderIf("ai-providers");
+}
+async function f3ProviderAction(prov,op){
+ if(AIP.busy[prov])return;AIP.busy[prov]=true;f3RenderIf("ai-providers");
+ try{const r=await VeloraData.request("/api/v1/admin/providers/"+encodeURIComponent(prov)+"/"+(op==="verify"?"verify":"test-connection"),{method:"POST"});
+  AIP.results[prov]={ok:true,res:r||{}};}
+ catch(e){AIP.results[prov]={ok:false,err:e};}
+ AIP.busy[prov]=false;f3RenderIf("ai-providers");
+}
+function aiProvidersPage(){
+ if(AIP.st==="idle")f3LoadAIP();
+ let h=pagehead(t("nav.ai-providers"),t("aip.title.desc"),"");
+ if(AIP.st==="loading"&&!AIP.data)return h+`<div class="grid g2">${f3skel(6)}</div>`;
+ if(AIP.st==="error")return h+f3errBox(AIP.err);
+ const d=AIP.data||{};const ps=Array.isArray(d.providers)?d.providers:[];
+ h+=`<div class="alert info"><span class="amark" aria-hidden="true">i</span><div>${esc(t("aip.note"))}</div></div>`;
+ h+=`<div class="grid g2">`;
+ ps.forEach(p=>{
+  const cs=p.credentialStatus||{};
+  h+=`<div class="card"><div class="ch"><h3 class="mono">${esc(p.provider)}</h3><div class="right">${bdot(p.available?"ok":"warn",p.available?t("aip.available"):t("aip.unavailable"))}</div></div><div class="cb">`;
+  if(cs.required){
+   h+=`<div class="kv"><span class="k">${esc(t("aip.cred"))}</span><span class="v">${cs.configured?bdot("ok",t("aip.configured")):bdot("warn",t("aip.notconfigured"))}</span></div>`;
+   if(cs.envKey)h+=`<div class="kv"><span class="k">${esc(t("aip.envkey"))}</span><span class="v mono">${esc(cs.envKey)}</span></div>`;
+  }else h+=`<div class="kv"><span class="k">${esc(t("aip.cred"))}</span><span class="v cellsub">${esc(t("f3.none"))}</span></div>`;
+  if(Array.isArray(p.capabilities)&&p.capabilities.length)h+=`<div class="kv"><span class="k">${esc(t("aip.caps"))}</span><span class="v cellsub">${esc(p.capabilities.join(" · "))}</span></div>`;
+  if(p.quota)h+=`<div class="kv"><span class="k">${esc(t("aip.quota"))}</span><span class="v mono cellsub">${esc(JSON.stringify(p.quota))}</span></div>`;
+  if(p.relay){h+=`<div class="kv"><span class="k">${esc(t("aip.relay.url"))}</span><span class="v">${p.relay.urlConfigured?bdot("ok",t("aip.configured")):bdot("warn",t("aip.notconfigured"))}</span></div>`;
+   h+=`<div class="kv"><span class="k">${esc(t("aip.relay.token"))}</span><span class="v">${p.relay.tokenConfigured?bdot("ok",t("aip.configured")):bdot("warn",t("aip.notconfigured"))}</span></div>`;}
+  if(p.effectiveRoute)h+=`<div class="kv"><span class="k">${esc(t("aip.effroute"))}</span><span class="v mono">${esc(String(p.effectiveRoute))}</span></div>`;
+  /* actions (page perm = aiManage already gates the route) */
+  h+=`<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+   <button class="btn sm" onclick="f3ProviderAction('${esc(p.provider)}','verify')"${AIP.busy[p.provider]?" disabled":""}>${AIP.busy[p.provider]?esc(t("aip.verify.running")):esc(t("aip.verify"))}</button>
+   <button class="btn sm" onclick="f3ProviderAction('${esc(p.provider)}','test')"${AIP.busy[p.provider]?" disabled":""}>${esc(t("aip.test"))}</button></div>`;
+  const R=AIP.results[p.provider];
+  if(R&&R.ok){const r=R.res;
+   h+=`<div style="border-top:1px dashed var(--border);margin-top:10px;padding-top:8px"><div class="cellsub">${esc(t("aip.lastresult"))}</div>
+    <div class="kv"><span class="k">${esc(t("ov.status.ok"))}</span><span class="v">${bdot(r.status==="VALID"?"ok":(r.reachable===true?"ok":"err"),esc(String(r.status||"—")))}</span></div>
+    <div class="kv"><span class="k">${esc(t("aip.latency"))}</span><span class="v num">${r.latency_ms!=null?esc(String(r.latency_ms))+"ms":f3unavail()}</span></div>
+    ${r.error_code?`<div class="kv"><span class="k">${esc(t("aip.errorcode"))}</span><span class="v mono">${esc(String(r.error_code))}</span></div>`:""}
+    ${r.checked_at?`<div class="kv"><span class="k">${esc(t("aip.checked"))}</span><span class="v cellsub">${esc(String(r.checked_at))}</span></div>`:""}</div>`;}
+  else if(R&&!R.ok){h+=`<div class="alert warn" style="margin-top:10px"><span class="amark" aria-hidden="true">!</span><div>${esc((R.err&&R.err.code)?R.err.code+" — ":"")}${esc(t("f3.load.err"))}</div></div>`;}
+  h+=`</div></div>`;
+ });
+ if(!ps.length)h+=`<div class="card"><div class="cb">${empty(VI.box,t("f3.unavailable"),"")}</div></div>`;
+ h+=`</div>`;
+ /* feature chains */
+ const fs=Array.isArray(d.features)?d.features:[];
+ h+=`<div class="card" style="margin-top:12px"><div class="ch"><h3>${esc(t("aip.features"))}</h3></div><div class="cb">`;
+ if(fs.length){
+  h+=`<div class="twrap"><table class="tbl" data-mstack><thead><tr><th>${esc(t("aip.feature"))}</th><th>${esc(t("aip.flag"))}</th><th>${esc(t("aip.source"))}</th><th>${esc(t("aip.chain"))}</th></tr></thead><tbody>`;
+  fs.forEach(f=>{h+=`<tr><td class="mono">${esc(f.feature)}</td><td>${f.flag?(f.flag.enabled?bdot("ok",t("aip.flag.on")+" · "+(f.flag.rolloutPercentage!=null?f.flag.rolloutPercentage+"%":"")):bdot("neutral",t("aip.flag.off"))):bdot("neutral",t("aip.flag.none"))}</td><td class="cellsub mono">${esc(String(f.source||"—"))}</td><td class="cellsub mono">${Array.isArray(f.chain)?esc(f.chain.join(" → "))||"—":f3unavail()}</td></tr>`});
+  h+=`</tbody></table></div>`;
+ }else h+=f3unavail();
+ h+=`</div></div>`;
+ h+=`<div class="card" style="margin-top:12px"><div class="ch"><h3>${esc(t("aip.routing"))}</h3></div><div class="cb">
+  <div class="kv"><span class="k">${esc(t("aip.routing"))}</span><span class="v">${d.routingTableExists?bdot("ok",t("aip.routing.exists")):bdot("warn",t("aip.routing.missing"))}</span></div>
+  <div class="kv"><span class="k">${esc(t("aip.routing.rows"))}</span><span class="v num">${d.routingRowCount!=null?esc(String(d.routingRowCount)):f3unavail()}</span></div></div></div>`;
+ return h;
+}
+
+/* ---------------- AI Route (GET/PUT/DELETE /api/v1/admin/ai/route) ---------------- */
+const AIR={data:null,st:"idle",err:null,busy:false,sel:""};
+async function f3LoadAIR(){
+ AIR.st="loading";f3RenderIf("ai-route");
+ try{const d=await VeloraData.request("/api/v1/admin/ai/route");AIR.data=d&&d.route?d.route:{};AIR.st="ok";}
+ catch(e){AIR.err=e;AIR.st="error";}
+ f3RenderIf("ai-route");
+}
+async function f3AirSave(){
+ if(AIR.busy||!AIR.sel)return;AIR.busy=true;f3RenderIf("ai-route");
+ try{const d=await VeloraData.request("/api/v1/admin/ai/route",{method:"PUT",body:{route:AIR.sel}});
+  AIR.data=d&&d.route?d.route:AIR.data;AIR.sel="";toast(t("air.done.save"));}
+ catch(e){AIR.err=e;toast((e&&e.code?e.code+" · ":"")+t("f3.load.err"),"err");}
+ AIR.busy=false;f3RenderIf("ai-route");
+}
+async function f3AirReset(){
+ if(AIR.busy)return;AIR.busy=true;f3RenderIf("ai-route");
+ try{const d=await VeloraData.request("/api/v1/admin/ai/route",{method:"DELETE"});
+  AIR.data=d&&d.route?d.route:AIR.data;toast(t("air.done.reset"));}
+ catch(e){AIR.err=e;toast((e&&e.code?e.code+" · ":"")+t("f3.load.err"),"err");}
+ AIR.busy=false;f3RenderIf("ai-route");
+}
+function aiRoutePage(){
+ if(AIR.st==="idle")f3LoadAIR();
+ let h=pagehead(t("nav.ai-route"),"");
+ if(AIR.st==="loading"&&!AIR.data)return h+`<div class="card"><div class="cb">${f3skel(5)}</div></div>`;
+ if(AIR.st==="error")return h+f3errBox(AIR.err);
+ const r=AIR.data||{};const canEdit=can("aiRouteManage");
+ h+=`<div class="card"><div class="ch"><h3>${esc(t("nav.ai-route"))}</h3></div><div class="cb">
+  <div class="kv"><span class="k">${esc(t("air.configured"))}</span><span class="v mono">${r.configured?esc(String(r.configured)):bdot("neutral",t("air.none"))}</span></div>
+  <div class="kv"><span class="k">${esc(t("air.effective"))}</span><span class="v mono">${r.effective?esc(String(r.effective)):f3unavail()}</span></div>
+  <div class="kv"><span class="k">${esc(t("air.source"))}</span><span class="v">${r.source?esc(f3srcLabel(r.source)):f3unavail()}</span></div>
+  <div class="kv"><span class="k">${esc(t("air.provider"))}</span><span class="v mono">${r.providerEffective?esc(String(r.providerEffective)):f3unavail()}</span></div>
+ </div></div>`;
+ if(!canEdit){
+  h+=`<div class="alert warn" style="margin-top:12px"><span class="amark" aria-hidden="true">!</span><div>${esc(t("air.readonly"))}<div class="note mono">aiRouteManage</div></div></div>`;
+  return h;
+ }
+ const chip=(val,label)=>`<button class="chip ${AIR.sel===val||( !AIR.sel&&r.configured===val)?"on":""}" onclick="AIR.sel='${val}';render()" aria-pressed="${AIR.sel===val}">${esc(label)} <span class="cellsub mono">${val}</span></button>`;
+ h+=`<div class="card" style="margin-top:12px"><div class="ch"><h3>${esc(t("air.choose"))}</h3></div><div class="cb">
+  <div style="display:flex;gap:8px;flex-wrap:wrap">${chip("direct",t("air.route.direct"))}${chip("n8n_relay",t("air.route.relay"))}</div>
+  <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+   <button class="btn sm primary" onclick="f3AirSave()"${(AIR.busy||!AIR.sel)?" disabled":""}>${esc(t("air.save"))}</button>
+   <button class="btn sm" onclick="f3AirReset()"${AIR.busy?" disabled":""}>${esc(t("air.reset"))}</button></div>
+  <div class="note">${esc(t("aip.note"))}</div>
+ </div></div>`;
+ return h;
+}
+
+/* registry honesty: these four routes are implemented now */
+["overview","users","ai-providers","ai-route"].forEach(rt=>{const d=REG_BY_ROUTE[rt];if(d)d.status="implemented"});
+const PAGE_IMPL={overview:overviewPage,users:usersPage,"ai-providers":aiProvidersPage,"ai-route":aiRoutePage};
+
 
 function activeGroupOf(cur){for(const n of NAV){const items=n.items||[n];if(n.g&&items.length>1&&items.some(it=>it.id===cur))return n.g}return null}
 function navDefs(){const out=[];NAV.forEach(n=>{(n.items||[n]).forEach(it=>{const d=REG_BY_ROUTE[it.id];if(d&&d.nav&&navAllowed(d.route))out.push(d)})});return out}
@@ -1067,7 +1516,7 @@ function render(){
   lbl=t("shell.boot.title");}
  else if(!r){fn=notFoundPage;lbl=t("shell.notfound.title");}
  else if(!canRoute(r.def)){CURRENT.status="denied";fn=()=>deniedPanel(r.def.perm||"");lbl=t("shell.denied.title");}
- else{fn=()=>r.def.dynamic?user360Page(r.params.id):(r.def.route==="overview"?shellStatusPage():pendingPage(r.def));lbl=t(r.def.labelKey);}
+ else{fn=()=>r.def.dynamic?user360Page(r.params.id):(PAGE_IMPL[r.def.route]?PAGE_IMPL[r.def.route]():pendingPage(r.def));lbl=t(r.def.labelKey);}
  v.innerHTML=fn();
  const g=CURRENT.def&&CURRENT.def.group&&CURRENT.def.group!==CURRENT.def.labelKey?t(CURRENT.def.group):null;
  $("#crumb").innerHTML=`<span>VELORA</span><span>›</span>${g?`<span>${esc(g)}</span><span>›</span>`:""}<b>${esc(lbl)}</b>`;
@@ -1129,6 +1578,7 @@ document.addEventListener("keydown",e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLower
 /* F-2: Escape ordering — command palette first, then user menu, then drawer. */
 document.addEventListener("keydown",e=>{if(e.key!=="Escape")return;
  if(document.querySelector("#palette-root .palette")){closePalette();return}
+ if($("#modal-root .modal")){f3CloseModal();return}
  if($("#umenu")){closeUserMenu();return}
  closeSidebar()});
 const faNorm=x=>String(x||"").toLowerCase().replace(/\u064a/g,"\u06cc").replace(/\u0643/g,"\u06a9");

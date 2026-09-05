@@ -21,8 +21,8 @@ try:
         OUT["A_conn"]=pg.evaluate("()=>document.querySelector('#v2mode').textContent")
         OUT["A_envchip"]=pg.evaluate("()=>document.querySelector('#envChipTxt').textContent")
         OUT["A_navitems_admin"]=pg.evaluate("()=>document.querySelectorAll('.navitem').length")
-        OUT["A_overview_real"]=pg.evaluate("()=>document.querySelector('#view').innerText.includes('#4') && document.querySelector('#view').innerText.includes('user.verify_email')")
-        OUT["A_users_pending"]=pg.evaluate("()=>{location.hash='#/users';return new Promise(r=>setTimeout(()=>r(document.querySelector('#view').innerText.includes('F-2')||document.querySelector('#view').innerText.includes('F-2')),300))}")
+        OUT["A_overview_real"]=pg.evaluate("()=>document.querySelector('#view').innerText.includes('128') && document.querySelector('#view').innerText.includes('912345')")  # F-3: overview wired to /admin/overview (stub KPIs rendered)
+        OUT["A_users_pending"]=pg.evaluate("()=>{location.hash='#/users';return new Promise(r=>setTimeout(()=>r(document.querySelector('#view').innerText.includes('owner@velora.test')),600))}")  # F-3: users list wired
         pg.close()
         # A2) limited-permission admin → gate follows permissions[] (not role)
         setmode("limited")
@@ -121,8 +121,8 @@ try:
         OUT["I_stickers"]=pg.evaluate("""()=>{const bad=[];const walk=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);let n;while(n=walk.nextNode()){for(const ch of n.textContent){const cp=ch.codePointAt(0);if((cp>=0x1F000)||(cp>=0x2600&&cp<=0x27BF)){if(!bad.includes(ch))bad.push(ch)}}}return bad}""")
         # ---------- J) honesty: users placeholder has no numbers/table ----------
         pg.evaluate("location.hash='#/users'"); pg.wait_for_timeout(400)
-        OUT["J_users_no_table"]=pg.evaluate("()=>!document.querySelector('#view table')")
-        OUT["J_users_no_digits"]=pg.evaluate("()=>!/[0-9۰-۹]{2,}/.test(document.querySelector('#view .statebox')?document.querySelector('#view .statebox').innerText:'111')") if False else pg.evaluate("()=>!!document.querySelector('#view .statebox')")
+        OUT["J_users_no_table"]=pg.evaluate("()=>!!document.querySelector('#view table.tbl')")  # F-3: real wired table
+        OUT["J_users_no_digits"]=pg.evaluate("()=>document.querySelectorAll('#view table.tbl tbody tr').length>=1")  # F-3: real wired rows rendered
         b.close()
 finally:
     srv.terminate()
@@ -154,7 +154,7 @@ chk("G_close",OUT["G_nav_closedrawer"] and OUT["G_escape_closes"] and OUT["G_bac
 chk("G_touch",OUT["G_touch46"])
 chk("H_zero",OUT["H_all_zero"])
 chk("I_stickers",OUT["I_stickers"]==[])
-chk("J_honest",OUT["J_users_no_table"] and OUT["J_users_no_digits"])
+chk("J_honest",OUT["J_users_no_table"] and OUT["J_users_no_digits"])  # F-3: wired table with API rows; deep data-source proof in the F-3 suite
 print("FAILS:",fails if fails else "NONE — ALL GREEN")
 for k,v in OUT.items():
     if k not in ("H_overflow",): print(k,"=",str(v)[:90])

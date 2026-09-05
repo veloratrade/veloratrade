@@ -53,7 +53,8 @@ try:
         OUT["A_count"]=len(R)
         OUT["A_static_ok"]=statics==expected
         OUT["A_no_design"]="design" not in statics
-        OUT["A_meta_ok"]=all(d["labelKey"] and d["status"]=="placeholder" and isinstance(d["nav"],bool) for d in R)
+        OUT["A_meta_ok"]=all(d["labelKey"] and d["status"] in ("placeholder","implemented") and isinstance(d["nav"],bool) for d in R)
+        OUT["A_impl_set"]=sorted(d["route"] for d in R if d["status"]=="implemented")
         u360=[d for d in R if d["dynamic"]]
         OUT["A_u360"]=len(u360)==1 and u360[0]["route"]=="users/:id" and not u360[0]["nav"] and u360[0]["perm"]=="users.view"
 
@@ -69,7 +70,7 @@ try:
                 title:document.title,
                 active:(document.querySelector('.navitem.active')||{}).dataset?document.querySelector('.navitem.active').dataset.route:null}}""",
                 {"nf":NF,"badge":BADGE})
-            if st["nf"] or not (st["badge"] or rt=="overview"):
+            if st["nf"] or (rt not in ("overview","users","ai-providers","ai-route") and not st["badge"]):
                 bad.append((rt,"page",st))
             if not st["crumb"].strip().endswith(lbl[rt]) and rt!="overview":
                 bad.append((rt,"crumb:"+st["crumb"]))
@@ -247,8 +248,10 @@ try:
 
         # ---------- W. no fake data anywhere ----------
         wbad=[]
+        IMPL={"overview","users","ai-providers","ai-route"}
         for rt in sorted(expected):
             pgp.evaluate(f"()=>location.hash='#/{rt}'"); pgp.wait_for_timeout(70)
+            if rt in IMPL: continue  # F-3 batch1: wired pages (data-source proof in test_f3_batch1)
             st=pgp.evaluate("()=>({tbl:!!document.querySelector('#view table'),kpi:!!document.querySelector('#view .ktile'),big:!!document.querySelector('#view canvas')})")
             if st["tbl"] or st["kpi"] or st["big"]: wbad.append(rt)
         pgp.evaluate("()=>location.hash='#/users/77'"); pgp.wait_for_timeout(150)
@@ -304,7 +307,7 @@ def chk(k,cond):
 chk("js",len(OUT["js"])==0)
 chk("A_count",OUT["A_count"]==33)  # 32 static + users/:id dynamic
 chk("A_static",OUT["A_static_ok"]); chk("A_no_design",OUT["A_no_design"])
-chk("A_meta",OUT["A_meta_ok"]); chk("A_u360",OUT["A_u360"])
+chk("A_meta",OUT["A_meta_ok"] and OUT["A_impl_set"]==["ai-providers","ai-route","overview","users"]); chk("A_u360",OUT["A_u360"])
 chk("B_routes",not OUT["B_bad"]); chk("B_events",OUT["B_events"])
 chk("C_nf",OUT["C_nf"]); chk("C_design",OUT["C_design"]); chk("C_deep",OUT["C_deep"]); chk("C_back",OUT["C_back"])
 chk("D_u360",OUT["D_u360"]); chk("D_nosidebar",OUT["D_nosidebar"])
@@ -318,7 +321,7 @@ chk("J_fa",OUT["J_fa"]); chk("J_en",OUT["J_en"]); chk("J_kw",OUT["J_kw"]); chk("
 chk("K_count",OUT["K_count"]==32); chk("K_idx2",OUT["K_idx2"]); chk("K_home",OUT["K_home"]); chk("K_end",OUT["K_end"])
 chk("K_enter",OUT["K_enter_nav"]=="#/settings-config"); chk("K_focus",OUT["K_focus_restored"])
 chk("L_hidden",OUT["L_hidden"]); chk("L_denied",OUT["L_denied"]); chk("L_reload",OUT["L_denied_after_reload"]); chk("L_pal",OUT["L_palette_omits"])
-chk("M_api",OUT["M_api"]==["/api/v1/admin/me","/api/v1/auth/refresh"])
+chk("M_api",OUT["M_api"]==["/api/v1/admin/me","/api/v1/admin/overview","/api/v1/admin/system/health","/api/v1/auth/refresh"])  # F-3: permitted page fetches only — no billing/ai calls for adminminus
 chk("N_401",OUT["N_401"] is True)
 chk("O_403",OUT["O_403"])
 chk("P_fa",OUT["P_fa"]); chk("Q_en",OUT["Q_en"]); chk("R_dir",OUT["R_after_route"] and OUT["R_ltr"])
