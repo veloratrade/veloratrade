@@ -1,0 +1,165 @@
+name: Admin Schema Migration (Staging) — v1.3 admin management + v1.5 system observability
+
+# ============================================================================
+# STAGING-ONLY additive, idempotent admin-schema migration via the one-use probe
+# pattern (token-gated, random-named, self-deleting). Runs the exact additive
+# DDL guarded by information_schema:
+#   * v1.3 — users.plan/subscription_status/plan_* columns (guarded), legacy
+#     role='pro' reconciliation (guarded, count-first), users.role ENUM widened
+#     to include super_admin (re-runnable MODIFY), admin_audit_logs table;
+#   * v1.5 — system_logs + integration_health tables (CREATE IF NOT EXISTS).
+# No DROP/TRUNCATE/DELETE of data. check mode changes nothing; apply mode
+# requires the exact confirmation phrase. Uses STAGING_FTP_* / staging host only.
+# Mirrors api/database/migrations/v1.3_admin_management.sql and
+# v1.5_system_observability.sql (both additive, idempotent, reversible).
+# Dispatched workflow_dispatch (registered on the default branch; runs the file
+# from the requested ref).
+# ============================================================================
+
+on:
+  workflow_call:
+    inputs:
+      mode:
+        description: 'check (report only) or apply (additive migration)'
+        type: string
+        required: true
+      confirm:
+        description: 'must be APPLY-ADMIN-MIGRATION when mode=apply'
+        type: string
+        required: false
+        default: ''
+    outputs:
+      result:
+        value: ${{ jobs.migrate.outputs.result }}
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Mode: check (report only) or apply (additive migration)'
+        required: true
+        default: check
+      confirm:
+        description: 'Type APPLY-ADMIN-MIGRATION to confirm apply on STAGING'
+        required: false
+        default: ''
+
+permissions: { contents: read }
+
+concurrency:
+  group: admin-migration-staging
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: Admin migration check/apply on STAGING
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      result: ${{ steps.runsql.outputs.state }}
+    env:
+      FTP_SERVER:   ${{ secrets.STAGING_FTP_SERVER }}
+      FTP_USERNAME: ${{ secrets.STAGING_FTP_USERNAME }}
+      FTP_PASSWORD: ${{ secrets.STAGING_FTP_PASSWORD }}
+      BASE: https://staging.veloratrade.ir
+      DOCROOT: public_html/staging.veloratrade.ir
+      INPUT_MODE: ${{ inputs.mode || github.event.inputs.mode }}
+      INPUT_CONFIRM: ${{ inputs.confirm || github.event.inputs.confirm }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install lftp
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -q lftp >/dev/null
+
+      - name: Guard — staging-only, mode, and apply confirmation
+        run: |
+          set -euo pipefail
+          [ -n "${FTP_SERVER:-}" ] && [ -n "${FTP_USERNAME:-}" ] && [ -n "${FTP_PASSWORD:-}" ] \
+            || { echo "::error::missing STAGING_FTP_* secrets (staging-only)"; exit 1; }
+          case "$INPUT_MODE" in
+            check) echo "mode=check (read-only; no schema change)";;
+            apply)
+              [ "$INPUT_CONFIRM" = "APPLY-ADMIN-MIGRATION" ] \
+                || { echo "::error::for apply mode, confirm must be exactly APPLY-ADMIN-MIGRATION"; exit 1; }
+              echo "mode=apply (STAGING; additive, idempotent)";;
+            *) echo "::error::mode must be check|apply"; exit 1;;
+          esac
+
+      - name: Create, upload, execute, and remove one-use probe
+        id: runsql
+        run: |
+          set -euo pipefail
+          NAME="_velora_amig_$(openssl rand -hex 8).php"
+          TOKEN="$(openssl rand -hex 32)"
+          HASH="$(printf '%s' "$TOKEN" | sha256sum | awk '{print $1}')"
+          echo "::add-mask::$NAME"; echo "::add-mask::$TOKEN"; echo "::add-mask::$HASH"
+          export NAME HASH
+          python3 - <<'PY'
+          import os, pathlib
+          tpl = pathlib.Path('ops/velora-mgmt/probe/admin_migration_probe.php.tmpl').read_text()
+          tpl = (tpl.replace('__HASH__', os.environ['HASH'])
+                     .replace('__MODE__', os.environ['INPUT_MODE'])
+                     .replace('__ENV__', 'staging'))
+          pathlib.Path('/tmp/probe.php').write_text(tpl)
+          PY
+          cleanup() {
+            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+              -e "set ftp:ssl-allow yes; set ftp:ssl-force yes; set ftp:ssl-protect-data yes; set ssl:verify-certificate yes; set net:max-retries 1; set net:timeout 20; glob -a rm -f $DOCROOT/public/_velora_amig_*.php; bye" >/dev/null 2>&1 || true
+            shred -u /tmp/probe.php /tmp/status.json 2>/dev/null || rm -f /tmp/probe.php /tmp/status.json
+          }
+          trap cleanup EXIT
+          uploaded=0
+          for attempt in $(seq 1 15); do
+            if lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+              -e "set ftp:ssl-allow yes; set ftp:ssl-force yes; set ftp:ssl-protect-data yes; set ssl:verify-certificate yes; set net:max-retries 2; set net:timeout 30; glob -a rm -f $DOCROOT/public/_velora_amig_*.php; put /tmp/probe.php -o $DOCROOT/public/$NAME; bye"; then
+              uploaded=1; break
+            fi
+            sleep 5
+          done
+          [ "$uploaded" = 1 ] || { echo "::error::probe upload failed"; exit 1; }
+          code=$(curl -sS -o /tmp/status.json -w '%{http_code}' --max-time 90 -H "X-Velora-Mig: $TOKEN" "$BASE/public/$NAME")
+          echo "probe HTTP: $code"
+          [ "$code" = 200 ] || { echo "::error::migration probe HTTP $code"; cat /tmp/status.json; exit 1; }
+          cp /tmp/status.json admin-migration-result.json
+          python3 - <<'PY'
+          import json, sys
+          d = json.load(open('admin-migration-result.json'))
+          assert d.get('env') == 'staging', 'probe did not report staging'
+          print("=== Admin Migration (%s) ===" % d.get('mode'))
+          print("applied:", d.get('applied'))
+          st = d.get('state', {})
+          print("users_plan_present     :", st.get('users_plan_columns_present'))
+          print("users_plan_missing     :", st.get('users_plan_columns_missing'))
+          print("users_role_enum_type   :", st.get('users_role_enum_type'))
+          print("admin_audit_logs_exists:", st.get('admin_audit_logs_exists'))
+          print("idx_audit_*            :", st.get('idx_audit_actor'), st.get('idx_audit_action'), st.get('idx_audit_target'), st.get('idx_audit_created'))
+          print("system_logs_exists     :", st.get('system_logs_exists'))
+          print("idx_syslog_*           :", st.get('idx_syslog_severity'), st.get('idx_syslog_source'), st.get('idx_syslog_created'), st.get('idx_syslog_request'))
+          print("integration_health     :", st.get('integration_health_exists'))
+          if d.get('errors'):
+              print("ERRORS:", d.get('errors'))
+          if not d.get('ok') or d.get('errors'):
+              sys.exit("::error::admin migration probe reported errors")
+          print("PASS: migration probe ok (mode=%s)" % d.get('mode'))
+          PY
+          # emit a compact post-state for reusable-workflow callers
+          python3 - <<'PY'
+          import json, os
+          d=json.load(open('admin-migration-result.json'))
+          st=d.get('state',{})
+          line="applied=%s users_plan_missing=%s role_enum=%s admin_audit_logs=%s system_logs=%s integration_health=%s" % (
+              d.get('applied'), st.get('users_plan_columns_missing'), st.get('users_role_enum_type'),
+              st.get('admin_audit_logs_exists'), st.get('system_logs_exists'), st.get('integration_health_exists'))
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:
+              f.write("state="+line.replace('\n',' ')+"\n")
+          PY
+
+      - name: Keep migration result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-migration-staging-${{ github.run_id }}
+          path: admin-migration-result.json
+          if-no-files-found: ignore
+          retention-days: 14
