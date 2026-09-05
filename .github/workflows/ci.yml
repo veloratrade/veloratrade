@@ -328,3 +328,29 @@ jobs:
       - name: Stop local test server
         if: always()
         run: pkill -f 'php -S 127.0.0.1:8080' || true
+
+  admin-v2-shell:
+    name: Admin v2 shell (F-1) browser test
+    # F-1 shell suite boots its own self-contained stub API (no PHP/DB needed),
+    # so this job stays cheap; browser minutes follow the same PR-only policy
+    # as the dashboard job (cost guard).
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Playwright (Python)
+        run: |
+          pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Run F-1 shell suite
+        run: python admin/v2/tests/test_f1_shell.py
