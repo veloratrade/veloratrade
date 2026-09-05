@@ -14,6 +14,9 @@ class H(SimpleHTTPRequestHandler):
         b=json.dumps(obj).encode(); self.send_response(code)
         self.send_header("Content-Type","application/json"); self.send_header("Content-Length",str(len(b))); self.end_headers(); self.wfile.write(b)
     def do_GET(self):
+        if self.path.split("?")[0] in ("/login","/login/"):
+            b=b"<html><body>login</body></html>"; self.send_response(200)
+            self.send_header("Content-Type","text/html"); self.send_header("Content-Length",str(len(b))); self.end_headers(); self.wfile.write(b); return
         if self.path.startswith("/api/v1/admin/me"):
             m=loadmode(); me=None
             if m["mode"]=="admin": me={"userId":4,"role":"admin","isSuperAdmin":False,"panel":True,"permissions":PERMS_ADMIN}

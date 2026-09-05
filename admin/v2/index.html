@@ -2,6 +2,7 @@
 <html lang="fa" dir="rtl" data-theme="dark">
 <head>
 <meta charset="utf-8">
+<script src="/public/assets/velora-latin-digits.js?v=2026.08.30.2"></script>
 <script src="/public/assets/velora-data.js?v=2026.08.30.2"></script>
 <script>
 /* F-1 pre-paint restore (theme/lang) — no FOUC, no server persistence */
@@ -1063,9 +1064,15 @@ function toggleUserMenu(){
   location.replace("/login")};
 }
 function syncUserBtn(){const ub=$("#userBtn");if(!ub)return;
- if(ME.ok){const m=ME.user||{};ub.textContent=String(m.userId??"…");ub.title=String(m.role||"");ub.disabled=false}
+ if(ME.ok){const m=ME.user||{};
+  /* Icon-only avatar: numeric text here would be wrapped by the site-wide
+     Latin-digit layer (v-latn-num span) and swap the button's hit target
+     mid-click. Identity (#id · role) lives inside the user menu. */
+  ub.innerHTML='<svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="5.4" r="2.6"/><path d="M2.8 13.6c1-2.6 3-3.9 5.2-3.9s4.2 1.3 5.2 3.9"/></svg>';
+  ub.title=String(m.role||"");ub.disabled=false}
  else{ub.textContent="…";ub.disabled=true}}
-document.addEventListener("click",e=>{const m=$("#umenu");if(m&&!m.contains(e.target)&&e.target.id!=="userBtn")closeUserMenu()});
+document.addEventListener("click",e=>{const m=$("#umenu");if(!m)return;const ub=$("#userBtn");
+ if(!m.contains(e.target)&&!(ub&&ub.contains(e.target)))closeUserMenu()});
 $("#userBtn").onclick=()=>{if(ME.ok)toggleUserMenu()};
 
 /* ------------------------------ bootstrap (real /admin/me; no fake env) ------------------------------ */

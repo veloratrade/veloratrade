@@ -126,7 +126,10 @@ try:
         b.close()
 finally:
     srv.terminate()
-json.dump(OUT,open("/home/user/qa/f1-shell-verify.json","w"),ensure_ascii=False,indent=1)
+try:  # optional evidence artifact (workspace may not exist, e.g. CI)
+    json.dump(OUT,open(os.path.join(HERE,"last_run.json"),"w"),ensure_ascii=False,indent=1)
+except OSError:
+    pass
 fails=[]
 def chk(k,cond):
     if not cond: fails.append(k)
