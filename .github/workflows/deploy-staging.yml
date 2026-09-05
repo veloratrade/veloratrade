@@ -487,6 +487,6 @@ jobs:
   db_verify:
     name: راستی‌آزمایی دیتابیس staging پس از انتشار (read-only)
     needs: deploy-staging
-    if: ${{ inputs.with_postdeploy_db_verify && needs['deploy-staging'].result == 'success' }}
+    if: ${{ !cancelled() && inputs.with_postdeploy_db_verify && needs['deploy-staging'].result == 'success' }}
     uses: ./.github/workflows/velora-db-verify-staging.yml
     secrets: inherit
