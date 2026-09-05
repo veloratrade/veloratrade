@@ -193,6 +193,8 @@ $router->get('/api/v1/admin/users/{id}/trades', [\Velora\Admin\UserManagementCon
 $router->get('/api/v1/admin/users/{id}/activity', [\Velora\Admin\UserManagementController::class, 'activity'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_USERS_VIEW)]);
 $router->get('/api/v1/admin/users/{id}/audit', [\Velora\Admin\UserManagementController::class, 'audit'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_AUDIT_VIEW)]);
 $router->post('/api/v1/admin/users/{id}/revoke-sessions', [\Velora\Admin\UserManagementController::class, 'revokeSessions'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_USERS_SUSPEND)]);
+// Phase 3 B-1: admin-triggered email verification (idempotent; audited user.verify_email).
+$router->post('/api/v1/admin/users/{id}/verify-email', [\Velora\Admin\UserManagementController::class, 'verifyEmail'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_USERS_VERIFY_EMAIL)]);
 
 // Dispatch
 try {

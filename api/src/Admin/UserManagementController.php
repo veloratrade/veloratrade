@@ -224,4 +224,29 @@ final class UserManagementController
         );
         Response::json(['ok' => true, 'revoked' => $n]);
     }
+
+    /**
+     * Phase 3 B-1 (decision D1): POST /api/v1/admin/users/{id}/verify-email
+     * RBAC: users.verify_email (admin + super_admin) via requirePermission in
+     * api/index.php. Idempotent; audited as user.verify_email with
+     * metadata {changed: bool}. Never echoes tokens or secrets.
+     */
+    public function verifyEmail(Request $request, array $params): never
+    {
+        RateLimiter::hit('admin-user-action', 30, 300);
+        $id = (int) ($params['id'] ?? 0);
+        $actorId = (int) ($request->attributes['user_id'] ?? 0);
+        $actorRole = (string) ($request->attributes['user_role'] ?? '');
+
+        $result = $this->service->verifyEmail($id, $actorId, $actorRole);
+        $this->audit->record(
+            $actorId, $actorRole, 'user.verify_email', 'user', $id, 'success',
+            "User #$id email verified by admin" . ($result['changed'] ? '' : ' (already verified)'),
+            $request->clientIp() ?? null,
+            $request->headers['user-agent'] ?? null,
+            $request->contextId(),
+            ['changed' => $result['changed']],
+        );
+        Response::json(['ok' => true, 'changed' => $result['changed'], 'user' => $result['user']]);
+    }
 }

@@ -420,6 +420,51 @@ final class UserManagementService
         return $n;
     }
 
+    /**
+     * Phase 3 B-1 (decision D1): Admin-triggered email verification.
+     *
+     * Idempotent by construction: email_verified_at is written only while it
+     * is still NULL (UPDATE ... WHERE email_verified_at IS NULL); an already
+     * verified user yields changed=false and is NOT an error. Outstanding
+     * email verification tokens are ALWAYS invalidated (also on the
+     * idempotent path) so no stale token survives the admin action.
+     *
+     * Authorization mirrors setStatus(): self-action denied; a plain Admin
+     * cannot operate on privileged users (assertTargetManipulable). The
+     * UPDATE and the token invalidation commit atomically (repo transaction
+     * convention). Timestamps use the project's UTC convention (gmdate).
+     */
+    public function verifyEmail(int $id, int $requesterId, string $requesterRole): array
+    {
+        if ($id === $requesterId) {
+            throw new ForbiddenException('Action on self is not allowed.', 'SELF_ACTION_DENIED');
+        }
+        $target = $this->findUser($id);
+        if ($target === null) {
+            throw new NotFoundException('User not found.', 'USER_NOT_FOUND');
+        }
+        $this->assertTargetManipulable($target, $requesterRole);
+
+        $pdo = Database::connection();
+        $pdo->beginTransaction();
+        try {
+            $stmt = $pdo->prepare('UPDATE users SET email_verified_at = :ts WHERE id = :id AND email_verified_at IS NULL');
+            $stmt->execute(['ts' => gmdate('Y-m-d H:i:s'), 'id' => $id]);
+            $changed = $stmt->rowCount() === 1;
+
+            (new \Velora\Auth\EmailVerificationRepository())->invalidateAllForUser($id);
+
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
+
+        return ['changed' => $changed, 'user' => $this->userDetail($id, $requesterId, $requesterRole)];
+    }
+
     // ---------------------------------------------------------------------
     // helpers
     // ---------------------------------------------------------------------
