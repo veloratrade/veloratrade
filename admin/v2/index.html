@@ -638,6 +638,8 @@ body.drawer-open{overflow:hidden}
 [data-theme="light"] .fchip.on{color:#6b4e0e;border-color:rgba(138,106,31,.4)}
 /* F-1 a11y override: §16 touch targets >=46px on mobile */
 @media (max-width:768px){.sidebar .navitem{min-height:46px}.sidebar .ghead{min-height:40px}}
+/* F-2: keyboard-selection parity with the frozen hover token (no redesign) */
+.pal-item.sel,.pal-item.sel:hover{background:rgba(233,196,92,.1)}
 </style>
 </head>
 <body>
@@ -774,27 +776,31 @@ const I={
 };
 
 /* ------------------------------ mock data (baseline-faithful) ------------------------------ */
+/* v2.5 i18n supplement (VERBATIM nav labels + palette title from frozen mockup) */
+Object.assign(T.fa,{"nav.ai-health":"سلامت AI","nav.ai-usage":"مصرف (Usage)","nav.integrations-metaapi":"MetaAPI","nav.integrations-email":"ایمیل (Resend)","nav.integrations-n8n":"n8n Relay","nav.integrations-services":"سرویس‌های دیگر","nav.analytics-users":"کاربران","nav.analytics-trading":"معاملات","nav.analytics-ai":"هوش مصنوعی","nav.analytics-revenue":"درآمد","nav.billing-overview":"نمای کلی","nav.billing-plans":"پلن‌ها","nav.billing-subs":"اشتراک‌ها","nav.security-devices":"دستگاه‌ها","nav.system-diagnostics":"تشخیص‌ها","nav.settings-permissions":"دسترسی‌ها","nav.settings-config":"پیکربندی","search.title":"مرکز فرمان ادمین","search.users":"کاربران","search.trading":"معاملات","search.events":"رویدادها","search.system":"سیستم","search.empty":"نتیجه‌ای یافت نشد","nav.security-signups":"ثبت‌نام‌های هم‌دستگاه"});
+Object.assign(T.en,{"nav.ai-health":"AI Health","nav.ai-usage":"Usage","nav.integrations-metaapi":"MetaAPI","nav.integrations-email":"Email (Resend)","nav.integrations-n8n":"n8n Relay","nav.integrations-services":"Other Services","nav.analytics-users":"Users","nav.analytics-trading":"Trading","nav.analytics-ai":"AI","nav.analytics-revenue":"Revenue","nav.billing-overview":"Overview","nav.billing-plans":"Plans","nav.billing-subs":"Subscriptions","nav.security-devices":"Devices","nav.system-diagnostics":"Diagnostics","nav.settings-permissions":"Permissions","nav.settings-config":"Configuration","search.title":"Admin Command Center","search.users":"USERS","search.trading":"TRADING","search.events":"EVENTS","search.system":"SYSTEM","search.empty":"No results","nav.security-signups":"Shared-Device Signups"});
+
 
 /* ---------- extra shell strings (F-1) ---------- */
 const SHELL_T={
- fa:{ "shell.pending.title":"این صفحه هنوز متصل نشده","shell.pending.desc":"پوستهٔ production آماده است؛ اتصال این صفحه به API واقعی در گام F-2 انجام می‌شود. هیچ دادهٔ نمایشی در این صفحه وجود ندارد.",
+ fa:{ "shell.pending.title":"این صفحه هنوز پیاده‌سازی نشده","shell.pending.desc":"مسیر در F-2 متصل شد؛ پیاده‌سازی خودِ صفحه به فاز بعدی موکول است. هیچ داده‌ای ساخته یا نمایش داده نمی‌شود.",
       "shell.denied.title":"دسترسی لازم را ندارید","shell.denied.desc":"برای مشاهدهٔ این صفحه پرمیشن زیر لازم است:",
       "shell.boot.title":"در حال بارگذاری کنسول…","shell.boot.desc":"اعتبارسنجی نشست و دریافت سطح دسترسی",
       "shell.offline.title":"ارتباط با API برقرار نشد","shell.offline.desc":"پاسخی از سرور دریافت نشد. بعداً تلاش کنید.",
       "shell.nolayer.title":"لایهٔ داده در دسترس نیست","shell.nolayer.desc":"این صفحه باید از طریق سرور VELORA باز شود.",
       "shell.403.title":"دسترسی مدیریتی لازم است","shell.403.desc":"این کنسول برای نقش‌های admin و super_admin است.",
-      "shell.notfound.title":"این مسیر در production وجود ندارد","shell.notfound.desc":"مسیر درخواستی بخشی از نقشهٔ ۳۴ مسیری production نیست.",
+      "shell.notfound.title":"چنین صفحه‌ای وجود ندارد","shell.notfound.desc":"مسیر درخواستی در ثبتِ مسیرهای production نیست.",
       "shell.status.title":"وضعیت پوسته","shell.status.ident":"هویت","shell.status.perms":"تعداد پرمیشن‌ها","shell.status.recent":"اقدامات اخیر شما","shell.status.recent.empty":"موردی ثبت نشده","shell.status.env":"محیط (hostname واقعی)",
-      "shell.menu.logout":"خروج از حساب","shell.menu.lang":"زبان FA/EN","shell.menu.theme":"تم روشن/تاریک","shell.conn.ready":"متصل","shell.conn.offline":"قطع","shell.conn.demo":"بدون لایهٔ داده"},
- en:{ "shell.pending.title":"Not wired yet","shell.pending.desc":"The production shell is ready; wiring this page to the real API lands in F-2. No demo data exists on this page.",
+      "shell.menu.logout":"خروج از حساب","shell.menu.lang":"زبان FA/EN","shell.menu.theme":"تم روشن/تاریک","shell.conn.ready":"متصل","shell.conn.offline":"قطع","shell.conn.demo":"بدون لایهٔ داده","search.placeholder":"جست‌وجوی مسیر…","search.hint":"جست‌وجو در مسیرهای کنسول مدیریتی (F-2)","shell.p404.back":"بازگشت به نمای کلی","shell.pending.badge":"مسیر متصل · صفحه در فاز بعد","shell.user360.none":"هیچ داده‌ای برای این کاربر ساخته نشده است","nav.user360":"نمای کاربر"},
+ en:{ "shell.pending.title":"Page not implemented yet","shell.pending.desc":"The route is wired (F-2); the page implementation itself belongs to a later phase. Nothing is fabricated on this page.",
       "shell.denied.title":"Permission required","shell.denied.desc":"This page requires the following permission:",
       "shell.boot.title":"Loading console…","shell.boot.desc":"Validating session and fetching permissions",
       "shell.offline.title":"API unreachable","shell.offline.desc":"No response from the server. Try again later.",
       "shell.nolayer.title":"Data layer unavailable","shell.nolayer.desc":"This page must be served by the VELORA server.",
       "shell.403.title":"Administrator access required","shell.403.desc":"This console is for admin and super_admin roles.",
-      "shell.notfound.title":"Route not in production","shell.notfound.desc":"The requested route is not part of the 34-route production map.",
+      "shell.notfound.title":"Page not found","shell.notfound.desc":"The requested hash is not part of the production route registry.",
       "shell.status.title":"Shell status","shell.status.ident":"Identity","shell.status.perms":"Permission count","shell.status.recent":"Your recent actions","shell.status.recent.empty":"Nothing recorded","shell.status.env":"Environment (real hostname)",
-      "shell.menu.logout":"Sign out","shell.menu.lang":"Language FA/EN","shell.menu.theme":"Dark/Light theme","shell.conn.ready":"Connected","shell.conn.offline":"Offline","shell.conn.demo":"No data layer"}
+      "shell.menu.logout":"Sign out","shell.menu.lang":"Language FA/EN","shell.menu.theme":"Dark/Light theme","shell.conn.ready":"Connected","shell.conn.offline":"Offline","shell.conn.demo":"No data layer","search.placeholder":"Search routes…","search.hint":"Search admin console routes (F-2)","shell.p404.back":"Back to overview","shell.pending.badge":"route live · page pending","shell.user360.none":"No user data is fabricated here","nav.user360":"User360"}
 };
 const t=k=>(T[lang][k]??SHELL_T[lang][k]??T.fa[k]??k);
 
@@ -885,7 +891,7 @@ function activeGroupOf(cur){for(const n of NAV){const items=n.items||[n];if(n.g&
 /* ---------- navigation structure (VERBATIM) ---------- */
 const NAV=[
  {g:null,items:[{id:"overview",ic:I.ov}]},
- {g:"nav.users",items:[{id:"users",ic:I.users,cnt:81}]},
+ {g:"nav.users",items:[{id:"users",ic:I.users}]},
  {g:"nav.trading",items:[{id:"trading-accounts",ic:I.trade},{id:"trading-trades",ic:I.trade}]},
  {g:"nav.ai",items:[{id:"ai-providers",ic:I.ai},{id:"ai-route",ic:I.ai},{id:"ai-usage",ic:I.ai},{id:"ai-health",ic:I.ai}]},
  {g:"nav.integrations",items:[{id:"integrations-metaapi",ic:I.plug},{id:"integrations-email",ic:I.plug},{id:"integrations-n8n",ic:I.plug},{id:"integrations-services",ic:I.plug}]},
@@ -927,10 +933,16 @@ function deniedPanel(perm){return pagehead(t("shell.denied.title"),t("shell.deni
  `<span class="badge b-err">403 · PERMISSION_DENIED</span>`)+empty(VI.ban,t("shell.denied.title"),esc(perm));}
 function navAllowed(id){if(id==="design")return false;const p=VIEW_PERM[id];return !p||can(p);}
 
-/* ---- placeholder pages (honest; no fixtures) ---- */
-function pendingPage(id){return pagehead(t("nav."+id),t("shell.pending.desc"),"")
+/* ---- placeholder pages (honest; no fixtures; routes wired by F-2, pages later) ---- */
+function pendingPage(def){return pagehead(t(def.labelKey),t("shell.pending.desc"),`<span class="badge">${esc(t("shell.pending.badge"))}</span>`)
  +empty(VI.box,t("shell.pending.title"),t("shell.pending.desc"),
-   `<button class="btn sm" onclick="go('overview')">${esc(lang==="fa"?"بازگشت به نمای کلی":"Back to overview")}</button>`);}
+   `<button class="btn sm" onclick="go('overview')">${esc(t("shell.p404.back"))}</button>`);}
+function user360Page(uid){return pagehead(t("nav.user360")+" <span class='mono num'>#"+esc(String(uid))+"</span>",t("shell.pending.desc"),`<span class="badge">${esc(t("shell.pending.badge"))}</span>`)
+ +empty(NAVID_IC.users||VI.box,t("shell.pending.title"),t("shell.user360.none"),
+   `<button class="btn sm" onclick="go('users')">${esc(t("nav.users"))}</button>`);}
+function notFoundPage(){return pagehead(t("shell.notfound.title"),t("shell.notfound.desc"),`<span class="badge b-err">404</span>`)
+ +empty(VI.box,t("shell.notfound.title"),t("shell.notfound.desc"),
+   `<button class="btn sm" onclick="go('overview')">${esc(t("shell.p404.back"))}</button>`);}
 function shellStatusPage(){
  const m=ME.user||{};const rec=Array.isArray(ME.recent)?ME.recent:(Array.isArray(m.recentAdminActions)?m.recentAdminActions:[]);
  const rows=rec.length?rec.map(a=>`<div class="evrow" tabindex="0"><span class="mono">${esc(a.action||"")}</span><span style="flex:1"></span><span class="cellsub">${esc(String(a.targetType||"")+ (a.targetId!=null?":"+a.targetId:""))} · ${esc(a.result||"")}</span></div>`).join("")
@@ -943,18 +955,35 @@ function shellStatusPage(){
   </div></div>
   <div class="card"><div class="ch"><h3>${esc(t("shell.status.recent"))}</h3></div><div class="cb">${rows}</div></div></div>`;
 }
-const S={};
-Object.keys(VIEW_PERM).forEach(id=>{S[id]=()=>navAllowed(id)?(id==="overview"?shellStatusPage():pendingPage(id)):deniedPanel(VIEW_PERM[id]);});
+/* ---------- F-2: canonical route registry (single source of truth) ---------- */
+/* Derived from the frozen NAV structure + the F-1 permission map — no
+   duplicate route definitions. Consumers: sidebar, command palette, router,
+   breadcrumbs, document titles, keyboard navigation, tests. */
+const REG=[];
+NAV.forEach(n=>{const grouped=n.g!==null&&(n.items||[n]).length>1;
+ (n.items||[n]).forEach(it=>{
+  if(it.id==="design")return;               /* #/design is not a production route */
+  REG.push({route:it.id,labelKey:"nav."+it.id,group:grouped?n.g:null,
+   perm:VIEW_PERM[it.id]||null,status:"placeholder",nav:true,dynamic:false});
+ })});
+REG.push({route:"users/:id",labelKey:"nav.user360",group:"nav.users",icon:"users",
+ perm:VIEW_PERM.user360||"users.view",status:"placeholder",nav:false,dynamic:true,
+ kw:["user360","user","profile","users"]});
+const REG_BY_ROUTE={};REG.forEach(d=>{REG_BY_ROUTE[d.route]=d});
+const iconFor=d=>NAVID_IC[d.icon||d.route]||IC[d.icon||d.route]||"";
+const canRoute=d=>!d.perm||can(d.perm);
+window.__VELORA_ROUTES__=REG;   /* deterministic introspection for the test suites */
 
 /* ------------------------------ navigation ------------------------------ */
 
 function activeGroupOf(cur){for(const n of NAV){const items=n.items||[n];if(n.g&&items.length>1&&items.some(it=>it.id===cur))return n.g}return null}
+function navDefs(){const out=[];NAV.forEach(n=>{(n.items||[n]).forEach(it=>{const d=REG_BY_ROUTE[it.id];if(d&&d.nav&&navAllowed(d.route))out.push(d)})});return out}
 function renderNav(){
- const cur=(location.hash||"#/overview").slice(2);
+ const cur=CURRENT.def?CURRENT.def.route:null;
  const openG=userOpen||activeGroupOf(cur);
  let h="",gi=0;
  NAV.forEach(n=>{
-  const items=(n.items||[n]).filter(it=>navAllowed(it.id));
+  const items=(n.items||[n]).map(it=>REG_BY_ROUTE[it.id]).filter(d=>d&&d.nav&&navAllowed(d.route));
   if(!items.length)return;
   if(n.g!==null&&items.length>1){
    const open=n.g===openG;
@@ -963,34 +992,90 @@ function renderNav(){
     <button class="ghead" data-g="${esc(n.g)}" aria-expanded="${open?"true":"false"}" aria-controls="${giId}">
      <span class="gt">${t(n.g)}</span><span class="gchev" aria-hidden="true">▾</span></button>
     <div class="gitems ${open?"show":""}" id="${giId}" role="group" aria-label="${t(n.g)}">`;
-   items.forEach(it=>{h+=navItem(it.id,cur)});
+   items.forEach(d=>{h+=navItem(d,cur)});
    h+="</div></div>";
   }
-  else h+=`<div class="navgroup">${items.map(it=>navItem(it.id,cur)).join("")}</div>`;
+  else h+=`<div class="navgroup">${items.map(d=>navItem(d,cur)).join("")}</div>`;
  });
  $("#nav").innerHTML=h;
- document.querySelectorAll(".navitem").forEach(b=>b.onclick=()=>{userOpen=null;location.hash="#/"+b.dataset.id;closeSidebar()});
+ /* F-2: same-route click never re-pushes history; internal nav closes the
+    drawer and moves focus to the new page heading (mobile requirement). */
+ document.querySelectorAll(".navitem").forEach(b=>b.onclick=()=>{const d=REG_BY_ROUTE[b.dataset.route];if(!d)return;
+  userOpen=null;
+  if(!(CURRENT.def&&CURRENT.def.route===d.route)){focusNext=true;location.hash="#/"+d.route}
+  closeSidebar()});
  document.querySelectorAll(".ghead").forEach(b=>b.onclick=()=>{const g=b.dataset.g;
   userOpen=(openG===g)?null:g;renderNav()});
+ /* F-2: ArrowUp/ArrowDown traverse the visible sidebar (groups + items). */
+ const sbs=[...document.querySelectorAll("#nav .ghead,#nav .navitem")].filter(e=>e.offsetParent!==null);
+ sbs.forEach((b,i)=>b.addEventListener("keydown",e=>{
+  if(e.key!=="ArrowDown"&&e.key!=="ArrowUp")return;e.preventDefault();
+  const nx=sbs[(i+(e.key==="ArrowDown"?1:sbs.length-1))%sbs.length];if(nx)nx.focus()}));
 }
-function navItem(id,cur){const lb=t("nav."+id);const on=cur===id;return `<button class="navitem ${on?"active":""}" data-id="${id}" data-tip="${esc(lb)}" aria-label="${esc(lb)}"${on?' aria-current="page"':""}>${NAVID_IC[id]||IC[id]||""}<span>${lb}</span>${on?`<span class="aind" aria-hidden="true"></span>`:""}</button>`}
+function navItem(def,cur){const lb=t(def.labelKey);const on=cur===def.route;
+ return `<button class="navitem ${on?"active":""}" data-route="${esc(def.route)}" data-id="${esc(def.route)}" data-tip="${esc(lb)}" aria-label="${esc(lb)}"${on?' aria-current="page"':""}>${iconFor(def)}<span>${lb}</span>${on?`<span class="aind" aria-hidden="true"></span>`:""}</button>`}
+function focusHeading(){const h=$("#view h1");if(!h)return;h.setAttribute("tabindex","-1");
+ try{h.focus({preventScroll:true})}catch(e){h.focus()}}
 
-/* ------------------------------ router ------------------------------ */
-function go(id){location.hash="#/"+id}
+/* ------------------------------ F-2 router ------------------------------
+   Hash router over the canonical registry: dynamic :id segments, query
+   params, trailing-slash normalization, browser back/forward, document
+   title + breadcrumb via i18n, deterministic velora:route event, honest
+   404 (never silently Overview), route-level permission gating, no full
+   page reloads, rapid-change safe (render is synchronous; last hash wins). */
+let CURRENT={def:null,params:{},query:{},status:"boot"};
+let focusNext=false;
+function parseHash(){
+ let h=location.hash||"#/overview";
+ h=h.replace(/^#/,"");
+ if(!h.startsWith("/"))h="/"+h;
+ h=h.replace(/\/+$/,"");if(h==="")h="/";
+ let path=h,query={};
+ const qi=h.indexOf("?");
+ if(qi>=0){path=h.slice(0,qi);
+  new URLSearchParams(h.slice(qi+1)).forEach((v,k)=>{query[k]=v});}
+ return {path,seg:path.split("/").filter(Boolean),query};
+}
+function resolveRoute(p){
+ if(!p.seg.length){const d=REG_BY_ROUTE.overview;return d?{def:d,params:{},query:p.query}:null}
+ const joined=p.seg.map(x=>decodeURIComponent(x)).join("/");
+ let d=REG_BY_ROUTE[joined];
+ if(d)return {def:d,params:{},query:p.query};
+ for(const dd of REG){if(!dd.dynamic)continue;
+  const parts=dd.route.split("/");
+  if(parts.length!==p.seg.length)continue;
+  const params={};let ok=true;
+  parts.forEach((pp,i)=>{const raw=decodeURIComponent(p.seg[i]);
+   if(pp.charAt(0)===":")params[pp.slice(1)]=raw;else if(pp!==raw)ok=false});
+  if(ok)return {def:dd,params,query:p.query};
+ }
+ return null;
+}
+function navTo(hash){if(location.hash===hash)return;location.hash=hash}
+function go(id){const d=REG_BY_ROUTE[id];
+ if(!d){navTo("#/_not-found");return}
+ const target="#/"+(d.dynamic?d.route:id);
+ if(CURRENT.def&&CURRENT.def.route===d.route){render();return}   /* same route: no history entry */
+ navTo(target);
+}
 function render(){
- let cur=(location.hash||"#/overview").slice(2);
- if(cur==="design"){cur="__excluded__"}
- const v=$("#view");
- let fn;
- if(cur==="__excluded__"){fn=()=>pagehead(t("shell.notfound.title"),t("shell.notfound.desc"),"")+empty(VI.ban,t("shell.notfound.title"),t("shell.notfound.desc"));}
- else if(!ME.ok){fn=()=>pagehead(t("shell.boot.title"),t("shell.boot.desc"),"")+`<div class="card"><div class="cb">${'<div class="skel" style="height:14px;margin:11px;width:70%"></div>'.repeat(4)}</div></div>`;}
- else if(S[cur])fn=S[cur];
- else{fn=()=>pagehead(t("shell.notfound.title"),t("shell.notfound.desc"),"")+empty(VI.box,t("shell.notfound.title"),t("shell.notfound.desc"));}
+ const p=parseHash(),r=resolveRoute(p),v=$("#view");
+ CURRENT=r?{def:r.def,params:r.params,query:r.query,status:"ok"}:{def:null,params:{},query:p.query,status:"notfound"};
+ let fn,lbl;
+ if(!ME.ok){CURRENT.status="boot";
+  fn=()=>pagehead(t("shell.boot.title"),t("shell.boot.desc"),"")+`<div class="card"><div class="cb">${'<div class="skel" style="height:14px;margin:11px;width:70%"></div>'.repeat(4)}</div></div>`;
+  lbl=t("shell.boot.title");}
+ else if(!r){fn=notFoundPage;lbl=t("shell.notfound.title");}
+ else if(!canRoute(r.def)){CURRENT.status="denied";fn=()=>deniedPanel(r.def.perm||"");lbl=t("shell.denied.title");}
+ else{fn=()=>r.def.dynamic?user360Page(r.params.id):(r.def.route==="overview"?shellStatusPage():pendingPage(r.def));lbl=t(r.def.labelKey);}
  v.innerHTML=fn();
- const lbl=(cur&&S[cur])?t("nav."+cur):t("shell.notfound.title");
- $("#crumb").innerHTML=`<span>VELORA</span><span>›</span><b>${esc(lbl)}</b>`;
+ const g=CURRENT.def&&CURRENT.def.group&&CURRENT.def.group!==CURRENT.def.labelKey?t(CURRENT.def.group):null;
+ $("#crumb").innerHTML=`<span>VELORA</span><span>›</span>${g?`<span>${esc(g)}</span><span>›</span>`:""}<b>${esc(lbl)}</b>`;
+ document.title=lbl+" · VELORA ADMIN";
  renderNav();syncUserBtn();
  v.classList.remove("viewin");void v.offsetWidth;v.classList.add("viewin");
+ if(focusNext){focusNext=false;focusHeading()}
+ window.dispatchEvent(new CustomEvent("velora:route",{detail:{route:CURRENT.def?CURRENT.def.route:null,params:CURRENT.params,query:CURRENT.query,status:CURRENT.status}}));
 }
 window.addEventListener("hashchange",render);
 
@@ -1020,7 +1105,9 @@ function syncRailBtn(){}
 (function(){const rb=$("#railBtn");if(rb)rb.onclick=()=>{document.querySelector(".app").classList.toggle("rail")}})();
 
 /* ------------------------------ command palette (routes only, F-2 adds server search) ------------------------------ */
+let palOpener=null;
 function openPalette(){const r=$("#palette-root");if(!r)return;
+ palOpener=document.activeElement instanceof HTMLElement?document.activeElement:null;palIdx=0;
  r.innerHTML=`<div class="palwrap" onclick="if(event.target===this)closePalette()"><div class="palette" role="dialog" aria-modal="true" aria-label="${t("search.title")}">
  <input id="palInput" class="pal-input" placeholder="${t("search.placeholder")}" oninput="palRender()" autocomplete="off" aria-label="${t("search.title")}">
  <div class="pal-groups" id="palGroups" role="listbox"></div>
@@ -1028,22 +1115,46 @@ function openPalette(){const r=$("#palette-root");if(!r)return;
  </div></div>`;
  palRender();const pi=$("#palInput");if(pi)pi.focus();
  document.addEventListener("keydown",palKeys)}
-function closePalette(){const r=$("#palette-root");if(r)r.innerHTML="";document.removeEventListener("keydown",palKeys)}
-function palKeys(e){if(e.key==="Escape")closePalette();else if(e.key==="Enter"){const f=document.querySelector("#palGroups .pal-item");if(f)f.click()}}
+function closePalette(){const r=$("#palette-root");if(r)r.innerHTML="";document.removeEventListener("keydown",palKeys);
+ if(palOpener&&document.contains(palOpener)){try{palOpener.focus({preventScroll:true})}catch(e){palOpener.focus()}}palOpener=null}
+function palKeys(e){
+ const box=$("#palGroups");if(!box)return;
+ if(e.key==="ArrowDown"||e.key==="ArrowUp"||e.key==="Home"||e.key==="End"){e.preventDefault();
+  const n=box.querySelectorAll(".pal-item").length;if(!n)return;
+  if(e.key==="Home")palIdx=0;else if(e.key==="End")palIdx=n-1;
+  else palIdx=Math.max(0,Math.min(n-1,palIdx+(e.key==="ArrowDown"?1:-1)));
+  palSync();return}
+ if(e.key==="Enter"){e.preventDefault();const it=box.querySelectorAll(".pal-item")[palIdx];if(it)it.click()}}
 document.addEventListener("keydown",e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();openPalette()}});
+/* F-2: Escape ordering — command palette first, then user menu, then drawer. */
+document.addEventListener("keydown",e=>{if(e.key!=="Escape")return;
+ if(document.querySelector("#palette-root .palette")){closePalette();return}
+ if($("#umenu")){closeUserMenu();return}
+ closeSidebar()});
+const faNorm=x=>String(x||"").toLowerCase().replace(/\u064a/g,"\u06cc").replace(/\u0643/g,"\u06a9");
 function palData(){
  const out=[];
- NAV.forEach(n=>{(n.items||[n]).forEach(it=>{if(!navAllowed(it.id))return;
-  out.push({t:t("nav."+it.id),d:t(n.g||"nav."+it.id),go:()=>go(it.id)})})});
- return {routes:out}}
-function palRender(){const box=$("#palGroups");if(!box)return;const raw=($("#palInput").value||"").trim();const q=raw.toLowerCase();
+ REG.forEach(d=>{if(!d.nav||!canRoute(d))return;
+  const en=T.en[d.labelKey]||d.labelKey;
+  out.push({t:t(d.labelKey),en,d:d.group?t(d.group):"",
+   dEn:d.group?(T.en[d.group]||d.group):"",
+   kw:(d.kw||[]).concat([d.route.replace(/-/g," ")],en.toLowerCase().split(/\s+/)),
+   go:()=>go(d.route)})});
+ return out}
+let palIdx=0;
+function palSync(){const box=$("#palGroups");if(!box)return;const items=box.querySelectorAll(".pal-item");
+ items.forEach((el,i)=>{const on=i===palIdx;el.classList.toggle("sel",on);el.setAttribute("aria-selected",on?"true":"false");
+  if(on&&el.scrollIntoView)el.scrollIntoView({block:"nearest"})})}
+function palRender(){const box=$("#palGroups");if(!box)return;const raw=faNorm(($("#palInput").value||"").trim());const q=raw;
  const D=palData();
- const flt=D.routes.filter(x=>!q||(x.t+" "+x.d).toLowerCase().includes(q));
- const flat=[];
- const h=flt.length?`<div class="pal-g">${esc(t("search.title"))}</div>`+flt.slice(0,40).map(x=>{flat.push(x);return `<div class="pal-item" tabindex="0" role="option" aria-label="${esc(x.t)}"><span class="t">${esc(x.t)}</span><span class="d">${esc(x.d)}</span></div>`}).join("")
+ const flt=!q?D:D.filter(x=>{const hay=faNorm(x.t+" "+x.en+" "+x.d+" "+x.dEn+" "+x.kw.join(" "));return hay.includes(q)});
+ const flat=flt.slice(0,40);palIdx=0;
+ const h=flat.length?`<div class="pal-g">${esc(t("search.title"))}</div>`+flat.map(x=>`<div class="pal-item" tabindex="0" role="option" aria-selected="false" aria-label="${esc(x.t)}"><span class="t">${esc(x.t)}</span><span class="d">${esc(x.d||x.en)}</span></div>`).join("")
   :`<div style="padding:22px;text-align:center;color:var(--muted)">${t("search.empty")}</div>`;
  box.innerHTML=h;
- box.querySelectorAll(".pal-item").forEach((el,i)=>{el.onclick=()=>{const x=flat[i];closePalette();if(x&&x.go)x.go()}})}
+ box.querySelectorAll(".pal-item").forEach((el,i)=>{el.onclick=()=>{const x=flat[i];closePalette();if(x)x.go()}
+  el.onmousemove=()=>{if(palIdx!==i){palIdx=i;palSync()}}});
+ palSync()}
 
 /* ------------------------------ user menu (real identity + real logout) ------------------------------ */
 function closeUserMenu(){const m=$("#umenu");if(m)m.remove();const ub=$("#userBtn");if(ub)ub.setAttribute("aria-expanded","false")}
