@@ -41,8 +41,12 @@ final class UserManagementService
         $search = trim((string) ($filters['search'] ?? ''));
         if ($search !== '') {
             // Prepared-statement bound wildcard search; never concatenated.
-            $params['q'] = '%' . $search . '%';
-            $where[] = '(u.email LIKE :q OR u.full_name LIKE :q)';
+            // Native prepares (PDO::ATTR_EMULATE_PREPARES = false) reject a named
+            // placeholder reused twice in one statement (HY093) — bind distinct
+            // placeholders instead.
+            $params['q_email'] = '%' . $search . '%';
+            $params['q_name'] = '%' . $search . '%';
+            $where[] = '(u.email LIKE :q_email OR u.full_name LIKE :q_name)';
         }
         if (!empty($filters['role']) && Role::isValidStored((string) $filters['role'])) {
             $where[] = 'u.role = :role';

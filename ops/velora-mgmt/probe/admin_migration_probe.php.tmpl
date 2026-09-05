@@ -1,0 +1,247 @@
+<?php
+/**
+ * VELORA — ONE-USE ADMIN/OBSERVABILITY SCHEMA MIGRATION probe (STAGING only):
+ * v1.3 admin management + v1.5 system observability.
+ *
+ * SAFETY MODEL (identical to the trade migration probe):
+ *   - token-gated (hash_equals timing-safe), random filename, single execution,
+ *     self-deletes immediately on authorized execution;
+ *   - fixed operation and fixed environment (__ENV__ = staging);
+ *   - STAGING is the intended target; the workflow only ever renders staging here;
+ *   - ADDITIVE + IDEMPOTENT ONLY: every ADD COLUMN / MODIFY / CREATE TABLE is
+ *     guarded by information_schema so re-running is a no-op; the legacy
+ *     role='pro' reconciliation runs only when such rows actually exist;
+ *   - NO destructive data operation (no DROP/TRUNCATE/DELETE, no bulk UPDATE of
+ *     application rows). Rollback is handled by the separate *_rollback.sql
+ *     files, never by this forward probe.
+ *   - __MODE__ = check  -> report presence, change nothing;
+ *     __MODE__ = apply  -> apply missing additive objects, then re-report.
+ *
+ * Mirrors exactly:
+ *   api/database/migrations/v1.3_admin_management.sql
+ *   api/database/migrations/v1.5_system_observability.sql
+ *
+ * Prints JSON metadata only (no credentials/DSN/row data).
+ */
+declare(strict_types=1);
+
+$expected = '__HASH__';
+$provided = (string)($_SERVER['HTTP_X_VELORA_MIG'] ?? '');
+if ($provided === '' || !hash_equals($expected, hash('sha256', $provided))) {
+    http_response_code(404);
+    exit('Not found');
+}
+@unlink(__FILE__); // single-use
+
+require dirname(__DIR__) . '/api/src/bootstrap.php';
+
+use Velora\Core\Database;
+
+header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store');
+
+$MODE = '__MODE__';   // check | apply
+$ENV  = '__ENV__';    // HARD-LOCKED to staging (this probe is staging-only)
+
+$result = ['probe' => 'velora-admin-migration', 'mode' => $MODE, 'env' => $ENV,
+           'applied' => [], 'errors' => [], 'ok' => true];
+
+if (!in_array($MODE, ['check', 'apply'], true) || $ENV !== 'staging') {
+    // This admin-schema migration probe is STAGING-ONLY. It must never execute
+    // against production even if a future caller accidentally renders it with
+    // another environment — fail closed with a generic 400 and no DB access.
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'error' => 'bad mode/env (staging-only probe)'],
+                     JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
+function am_table_exists(PDO $pdo, string $t): bool {
+    $st = $pdo->prepare('SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=?');
+    $st->execute([$t]);
+    return (int)$st->fetchColumn() === 1;
+}
+function am_col_exists(PDO $pdo, string $t, string $c): bool {
+    $st = $pdo->prepare('SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? AND COLUMN_NAME=?');
+    $st->execute([$t, $c]);
+    return (int)$st->fetchColumn() === 1;
+}
+function am_index_exists(PDO $pdo, string $t, string $i): bool {
+    $st = $pdo->prepare('SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? AND INDEX_NAME=?');
+    $st->execute([$t, $i]);
+    return (int)$st->fetchColumn() > 0;
+}
+function am_role_enum(PDO $pdo): string {
+    $st = $pdo->prepare("SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='users' AND COLUMN_NAME='role'");
+    $st->execute();
+    return (string)($st->fetchColumn() ?: '');
+}
+
+try {
+    $pdo = Database::connection();
+    if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) !== 'mysql') {
+        // Non-mysql (CI/SQLite) — report and stop without mutating.
+        echo json_encode(['ok' => false, 'env' => $ENV, 'error' => 'migration requires mysql driver'], JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
+    $apply = ($MODE === 'apply');
+
+    // idempotent additive DDL runner
+    $addColumn = function (string $table, string $col, string $ddl) use ($pdo, $apply, &$result) {
+        if (am_col_exists($pdo, $table, $col)) { return; }
+        if (!$apply) { return; }
+        try { $pdo->exec($ddl); $result['applied'][] = "$table.$col"; }
+        catch (Throwable $e) {
+            error_log('velora-admin-migration probe: add column failed: ' . $e->getMessage());
+            $result['errors'][] = "$table.$col (internal error)";
+        }
+    };
+    $addIndex = function (string $table, string $idx, string $ddl) use ($pdo, $apply, &$result) {
+        if (am_index_exists($pdo, $table, $idx)) { return; }
+        if (!$apply) { return; }
+        try { $pdo->exec($ddl); $result['applied'][] = "index:$idx"; }
+        catch (Throwable $e) {
+            if (stripos($e->getMessage(), 'Duplicate') === false) {
+                error_log('velora-admin-migration probe: add index failed: ' . $e->getMessage());
+                $result['errors'][] = "index:$idx (internal error)";
+            }
+        }
+    };
+    $createTable = function (string $table, string $ddl) use ($pdo, $apply, &$result) {
+        if (am_table_exists($pdo, $table)) { return; }
+        if (!$apply) { return; }
+        try { $pdo->exec($ddl); $result['applied'][] = "create:$table"; }
+        catch (Throwable $e) {
+            error_log('velora-admin-migration probe: create table failed: ' . $e->getMessage());
+            $result['errors'][] = "create:$table (internal error)";
+        }
+    };
+
+    // ---- v1.3 part 1: internal subscription/plan layer on users (additive) ----
+    $addColumn('users', 'plan',
+        "ALTER TABLE users ADD COLUMN plan ENUM('free','pro') NOT NULL DEFAULT 'free' COMMENT 'subscription plan (RBAC-neutral)' AFTER role");
+    $addColumn('users', 'subscription_status',
+        "ALTER TABLE users ADD COLUMN subscription_status ENUM('none','active','past_due','grace','expired','cancelled') NOT NULL DEFAULT 'none' COMMENT 'subscription lifecycle (RBAC-neutral)' AFTER plan");
+    $addColumn('users', 'plan_started_at',
+        "ALTER TABLE users ADD COLUMN plan_started_at DATETIME NULL AFTER subscription_status");
+    $addColumn('users', 'plan_expires_at',
+        "ALTER TABLE users ADD COLUMN plan_expires_at DATETIME NULL AFTER plan_started_at");
+    $addColumn('users', 'plan_updated_at',
+        "ALTER TABLE users ADD COLUMN plan_updated_at DATETIME NULL AFTER plan_expires_at");
+
+    // ---- v1.3 part 2: legacy role='pro' reconciliation (guarded, count-first) ----
+    if ($apply && am_col_exists($pdo, 'users', 'plan')) {
+        $st = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'pro'");
+        $legacy = (int)$st->fetchColumn();
+        if ($legacy > 0) {
+            $pdo->exec("UPDATE users SET role = 'user', plan = 'pro' WHERE role = 'pro'");
+            $result['applied'][] = "reconcile_legacy_pro_role:x$legacy";
+        }
+    }
+
+    // ---- v1.3 part 3: widen users.role to the authorization-only set ----
+    // Re-running MODIFY is harmless (idempotent in effect); additive values only.
+    if ($apply) {
+        try {
+            $pdo->exec("ALTER TABLE users MODIFY COLUMN role ENUM('user','admin','super_admin') NOT NULL DEFAULT 'user' COMMENT 'RBAC authorization role; guest is the unauthenticated state (never stored); NOT a subscription'");
+            if (!in_array('users.role.enum', $result['applied'], true)) { $result['applied'][] = 'users.role.enum'; }
+        } catch (Throwable $e) {
+            error_log('velora-admin-migration probe: modify role enum failed: ' . $e->getMessage());
+            $result['errors'][] = 'users.role.enum (internal error)';
+        }
+    }
+
+    // ---- v1.3 part 4: admin audit log (immutable-from-UI) ----
+    $createTable('admin_audit_logs',
+        "CREATE TABLE IF NOT EXISTS admin_audit_logs (
+            id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            actor_user_id BIGINT UNSIGNED NOT NULL COMMENT 'admin/super-admin actor; 0 = system',
+            actor_role    VARCHAR(32)     NOT NULL DEFAULT 'admin',
+            action        VARCHAR(64)     NOT NULL COMMENT 'user.suspend, provider.enabled, ...',
+            target_type   VARCHAR(32)     NOT NULL DEFAULT 'user' COMMENT 'user|provider|system|...',
+            target_id     BIGINT UNSIGNED NULL,
+            result        VARCHAR(16)     NOT NULL DEFAULT 'success' COMMENT 'success|denied|error',
+            summary       VARCHAR(500)    NULL COMMENT 'sanitized human-readable description (no secrets)',
+            ip_address    VARCHAR(45)     NULL,
+            user_agent    VARCHAR(250)    NULL,
+            context_id    VARCHAR(64)     NULL COMMENT 'request/context id for correlation',
+            metadata_json TEXT            NULL COMMENT 'sanitized safe metadata; never secrets',
+            created_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_audit_actor (actor_user_id),
+            KEY idx_audit_action (action),
+            KEY idx_audit_target (target_type, target_id),
+            KEY idx_audit_created (created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    $addIndex('admin_audit_logs', 'idx_audit_actor', "ALTER TABLE admin_audit_logs ADD KEY idx_audit_actor (actor_user_id)");
+    $addIndex('admin_audit_logs', 'idx_audit_action', "ALTER TABLE admin_audit_logs ADD KEY idx_audit_action (action)");
+    $addIndex('admin_audit_logs', 'idx_audit_target', "ALTER TABLE admin_audit_logs ADD KEY idx_audit_target (target_type, target_id)");
+    $addIndex('admin_audit_logs', 'idx_audit_created', "ALTER TABLE admin_audit_logs ADD KEY idx_audit_created (created_at)");
+
+    // ---- v1.5: system observability ----
+    $createTable('system_logs',
+        "CREATE TABLE IF NOT EXISTS system_logs (
+            id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            severity      VARCHAR(8)      NOT NULL DEFAULT 'INFO' COMMENT 'DEBUG|INFO|WARN|ERROR',
+            source        VARCHAR(64)     NOT NULL COMMENT 'component: api|database|auth|metaapi|n8n|ai|mailer|worker|...',
+            message       VARCHAR(1000)   NULL COMMENT 'sanitized message; never a secret',
+            request_id    VARCHAR(64)     NULL COMMENT 'correlation/request id (Request::contextId)',
+            correlation_id VARCHAR(64)    NULL COMMENT 'context id for traceability',
+            user_id       BIGINT UNSIGNED NULL COMMENT 'actor when safely available; NULL = system',
+            error_code    VARCHAR(64)     NULL COMMENT 'machine error/status code',
+            metadata_json TEXT            NULL COMMENT 'sanitized safe metadata; never secrets',
+            created_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_syslog_severity (severity),
+            KEY idx_syslog_source (source),
+            KEY idx_syslog_created (created_at),
+            KEY idx_syslog_request (request_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    $addIndex('system_logs', 'idx_syslog_severity', "ALTER TABLE system_logs ADD KEY idx_syslog_severity (severity)");
+    $addIndex('system_logs', 'idx_syslog_source', "ALTER TABLE system_logs ADD KEY idx_syslog_source (source)");
+    $addIndex('system_logs', 'idx_syslog_created', "ALTER TABLE system_logs ADD KEY idx_syslog_created (created_at)");
+    $addIndex('system_logs', 'idx_syslog_request', "ALTER TABLE system_logs ADD KEY idx_syslog_request (request_id)");
+
+    $createTable('integration_health',
+        "CREATE TABLE IF NOT EXISTS integration_health (
+            integration   VARCHAR(32)     NOT NULL COMMENT 'metaapi|n8n_relay|ai|email',
+            status        VARCHAR(32)     NOT NULL COMMENT 'HEALTHY|DEGRADED|UNHEALTHY|NOT_CONFIGURED|UNKNOWN',
+            latency_ms    INT UNSIGNED    NULL,
+            error_code    VARCHAR(64)     NULL COMMENT 'machine classification (AUTH_FAILED|...|null)',
+            message       VARCHAR(500)    NULL COMMENT 'sanitized diagnostic (never a secret)',
+            checked_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (integration)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    // ---- Re-report (post-apply) state ----
+    $v13cols = ['plan','subscription_status','plan_started_at','plan_expires_at','plan_updated_at'];
+    $p = []; $m = [];
+    foreach ($v13cols as $c) { (am_col_exists($pdo, 'users', $c) ? $p[] = $c : $m[] = $c); }
+    $result['state'] = [
+        'users_plan_columns_present' => $p,
+        'users_plan_columns_missing' => $m,
+        'users_role_enum_type'       => am_role_enum($pdo),
+        'admin_audit_logs_exists'    => am_table_exists($pdo, 'admin_audit_logs'),
+        'idx_audit_actor'            => am_index_exists($pdo, 'admin_audit_logs', 'idx_audit_actor'),
+        'idx_audit_action'           => am_index_exists($pdo, 'admin_audit_logs', 'idx_audit_action'),
+        'idx_audit_target'           => am_index_exists($pdo, 'admin_audit_logs', 'idx_audit_target'),
+        'idx_audit_created'          => am_index_exists($pdo, 'admin_audit_logs', 'idx_audit_created'),
+        'system_logs_exists'         => am_table_exists($pdo, 'system_logs'),
+        'idx_syslog_severity'        => am_index_exists($pdo, 'system_logs', 'idx_syslog_severity'),
+        'idx_syslog_source'          => am_index_exists($pdo, 'system_logs', 'idx_syslog_source'),
+        'idx_syslog_created'         => am_index_exists($pdo, 'system_logs', 'idx_syslog_created'),
+        'idx_syslog_request'         => am_index_exists($pdo, 'system_logs', 'idx_syslog_request'),
+        'integration_health_exists'  => am_table_exists($pdo, 'integration_health'),
+    ];
+    $result['ok'] = count($result['errors']) === 0;
+
+    echo json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+} catch (Throwable $e) {
+    error_log('velora-admin-migration probe error: ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['ok' => false, 'env' => $ENV, 'mode' => $MODE,
+                      'error' => 'migration probe failed (internal error)',
+                      'error_code' => 'VELORA_MIGRATION_FAILED'],
+                     JSON_UNESCAPED_SLASHES);
+}
