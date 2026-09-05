@@ -34,7 +34,7 @@ final class MetaApiWebhookController
         if ($request->rawBody === '' || strlen($request->rawBody) > self::MAX_BODY_BYTES) {
             throw new ApiException('Webhook payload is missing or too large.', 413, 'PAYLOAD_TOO_LARGE');
         }
-        $secret = (string) Config::env('METAAPI_WEBHOOK_SECRET', '');
+        $secret = \Velora\Core\IntegrationConfigResolver::metaApiWebhookSecret();
         if ($secret === '') {
             throw new ApiException('Webhook authentication is not configured.', 503, 'WEBHOOK_SECRET_MISSING');
         }
@@ -147,7 +147,7 @@ final class MetaApiWebhookController
         if (!Config::isDevelopmentEnvironment()) {
             Response::error('Not found.', 404, 'NOT_FOUND');
         }
-        $secret = (string) Config::env('METAAPI_WEBHOOK_SECRET', '');
+        $secret = \Velora\Core\IntegrationConfigResolver::metaApiWebhookSecret();
         if ($secret === '') {
             throw new ApiException('Webhook authentication is not configured.', 503, 'WEBHOOK_SECRET_MISSING');
         }

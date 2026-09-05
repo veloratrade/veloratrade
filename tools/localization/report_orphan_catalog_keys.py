@@ -61,6 +61,44 @@ I18N_KEY_ATTR_PATTERN = re.compile(
     r'data-i18n(?:-[a-z-]+)?="([a-zA-Z0-9_.-]+)"'
 )
 
+# Narrow dynamic-key form (Pattern-B): a *literal* dotted key prefix
+# concatenated with an inline object literal whose values are *literal*
+# suffix strings, immediately subscripted, e.g.
+#
+#     var key = 'admin.integrations.result.' + {
+#       SUCCESS: 'success', AUTH_FAILED: 'authFailed'
+#     }[status];
+#
+# This is statically resolvable with certainty: the produced key set is
+# exactly {prefix + value for each literal value}. Nothing else is
+# inferred — arbitrary concatenation with variables is deliberately NOT
+# expanded, so a key that merely *looks* similar but is absent from the
+# inline map is still reported as an orphan.
+CONCAT_MAP_PATTERN = re.compile(
+    r"(['\"])([a-zA-Z][a-zA-Z0-9_-]*(?:\.[a-zA-Z0-9_-]+)*\.)\1"
+    r"\s*\+\s*\{(?P<body>[^{}]*)\}\s*\[",
+    re.DOTALL,
+)
+CONCAT_MAP_VALUE_PATTERN = re.compile(
+    r"[:]\s*(['\"])([a-zA-Z0-9_-]+)\1"
+)
+
+
+def _expand_concat_map_keys(text: str) -> set[str]:
+    """Resolve the narrow ``'prefix.' + { ... }[expr]`` dynamic-key form.
+
+    Only literal prefixes combined with literal object-literal values are
+    expanded. Any other dynamic construction is left unresolved (and thus
+    still capable of producing a genuine orphan report).
+    """
+    resolved: set[str] = set()
+    for match in CONCAT_MAP_PATTERN.finditer(text):
+        prefix = match.group(2)
+        body = match.group("body")
+        for value_match in CONCAT_MAP_VALUE_PATTERN.finditer(body):
+            resolved.add(prefix + value_match.group(2))
+    return resolved
+
 
 def _load_messages(path: Path) -> dict[str, str]:
     payload = json.loads(path.read_text(encoding="utf-8"))
@@ -101,6 +139,9 @@ def _collect_references(root: Path, *, known_prefixes: set[str]) -> set[str]:
             references.add(match.group(2))
         for match in I18N_KEY_ATTR_PATTERN.finditer(text):
             references.add(match.group(1))
+        for key in _expand_concat_map_keys(text):
+            if key.split(".", 1)[0] in known_prefixes:
+                references.add(key)
         if not apply_prefix_filter:
             return
         for match in QUOTED_KEY_PATTERN.finditer(text):

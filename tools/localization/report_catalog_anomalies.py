@@ -26,6 +26,22 @@ from typing import Iterable
 
 PERSIAN_RE = re.compile('[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]')
 
+# Masked-secret display placeholder: Velora renders an obscured credential/token
+# value as a run of bullet characters (U+2022), e.g. "••••••••". This is a
+# redaction sentinel, not translatable text, so it must never be flagged as an
+# untranslated-English value by `fa.en.identical`. The rule is deliberately
+# narrow: it matches ONLY strings composed entirely of U+2022 bullets and nothing
+# else, so it cannot exempt arbitrary punctuation, Latin words, or real English.
+MASKED_SECRET_BULLET = '\u2022'
+
+
+def _is_masked_secret_placeholder(value: str) -> bool:
+    """True iff ``value`` is the masked-secret display placeholder (a non-empty
+    string made only of U+2022 bullet characters). Used to keep a redacted token
+    sentinel out of the ``fa.en.identical`` (untranslated-English) check."""
+    return bool(value) and all(ch == MASKED_SECRET_BULLET for ch in value)
+
+
 DEFAULT_REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_ALLOWLIST = DEFAULT_REPO_ROOT / 'tools' / 'localization' / 'catalog-quality-allowlist.json'
 CATALOG_RELS = (('public', 'locales', 'fa.json'), ('public', 'locales', 'en.json'))
@@ -62,7 +78,10 @@ def report(root: Path, limit: int) -> dict:
 
     groups['fa.no-persian'] = [k for k in sorted(fa) if not PERSIAN_RE.search(fa[k])]
 
-    groups['fa.en.identical'] = [k for k in common if k in fa and k in en and fa[k] == en[k]]
+    groups['fa.en.identical'] = [
+        k for k in common
+        if k in fa and k in en and fa[k] == en[k] and not _is_masked_secret_placeholder(fa[k])
+    ]
 
     fa_by_value = defaultdict(list)
     for k, v in fa.items():

@@ -65,17 +65,29 @@ preg_match("/window\.VeloraAdminAIKeys = \{(.*?)\};/s", $html, $mapMatch);
 check(!empty($mapMatch[1]), 'inline VeloraAdminAIKeys map present in template');
 $keyMap = [];
 if (!empty($mapMatch[1])) {
-    preg_match_all("/'([^']+)':\s*'(admin\.ai\.[A-Za-z0-9_.]+)'/", $mapMatch[1], $mm, PREG_SET_ORDER);
+    preg_match_all("/'([^']+)':\s*'(admin\.(?:ai|relay)\.[A-Za-z0-9_.]+)'/", $mapMatch[1], $mm, PREG_SET_ORDER);
     foreach ($mm as $set) { $keyMap[$set[1]] = $set[2]; }
 }
-check(count($keyMap) === 39, 'key map carries all 39 admin.ai keys (' . count($keyMap) . ')');
+// Expected = every admin.ai.* key actually referenced by the page (data-i18n)
+// plus every key the asset resolves through K(). Deriving it removes a stale
+// magic-number pin that breaks whenever the AI panel's key set grows (e.g. the
+// Phase-2 credential-status/verification keys added to the module).
+$referencedAi = array_values(array_filter(
+    array_unique(array_merge($htmlKeys, array_values($keyMap))),
+    fn (string $k): bool => str_starts_with($k, 'admin.ai.')
+));
+$mapAi = array_values(array_filter(array_values($keyMap), fn (string $k): bool => str_starts_with($k, 'admin.ai.')));
+check(
+    count($mapAi) === count($referencedAi),
+    'key map covers every referenced admin.ai key (expected ' . count($referencedAi) . ', got ' . count($mapAi) . ')'
+);
 $mapMissing = array_values(array_filter($keyMap, fn (string $k): bool => !isset($en[$k]) || !isset($fa[$k])));
 check($mapMissing === [], 'every mapped key exists in BOTH catalogs');
 preg_match_all("/K\('([^']+)'\)/", $js, $km);
 $assetStems = array_unique($km[1]);
 $unmapped = array_values(array_diff($assetStems, array_keys($keyMap)));
 check($unmapped === [], 'every K(stem) used by the asset exists in the template map');
-preg_match_all("/'(admin\.ai\.[A-Za-z0-9_.]+)'/", $js, $mj);
+preg_match_all("/'(admin\.(?:ai|relay)\.[A-Za-z0-9_.]+)'/", $js, $mj);
 check($mj[1] === [], 'asset embeds NO raw catalog key literals (single source: template map)');
 
 $usedKeys = array_unique(array_merge($htmlKeys, array_values($keyMap)));
@@ -88,6 +100,19 @@ $placeholderBroken = array_values(array_filter($catalogAi, fn (string $k): bool 
 $identical = array_values(array_filter($catalogAi, fn (string $k): bool => $en[$k] === $fa[$k]));
 check($identical === [], 'no admin.ai.* key has identical EN/FA text (fa.en.identical group)');
 check($placeholderBroken === [], '{count} placeholder parity en/fa intact');
+
+echo "== Phase A relay config panel ==\n";
+foreach (['relayConfig', 'relayUrlInput', 'relayTokenInput', 'relayStatus', 'relayHost', 'relayMasked', 'relaySave', 'relayClear', 'relayErrorBox', 'relayErrorText'] as $id) {
+    check(strpos($html, 'id="' . $id . '"') !== false, "relay element #{$id} present");
+}
+check(strpos($js, "'/api/v1/admin/integrations/relay/config'") !== false, 'asset targets the relay config API');
+check(strpos($js, "'PUT'") !== false && strpos($js, "'DELETE'") !== false, 'relay uses PUT to save and DELETE to clear');
+check(strpos($js, 'RELAY_BASE') !== false, 'relay state fetched (GET) and re-fetched after mutation');
+$relayRaws = [];
+preg_match_all("/'(admin\\.relay\\.[A-Za-z0-9_.]+)'/", $js, $rr);
+check($rr[1] === [], 'asset embeds NO raw admin.relay.* key literals (resolve via K())');
+/* Only the Super Admin can write relay config; the API enforces it server-side. */
+check(strpos($js, "'super_admin'") !== false, 'relay write path gated to super_admin (authorization still server-side)');
 
 echo "== Feature chunk integrity ==\n";
 $featureManifest = json_decode((string) file_get_contents($root . '/public/locales/feature-manifest.json'), true);

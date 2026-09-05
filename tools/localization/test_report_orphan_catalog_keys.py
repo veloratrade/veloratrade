@@ -193,6 +193,80 @@ class OrphanCatalogKeysTestCase(unittest.TestCase):
 
         self.assertEqual(exit_code, 1)
 
+    # -- Pattern-B dynamic key handling (prefix + inline literal map) ----
+    CONCAT_MAP_SOURCE = (
+        "function statusLabel(status) {\n"
+        "  var key = 'admin.integrations.result.' + {\n"
+        "    SUCCESS: 'success', AUTH_FAILED: 'authFailed', TIMEOUT: 'timeout',\n"
+        "    NETWORK_ERROR: 'networkError', SERVICE_UNAVAILABLE: 'serviceUnavailable',\n"
+        "    NOT_CONFIGURED: 'notConfigured', INVALID: 'invalid'\n"
+        "  }[status];\n"
+        "  return key ? t(key) : status;\n"
+        "}\n"
+    )
+    CONCAT_MAP_KEYS = [
+        "admin.integrations.result.success",
+        "admin.integrations.result.authFailed",
+        "admin.integrations.result.timeout",
+        "admin.integrations.result.networkError",
+        "admin.integrations.result.serviceUnavailable",
+        "admin.integrations.result.notConfigured",
+        "admin.integrations.result.invalid",
+    ]
+
+    def test_concat_map_dynamic_keys_are_not_orphans(self) -> None:
+        messages = {key: "x" for key in self.CONCAT_MAP_KEYS}
+        self.write_catalog("en", messages)
+        self.write_catalog("fa", messages)
+        self.write_asset("velora-admin-integrations.js", self.CONCAT_MAP_SOURCE)
+
+        orphans = find_orphan_keys(self.root)
+
+        for key in self.CONCAT_MAP_KEYS:
+            self.assertNotIn(key, orphans["en"], key)
+            self.assertNotIn(key, orphans["fa"], key)
+
+    def test_similar_key_absent_from_concat_map_still_blocks(self) -> None:
+        messages = {key: "x" for key in self.CONCAT_MAP_KEYS}
+        # A key that *looks* like it belongs to the same dynamic family but
+        # is not produced by the inline map must still be reported.
+        messages["admin.integrations.result.rateLimited"] = "x"
+        self.write_catalog("en", messages)
+        self.write_catalog("fa", messages)
+        self.write_asset("velora-admin-integrations.js", self.CONCAT_MAP_SOURCE)
+
+        orphans = find_orphan_keys(self.root)
+
+        self.assertIn("admin.integrations.result.rateLimited", orphans["en"])
+        self.assertIn("admin.integrations.result.rateLimited", orphans["fa"])
+        self.assertEqual(1, main(["--root", str(self.root), "--fail"]))
+
+    def test_brand_new_unused_key_still_blocks_with_real_allowlist(self) -> None:
+        messages = {key: "x" for key in self.CONCAT_MAP_KEYS}
+        messages["common.brandNewUnusedKey"] = "x"
+        self.write_catalog("en", messages)
+        self.write_catalog("fa", messages)
+        self.write_asset("velora-admin-integrations.js", self.CONCAT_MAP_SOURCE)
+        allowlist = self.write_allowlist(["common.someOtherBaselineKey"])
+
+        exit_code = main(
+            ["--root", str(self.root), "--allowlist", str(allowlist), "--fail"]
+        )
+
+        self.assertEqual(exit_code, 1)
+
+    def test_variable_concatenation_is_not_expanded(self) -> None:
+        # Non-deterministic dynamic construction must NOT be resolved:
+        # detection strength is unchanged for anything outside the narrow
+        # literal-prefix + literal-map form.
+        self.write_catalog("en", {"common.dynamicThing": "x"})
+        self.write_catalog("fa", {"common.dynamicThing": "x"})
+        self.write_asset("app.js", "var key = 'common.' + suffix; t(key);")
+
+        orphans = find_orphan_keys(self.root)
+
+        self.assertIn("common.dynamicThing", orphans["en"])
+
     # -- real repository smoke test (does not assert a specific count,
     # only that the scan runs cleanly end-to-end against real data) -----
     def test_real_repository_scan_runs_without_error(self) -> None:

@@ -5,6 +5,9 @@
 <meta charset="utf-8"/><script src="/public/assets/velora-locale-registry.js?v=2026.08.30.2"></script>
 <script src="/public/assets/velora-latin-digits.js?v=2026.08.30.8"></script><script src="/public/assets/velora-locale-bootstrap.js?v=2026.08.30.2"></script><link href="/public/assets/velora-localization.css?v=2026.08.30.2" rel="stylesheet"/><script src="/public/assets/velora-localization.js?v=2026.08.30.2"></script><script src="/public/assets/velora-data.js?v=2026.08.30.2"></script>
 <script defer="" src="/public/assets/velora-admin-ai.js?v=2026.08.30.2"></script>
+<script defer="" src="/public/assets/velora-admin-security.js?v=2026.08.30.2"></script>
+<script defer="" src="/public/assets/velora-admin-integrations.js?v=2026.08.30.2"></script>
+<script defer="" src="/public/assets/velora-admin-system.js?v=2026.08.30.2"></script>
 <script>
 
 window.VeloraAdminAIKeys = {
@@ -43,10 +46,411 @@ window.VeloraAdminAIKeys = {
   'routingRows': 'admin.ai.routingRows',
   'source.db': 'admin.ai.source.db',
   'source.envDefault': 'admin.ai.source.envDefault',
-  'status': 'admin.ai.status',
-  'subtitle': 'admin.ai.subtitle',
-  'title': 'admin.ai.title',
-  'unavailable': 'admin.ai.unavailable'
+   'status': 'admin.ai.status',
+   'statusDetail': 'admin.ai.statusDetail',
+   'aiStatus.valid': 'admin.ai.status.valid',
+   'aiStatus.success': 'admin.ai.status.success',
+   'aiStatus.unverified': 'admin.ai.status.unverified',
+   'aiStatus.notConfigured': 'admin.ai.status.notConfigured',
+   'aiStatus.invalidCredential': 'admin.ai.status.invalidCredential',
+   'aiStatus.authFailed': 'admin.ai.status.authFailed',
+   'aiStatus.expired': 'admin.ai.status.expired',
+   'aiStatus.revoked': 'admin.ai.status.revoked',
+   'aiStatus.disabled': 'admin.ai.status.disabled',
+   'aiStatus.insufficientPermission': 'admin.ai.status.insufficientPermission',
+   'aiStatus.quotaExceeded': 'admin.ai.status.quotaExceeded',
+   'aiStatus.rateLimited': 'admin.ai.status.rateLimited',
+   'aiStatus.regionRestricted': 'admin.ai.status.regionRestricted',
+   'aiStatus.providerUnavailable': 'admin.ai.status.providerUnavailable',
+   'aiStatus.serviceUnavailable': 'admin.ai.status.serviceUnavailable',
+   'aiStatus.unknown': 'admin.ai.status.unknown',
+   'aiStatus.networkError': 'admin.ai.status.networkError',
+   'aiStatus.timeout': 'admin.ai.status.timeout',
+   'aiStatus.providerError': 'admin.ai.status.providerError',
+   'subtitle': 'admin.ai.subtitle',
+   'title': 'admin.ai.title',
+   'unavailable': 'admin.ai.unavailable',
+   'credentialStatus': 'admin.ai.credentialStatus',
+   'verified': 'admin.ai.verified',
+   'unverified': 'admin.ai.unverified',
+   'lastChecked': 'admin.ai.lastChecked',
+   'verify': 'admin.ai.verify',
+   'testConnection': 'admin.ai.testConnection',
+   'quotaInternal': 'admin.ai.quotaInternal',
+   
+   'relay.title': 'admin.relay.title',
+   'relay.subtitle': 'admin.relay.subtitle',
+   'relay.url': 'admin.relay.url',
+   'relay.token': 'admin.relay.token',
+   'relay.status': 'admin.relay.status',
+   'relay.configured': 'admin.relay.configured',
+   'relay.notConfigured': 'admin.relay.notConfigured',
+   'relay.urlConfigured': 'admin.relay.urlConfigured',
+   'relay.tokenConfigured': 'admin.relay.tokenConfigured',
+   'relay.host': 'admin.relay.host',
+   'relay.save': 'admin.relay.save',
+   'relay.clear': 'admin.relay.clear',
+   'relay.maskedToken': 'admin.relay.maskedToken',
+   
+   'route.global': 'admin.ai.globalRoute',
+   'route.hint': 'admin.ai.globalRouteHint',
+   'route.configured': 'admin.ai.routeConfigured',
+   'route.effective': 'admin.ai.routeEffective',
+   'route.source': 'admin.ai.routeSource',
+   'route.sourceAdmin': 'admin.ai.routeSourceAdmin',
+   'route.sourceEnv': 'admin.ai.routeSourceEnv',
+   'route.sourceFlag': 'admin.ai.routeSourceFlag',
+   'route.sourceDefault': 'admin.ai.routeSourceDefault',
+   'route.unset': 'admin.ai.routeUnset',
+   'route.direct': 'admin.ai.routeDirect',
+   'route.relay': 'admin.ai.routeRelay',
+   'route.save': 'admin.ai.routeSave',
+   'route.reset': 'admin.ai.routeReset',
+ };
+
+
+window.VeloraAdminIntegrationKeys = {
+  'title': 'admin.integrations.title',
+  'subtitle': 'admin.integrations.subtitle',
+  'refresh': 'admin.integrations.refresh',
+  'metaapi': 'admin.integrations.metaapi',
+  'metaapiSubtitle': 'admin.integrations.metaapiSubtitle',
+  'email': 'admin.integrations.email',
+  'emailSubtitle': 'admin.integrations.emailSubtitle',
+  'save': 'admin.integrations.save',
+  'clear': 'admin.integrations.clear',
+  'clearConfirm': 'admin.integrations.clearConfirm',
+  'test': 'admin.integrations.test',
+  'testing': 'admin.integrations.testing',
+  'configured': 'admin.integrations.configured',
+  'notConfigured': 'admin.integrations.notConfigured',
+  'reachable': 'admin.integrations.reachable',
+  'token': 'admin.integrations.token',
+  'tokenConfigured': 'admin.integrations.tokenConfigured',
+  'baseUrl': 'admin.integrations.baseUrl',
+  'driver': 'admin.integrations.driver',
+  'from': 'admin.integrations.from',
+  'fromName': 'admin.integrations.fromName',
+  'apiKey': 'admin.integrations.apiKey',
+  'apiKeyConfigured': 'admin.integrations.apiKeyConfigured',
+  'webhookSecretConfigured': 'admin.integrations.webhookSecretConfigured',
+  'smtpHost': 'admin.integrations.smtpHost',
+  'smtpPort': 'admin.integrations.smtpPort',
+  'smtpUser': 'admin.integrations.smtpUser',
+  'source': 'admin.integrations.source',
+  'sourceAdmin': 'admin.integrations.source.admin',
+  'sourceEnv': 'admin.integrations.source.env',
+  'sourceVeloraEnv': 'admin.integrations.source.veloraEnv',
+  'sourceUnset': 'admin.integrations.source.unset',
+  'lastVerified': 'admin.integrations.lastVerified',
+  'host': 'admin.integrations.host',
+  'saved': 'admin.integrations.saved',
+  'cleared': 'admin.integrations.cleared',
+  'noPermissions': 'admin.integrations.noPermissions',
+};
+window.VeloraAdminSecurityKeys = {
+  'title': 'admin.security.title',
+  'subtitle': 'admin.security.subtitle',
+  'currentRole': 'admin.security.currentRole',
+  'yourRole': 'admin.security.yourRole',
+  'permissions': 'admin.security.effectivePermissions',
+  'permissionCount': 'admin.security.permissionCount',
+  'permission': 'admin.security.permission',
+  'actions': 'admin.security.actions',
+  'noActions': 'admin.security.noActions',
+  'event': 'admin.security.event',
+  'actor': 'admin.security.actor',
+  'result': 'admin.security.result',
+  'time': 'admin.security.time',
+  'refresh': 'admin.security.refresh',
+  'role.super_admin': 'admin.role.super_admin',
+  'role.admin': 'admin.role.admin',
+  'role.user': 'admin.role.user'
+ };
+
+window.VeloraAdminSystemKeys = {
+  'title': 'admin.system.title',
+  'subtitle': 'admin.system.subtitle',
+  'refresh': 'admin.system.refresh',
+  'refreshDiagnostics': 'admin.system.refreshDiagnostics',
+  'components': 'admin.system.components',
+  'checkedAt': 'admin.system.checkedAt',
+  'stHealthy': 'admin.system.status.healthy',
+  'stDegraded': 'admin.system.status.degraded',
+  'stUnhealthy': 'admin.system.status.unhealthy',
+  'stNotConfigured': 'admin.system.status.notConfigured',
+  'stNotApplicable': 'admin.system.status.notApplicable',
+  'stUnknown': 'admin.system.status.unknown',
+  'component.api': 'admin.system.api',
+  'component.database': 'admin.system.database',
+  'component.redis': 'admin.system.redis',
+  'component.workers': 'admin.system.workers',
+  'component.metaapi': 'admin.system.metaapi',
+  'component.n8n_relay': 'admin.system.n8n_relay',
+  'component.ai': 'admin.system.ai',
+  'component.email': 'admin.system.email',
+  'latencyMs': 'admin.system.latencyMs',
+  'lastCheck': 'admin.system.lastCheck',
+  'noPreviousCheck': 'admin.system.noPreviousCheck',
+  'diagnosticsRunning': 'admin.system.diagnosticsRunning',
+  'diagnosticsDone': 'admin.system.diagnosticsDone',
+  'jobsPending': 'admin.system.jobsPending',
+  'jobsFailed': 'admin.system.jobsFailed',
+  'errorCode': 'admin.system.errorCode',
+  'verified': 'admin.system.verified',
+  'logs.title': 'admin.logs.title',
+  'logs.subtitle': 'admin.logs.subtitle',
+  'logs.severity': 'admin.logs.severity',
+  'logs.source': 'admin.logs.source',
+  'logs.search': 'admin.logs.search',
+  'logs.since': 'admin.logs.since',
+  'logs.until': 'admin.logs.until',
+  'logs.apply': 'admin.logs.apply',
+  'logs.page': 'admin.logs.page',
+  'logs.empty': 'admin.logs.empty',
+  'logs.error': 'admin.logs.error',
+  'sev.debug': 'admin.logs.sev.debug',
+  'sev.info': 'admin.logs.sev.info',
+  'sev.warn': 'admin.logs.sev.warn',
+  'sev.error': 'admin.logs.sev.error',
+  'logs.requestId': 'admin.logs.requestId',
+  'logs.correlationId': 'admin.logs.correlationId',
+  'logs.userId': 'admin.logs.userId',
+  'logs.message': 'admin.logs.message',
+  'logs.time': 'admin.logs.time',
+  'logs.loading': 'admin.logs.loading',
+ };
+
+window.VeloraAdminUserKeys = {
+  'title': 'admin.user360.title',
+  'back': 'admin.user360.back',
+  'loading': 'admin.user360.loading',
+  'error': 'admin.user360.error',
+  'notAvailable': 'admin.user360.notAvailable',
+  'empty': 'admin.user360.empty',
+  'identity': 'admin.user360.identity',
+  'account': 'admin.user360.account',
+  'role': 'admin.user360.role',
+  'plan': 'admin.user360.plan',
+  'subscription': 'admin.user360.subscription',
+  'status': 'admin.user360.status',
+  'userId': 'admin.user360.userId',
+  'name': 'admin.user360.name',
+  'email': 'admin.user360.email',
+  'locale': 'admin.user360.locale',
+  'createdAt': 'admin.user360.createdAt',
+  'lastLoginAt': 'admin.user360.lastLoginAt',
+  'activeSessions': 'admin.user360.activeSessions',
+  'knownDevices': 'admin.user360.knownDevices',
+  'subscriptionStatus': 'admin.user360.subscriptionStatus',
+  'planStart': 'admin.user360.planStart',
+  'planExpiry': 'admin.user360.planExpiry',
+  'tradingAccounts': 'admin.user360.tradingAccounts',
+  'trades': 'admin.user360.trades',
+  'aiUsage': 'admin.user360.aiUsage',
+  'activity': 'admin.user360.activity',
+  'auditHistory': 'admin.user360.auditHistory',
+  'administrativeActions': 'admin.user360.administrativeActions',
+  'accountsEmpty': 'admin.user360.accountsEmpty',
+  'tradesEmpty': 'admin.user360.tradesEmpty',
+  'activityEmpty': 'admin.user360.activityEmpty',
+  'auditEmpty': 'admin.user360.auditEmpty',
+  'aiUsageEmpty': 'admin.user360.aiUsageEmpty',
+  'aiRequests': 'admin.user360.aiRequests',
+  'aiFailed': 'admin.user360.aiFailed',
+  'aiTokens': 'admin.user360.aiTokens',
+  'aiProvider': 'admin.user360.aiProvider',
+  'aiModel': 'admin.user360.aiModel',
+  'aiCost': 'admin.user360.aiCost',
+  'accAccount': 'admin.user360.accAccount',
+  'accBroker': 'admin.user360.accBroker',
+  'accPlatform': 'admin.user360.accPlatform',
+  'accStatus': 'admin.user360.accStatus',
+  'accLastSync': 'admin.user360.accLastSync',
+  'tradeSymbol': 'admin.user360.tradeSymbol',
+  'tradeDir': 'admin.user360.tradeDir',
+  'tradeVol': 'admin.user360.tradeVol',
+  'tradeEntry': 'admin.user360.tradeEntry',
+  'tradeExit': 'admin.user360.tradeExit',
+  'tradePnl': 'admin.user360.tradePnl',
+  'tradeOpened': 'admin.user360.tradeOpened',
+  'tradeClosed': 'admin.user360.tradeClosed',
+  'event': 'admin.user360.event',
+  'time': 'admin.user360.time',
+  'ip': 'admin.user360.ip',
+  'userAgent': 'admin.user360.userAgent',
+  'result': 'admin.user360.result',
+  'eventCreated': 'admin.user360.eventSessionCreated',
+  'eventRevoked': 'admin.user360.eventSessionRevoked',
+  'resultActive': 'admin.user360.resultActive',
+  'resultRevoked': 'admin.user360.resultRevoked',
+  'auditActor': 'admin.user360.auditActor',
+  'auditAction': 'admin.user360.auditAction',
+  'actions': 'admin.user360.actions',
+  'suspend': 'admin.user360.suspend',
+  'activate': 'admin.user360.activate',
+  'changeRole': 'admin.user360.changeRole',
+  'changeSubscription': 'admin.user360.changeSubscription',
+  'revokeSessions': 'admin.user360.revokeSessions',
+  'confirm': 'admin.user360.confirm',
+  'cancel': 'admin.user360.cancel',
+  'roleAssigned': 'admin.user360.roleAssigned',
+  'subscriptionUpdated': 'admin.user360.subscriptionUpdated',
+  'suspendedTxt': 'admin.user360.suspended',
+  'activatedTxt': 'admin.user360.activated',
+  'sessionsRevoked': 'admin.user360.sessionsRevoked',
+   'actionFailed': 'admin.user360.actionFailed',
+   'permissionDenied': 'admin.user360.permissionDenied',
+  };
+
+
+window.VeloraAdminFlagKeys = {
+  'title': 'admin.flags.title',
+  'subtitle': 'admin.flags.subtitle',
+  'refresh': 'admin.flags.refresh',
+  'feature': 'admin.flags.feature',
+  'status': 'admin.flags.status',
+  'targeting': 'admin.flags.targeting',
+  'environment': 'admin.flags.environment',
+  'updatedBy': 'admin.flags.updatedBy',
+  'loading': 'admin.flags.loading',
+  'empty': 'admin.flags.empty',
+  'error': 'admin.flags.error',
+  'unauthorized': 'admin.flags.unauthorized',
+  'enable': 'admin.flags.enable',
+  'disable': 'admin.flags.disable',
+  'editTargeting': 'admin.flags.editTargeting',
+  'save': 'admin.flags.save',
+  'cancel': 'admin.flags.cancel',
+  'on': 'admin.flags.on',
+  'off': 'admin.flags.off',
+  'rollout': 'admin.flags.rollout',
+  'allUsers': 'admin.flags.allUsers',
+  'noUsers': 'admin.flags.noUsers',
+  'confirmEnableTitle': 'admin.flags.confirmEnableTitle',
+  'confirmEnableMsg': 'admin.flags.confirmEnableMsg',
+  'confirmDisableTitle': 'admin.flags.confirmDisableTitle',
+  'confirmDisableMsg': 'admin.flags.confirmDisableMsg',
+  'confirmTargetTitle': 'admin.flags.confirmTargetTitle',
+  'confirmTargetMsg': 'admin.flags.confirmTargetMsg',
+  'denyEditTitle': 'admin.flags.denyEditTitle',
+  'denyEditMsg': 'admin.flags.denyEditMsg',
+  'saveSuccess': 'admin.flags.saveSuccess',
+  'saveError': 'admin.flags.saveError',
+  'system': 'admin.flags.system',
+};
+
+
+window.VeloraAdminBillingKeys = {
+  'title': 'admin.billing.title',
+  'subtitle': 'admin.billing.subtitle',
+  'refresh': 'admin.billing.refresh',
+  'loading': 'admin.billing.loading',
+  'empty': 'admin.billing.empty',
+  'error': 'admin.billing.error',
+  'unauthorized': 'admin.billing.unauthorized',
+  'provider': 'admin.billing.provider',
+  'providerUnavailable': 'admin.billing.providerUnavailable',
+  'providerReason': 'admin.billing.providerReason',
+  'plans': 'admin.billing.plans',
+  'plan': 'admin.billing.plan',
+  'price': 'admin.billing.price',
+  'priceUnavailable': 'admin.billing.priceUnavailable',
+  'distribution': 'admin.billing.distribution',
+  'statusDistribution': 'admin.billing.statusDistribution',
+  'entitlements': 'admin.billing.entitlements',
+  'accountsLimit': 'admin.billing.accountsLimit',
+  'providerBudget': 'admin.billing.providerBudget',
+  'history': 'admin.billing.history',
+  'historyUnavailable': 'admin.billing.historyUnavailable',
+  'free': 'admin.billing.free',
+  'pro': 'admin.billing.pro',
+  'uTitle': 'admin.billing.uTitle',
+  'planLbl': 'admin.billing.plan',
+  'statusLbl': 'admin.billing.status',
+  'started': 'admin.billing.started',
+  'expires': 'admin.billing.expires',
+  'accountsUsed': 'admin.billing.accountsUsed',
+  'aiRequests': 'admin.billing.aiRequests',
+  'aiTokens': 'admin.billing.aiTokens',
+  'notAuthoritative': 'admin.billing.notAuthoritative',
+  'noPeriod': 'admin.billing.noPeriod',
+  'notConfigured': 'admin.billing.notConfigured',
+  'used': 'admin.billing.used',
+  'limit': 'admin.billing.limit',
+};
+
+
+window.VeloraAdminAnalyticsKeys = {
+  'title': 'admin.analytics.title',
+  'subtitle': 'admin.analytics.subtitle',
+  'refresh': 'admin.analytics.refresh',
+  'loading': 'admin.analytics.loading',
+  'empty': 'admin.analytics.empty',
+  'error': 'admin.analytics.error',
+  'unauthorized': 'admin.analytics.unauthorized',
+  'range': 'admin.analytics.range',
+  'rangeToday': 'admin.analytics.rangeToday',
+  'range7d': 'admin.analytics.range7d',
+  'range30d': 'admin.analytics.range30d',
+  'range90d': 'admin.analytics.range90d',
+  'rangeAll': 'admin.analytics.rangeAll',
+  'customRange': 'admin.analytics.customRange',
+  'from': 'admin.analytics.from',
+  'to': 'admin.analytics.to',
+  'apply': 'admin.analytics.apply',
+  'sectionOverview': 'admin.analytics.sectionOverview',
+  'sectionUsers': 'admin.analytics.sectionUsers',
+  'sectionTrading': 'admin.analytics.sectionTrading',
+  'sectionAi': 'admin.analytics.sectionAi',
+  'sectionOperations': 'admin.analytics.sectionOperations',
+  'sectionRevenue': 'admin.analytics.sectionRevenue',
+  'totalUsers': 'admin.analytics.totalUsers',
+  'newUsers': 'admin.analytics.newUsers',
+  'activeUsers': 'admin.analytics.activeUsers',
+  'suspendedUsers': 'admin.analytics.suspendedUsers',
+  'byRole': 'admin.analytics.byRole',
+  'byStatus': 'admin.analytics.byStatus',
+  'byLocale': 'admin.analytics.byLocale',
+  'registrationTrend': 'admin.analytics.registrationTrend',
+  'totalTrades': 'admin.analytics.totalTrades',
+  'tradesInRange': 'admin.analytics.tradesInRange',
+  'tradingAccounts': 'admin.analytics.tradingAccounts',
+  'bySymbol': 'admin.analytics.bySymbol',
+  'byDirection': 'admin.analytics.byDirection',
+  'wins': 'admin.analytics.wins',
+  'losses': 'admin.analytics.losses',
+  'breakeven': 'admin.analytics.breakeven',
+  'netPnl': 'admin.analytics.netPnl',
+  'totalVolume': 'admin.analytics.totalVolume',
+  'tradingNote': 'admin.analytics.tradingNote',
+  'totalRequests': 'admin.analytics.totalRequests',
+  'aiInRange': 'admin.analytics.aiInRange',
+  'success': 'admin.analytics.success',
+  'failed': 'admin.analytics.failed',
+  'byProvider': 'admin.analytics.byProvider',
+  'byFeature': 'admin.analytics.byFeature',
+  'byModel': 'admin.analytics.byModel',
+  'tokensUsed': 'admin.analytics.tokensUsed',
+  'requestCost': 'admin.analytics.requestCost',
+  'aiTrend': 'admin.analytics.aiTrend',
+  'systemErrors': 'admin.analytics.systemErrors',
+  'bySeverity': 'admin.analytics.bySeverity',
+  'bySource': 'admin.analytics.bySource',
+  'integrationHealth': 'admin.analytics.integrationHealth',
+  'integrationFailures': 'admin.analytics.integrationFailures',
+  'adminAudit': 'admin.analytics.adminAudit',
+  'latency': 'admin.analytics.latency',
+  'status': 'admin.analytics.status',
+  'revenueUnavailable': 'admin.analytics.revenueUnavailable',
+  'revenueNote': 'admin.analytics.revenueNote',
+  'revenue': 'admin.analytics.revenue',
+  'mrr': 'admin.analytics.mrr',
+  'arr': 'admin.analytics.arr',
+  'churn': 'admin.analytics.churn',
+  'ltv': 'admin.analytics.ltv',
+  'paymentVolume': 'admin.analytics.paymentVolume',
+  'refunds': 'admin.analytics.refunds',
 };
 </script><script defer="" src="/public/assets/velora-dynamic-content.js?v=2026.08.30.2"></script>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0" name="viewport"/>
@@ -424,6 +828,23 @@ window.VeloraAdminAIKeys = {
     color: #fce38a !important;
   }
 }
+
+
+.security-grid{display:grid;grid-template-columns:1fr 2fr;gap:14px;margin:14px 0;}
+.security-grid>*{min-width:0;}
+.security-card{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--border);border-radius:16px;padding:16px 18px;margin-bottom:14px;min-width:0;}
+.security-card-wide{width:100%;min-width:0;}
+.security-card-title{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.4px;margin-bottom:12px;}
+.security-role{font-size:15px;font-weight:800;color:var(--txt);}
+.security-role .role{margin-left:8px;}
+.security-perms{display:flex;flex-wrap:wrap;gap:8px;width:100%;min-width:0;}
+.sec-perm{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:var(--txt);background:rgba(255,255,255,.04);border:1px solid var(--border2);border-radius:9px;padding:6px 10px;}
+.sec-perm::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;}
+.security-actions-tbody td{font-size:12.5px;}
+.security-actions-tbody tr:hover{background:rgba(255,255,255,.02);}
+.sec-act{color:var(--gold-l);}
+.st.soft{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;}
+@media (max-width:820px){.security-grid{grid-template-columns:1fr;}}
 </style>
 <script>
 function toggleMobileSidebar() {
@@ -628,6 +1049,98 @@ function toggleMobileSidebar() {
 </style>
 <link href="/public/assets/velora-latin-digits.css?v=2026.08.30.8" rel="stylesheet"/>
 <link href="/public/assets/velora-sidebar-icons.css?v=2026.08.13.45" rel="stylesheet"/><script src="/public/assets/velora-sidebar-icons.js?v=2026.08.13.42"></script>
+<style id="velora-admin-system-css">
+
+#healthPanel .ai-err{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.45);border-radius:12px;padding:10px 14px;color:#fca5a5;font-size:12.5px;margin:10px 0;}
+#healthPanel .ai-note, #logsPanel .ai-note{color:var(--muted);font-size:11.5px;margin:2px 0 6px;}
+#healthPanel .ai-kv, #logsPanel .ai-kv{white-space:nowrap;color:var(--muted);font-size:11.5px;}
+#healthPanel .panel-head .t, #logsPanel .panel-head .t{display:flex;align-items:center;gap:8px;}
+#healthPanel .panel-head .t svg, #logsPanel .panel-head .t svg{color:var(--gold);}
+#healthPanel .sys-meta{color:var(--faint);font-size:11px;margin:6px 0 10px;}
+#healthPanel .sys-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;}
+#healthPanel .sys-card{background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:13px 14px;}
+#healthPanel .sys-card[data-status="HEALTHY"]{border-color:rgba(76,211,154,.35);}
+#healthPanel .sys-card[data-status="DEGRADED"]{border-color:rgba(245,158,11,.4);}
+#healthPanel .sys-card[data-status="UNHEALTHY"]{border-color:rgba(255,107,107,.45);}
+#healthPanel .sys-card[data-status="NOT_CONFIGURED"]{border-color:rgba(139,92,246,.3);}
+#healthPanel .sys-card-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+#healthPanel .sys-card-head span{font-size:13px;font-weight:700;}
+#healthPanel .sys-card-head em{font-style:normal;color:var(--muted);font-size:11px;margin-inline-start:auto;text-transform:uppercase;letter-spacing:.5px;}
+#healthPanel .sys-badge{width:9px;height:9px;border-radius:50%;flex-shrink:0;display:inline-block;background:var(--muted);}
+#healthPanel .sys-badge.st-healthy{background:var(--green);}
+#healthPanel .sys-badge.st-degraded{background:var(--orange);}
+#healthPanel .sys-badge.st-unhealthy{background:var(--red);}
+#healthPanel .sys-badge.st-notconfigured{background:var(--violet);}
+#healthPanel .sys-badge.st-notapplicable{background:var(--faint);}
+#healthPanel .sys-badge.st-unknown{background:var(--faint);}
+#healthPanel .sys-msg{color:var(--muted);font-size:12px;margin-bottom:8px;}
+#healthPanel .sys-noprev{color:var(--faint);font-size:11.5px;font-style:italic;margin-bottom:8px;}
+#healthPanel .sys-kv{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;padding:2px 0;color:var(--muted);}
+#healthPanel .sys-kv b{color:var(--txt);font-weight:600;text-align:end;word-break:break-word;}
+#healthPanel .sys-empty{color:var(--faint);font-size:12.5px;padding:14px 0;text-align:center;}
+#logsPanel .log-filters{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;}
+#logsPanel .log-filters .f-input{max-width:230px;min-width:140px;}
+#logsPanel .log-table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px;}
+#logsPanel .sys-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+#logsPanel .sys-table th{text-align:start;color:var(--faint);font-size:11px;font-weight:700;padding:9px 12px;border-bottom:1px solid var(--border);white-space:nowrap;}
+#logsPanel .sys-table td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:top;}
+#logsPanel .sys-table tr[data-sev="error"] td{background:rgba(255,107,107,.05);}
+#logsPanel .sys-table tr[data-sev="warn"] td{background:rgba(245,158,11,.05);}
+#logsPanel .sys-table .log-time{white-space:nowrap;color:var(--muted);}
+#logsPanel .sys-table .log-msg{color:var(--txt);}
+#logsPanel .sys-table .log-id{color:var(--faint);font-family:Consolas,monospace;font-size:11px;}
+#logsPanel .sys-table td .sev-info{background:var(--green);}
+#logsPanel .sys-table td .sev-warn{background:var(--orange);}
+#logsPanel .sys-table td .sev-error{background:var(--red);}
+#logsPanel .sys-table td .sev-debug{background:var(--violet);}
+#logsPanel .sys-table td span{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--muted);margin-inline-end:6px;}
+#logsPanel .log-pager{display:flex;align-items:center;gap:10px;margin:12px 0 0;}
+#logsPanel .sys-empty{color:var(--faint);font-size:12.5px;padding:14px 0;text-align:center;}
+
+#flagsPanel .log-table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px;}
+#flagsPanel .sys-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+#flagsPanel .sys-table th{text-align:start;color:var(--faint);font-size:11px;font-weight:700;padding:9px 12px;border-bottom:1px solid var(--border);white-space:nowrap;}
+#flagsPanel .sys-table td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:top;}
+#flagsPanel .sys-empty{color:var(--faint);font-size:12.5px;padding:14px 0;text-align:center;}
+#flagsPanel .hint{font-size:11px;color:var(--faint);}
+
+#billingPanel .b-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;min-width:0;}
+#billingPanel .b-kv{background:rgba(6,10,20,.5);border:1px solid var(--border);border-radius:12px;padding:10px 12px;min-width:0;overflow-wrap:anywhere;}
+#billingPanel .b-full{grid-column:1 / -1;}
+#billingPanel .log-table-wrap{overflow-x:auto;width:100%;min-width:0;border:1px solid var(--border);border-radius:12px;}
+#billingPanel .sys-table{width:100%;min-width:0;border-collapse:collapse;font-size:12.5px;}
+#billingPanel .sys-table th{text-align:start;color:var(--faint);font-size:11px;font-weight:700;padding:9px 12px;border-bottom:1px solid var(--border);white-space:nowrap;}
+#billingPanel .sys-table td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:top;}
+#billingPanel .b-kv small{display:block;color:var(--faint);font-size:10.5px;margin-bottom:4px;}
+#billingPanel .b-kv b{color:#fff;font-size:14px;}
+#billingPanel .ai-err{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.45);border-radius:12px;padding:10px 14px;color:#fca5a5;font-size:12.5px;margin:10px 0;}
+#billingPanel .b-subhead{font-size:11px;color:var(--faint);letter-spacing:1px;font-weight:700;margin:16px 0 8px;}
+#billingPanel .b-unavail{color:var(--muted);font-size:12px;font-style:italic;}
+@media(max-width:560px){#billingPanel .b-grid{grid-template-columns:1fr 1fr;}}
+
+#analyticsPanel .a-note{color:var(--muted);font-size:11.5px;margin:2px 0 6px;}
+#analyticsPanel .a-err{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.45);border-radius:12px;padding:10px 14px;color:#fca5a5;font-size:12.5px;margin:10px 0;}
+#analyticsPanel .a-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:12px 0 6px;}
+#analyticsPanel .a-toolbar select{max-width:150px;min-width:110px;}
+#analyticsPanel .a-kv{white-space:nowrap;color:var(--muted);font-size:11.5px;}
+#analyticsPanel .a-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;min-width:0;margin-top:6px;}
+#analyticsPanel .a-card{background:rgba(6,10,20,.5);border:1px solid var(--border);border-radius:12px;padding:12px 14px;min-width:0;overflow-wrap:anywhere;}
+#analyticsPanel .a-card small{display:block;color:var(--faint);font-size:10.5px;margin-bottom:4px;}
+#analyticsPanel .a-card b{color:#fff;font-size:16px;}
+#analyticsPanel .a-subhead{font-size:11px;color:var(--faint);letter-spacing:1px;font-weight:700;margin:16px 0 8px;}
+#analyticsPanel .log-table-wrap{overflow-x:auto;width:100%;min-width:0;border:1px solid var(--border);border-radius:12px;}
+#analyticsPanel .sys-table{width:100%;min-width:0;border-collapse:collapse;font-size:12.5px;}
+#analyticsPanel .sys-table th{text-align:start;color:var(--faint);font-size:11px;font-weight:700;padding:9px 12px;border-bottom:1px solid var(--border);white-space:nowrap;}
+#analyticsPanel .sys-table td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:top;}
+#analyticsPanel .a-bars{display:flex;align-items:flex-end;gap:6px;height:120px;padding-top:8px;min-width:0;}
+#analyticsPanel .a-bar{flex:1;min-width:8px;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,var(--gold-l),var(--gold-d));position:relative;}
+#analyticsPanel .a-bar:hover{filter:brightness(1.15);}
+#analyticsPanel .a-bar span{position:absolute;top:-18px;left:50%;transform:translateX(-50%);background:rgba(10,16,32,.95);border:1px solid rgba(212,175,55,.4);border-radius:6px;padding:2px 7px;font-size:10px;color:var(--gold-l);opacity:0;}
+#analyticsPanel .a-bar:hover span{opacity:1;}
+#analyticsPanel .a-bar-label{font-size:9.5px;color:var(--faint);white-space:nowrap;}
+#analyticsPanel .a-unavail{color:var(--muted);font-size:12px;font-style:italic;}
+#analyticsPanel .a-empty{color:var(--faint);font-size:12.5px;padding:14px 0;text-align:center;}
+</style>
 <style id="velora-admin-ai-css">
 #aiSettingsPanel .ai-err{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.45);border-radius:12px;padding:10px 14px;color:#fca5a5;font-size:12.5px;margin:10px 0;}
 #aiSettingsPanel .ai-note{color:var(--muted);font-size:11.5px;margin:2px 0 6px;}
@@ -640,7 +1153,7 @@ function toggleMobileSidebar() {
 #aiSettingsPanel .ai-prov-name{min-width:130px;}
 #aiSettingsPanel .ai-prov-cred{display:flex;flex-wrap:wrap;align-items:center;gap:8px;flex:1;}
 #aiSettingsPanel .ai-prov-cred .f-input{width:210px;padding:7px 10px;font-size:12px;}
-#aiSettingsPanel .ai-prov-relay{display:flex;gap:14px;font-size:11.5px;color:var(--muted);align-items:center;}
+#aiSettingsPanel .ai-prov-relay{display:flex;flex-wrap:wrap;gap:10px 14px;font-size:11.5px;color:var(--muted);align-items:center;min-width:0;}
 #aiSettingsPanel .ai-kv{white-space:nowrap;}
 #aiSettingsPanel .ai-feature{margin-top:14px;padding:14px;}
 #aiSettingsPanel .ai-empty{color:var(--muted);font-size:12.5px;padding:8px 2px;}
@@ -744,11 +1257,103 @@ function toggleMobileSidebar() {
 </div>
 <div class="table-wrap">
 <table>
-<thead><tr><th data-i18n="common.user.cfadc9e3">کاربر</th><th data-i18n="common.role.eb5456b4">نقش</th><th data-i18n="pages.admin.status.b81f9c7b">وضعیت</th><th data-i18n="common.trades.5aa84041">معاملات</th><th data-i18n="common.member.since.f0ceac0b">تاریخ عضویت</th></tr></thead>
+<thead><tr><th data-i18n="common.user.cfadc9e3">کاربر</th><th data-i18n="common.role.eb5456b4">نقش</th><th data-i18n="admin.plan.title">پلن</th><th data-i18n="admin.subscription.title">وضعیت اشتراک</th><th data-i18n="pages.admin.status.b81f9c7b">وضعیت</th><th data-i18n="common.trades.5aa84041">معاملات</th><th data-i18n="common.member.since.f0ceac0b">تاریخ عضویت</th><th data-i18n="admin.user360.actions">اقدامات</th></tr></thead>
 <tbody id="tbody"></tbody>
 </table>
 </div>
 <div class="pager" id="pager"></div>
+</div>
+<style>
+  
+  .user360{margin-top:18px;}
+  .u360-err{background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.3);border-radius:12px;padding:12px 14px;color:#f6a7a7;font-size:13px;margin-bottom:14px;}
+  .u360-loading{color:var(--muted);font-size:13px;padding:24px;text-align:center;}
+  .u360-identity{display:flex;flex-wrap:wrap;align-items:center;gap:14px;background:var(--card2);border:1px solid var(--border);border-radius:16px;padding:18px 20px;margin-bottom:14px;}
+  .u360-identity .av{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;color:#060a14;font-weight:900;font-size:22px;flex-shrink:0;}
+  .u360-identity .who{min-width:0;}
+  .u360-identity .who b{display:block;font-size:16px;color:#fff;}
+  .u360-identity .who span{display:block;font-size:12.5px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .u360-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px;}
+  .u360-card{background:var(--card2);border:1px solid var(--border);border-radius:14px;padding:14px 16px;}
+  .u360-card small{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+  .u360-card b{font-size:14px;color:#fff;}
+  .u360-card .st{font-size:12px;}
+  .u360-section{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px 18px;margin-bottom:16px;}
+  .u360-section h3{margin:0 0 12px;font-size:14px;color:var(--txt);display:flex;align-items:center;gap:8px;}
+  .u360-section h3::before{content:"";width:4px;height:16px;border-radius:3px;background:linear-gradient(180deg,var(--gold),var(--gold-d));display:inline-block;}
+  .u360-body{font-size:13px;color:var(--muted);}
+  .u360-empty{color:var(--faint);padding:18px;text-align:center;font-size:12.5px;}
+  .u360-kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;}
+  .u360-kv .kv small{display:block;color:var(--muted);font-size:11px;}
+  .u360-kv .kv b{font-size:14px;color:#fff;}
+  .u360-ai{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;}
+  .u360-ai .kv small{display:block;color:var(--muted);font-size:11px;}
+  .u360-ai .kv b{font-size:16px;color:#fff;}
+  .u360-trades td,.u360-trades th{font-size:12px;}
+  .u360-actions{display:flex;flex-wrap:wrap;gap:10px;}
+  .u360-actions button{font:700 12px Vazirmatn,Arial,sans-serif;padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--txt);cursor:pointer;}
+  .u360-actions button.danger{border-color:rgba(255,107,107,.4);color:#f6a7a7;background:rgba(255,107,107,.08);}
+  .u360-actions button:disabled{opacity:.4;cursor:not-allowed;}
+  .u360-actions .hint{width:100%;color:var(--faint);font-size:12px;margin-top:2px;}
+</style>
+
+<div class="panel user360" hidden="true" id="user360View">
+<div class="panel-head">
+<div class="t"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" viewbox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path></svg> <span data-i18n="admin.user360.title">کاربر 360 درجه</span></div>
+<span class="meta"><button class="chip" data-i18n="admin.user360.back" id="u360Back" type="button">بازگشت به کاربران</button></span>
+</div>
+<div class="u360-err" hidden="true" id="u360ErrorBox"><span id="u360ErrorText"></span></div>
+<div class="u360-loading" data-i18n="admin.user360.loading" hidden="true" id="u360Loading">در حال بارگذاری…</div>
+<div class="u360-identity" id="u360Identity"></div>
+<div class="u360-cards" id="u360Cards"></div>
+<div class="u360-section">
+<h3 data-i18n="admin.user360.tradingAccounts">حساب‌های معاملاتی</h3>
+<div class="u360-body" id="u360Accounts"><div class="u360-empty" data-i18n="admin.user360.empty">داده‌ای نیست</div></div>
+</div>
+<div class="u360-section">
+<h3 data-i18n="admin.user360.trades">معاملات</h3>
+<div class="table-wrap"><table class="u360-trades"><thead><tr>
+<th data-i18n="admin.user360.tradeSymbol">نماد</th>
+<th data-i18n="admin.user360.tradeDir">جهت</th>
+<th data-i18n="admin.user360.tradeVol">حجم</th>
+<th data-i18n="admin.user360.tradeEntry">ورود</th>
+<th data-i18n="admin.user360.tradeExit">خروج</th>
+<th data-i18n="admin.user360.tradePnl">سود/زیان</th>
+<th data-i18n="admin.user360.tradeOpened">باز شده</th>
+</tr></thead><tbody id="u360TradeBody"></tbody></table></div>
+<div class="pager" id="u360TradePager"></div>
+</div>
+<div class="u360-section">
+<h3 data-i18n="admin.user360.aiUsage">مصرف هوش مصنوعی</h3>
+<div class="u360-body u360-ai" id="u360Ai"></div>
+</div>
+<div class="u360-section">
+<h3 data-i18n="admin.billing.uTitle">صورتحساب و سهمیه‌ها</h3>
+<div class="u360-body u360-ai" id="u360Billing"><div class="u360-empty" data-i18n="admin.billing.loading">در حال بارگیری وضعیت صورت‌حساب…</div></div>
+</div>
+<div class="u360-section">
+<h3 data-i18n="admin.user360.activity">فعالیت</h3>
+<div class="table-wrap"><table class="u360-trades"><thead><tr>
+<th data-i18n="admin.user360.event">رویداد</th>
+<th data-i18n="admin.user360.time">زمان</th>
+<th data-i18n="admin.user360.ip">IP</th>
+<th data-i18n="admin.user360.userAgent">کاربر-عامل</th>
+<th data-i18n="admin.user360.result">نتیجه</th>
+</tr></thead><tbody id="u360ActivityBody"></tbody></table></div>
+</div>
+<div class="u360-section">
+<h3 data-i18n="admin.user360.auditHistory">تاریخچه ممیزی</h3>
+<div class="table-wrap"><table class="u360-trades"><thead><tr>
+<th data-i18n="admin.user360.auditActor">عامل</th>
+<th data-i18n="admin.user360.auditAction">اقدام</th>
+<th data-i18n="admin.user360.time">زمان</th>
+<th data-i18n="admin.user360.result">نتیجه</th>
+</tr></thead><tbody id="u360AuditBody"></tbody></table></div>
+</div>
+<div class="u360-section">
+<h3 data-i18n="admin.user360.administrativeActions">اقدامات مدیریتی</h3>
+<div class="u360-actions" id="u360Actions"></div>
+</div>
 </div>
 
 <div class="panel" id="aiSettingsPanel">
@@ -762,16 +1367,221 @@ function toggleMobileSidebar() {
 <div id="aiProviders"></div>
 <div class="ai-subhead" data-i18n="admin.ai.chain">زنجیره پردازش</div>
 <div id="aiFeatures"></div>
+<div class="ai-subhead" data-i18n="admin.relay.title">Relay n8n Gemini</div>
+<div class="ai-note" data-i18n="admin.relay.subtitle">اتصال به relay ابری n8n برای استخراج (پیکربندی بدون ویرایش فایل)</div>
+<div class="ai-err" hidden="true" id="relayErrorBox"><span id="relayErrorText"></span></div>
+<div class="ai-prov" id="relayConfig">
+<div class="ai-field"><label data-i18n="admin.relay.url" for="relayUrlInput">آدرس Relay</label><input autocomplete="off" class="f-input" id="relayUrlInput" placeholder="https://…" spellcheck="false" type="url"/></div>
+<div class="ai-field"><label data-i18n="admin.relay.token" for="relayTokenInput">توکن Relay</label><input autocomplete="new-password" class="f-input" id="relayTokenInput" placeholder="••••••••" spellcheck="false" type="password"/></div>
+<div class="ai-prov-relay">
+<span class="ai-kv" id="relayStatus">—</span>
+<span class="ai-kv" id="relayHost">—</span>
+<span class="ai-kv" id="relayMasked">••••••••</span>
+</div>
+</div>
+<div class="ai-add">
+<button class="chip" data-i18n="admin.relay.save" id="relaySave" type="button">ذخیره</button>
+<button class="chip" data-i18n="admin.relay.clear" id="relayClear" type="button">پاک کردن</button>
+</div>
+<div class="ai-subhead" data-i18n="admin.ai.globalRoute">مسیر سراسری هوش مصنوعی</div>
+<div class="ai-note" data-i18n="admin.ai.globalRouteHint">مسیر پیش‌فرض سراسری Gemini وقتی هیچ مسیر خاصی برای feature تنظیم نشده است.</div>
+<div class="ai-err" hidden="true" id="globalRouteErrorBox"><span id="globalRouteErrorText"></span></div>
+<div class="ai-prov" id="globalRouteConfig">
+<div class="ai-field">
+<label data-i18n="admin.ai.route" for="globalRouteSelect">مسیر</label>
+<select class="f-input" id="globalRouteSelect">
+<option data-i18n="admin.ai.routeUnset" value="">پیکربندی نشده — ارث‌بری از محیط</option>
+<option data-i18n="admin.ai.routeDirect" value="direct">مستقیم (Gemini)</option>
+<option data-i18n="admin.ai.routeRelay" value="n8n_relay">رله n8n (سرویس ابری)</option>
+</select>
+</div>
+<div class="ai-prov-relay">
+<span class="ai-kv" id="globalRouteConfigured">—</span>
+<span class="ai-kv" id="globalRouteEffective">—</span>
+<span class="ai-kv" id="globalRouteSource">—</span>
+</div>
+</div>
+<div class="ai-add">
+<button class="chip" data-i18n="admin.ai.routeSave" id="globalRouteSave" type="button">ذخیره مسیر</button>
+<button class="chip" data-i18n="admin.ai.routeReset" id="globalRouteReset" type="button">بازنشانی (ارث‌بری)</button>
+</div>
+</div>
+
+<div class="panel" id="securityPanel">
+<div class="panel-head">
+<div class="t"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"></path><path d="m9 12 2 2 4-4"></path></svg> <span data-i18n="admin.security.title">امنیت و دسترسی</span></div>
+<span class="meta"><button class="chip" data-i18n="admin.security.refresh" id="securityRefresh" type="button">بازخوانی</button></span>
+</div>
+<div class="ai-note" data-i18n="admin.security.subtitle">نقش فعلی, مجوزهای مؤثر و رویدادهای اخیر مدیریت</div>
+<div class="ai-err" hidden="true" id="securityErrorBox"><span id="securityErrorText"></span></div>
+<div class="security-grid">
+<div class="security-card">
+<div class="security-card-title" data-i18n="admin.security.currentRole">نقش فعلی</div>
+<div class="security-role" id="securityRole">—</div>
+</div>
+<div class="security-card security-card-wide">
+<div class="security-card-title" data-i18n="admin.security.effectivePermissions">مجوزهای مؤثر</div>
+<div class="security-perms" id="securityPerms"></div>
+</div>
+</div>
+<div class="security-card security-card-wide">
+<div class="security-card-title" data-i18n="admin.security.actions">رویدادهای اخیر مدیریت</div>
+<div class="table-wrap"><table>
+<thead><tr><th data-i18n="admin.security.actor">شخص</th><th data-i18n="admin.security.event">رویداد</th><th data-i18n="admin.security.result">نتیجه</th><th data-i18n="admin.security.time">زمان</th></tr></thead>
+<tbody class="security-actions-tbody" id="securityActions"></tbody>
+</table></div>
+</div>
+</div>
+
+<div class="panel" id="integrationPanel">
+<div class="panel-head">
+<div class="t"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path></svg> <span data-i18n="admin.integrations.title">اتصالات</span></div>
+<span class="meta"><button class="chip" data-i18n="admin.integrations.refresh" id="integrationRefresh" type="button">بازخوانی</button></span>
+</div>
+<div class="ai-note" data-i18n="admin.integrations.subtitle">وضعیت, پیکربندی و اتصال MetaAPI و ارائه‌دهنده ایمیل</div>
+<div class="ai-err" hidden="true" id="integrationErrorBox"><span id="integrationErrorText"></span></div>
+<div class="ai-subhead" data-i18n="admin.integrations.metaapi">MetaAPI</div>
+<div class="ai-note" data-i18n="admin.integrations.metaapiSubtitle">توکن پلتفرم و آدرس پایانه Provisioning</div>
+<div class="ai-prov" id="metaapiConfig">
+<div class="ai-field"><label data-i18n="admin.integrations.token" for="metaapiTokenInput">توکن پلتفرم</label><input autocomplete="new-password" class="f-input" id="metaapiTokenInput" placeholder="••••••••" spellcheck="false" type="password"/></div>
+<div class="ai-field"><label data-i18n="admin.integrations.baseUrl" for="metaapiBaseUrlInput">آدرس پایانه Provisioning</label><input autocomplete="off" class="f-input" id="metaapiBaseUrlInput" placeholder="https://…" spellcheck="false" type="url"/></div>
+<div class="ai-prov-relay">
+<span class="ai-kv" id="metaapiStatus">—</span>
+<span class="ai-kv" id="metaapiSource">—</span>
+<span class="ai-kv" id="metaapiHost">—</span>
+<span class="ai-kv" id="metaapiLastVerified">—</span>
+</div>
+</div>
+<div class="ai-add">
+<button class="chip" data-i18n="admin.integrations.test" id="metaapiTest" type="button">تست اتصال</button>
+<button class="chip" data-i18n="admin.integrations.save" id="metaapiSave" type="button">ذخیره</button>
+<button class="chip" data-i18n="admin.integrations.clear" id="metaapiClear" type="button">پاک کردن</button>
+</div>
+<div class="ai-subhead" data-i18n="admin.integrations.email">ایمیل</div>
+<div class="ai-note" data-i18n="admin.integrations.emailSubtitle">پیکربندی ارائه‌دهنده ایمیل تراکنشی</div>
+<div class="ai-prov" id="emailConfig">
+<div class="ai-field"><label data-i18n="admin.integrations.driver" for="emailDriverInput">درایور ایمیل</label><select class="f-input" id="emailDriverInput"><option value="">—</option><option value="mail">mail()</option><option value="smtp">SMTP</option><option value="resend">Resend</option><option value="log">log</option></select></div>
+<div class="ai-field"><label data-i18n="admin.integrations.from" for="emailFromInput">آدرس فرستنده</label><input autocomplete="off" class="f-input" id="emailFromInput" spellcheck="false" type="email"/></div>
+<div class="ai-field"><label data-i18n="admin.integrations.fromName" for="emailFromNameInput">نام فرستنده</label><input autocomplete="off" class="f-input" id="emailFromNameInput" spellcheck="false" type="text"/></div>
+<div class="ai-field"><label data-i18n="admin.integrations.apiKey" for="emailApiKeyInput">کلید API (فقط نوشتنی)</label><input autocomplete="new-password" class="f-input" id="emailApiKeyInput" placeholder="••••••••" spellcheck="false" type="password"/></div>
+<div class="ai-field"><label data-i18n="admin.integrations.smtpHost" for="emailHostInput">میزبان SMTP</label><input autocomplete="off" class="f-input" id="emailHostInput" spellcheck="false" type="text"/></div>
+<div class="ai-field"><label data-i18n="admin.integrations.smtpPort" for="emailPortInput">پورت SMTP</label><input autocomplete="off" class="f-input" id="emailPortInput" spellcheck="false" type="number"/></div>
+<div class="ai-field"><label data-i18n="admin.integrations.smtpUser" for="emailUserInput">نام کاربری SMTP</label><input autocomplete="off" class="f-input" id="emailUserInput" spellcheck="false" type="text"/></div>
+<div class="ai-prov-relay">
+<span class="ai-kv" id="emailStatus">—</span>
+<span class="ai-kv" id="emailSource">—</span>
+<span class="ai-kv" id="emailLastVerified">—</span>
+</div>
+</div>
+<div class="ai-add">
+<button class="chip" data-i18n="admin.integrations.test" id="emailTest" type="button">تست اتصال</button>
+<button class="chip" data-i18n="admin.integrations.save" id="emailSave" type="button">ذخیره</button>
+<button class="chip" data-i18n="admin.integrations.clear" id="emailClear" type="button">پاک کردن</button>
+</div>
+</div>
+<div class="panel" id="healthPanel">
+<div class="panel-head">
+<div class="t"><svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" width="18"><path d="M3 12h4l2-5 4 10 2-5h6"></path></svg> <span data-i18n="admin.system.title">سیستم و سلامت</span></div>
+<span class="meta"><button class="chip" data-i18n="admin.system.refreshDiagnostics" id="diagRun" type="button">اجرای تشخیص</button><button class="chip" data-i18n="admin.system.refresh" id="healthRefresh" type="button">بازخوانی</button></span>
+</div>
+<div class="ai-note" data-i18n="admin.system.subtitle">وضعیت زندهٔ مؤلفه‌های هسته و اتصالات خارجی</div>
+<div class="ai-err" hidden="true" id="healthErrorBox"><span></span></div>
+<div class="sys-meta" id="healthCheckedAt"></div>
+<div class="sys-grid" id="healthGrid"><div class="sys-empty" data-i18n="admin.system.checkedAt">بررسی‌شده در {time}</div></div>
+</div>
+<div class="panel" id="logsPanel">
+<div class="panel-head">
+<div class="t"><svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" width="18"><path d="M4 4h16v14H6a2 2 0 0 0-2 2V4Z"></path><path d="M8 8h8M8 12h8"></path></svg> <span data-i18n="admin.logs.title">لاگ‌های سیستم</span></div>
+<span class="meta"><span class="ai-kv" id="logCount">0</span></span>
+</div>
+<div class="ai-note" data-i18n="admin.logs.subtitle">رویدادهای ساختاریافته برنامه و بک‌اند</div>
+<div class="ai-err" hidden="true" id="logErrorBox"><span></span></div>
+<div class="log-filters">
+<input autocomplete="off" class="f-input" data-i18n-placeholder="admin.logs.search" id="logSearch" placeholder="جستجوی پیام, درخواست یا خطا…" spellcheck="false" type="search"/>
+<select class="f-input" id="logSeverity"><option value="">—</option><option data-i18n="admin.logs.sev.debug" value="DEBUG">اشکال‌زدایی</option><option data-i18n="admin.logs.sev.info" value="INFO">اطلاع</option><option data-i18n="admin.logs.sev.warn" value="WARN">هشدار</option><option data-i18n="admin.logs.sev.error" value="ERROR">خطا</option></select>
+<select class="f-input" id="logSource"><option value="">—</option><option value="api">api</option><option value="auth">auth</option><option value="metaapi">metaapi</option><option value="email">email</option><option value="ai">ai</option><option value="workers">workers</option></select>
+<input aria-label="از" class="f-input" data-i18n-aria-label="admin.logs.since" id="logSince" type="date"/>
+<input aria-label="تا" class="f-input" data-i18n-aria-label="admin.logs.until" id="logUntil" type="date"/>
+<button class="chip" data-i18n="admin.logs.apply" id="logApply" type="button">اعمال</button>
+</div>
+<div class="log-table-wrap">
+<table class="sys-table">
+<thead><tr><th data-i18n="admin.logs.time">زمان</th><th data-i18n="admin.logs.severity">شدت</th><th data-i18n="admin.logs.source">منبع</th><th data-i18n="admin.logs.message">پیام</th><th data-i18n="admin.logs.requestId">درخواست</th><th data-i18n="admin.logs.correlationId">همبستگی</th></tr></thead>
+<tbody id="logBody"><tr><td class="sys-empty" colspan="6" data-i18n="admin.logs.loading">در حال بارگیری لاگ‌ها…</td></tr></tbody>
+</table>
+</div>
+<div class="log-pager">
+<button class="chip" id="logPrev" type="button">‹</button>
+<span class="ai-kv" id="logPage">—</span>
+<button class="chip" id="logNext" type="button">›</button>
+</div>
+</div>
+<div class="panel" id="flagsPanel">
+<div class="panel-head">
+<div class="t"><svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" width="18"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" x2="4" y1="22" y2="15"></line></svg> <span data-i18n="admin.flags.title">پرچم‌های ویژگی</span></div>
+<span class="meta"><span class="ai-kv" id="flagsEnv">—</span><button class="chip" data-i18n="admin.flags.refresh" id="flagsRefresh" type="button">بازخوانی</button></span>
+</div>
+<div class="ai-note" data-i18n="admin.flags.subtitle">کلیدهای عرضه تدریجی معتبر در سمت سرور برای ویژگی‌های هوش مصنوعی</div>
+<div class="ai-err" hidden="true" id="flagsErrorBox"><span></span></div>
+<div class="log-table-wrap">
+<table class="sys-table">
+<thead><tr><th data-i18n="admin.flags.feature">ویژگی</th><th data-i18n="admin.flags.status">وضعیت</th><th data-i18n="admin.flags.targeting">هدف‌گیری</th><th data-i18n="admin.flags.environment">محیط</th><th data-i18n="admin.flags.updatedBy">به‌روزرسانی توسط</th><th></th></tr></thead>
+<tbody id="flagsBody"><tr><td class="sys-empty" colspan="6" data-i18n="admin.flags.loading">در حال بارگیری پرچم‌های ویژگی…</td></tr></tbody>
+</table>
+</div>
+</div>
+<div class="panel" id="billingPanel">
+<div class="panel-head">
+<div class="t"><svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" width="18"><rect height="14" rx="2" width="20" x="2" y="5"></rect><line x1="2" x2="22" y1="10" y2="10"></line><path d="M6 15h4"></path></svg> <span data-i18n="admin.billing.title">صورتحساب و اشتراک</span></div>
+<span class="meta"><button class="chip" data-i18n="admin.billing.refresh" id="billingRefresh" type="button">بازخوانی</button></span>
+</div>
+<div class="ai-note" data-i18n="admin.billing.subtitle">وضعیت اشتراک قابل مشاهده و سهمیه‌های مبتنی بر زمان اجرا</div>
+<div class="ai-err" hidden="true" id="billingErrorBox"><span></span></div>
+<div id="billingBody"><div class="sys-empty" data-i18n="admin.billing.loading">در حال بارگیری وضعیت صورت‌حساب…</div></div>
+</div>
+<div class="panel" id="analyticsPanel">
+<div class="panel-head">
+<div class="t"><svg fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" width="18"><path d="M3 3v18h18"></path><path d="M7 14l4-4 3 3 5-6"></path></svg> <span data-i18n="admin.analytics.title">تحلیل و درآمد</span></div>
+<span class="meta"><button class="chip" data-i18n="admin.analytics.refresh" id="analyticsRefresh" type="button">بازخوانی</button></span>
+</div>
+<div class="ai-note a-note" data-i18n="admin.analytics.subtitle">تحلیل مبتنی بر شواهدِ محصول, عملیات و درآمد; هر شاخص از یک منبع معتبر استخراج می‌شود.</div>
+<div class="ai-err" hidden="true" id="analyticsErrorBox"><span></span></div>
+<div class="a-toolbar">
+<label class="a-kv" data-i18n="admin.analytics.range" for="analyticsRange">بازه زمانی</label>
+<select class="f-input" id="analyticsRange">
+<option data-i18n="admin.analytics.rangeToday" value="today">امروز</option>
+<option data-i18n="admin.analytics.range7d" value="7d">7 روز</option>
+<option data-i18n="admin.analytics.range30d" selected="" value="30d">30 روز</option>
+<option data-i18n="admin.analytics.range90d" value="90d">90 روز</option>
+<option data-i18n="admin.analytics.rangeAll" value="all">همه زمان‌ها</option>
+<option data-i18n="admin.analytics.customRange" value="custom">بازه سفارشی</option>
+</select>
+<input aria-label="از" class="f-input" data-i18n-aria-label="admin.analytics.from" id="analyticsStart" type="date"/>
+<input aria-label="تا" class="f-input" data-i18n-aria-label="admin.analytics.to" id="analyticsEnd" type="date"/>
+<button class="chip" data-i18n="admin.analytics.apply" id="analyticsApply" type="button">اعمال</button>
+</div>
+<div id="analyticsBody"><div class="sys-empty a-empty" data-i18n="admin.analytics.loading">در حال بارگیری تحلیل‌ها…</div></div>
 </div>
 </main>
 </div>
 <script data-velora-early="1">
 (function(){
+  
+  
+  
+  
+  
+  if (window.VeloraLocale && VeloraLocale.loadFeatures) {
+    VeloraLocale.loadFeatures(['admin']).catch(function(){});
+  }
   document.addEventListener('DOMContentLoaded', function () {
     if (!window.VeloraData) { window.location.replace('/login'); return; }
     VeloraData.ready().then(function (user) {
       if (!user) { window.location.replace('/login'); return; }
-      if (user.role !== 'admin') window.location.replace('/dashboard');
+      
+      
+      
+      if (user.role !== 'admin' && user.role !== 'super_admin') window.location.replace('/dashboard');
     }).catch(function () { window.location.replace('/login'); });
   });
 })();
@@ -928,6 +1738,10 @@ function toggleMobileSidebar() {
       return true;
     });
   }
+  function roleLabel(role){return role==='super_admin'?t('admin.role.super_admin'):(role==='admin'?t('admin.role.admin'):t('admin.role.user'));}
+  function roleCls(role){return role==='admin'||role==='super_admin'?'admin':'user';}
+  function planLabel(plan){return plan==='pro'?t('admin.plan.pro'):t('admin.plan.free');}
+  function subLabel(status){return status==='active'?t('admin.subscription.active'):(status==='trialing'?t('admin.subscription.trialing'):(status==='expired'?t('admin.subscription.expired'):(status==='past_due'?t('admin.subscription.past_due'):(status==='requires_action'?t('admin.subscription.requires_action'):t('admin.subscription.none')))));}
   function renderTable(){
     var list=filtered();
     var pages=Math.max(1,Math.ceil(list.length/state.per));
@@ -936,23 +1750,28 @@ function toggleMobileSidebar() {
     $('shownCount').textContent=t('admin.usersShown',{count:number(list.length)});
     var body=$('tbody');
     if(!slice.length){
-      body.innerHTML='<tr><td colspan="5" style="text-align:center;padding:36px;color:var(--faint);">'+t('admin.noUsers')+'</td></tr>';
+      body.innerHTML='<tr><td colspan="7" style="text-align:center;padding:36px;color:var(--faint);">'+t('admin.noUsers')+'</td></tr>';
       $('pager').innerHTML='';return;
     }
     body.innerHTML=slice.map(function(u){
       var name=u.fullName||'—';
       var av=name.charAt(0)||'?';
-      var roleCls=u.role==='admin'?'admin':'user';
-      var roleTxt=t(u.role==='admin'?'admin.role.admin':'admin.role.user');
+      
+      var roleTxt=roleLabel(u.role);
+      var planTxt=planLabel(u.plan||'free');
+      var subTxt=subLabel(u.subscriptionStatus);
       var stCls=u.status==='active'?'active':'suspended';
       var stTxt=t(u.status==='active'?'status.active':'admin.status.suspended');
       var created=VeloraLocale.date(u.createdAt);
-      return '<tr>'
+      return '<tr data-u360id="'+u.id+'">'
         +'<td><div class="u-cell"><span class="u-av" style="background:'+avColor(u.email||name)+'">'+esc(av)+'</span><div><div class="u-name">'+esc(name)+'</div><div class="u-mail">'+esc(u.email)+'</div></div></div></td>'
-        +'<td><span class="role '+roleCls+'">'+roleTxt+'</span></td>'
-        +'<td><span class="st '+stCls+'"><span class="dot"></span>'+stTxt+'</span></td>'
+        +'<td><span class="role '+roleCls(u.role)+'">'+esc(roleTxt)+'</span></td>'
+        +'<td><span class="st '+(u.plan==='pro'?'active':'suspended')+'"><span class="dot"></span>'+esc(planTxt)+'</span></td>'
+        +'<td><span class="st '+(subTxt===t('admin.subscription.active')?'active':'suspended')+'"><span class="dot"></span>'+esc(subTxt)+'</span></td>'
+        +'<td><span class="st '+stCls+'"><span class="dot"></span>'+esc(stTxt)+'</span></td>'
         +'<td><span class="t-count" data-value-type="number">'+number(u.tradesCount||0)+'</span></td>'
         +'<td>'+esc(created)+'</td>'
+        +'<td><button class="chip u360-open" data-u360id="'+u.id+'" type="button" data-i18n="admin.user360.actions">'+t('admin.user360.actions')+'</button></td>'
         +'</tr>';
     }).join('');
     
@@ -981,18 +1800,628 @@ function toggleMobileSidebar() {
   $('search').addEventListener('input',function(){state.q=this.value.trim();state.page=1;renderTable();});
 
   
+  if ($('u360Back')) $('u360Back').addEventListener('click', closeUser360);
+  function u360GridClick(e){
+    var btn = e.target.closest && e.target.closest('.u360-open');
+    var tr = e.target.closest && e.target.closest('tr[data-u360id]');
+    var id = null;
+    if (btn) id = btn.getAttribute('data-u360id');
+    else if (tr) id = tr.getAttribute('data-u360id');
+    if (id) openUser360(Number(id));
+  }
+  document.getElementById('tbody').addEventListener('click', u360GridClick);
+
+  
+  
+  
+  function uK(stem){ return window.VeloraAdminUserKeys && window.VeloraAdminUserKeys[stem] || stem; }
+  function uT(stem, params){ return VeloraLocale.t(uK(stem), params); }
+  var u360State = { id: 0, tradePage: 1, tradePer: 10 };
+  
+  
+  function currentUser(){ return (window.VeloraData && VeloraData.getUser) ? VeloraData.getUser() : null; }
+  function roleFor(){ var u=currentUser(); return (u && u.role) || ''; }
+  function selfId(){ var u=currentUser(); return u && u.id ? Number(u.id) : 0; }
+  var u360data = null;
+  function uRoleLabel(r){ return t(r==='super_admin'?'admin.role.super_admin':(r==='admin'?'admin.role.admin':'admin.role.user')); }
+  function uPlanLabel(p){ return t(p==='pro'?'admin.plan.pro':'admin.plan.free'); }
+  function uSubLabel(s){
+    var m = s==='active'?'admin.subscription.active':(s==='past_due'?'admin.subscription.past_due':(s==='expired'?'admin.subscription.expired':(s==='trialing'?'admin.subscription.trialing':(s==='requires_action'?'admin.subscription.requires_action':'admin.subscription.none'))));
+    return t(m);
+  }
+  function uStatusCls(s){ return s==='active'?'active':'suspended'; }
+  function uStatusTxt(s){ return t(s==='active'?'status.active':'admin.status.suspended'); }
+  function uShow(parent, html){ if(parent) parent.innerHTML = html; }
+  function uHideDash(){ ['.kpi-grid','.charts','.user-panel'].forEach(function(sel){ document.querySelectorAll(sel).forEach(function(e){ e.style.display='none'; }); }); }
+  function uShowDash(){ ['.kpi-grid','.charts','.user-panel'].forEach(function(sel){ document.querySelectorAll(sel).forEach(function(e){ e.style.display=''; }); }); }
+  function uErr(msg){ var b=$('u360ErrorBox'); if(b){ b.hidden=false; $('u360ErrorText').textContent=msg; } }
+  function uErrHide(){ var b=$('u360ErrorBox'); if(b) b.hidden=true; }
+
+  function openUser360(id){
+    u360State.id = Number(id); u360State.tradePage = 1; u360data = null;
+    uHideDash();
+    var v=$('user360View'); if(v) v.hidden=false;
+    if(window.scrollTo) { try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(_){ } }
+    loadUser360();
+  }
+  function closeUser360(){
+    var v=$('user360View'); if(v) v.hidden=true;
+    uShowDash();
+    uErrHide();
+  }
+
+  function loadUser360(){
+    loadUserSummary(); loadAccounts(); loadTrades(1); loadAi(); loadUserBilling(); loadActivity(); loadAudit();
+  }
+
+  
+  function loadUserBilling(){
+    var b=$('u360Billing'); if(!b) return;
+    b.innerHTML='<div class="u360-empty">'+uT('loading')+'</div>';
+    VeloraData.request('/api/v1/admin/billing/users/'+u360State.id).then(function(d){
+      var data=(d&&d.data)?d.data:d;
+      b.innerHTML = billingHtml(data);
+    }).catch(function(e){ b.innerHTML='<div class="u360-empty">'+uT('error')+'</div>'; });
+  }
+  function billingHtml(data){
+    var sub=(data&&data.subscription)||{};
+    var ents=(data&&data.entitlements)||{};
+    var hist=(data&&data.history)||{};
+    if(!sub.available){ return '<div class="u360-empty">'+uT('notAvailable')+'</div>'; }
+    var html='';
+    html+='<div class="kv"><small>'+bT('planLbl')+'</small><b>'+esc(bPlanLabel(sub.plan))+'</b></div>'
+      +'<div class="kv"><small>'+bT('statusLbl')+'</small><b>'+esc(bStatusLabel(sub.status))+'</b></div>'
+      +'<div class="kv"><small>'+bT('started')+'</small><b>'+esc(sub.startedAt?VeloraLocale.date(sub.startedAt):bT('notConfigured'))+'</b></div>'
+      +'<div class="kv"><small>'+bT('expires')+'</small><b>'+esc(sub.expiresAt?VeloraLocale.date(sub.expiresAt):bT('notConfigured'))+'</b></div>';
+    html+='<div class="kv"><small>'+bT('provider')+'</small><b class="u360-empty">'+esc(bT('notAuthoritative'))+'</b></div>';
+    
+    var acct=ents.tradingAccounts||{};
+    var ai=ents.aiUsage||{};
+    html+='<div class="kv"><small>'+bT('accountsUsed')+'</small><b>'+(acct.used||0)+' / '+(acct.limit||'—')+'</b></div>'
+      +'<div class="kv"><small>'+bT('aiRequests')+'</small><b>'+(ai.requests||0)+'</b></div>'
+      +'<div class="kv"><small>'+bT('aiTokens')+'</small><b>'+number((ai.tokensUsed||0))+'</b></div>';
+    if(hist && hist.available){ html+='<div class="kv"><small>'+bT('history')+'</small><b>'+esc(bT('historyUnavailable'))+'</b></div>'; }
+    return html;
+  }
+
+  function loadUserSummary(){
+    var box=$('u360Identity'), cards=$('u360Cards');
+    if(box) box.innerHTML='<div class="u360-loading">'+uT('loading')+'</div>';
+    uErrHide();
+    VeloraData.request('/api/v1/admin/users/'+u360State.id).then(function(d){
+      var u=(d&&d.user)?d.user:d; u360data=u;
+      box.innerHTML = '<div class="av" style="background:linear-gradient(135deg,#ffb703,#d4af37)">'+esc((u.fullName||'?').charAt(0))+'</div>'
+        +'<div class="who"><b>'+esc(u.fullName||'—')+'</b><span>'+esc(u.email||'—')+'</span></div>';
+      cards.innerHTML =
+        card(uT('role'), '<span class="role '+((u.role==='user')?'user':'admin')+'">'+esc(uRoleLabel(u.role))+'</span>')
+        + card(uT('plan'), esc(uPlanLabel(u.plan||'free')))
+        + card(uT('subscription'), '<b>'+esc(uSubLabel(u.subscriptionStatus||'none'))+'</b>')
+        + card(uT('status'), '<span class="st '+uStatusCls(u.status)+'"><span class="dot"></span>'+esc(uStatusTxt(u.status))+'</span>')
+        + card(uT('userId'), String(u.id))
+        + card(uT('activeSessions'), String(u.activeSessions!=null?u.activeSessions:0))
+        + card(uT('knownDevices'), String(u.knownDevices!=null?u.knownDevices:0))
+        + card(uT('lastLoginAt'), esc(u.lastLoginAt?VeloraLocale.date(u.lastLoginAt):uT('notAvailable')))
+        + card(uT('locale'), esc(u.locale||'fa'))
+        + card(uT('createdAt'), esc(VeloraLocale.date(u.createdAt)));
+      renderActions(u);
+    }).catch(function(e){ uErr(uT('error')); });
+    function card(lbl, val){ return '<div class="u360-card"><small>'+lbl+'</small>'+val+'</div>'; }
+  }
+
+  function renderActions(u){
+    var box=$('u360Actions'); if(!box) return;
+    var r = roleFor(); var me = selfId();
+    var canSuspend = (r==='admin'||r==='super_admin') && u.id!==me;
+    var canChangeRole = r==='super_admin' && u.id!==me;
+    var canSub = (r==='admin'||r==='super_admin') && u.id!==me;
+    var canRevoke = (r==='admin'||r==='super_admin') && u.id!==me;
+    var html='';
+    if(u.status==='active'){ html+=actBtn('danger','suspend',uT('suspend'),canSuspend,'admin.user360.suspendConfirmTitle','admin.user360.suspendConfirmMsg',u.email); }
+    else { html+=actBtn('','activate',uT('activate'),canSuspend,'admin.user360.activateConfirmTitle','admin.user360.activateConfirmMsg',u.email); }
+    html+='<select class="chip" id="u360RoleSel" '+(canChangeRole?'':'disabled')+' title="'+uT('changeRole')+'">';
+    ['user','admin','super_admin'].forEach(function(r){ html+='<option value="'+r+'" '+(r===u.role?'selected':'')+'>'+uRoleLabel(r)+'</option>'; });
+    html+='</select>';
+    html+=actBtn('','changeRole',uT('changeRole'),canChangeRole,null,null);
+    html+='<select class="chip" id="u360PlanSel" '+(canSub?'':'disabled')+' title="'+uT('changeSubscription')+'">';
+    ['free','pro'].forEach(function(p){ html+='<option value="'+p+'" '+(p===u.plan?'selected':'')+'>'+uPlanLabel(p)+'</option>'; });
+    html+='</select>';
+    html+=actBtn('','revoke',uT('revokeSessions'),canRevoke,'admin.user360.revokeConfirmTitle','admin.user360.revokeConfirmMsg','');
+    if(!(canSuspend||canChangeRole||canSub||canRevoke)){ html+='<span class="hint">'+uT('permissionDenied')+'</span>'; }
+    box.innerHTML=html;
+    if($('u360RoleSel')) $('u360RoleSel').addEventListener('change', function(){ changeRole(u, this.value); });
+    if($('u360PlanSel')) $('u360PlanSel').addEventListener('change', function(){ changeSubscription(u, this.value); });
+    bindAct('u360SuspBtn', function(){ applyStatus(u,'suspended'); });
+    bindAct('u360ActiveBtn', function(){ applyStatus(u,'active'); });
+    bindAct('u360RoleBtn', function(){ changeRole(u, $('u360RoleSel')?$('u360RoleSel').value:u.role); });
+    bindAct('u360RevokeBtn', function(){ revokeSessions(u); });
+  }
+  function bindAct(id, fn){ var b=$(id); if(b) b.addEventListener('click', fn); }
+  function actBtn(cls, code, label, enabled, ct, cm, email){
+    var id = code==='suspend'?'u360SuspBtn':(code==='activate'?'u360ActiveBtn':(code==='changeRole'?'u360RoleBtn':(code==='revoke'?'u360RevokeBtn':'u360Unknown')));
+    return '<button class="'+cls+'" id="'+id+'" data-u360="'+code+'"'+(enabled?'':' disabled')+'>'+esc(label)+'</button>';
+  }
+  function confirmAndRun(titleKey, msgKey, email, fn){
+    var msg = uT(msgKey, { email: email });
+    VeloraDialog.confirm(msg, { title:uT(titleKey), confirm:uT('confirm'), cancel:uT('cancel') }).then(function(yes){ if(yes) fn(); });
+  }
+  function applyStatus(u, status){
+    confirmAndRun(status==='suspended'?'suspendConfirmTitle':'activateConfirmTitle', status==='suspended'?'suspendConfirmMsg':'activateConfirmMsg', u.email, function(){
+      VeloraData.request('/api/v1/admin/users/'+u.id+'/status', { method:'POST', body:{ status:status } }).then(function(){
+        loadUser360(); uErrHide();
+      }).catch(function(e){ uErr(eventMessage(e)); });
+    });
+  }
+  function changeRole(u, role){
+    if(role===u.role){ loadUserSummary(); return; }
+    VeloraData.request('/api/v1/admin/users/'+u.id+'/role', { method:'POST', body:{ role:role } }).then(function(){
+      loadUser360(); uErrHide();
+    }).catch(function(e){ uErr(eventMessage(e)); });
+  }
+  function changeSubscription(u, plan){
+    VeloraData.request('/api/v1/admin/users/'+u.id+'/subscription', { method:'POST', body:{ plan:plan, status:u.subscriptionStatus||'none' } }).then(function(){
+      loadUser360(); uErrHide();
+    }).catch(function(e){ uErr(eventMessage(e)); });
+  }
+  function revokeSessions(u){
+    confirmAndRun('revokeConfirmTitle','revokeConfirmMsg','', function(){
+      VeloraData.request('/api/v1/admin/users/'+u.id+'/revoke-sessions', { method:'POST' }).then(function(){
+        loadUser360(); uErrHide();
+      }).catch(function(e){ uErr(eventMessage(e)); });
+    });
+  }
+  function eventMessage(e){ return (e && e.messageKey) ? VeloraLocale.errorMessage(e, 'admin.loadFailed') : (e && e.message) || uT('actionFailed'); }
+
+  function loadAccounts(){
+    var b=$('u360Accounts'); if(!b) return;
+    b.innerHTML='<div class="u360-loading">'+uT('loading')+'</div>';
+    VeloraData.request('/api/v1/admin/users/'+u360State.id+'/accounts').then(function(d){
+      var list=(d&&d.accounts)||[];
+      if(!list.length){ uShow(b, '<div class="u360-empty">'+uT('accountsEmpty')+'</div>'); return; }
+      b.innerHTML = '<div class="table-wrap"><table class="u360-trades"><thead><tr>'
+        +'<th>'+uT('accAccount')+'</th><th>'+uT('accBroker')+'</th><th>'+uT('accPlatform')+'</th><th>'+uT('accStatus')+'</th><th>'+uT('accLastSync')+'</th>'
+        +'</tr></thead><tbody>'
+        + list.map(function(a){ return '<tr><td>'+esc(a.account||'—')+'</td><td>'+esc(a.broker||'—')+'</td><td>'+esc(a.platform||'—')+'</td>'
+          +'<td><span class="st '+((a.syncStatus==='CONNECTED')?'active':'suspended')+'"><span class="dot"></span>'+esc(a.syncStatus||'—')+'</span></td>'
+          +'<td>'+esc(a.lastSyncedAt?VeloraLocale.date(a.lastSyncedAt):uT('notAvailable'))+'</td></tr>'; }).join('')
+        +'</tbody></table></div>';
+    }).catch(function(e){ uShow(b, '<div class="u360-empty">'+uT('error')+'</div>'); });
+  }
+
+  function loadTrades(page){
+    u360State.tradePage = page||1;
+    var body=$('u360TradeBody'), pager=$('u360TradePager'); if(!body) return;
+    body.innerHTML='<tr><td colspan="7" class="u360-empty">'+uT('loading')+'</td></tr>';
+    VeloraData.request('/api/v1/admin/users/'+u360State.id+'/trades?page='+u360State.tradePage+'&per_page=10').then(function(d){
+      var items=(d&&d.items)||[], total=(d&&d.total)||0;
+      if(!items.length){ body.innerHTML='<tr><td colspan="7" class="u360-empty">'+uT('tradesEmpty')+'</td></tr>'; if(pager) pager.innerHTML=''; return; }
+      body.innerHTML = items.map(function(t2){
+        var pnl=number(t2.profit_loss!=null?t2.profit_loss:0);
+        var cls = Number(t2.profit_loss||0)>=0 ? 'green':'red';
+        return '<tr><td>'+esc(t2.symbol||'—')+'</td><td>'+esc(t2.direction||'—')+'</td><td>'+number(t2.volume||0)+'</td>'
+          +'<td>'+number(t2.entry_price||0)+'</td><td>'+number(t2.exit_price||0)+'</td>'
+          +'<td style="color:var(--'+cls+')">'+pnl+'</td>'
+          +'<td>'+esc(t2.open_time?VeloraLocale.date(t2.open_time):'—')+'</td></tr>';
+      }).join('');
+      renderPager(pager, total, 10, u360State.tradePage, loadTrades);
+    }).catch(function(e){ body.innerHTML='<tr><td colspan="7" class="u360-empty">'+uT('error')+'</td></tr>'; });
+  }
+  function renderPager(pager, total, per, page, fn){
+    if(!pager) return;
+    var pages=Math.max(1, Math.ceil(total/per));
+    var pg='<button class="pg-btn" data-p="'+(page-1)+'" '+(page<=1?'disabled':'')+'>'+t('admin.previous')+'</button>'
+      +'<span class="pg-info">'+page+' / '+pages+'</span>'
+      +'<button class="pg-btn" data-p="'+(page+1)+'" '+(page>=pages?'disabled':'')+'>'+t('admin.next')+'</button>';
+    pager.innerHTML=pg;
+    pager.querySelectorAll('[data-p]').forEach(function(b){ if(!b.disabled){ b.addEventListener('click', function(){ fn(Number(b.getAttribute('data-p'))); }); } });
+  }
+
+  function loadAi(){
+    var b=$('u360Ai'); if(!b) return;
+    var u=u360data;
+    if(u && u.aiUsage && u.aiUsage.available){
+      b.innerHTML = '<div class="kv"><small>'+uT('aiRequests')+'</small><b>'+(u.aiUsage.requests||0)+'</b></div>'
+        +'<div class="kv"><small>'+uT('aiFailed')+'</small><b>'+(u.aiUsage.failed||0)+'</b></div>'
+        +'<div class="kv"><small>'+uT('aiTokens')+'</small><b>'+number(u.aiUsage.tokensUsed||0)+'</b></div>';
+    } else {
+      b.innerHTML = '<div class="u360-empty">'+uT('aiUsageEmpty')+'</div>';
+    }
+  }
+
+  function loadActivity(){
+    var b=$('u360ActivityBody'); if(!b) return;
+    b.innerHTML='<tr><td colspan="5" class="u360-empty">'+uT('loading')+'</td></tr>';
+    VeloraData.request('/api/v1/admin/users/'+u360State.id+'/activity').then(function(d){
+      var items=(d&&d.items)||[];
+      if(!items.length){ b.innerHTML='<tr><td colspan="5" class="u360-empty">'+uT('activityEmpty')+'</td></tr>'; return; }
+      b.innerHTML = items.map(function(a){
+        var evt = a.event==='session.revoked'?uT('eventRevoked'):uT('eventCreated');
+        var res = a.result==='revoked'?uT('resultRevoked'):uT('resultActive');
+        return '<tr><td>'+esc(evt)+'</td><td>'+esc(a.time?VeloraLocale.date(a.time):'—')+'</td>'
+          +'<td>'+esc(a.ip||'—')+'</td><td class="u360-ua" title="'+esc(a.userAgent||'')+'">'+esc(a.userAgent||'—')+'</td>'
+          +'<td><span class="st '+((a.result==='revoked')?'suspended':'active')+'"><span class="dot"></span>'+esc(res)+'</span></td></tr>';
+      }).join('');
+    }).catch(function(e){ b.innerHTML='<tr><td colspan="5" class="u360-empty">'+uT('error')+'</td></tr>'; });
+  }
+
+  function loadAudit(){
+    var b=$('u360AuditBody'); if(!b) return;
+    b.innerHTML='<tr><td colspan="4" class="u360-empty">'+uT('loading')+'</td></tr>';
+    VeloraData.request('/api/v1/admin/users/'+u360State.id+'/audit').then(function(d){
+      var items=(d&&d.items)||[];
+      if(!items.length){ b.innerHTML='<tr><td colspan="4" class="u360-empty">'+uT('auditEmpty')+'</td></tr>'; return; }
+      b.innerHTML = items.map(function(a){
+        var actor = a.actorUserId===0 ? (a.actorRole||'system') : (a.actorRole||'')+' #'+(a.actorUserId||'');
+        return '<tr><td>'+esc(actor)+'</td><td>'+esc(a.action||'—')+'</td>'
+          +'<td>'+esc(a.createdAt?VeloraLocale.date(a.createdAt):'—')+'</td>'
+          +'<td><span class="st '+(a.result==='denied'?'suspended':'active')+'"><span class="dot"></span>'+esc(a.result||'—')+'</span></td></tr>';
+      }).join('');
+    }).catch(function(e){ b.innerHTML='<tr><td colspan="4" class="u360-empty">'+uT('error')+'</td></tr>'; });
+  }
+
+  
   function signOut(){VeloraData.logout().finally(function(){window.location.replace('/login');});}
   if($('logoutBtn')) $('logoutBtn').addEventListener('click',signOut);
   if($('mUserAv')) $('mUserAv').addEventListener('click',signOut);
 
-  load().catch(function(e){
+  function boot(){ return load(); }
+  function onLoadError(e){
     if(e.status===403){
       showErr(t('admin.forbidden'));
       document.querySelectorAll('.kpi-grid,.charts,.user-panel').forEach(function(el){el.style.opacity='.35';el.style.pointerEvents='none';});
     }else{
       showErr(VeloraLocale.errorMessage(e,'admin.loadFailed'));
     }
-  });
+  }
+  
+  
+  if (VeloraData.ready) {
+    VeloraData.ready().then(function(u){ if(u) return boot(); }).catch(onLoadError);
+  } else {
+    boot().catch(onLoadError);
+  }
+
+  
+  
+  
+  function fT(stem, p){ return t('admin.flags.'+stem, p); }
+  function fRole(){ try{ var u=VeloraData.getUser(); return (u&&u.role)||''; }catch(e){ return ''; } }
+  function fCanEdit(){ return fRole()==='super_admin'; }
+  function fErr(msg){ var b=$('flagsErrorBox'); if(b){ b.hidden=false; var s=b.querySelector('span'); if(s) s.textContent=msg; } }
+  function fErrHide(){ var b=$('flagsErrorBox'); if(b) b.hidden=true; }
+  var fFlagsData = [];
+
+  function loadFlags(){
+    var body=$('flagsBody'); if(!body) return;
+    fErrHide();
+    body.innerHTML='<tr><td colspan="6" class="sys-empty">'+esc(fT('loading'))+'</td></tr>';
+    VeloraData.request('/api/v1/admin/feature-flags').then(function(d){
+      var env=(d&&d.environment)||''; var envEl=$('flagsEnv'); if(envEl) envEl.textContent=env;
+      var flags=(d&&d.flags)||[]; fFlagsData=flags;
+      if(!flags.length){ body.innerHTML='<tr><td colspan="6" class="sys-empty">'+esc(fT('empty'))+'</td></tr>'; return; }
+      body.innerHTML = flags.map(function(f){ return fFlagRow(f); }).join('');
+      body.querySelectorAll('[data-act]').forEach(function(btn){
+        btn.addEventListener('click', function(){ fDoAct(btn); });
+      });
+    }).catch(function(e){
+      body.innerHTML='<tr><td colspan="6" class="sys-empty">'+esc(fT('error'))+'</td></tr>';
+      fErr(fT('error'));
+    });
+  }
+
+  function fStatus(f){ return f.enabled ? '<span class="st active"><span class="dot"></span>'+esc(fT('on'))+'</span>' : '<span class="st suspended"><span class="dot"></span>'+esc(fT('off'))+'</span>'; }
+  function fTargeting(f){ if(!f.enabled||f.rollout<=0) return esc(fT('noUsers')); if(f.rollout>=100) return esc(fT('allUsers')); return esc(f.rollout+'%'); }
+  function fUpdatedBy(u){ return (u&&u>0) ? ('#'+u) : esc(fT('system')); }
+  function fFlagRow(f){
+    var edit=fCanEdit(); var actions='';
+    if(edit){
+      var primary = f.enabled ? 'disable' : 'enable';
+      actions = '<button class="chip" data-act="'+primary+'" data-feature="'+esc(f.feature)+'">'+esc(fT(primary))+'</button>'
+        + ' <button class="chip" data-act="target" data-feature="'+esc(f.feature)+'">'+esc(fT('editTargeting'))+'</button>';
+    } else {
+      actions = '<span class="hint">'+esc(fT('denyEditMsg'))+'</span>';
+    }
+    return '<tr data-flag="'+esc(f.feature)+'"><td>'+esc(f.feature)+'</td><td>'+fStatus(f)+'</td>'
+      +'<td>'+fTargeting(f)+'</td><td>'+esc(f.environment||'')+'</td><td>'+fUpdatedBy(f.updatedBy)+'</td><td>'+actions+'</td></tr>';
+  }
+
+  function fDoAct(btn){
+    var act=btn.getAttribute('data-act'); var name=btn.getAttribute('data-feature');
+    var f=null; for(var i=0;i<fFlagsData.length;i++){ if(fFlagsData[i].feature===name){ f=fFlagsData[i]; break; } }
+    if(!f) return;
+    if(act==='enable'){ fGo(fT('confirmEnableTitle'), fT('confirmEnableMsg',{feature:name}), function(){ fPatch(name,{enabled:true,rollout:f.rollout||100}); }); }
+    else if(act==='disable'){ fGo(fT('confirmDisableTitle'), fT('confirmDisableMsg',{feature:name}), function(){ fPatch(name,{enabled:false,rollout:0}); }); }
+    else if(act==='target'){ fEditTargeting(f); }
+  }
+  function fGo(title,msg,fn){ VeloraDialog.confirm(msg,{title:title,confirm:fT('save'),cancel:fT('cancel')}).then(function(yes){ if(yes) fn(); }); }
+  function fPatch(name, body){
+    fErrHide();
+    VeloraData.request('/api/v1/admin/feature-flags/'+encodeURIComponent(name), { method:'PATCH', body:body }).then(function(){
+      fErr(''); var b=$('flagsErrorBox'); if(b) b.hidden=true;
+      loadFlags();           
+    }).catch(function(e){ fErr(eventMessage(e) || fT('saveError')); });
+  }
+  function fEditTargeting(f){
+    if(!fCanEdit()){ fGo(fT('denyEditTitle'), fT('denyEditMsg'), function(){}); return; }
+    var row=document.querySelector('tr[data-flag="'+CSS.escape(f.feature)+'"]'); if(!row) return;
+    var cell=row.lastElementChild;
+    var cur=(!f.enabled||f.rollout<=0)?100:f.rollout;
+    cell.innerHTML='<input type="number" min="0" max="100" value="'+cur+'" class="f-input" style="max-width:90px" data-flag-rollout aria-label="'+esc(fT('rollout'))+'" data-i18n-aria-label="admin.flags.rollout">'
+      +' <button class="chip" data-act="savetarget" data-feature="'+esc(f.feature)+'">'+esc(fT('save'))+'</button> ';
+    var save=cell.querySelector('[data-act="savetarget"]');
+    save.addEventListener('click', function(){
+      var inp=row.querySelector('[data-flag-rollout]'); var val=inp?Number(inp.value):cur;
+      if(!(val>=0&&val<=100)){ fErr(fT('saveError')); return; }
+      fPatch(f.feature,{enabled:true,rollout:Math.round(val)});
+    });
+  }
+
+  (function initFlags(){
+    if(!$('flagsBody')) return;
+    if(!VeloraData.ready){ return; }
+    VeloraData.ready().then(function(u){ if(u) loadFlags(); }).catch(function(){});
+    var r=$('flagsRefresh'); if(r){ r.addEventListener('click', function(){ loadFlags(); }); }
+  })();
+
+  
+  
+  
+  function bK(stem){ return window.VeloraAdminBillingKeys && window.VeloraAdminBillingKeys[stem] || stem; }
+  function bT(stem, p){ return VeloraLocale.t(bK(stem), p); }
+  function bErr(msg){ var b=$('billingErrorBox'); if(b){ b.hidden=false; var s=b.querySelector('span'); if(s) s.textContent=msg; } }
+  function bErrHide(){ var b=$('billingErrorBox'); if(b) b.hidden=true; }
+  function bPlanLabel(k){ return k==='pro' ? bT('pro') : bT('free'); }
+  function bStatusLabel(s){ return s||'—'; }
+
+  function loadBilling(){
+    var body=$('billingBody'); if(!body) return;
+    bErrHide();
+    body.innerHTML='<div class="sys-empty">'+esc(bT('loading'))+'</div>';
+    VeloraData.request('/api/v1/admin/billing').then(function(d){
+      var data=(d&&d.data)?d.data:d;
+      body.innerHTML = bOverview(data);
+    }).catch(function(e){
+      body.innerHTML='<div class="sys-empty">'+esc(bT('error'))+'</div>';
+      bErr(fT('error'));
+    });
+  }
+
+  function bOverview(d){
+    var provider = d.provider||{};
+    var plans = d.plans||[];
+    var dist = d.distribution||{};
+    var ents = d.entitlements||{};
+    var hist = d.history||{};
+    var html='';
+    
+    html+='<div class="b-subhead">'+esc(bT('provider'))+'</div>';
+    html+='<div class="b-grid"><div class="b-kv"><small>'+esc(bT('provider'))+'</small>'
+      +((provider.available)?'<b>'+esc(provider.name||'')+'</b>':'<span class="b-unavail">'+esc(bT('providerUnavailable'))+'</span>')+'</div>'
+      +'<div class="b-kv b-full"><small>'+esc(bT('providerReason'))+'</small><span class="b-unavail">'+esc((provider.reason||''))+'</span></div></div>';
+    
+    html+='<div class="b-subhead">'+esc(bT('plans'))+'</div>';
+    var planTable='<div class="log-table-wrap"><table class="sys-table"><thead><tr><th>'+esc(bT('plan'))+'</th><th>'+esc(bT('price'))+'</th><th>'+esc(bT('statusLbl'))+'</th></tr></thead><tbody>';
+    (plans).forEach(function(p){
+      var priceAvail = p.price && p.price.available;
+      planTable+='<tr><td>'+esc(bPlanLabel(p.key))+' <span class="hint">('+esc(p.key)+')</span></td>'
+        +'<td>'+(priceAvail?esc(p.price.value+' '+p.price.currency):'<span class="b-unavail">'+esc(bT('priceUnavailable'))+'</span>')+'</td>'
+        +'<td>'+(p.active?'<span class="st active"><span class="dot"></span>'+esc(bT('free'))+'</span>':'<span class="st suspended"><span class="dot"></span>—</span>')+'</td></tr>';
+    });
+    planTable+='</tbody></table></div>';
+    html+=planTable;
+    
+    if(dist.available){
+      html+='<div class="b-subhead">'+esc(bT('distribution'))+'</div><div class="b-grid">';
+      (dist.plan||[]).forEach(function(r){ html+='<div class="b-kv"><small>'+esc(bPlanLabel(r.key))+'</small><b>'+r.count+'</b></div>'; });
+      html+='</div>';
+      html+='<div class="b-subhead">'+esc(bT('statusDistribution'))+'</div><div class="b-grid">';
+      (dist.subscriptionStatus||[]).forEach(function(r){ html+='<div class="b-kv"><small>'+esc(bStatusLabel(r.key))+'</small><b>'+r.count+'</b></div>'; });
+      html+='</div>';
+    }
+    
+    html+='<div class="b-subhead">'+esc(bT('entitlements'))+'</div><div class="b-grid">';
+    var accounts = ents.tradingAccountsPerUser||{};
+    html+='<div class="b-kv"><small>'+esc(bT('accountsLimit'))+'</small><b>'+(accounts.limit??'—')+'</b></div>';
+    var budget = ents.providerBudget||{};
+    if(budget.available){
+      (budget.items||[]).forEach(function(i){ html+='<div class="b-kv"><small>'+esc(i.provider)+' — '+esc(bT('providerBudget'))+'</small><b>'+(i.used||0)+' / '+(i.limit||0)+'</b></div>'; });
+    } else {
+      html+='<div class="b-kv"><small>'+esc(bT('providerBudget'))+'</small><span class="b-unavail">—</span></div>';
+    }
+    html+='</div>';
+    
+    html+='<div class="b-subhead">'+esc(bT('history'))+'</div>'
+      +'<div class="b-kv"><span class="b-unavail">'+esc((hist.available?false:true)?bT('historyUnavailable'):'')+'</span></div>';
+    return html;
+  }
+
+  (function initBilling(){
+    if(!$('billingBody')) return;
+    if(!VeloraData.ready){ return; }
+    VeloraData.ready().then(function(u){ if(u) loadBilling(); }).catch(function(){});
+    var r=$('billingRefresh'); if(r){ r.addEventListener('click', function(){ loadBilling(); }); }
+  })();
+
+  
+  
+  
+  function aK(stem){ return window.VeloraAdminAnalyticsKeys && window.VeloraAdminAnalyticsKeys[stem] || stem; }
+  function aT(stem, p){ return VeloraLocale.t(aK(stem), p); }
+  function aErr(msg){ var b=$('analyticsErrorBox'); if(b){ b.hidden=false; var s=b.querySelector('span'); if(s) s.textContent=msg; } }
+  function aErrHide(){ var b=$('analyticsErrorBox'); if(b) b.hidden=true; }
+  function aFetch(path){ return VeloraData.request(path).then(function(d){ return (d&&d.data)?d.data:d; }); }
+  var aRange = '30d';
+
+  function aQuery(){
+    if(aRange==='custom'){
+      var s=$('analyticsStart')?($('analyticsStart').value||''):'';
+      var e=$('analyticsEnd')?($('analyticsEnd').value||''):'';
+      if(s&&e) return '?start='+encodeURIComponent(s)+'&end='+encodeURIComponent(e);
+      return '';
+    }
+    return aRange && aRange!=='30d' ? '?range='+encodeURIComponent(aRange) : '';
+  }
+
+  function loadAnalytics(){
+    var body=$('analyticsBody'); if(!body) return;
+    aErrHide();
+    body.innerHTML='<div class="sys-empty a-empty">'+esc(aT('loading'))+'</div>';
+    var q=aQuery();
+    Promise.all([
+      aFetch('/api/v1/admin/analytics/overview'+q),
+      aFetch('/api/v1/admin/analytics/users'+q),
+      aFetch('/api/v1/admin/analytics/trading'+q),
+      aFetch('/api/v1/admin/analytics/ai'+q),
+      aFetch('/api/v1/admin/analytics/operations'+q),
+      aFetch('/api/v1/admin/analytics/revenue'),
+    ]).then(function(payloads){
+      body.innerHTML = aRender({ overview:payloads[0], users:payloads[1], trading:payloads[2],
+        ai:payloads[3], operations:payloads[4], revenue:payloads[5] });
+    }).catch(function(e){
+      body.innerHTML='<div class="sys-empty a-empty">'+esc(aT('error'))+'</div>';
+      aErr(aT('error'));
+    });
+  }
+
+  function aPlanLabel(k){ return k==='pro' ? t('admin.plan.pro') : (k==='free' ? t('admin.plan.free') : (String(k||''))); }
+  function aRoleLabel(r){ return r==='super_admin'?t('admin.role.super_admin'):(r==='admin'?t('admin.role.admin'):t('admin.role.user')); }
+
+  function aCard(lbl, val){ return '<div class="a-card"><small>'+lbl+'</small><b>'+val+'</b></div>'; }
+  function aTable(headers, rows){
+    var h='<thead><tr>'+headers.map(function(x){return '<th>'+esc(x)+'</th>';}).join('')+'</tr></thead>';
+    var b='<tbody>'+rows.map(function(cells){
+      return '<tr>'+cells.map(function(c){return '<td>'+c+'</td>';}).join('')+'</tr>';
+    }).join('')+'</tbody>';
+    return '<div class="log-table-wrap"><table class="sys-table">'+h+b+'</table></div>';
+  }
+  function aEmpty(){ return '<div class="a-empty">'+esc(aT('empty'))+'</div>'; }
+  
+  function aBars(items){
+    if(!items || !items.length) return aEmpty();
+    var max=Math.max.apply(null, items.map(function(x){return x.value||0;}).concat([1]));
+    return '<div class="a-bars">'+ items.slice(0,12).map(function(x){
+      var h=Math.max(4, Math.round(((x.value||0)/max)*100));
+      return '<div style="flex:1;min-width:8px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;height:100%;">'
+        +'<div class="a-bar" style="height:'+h+'%"><span>'+esc(x.label)+': '+number(x.value||0)+'</span></div>'
+        +'<span class="a-bar-label">'+esc(x.label)+'</span></div>';
+    }).join('')+'</div>';
+  }
+
+  function aRender(d){
+    var html='';
+    
+    html+='<div class="a-subhead">'+esc(aT('sectionOverview'))+'</div>';
+    var ov=d.overview||{}; var ou=ov.users||{}; var ot=ov.trading||{}; var oa=ov.ai||{}; var oo=ov.operations||{};
+    html+='<div class="a-grid">'
+      +aCard(aT('totalUsers'), number(ou.total||0))
+      +aCard(aT('newUsers'), number(ou.newInRange||0))
+      +aCard(aT('totalTrades'), number(ot.totalTrades||0))
+      +aCard(aT('totalRequests'), number(oa.totalRequests||0))
+      +aCard(aT('systemErrors'), number(oo.systemErrors||0))
+      +aCard(aT('integrationFailures'), number(oo.integrationFailures||0))
+      +'</div>';
+    
+    html+='<div class="a-subhead">'+esc(aT('sectionUsers'))+'</div>';
+    var us=d.users||{}; var trend=us.registrationTrend||[];
+    var trendBy=(function(){ var m={};
+      trend.forEach(function(r){ var t=(r.date||'').slice(5); m[t]=(m[t]||0)+(r.count||0); });
+      return Object.keys(m).map(function(k){ return {label:k, value:m[k]}; }); })();
+    html+='<div class="a-grid">'
+      +aCard(aT('totalUsers'), number(us.total||0))
+      +aCard(aT('newUsers'), number(us.newInRange||0))
+      +aCard(aT('activeUsers'), number(((us.byStatus||[]).find(function(r){return r.key==='active';})||{}).count||0))
+      +aCard(aT('suspendedUsers'), number(((us.byStatus||[]).find(function(r){return r.key==='suspended';})||{}).count||0))
+      +'</div>';
+    html+='<div class="a-subhead">'+esc(aT('registrationTrend'))+'</div>'+aBars(trendBy);
+    html+='<div class="a-subhead">'+esc(aT('byRole'))+'</div>'+aTable([aT('byRole'),aT('totalUsers')],
+      (us.byRole||[]).map(function(r){ return [aRoleLabel(r.key), number(r.count)]; }));
+    html+='<div class="a-subhead">'+esc(aT('byLocale'))+'</div>'+aTable([aT('byLocale'),aT('totalUsers')],
+      (us.byLocale||[]).map(function(r){ return [esc(r.key), number(r.count)]; }));
+    
+    html+='<div class="a-subhead">'+esc(aT('sectionTrading'))+'</div>';
+    var tr=d.trading||{}; var wl=tr.winLoss||{};
+    html+='<div class="a-grid">'
+      +aCard(aT('totalTrades'), number(tr.total||0))
+      +aCard(aT('tradesInRange'), number(tr.tradesInRange||0))
+      +aCard(aT('tradingAccounts'), number((d.overview||{}).trading?((d.overview||{}).trading.tradingAccounts||0):0))
+      +aCard(aT('wins'), number(wl.wins||0))
+      +aCard(aT('losses'), number(wl.losses||0))
+      +aCard(aT('netPnl'), esc(tr.netPnl||'0'))
+      +'</div>';
+    html+='<div class="a-note">'+esc(aT('tradingNote'))+'</div>';
+    html+='<div class="a-subhead">'+esc(aT('bySymbol'))+'</div>'+aTable([aT('bySymbol'),aT('totalTrades')],
+      (tr.bySymbol||[]).map(function(r){ return [esc(r.key), number(r.count)]; }));
+    
+    html+='<div class="a-subhead">'+esc(aT('sectionAi'))+'</div>';
+    var a=d.ai||{};
+    var okS=(a.byStatus||[]).find(function(r){return r.key==='success';});
+    var okF=(a.byStatus||[]).find(function(r){return r.key!=='success';});
+    html+='<div class="a-grid">'
+      +aCard(aT('totalRequests'), number(a.total||0))
+      +aCard(aT('success'), number(okS?okS.count:0))
+      +aCard(aT('failed'), number(okF?okF.count:0))
+      +aCard(aT('tokensUsed'), number(a.tokensUsed||0))
+      +aCard(aT('requestCost'), esc(a.cost||'0'))
+      +'</div>';
+    html+='<div class="a-subhead">'+esc(aT('aiTrend'))+'</div>'+aBars((a.trend||[]).map(function(r){
+      return {label:(r.date||'').slice(5), value:r.count}; }));
+    html+='<div class="a-subhead">'+esc(aT('byProvider'))+'</div>'+aTable([aT('byProvider'),aT('totalRequests')],
+      (a.byProvider||[]).map(function(r){ return [esc(r.key), number(r.count)]; }));
+    html+='<div class="a-subhead">'+esc(aT('byFeature'))+'</div>'+aTable([aT('byFeature'),aT('totalRequests')],
+      (a.byFeature||[]).map(function(r){ return [esc(r.key), number(r.count)]; }));
+    
+    html+='<div class="a-subhead">'+esc(aT('sectionOperations'))+'</div>';
+    var op=d.operations||{}; var logs=op.systemLogs||{}; var ints=op.integrations||[];
+    html+='<div class="a-grid">'
+      +aCard(aT('systemErrors'), number(logs.errors||0))
+      +aCard(aT('integrationFailures'), number(op.integrationFailures||0))
+      +aCard(aT('adminAudit'), number((op.adminAudit||{}).eventsInRange||0))
+      +'</div>';
+    html+='<div class="a-subhead">'+esc(aT('bySeverity'))+'</div>'+aTable([aT('bySeverity'),aT('totalRequests')],
+      (logs.bySeverity||[]).map(function(r){ return [esc(r.key), number(r.count)]; }));
+    html+='<div class="a-subhead">'+esc(aT('integrationHealth'))+'</div>'+(ints.length
+      ? aTable([aT('integrationHealth'),aT('status'),aT('latency')],
+        ints.map(function(i){ return [esc(i.integration), esc(i.status), (i.latencyMs!=null?number(i.latencyMs):'—')]; }))
+      : aEmpty());
+    
+    html+='<div class="a-subhead">'+esc(aT('sectionRevenue'))+'</div>';
+    var rev=d.revenue||{};
+    var finKeys=[['revenue',aT('revenue')],['mrr',aT('mrr')],['arr',aT('arr')],['churn',aT('churn')],['ltv',aT('ltv')],['paymentVolume',aT('paymentVolume')],['refunds',aT('refunds')]];
+    var finRows=finKeys.map(function(pair){ return [
+      esc(pair[1]),
+      '<span class="a-unavail">'+esc(aT('revenueUnavailable'))+'</span>'
+    ]; });
+    html+='<div class="a-card a-card-note" style="margin-bottom:10px"><span class="a-unavail">'
+      +esc(rev.note||aT('revenueNote'))+'</span></div>';
+    html+=aTable([aT('revenue'),aT('status')], finRows);
+    return html;
+  }
+
+  (function initAnalytics(){
+    if(!$('analyticsBody')) return;
+    if(!VeloraData.ready){ return; }
+    VeloraData.ready().then(function(u){ if(u) loadAnalytics(); }).catch(function(){});
+    var r=$('analyticsRefresh'); if(r){ r.addEventListener('click', function(){ loadAnalytics(); }); }
+    var sel=$('analyticsRange'); if(sel){
+      sel.addEventListener('change', function(){
+        aRange = sel.value || '30d';
+        var isCustom = aRange==='custom';
+        $('analyticsStart').disabled = !isCustom;
+        $('analyticsEnd').disabled = !isCustom;
+        loadAnalytics();
+      });
+    }
+    var app=$('analyticsApply'); if(app){
+      app.addEventListener('click', function(){
+        aRange='custom';
+        if($('analyticsStart')){ $('analyticsStart').disabled=false; }
+        if($('analyticsEnd')){ $('analyticsEnd').disabled=false; }
+        loadAnalytics();
+      });
+    }
+    if($('analyticsStart')){ $('analyticsStart').disabled=true; }
+    if($('analyticsEnd')){ $('analyticsEnd').disabled=true; }
+  })();
+
 })();
 </script>
 <script src="/public/assets/velora-ui-sound.js?v=2026.08.13.2"></script>

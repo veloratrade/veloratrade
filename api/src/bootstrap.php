@@ -70,6 +70,24 @@ spl_autoload_register(static function (string $class): void {
 set_exception_handler(static function (\Throwable $e): void {
     $isApi = $e instanceof \Velora\Core\Exceptions\ApiException;
 
+    // Phase D — best-effort structured ERROR log (never a secret; fail-open).
+    try {
+        $req = \Velora\Core\Request::fromGlobals();
+        $ctx = $req->contextId();
+        \Velora\Core\SystemLogRepository::recordIfAvailable(
+            'ERROR',
+            'api',
+            'Unhandled exception: ' . $e->getMessage(),
+            $ctx,
+            $ctx,
+            null,
+            $isApi ? $e->errorCode() : 'INTERNAL_ERROR',
+            ['status' => $isApi ? $e->httpStatus() : 500],
+        );
+    } catch (\Throwable $ignored) {
+        // Logging must never break error handling.
+    }
+
     $status = $isApi ? $e->httpStatus() : 500;
     $message = $isApi ? $e->getMessage() : 'Internal server error.';
     $code = $isApi ? $e->errorCode() : 'INTERNAL_ERROR';

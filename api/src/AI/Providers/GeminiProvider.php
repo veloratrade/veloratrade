@@ -12,7 +12,6 @@ use Velora\AI\Exceptions\AITimeoutException;
 use Velora\AI\Exceptions\AIValidationException;
 use Velora\AI\Extraction\ExtractedTradeData;
 use Velora\AI\Prompts\PromptManager;
-use Velora\AI\Repositories\AIFeatureFlagRepository;
 use Velora\AI\Transports\DirectGeminiTransport;
 use Velora\AI\Transports\GeminiTransportInterface;
 use Velora\AI\Transports\N8nGeminiRelayTransport;
@@ -24,10 +23,15 @@ use Velora\Core\Config;
  * Transport is swappable (temporary n8n relay while the API host sits in a
  * region Google's frontend blocks; direct HTTPS afterwards):
  *   GEMINI_ROUTE=direct|n8n_relay   (explicit env wins)
- *   flag ai_gemini_relay_route      (admin-style DB switch, fallback)
- *   default: direct
- * The relay is used for extraction-shaped calls only; everything above this
- * class is unaware of the route. Business logic stays transport-agnostic.
+       *   route precedence (Phase B, single authority AiRouteResolver):
+       *     1. Admin-managed global route (ai_global_settings) — beats ENV
+       *     2. GEMINI_ROUTE env
+       *     3. ai_gemini_relay_route flag  (legacy compat fallback)
+       *     4. default: direct
+       *   Explicit per-feature route override (options['route']) is handled in
+       *   generate() and always wins over the global default.
+       * The relay is used for extraction-shaped calls only; everything above this
+       * class is unaware of the route. Business logic stays transport-agnostic.
  *
  * Secrets stay in env (Config::env), never hardcoded, never logged.
  * Prompt source is ONLY via PromptManager.
@@ -75,23 +79,14 @@ final class GeminiProvider implements AIProviderInterface
     }
 
     /**
-     * Effective route: explicit env first, then admin flag, then direct.
-     * Also exposed for tests/diagnostics (no secrets involved).
+     * Effective GLOBAL default route — delegated to the single authoritative
+     * resolver (AiRouteResolver) so there is ONE place deciding the default.
+     * Precedence: admin global route > GEMINI_ROUTE env > ai_gemini_relay_route
+     * flag > direct. Also exposed for tests/diagnostics (no secrets involved).
      */
     public function getRoute(?bool $extractionCall = null): string
     {
-        $env = strtolower(trim(Config::env('GEMINI_ROUTE', '')));
-        if ($env === 'n8n_relay' || $env === 'direct') {
-            return $env;
-        }
-        try {
-            if ((new AIFeatureFlagRepository())->isEnabled('ai_gemini_relay_route')) {
-                return 'n8n_relay';
-            }
-        } catch (\Throwable $e) {
-            // Flag table unavailable — stay on direct.
-        }
-        return 'direct';
+        return (new \Velora\AI\Services\AiRouteResolver())->resolve();
     }
 
     private function transport(string $route): GeminiTransportInterface

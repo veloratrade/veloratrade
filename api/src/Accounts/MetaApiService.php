@@ -47,11 +47,11 @@ final class MetaApiService
         $this->instants = $instants ?? new MetaApiInstantResolver();
         $this->assembler = $assembler ?? new MetaApiDealAssembler($this->instants);
         $this->fills = $fills ?? new MetaApiFillRepository();
-        $this->apiToken = (string) Config::env('METAAPI_TOKEN', '');
-        $configured = rtrim((string) Config::env(
-            'METAAPI_BASE_URL',
-            'https://mt-provisioning-api-v1.london.agiliumtrade.ai'
-        ), '/');
+        // Phase C: read via IntegrationConfigResolver so an Admin-managed value
+        // (encrypted store) is effective at runtime, with ENV / velora.env as
+        // the documented fallbacks. Precedence lives in ONE place.
+        $this->apiToken = \Velora\Core\IntegrationConfigResolver::metaApiToken();
+        $configured = rtrim(\Velora\Core\IntegrationConfigResolver::metaApiBaseUrl(), '/');
         $this->provisioningBaseUrl = str_replace('mt-client-api-v1', 'mt-provisioning-api-v1', $configured);
         $this->clientBaseUrl = str_replace('mt-provisioning-api-v1', 'mt-client-api-v1', $configured);
     }

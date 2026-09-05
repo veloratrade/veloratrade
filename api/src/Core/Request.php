@@ -100,4 +100,34 @@ final class Request
     {
         return $this->body[$key] ?? $default;
     }
+
+    /** Lazily-computed request correlation id (stable for this request). */
+    public ?string $requestId = null;
+
+    /** Resolve a best-effort client IP for audit metadata (no secrets). */
+    public function clientIp(): ?string
+    {
+        foreach (['x-forwarded-for', 'x-real-ip'] as $name) {
+            $v = $this->headers[$name] ?? '';
+            if ($v !== '') {
+                $parts = explode(',', $v);
+                $first = trim($parts[0] ?? '');
+                return $first !== '' ? $first : null;
+            }
+        }
+        return null;
+    }
+
+    /** A stable per-request correlation/context id (header-supplied or generated). */
+    public function contextId(): ?string
+    {
+        if ($this->requestId !== null) {
+            return $this->requestId;
+        }
+        $supplied = trim((string) ($this->headers['x-request-id'] ?? ''));
+        $this->requestId = $supplied !== '' && strlen($supplied) <= 64
+            ? $supplied
+            : bin2hex(random_bytes(16));
+        return $this->requestId;
+    }
 }
