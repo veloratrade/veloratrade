@@ -354,3 +354,6 @@ jobs:
 
       - name: Run F-1 shell suite
         run: python admin/v2/tests/test_f1_shell.py
+
+      - name: Run F-2 navigation suite
+        run: python admin/v2/tests/test_f2_navigation.py
