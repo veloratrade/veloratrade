@@ -7,6 +7,7 @@ def loadmode(): return json.load(open(os.path.join(ROOT,"mode.json")))
 PERMS_SUPER=["overview.view","users.view","users.suspend","users.activate","users.manage_subscription","users.verify_email","audit.view","audit.view_sensitive","system.health.view","system.logs.view","settings.view","feature_flags.view","billing.view","integrations.view","aiManage","analytics.view","users.change_role","system.settings.manage","feature_flags.edit","integrations.manage","aiRouteManage"]
 PERMS_ADMIN=[p for p in PERMS_SUPER if p not in ("users.change_role","audit.view_sensitive","system.settings.manage","feature_flags.edit","integrations.manage","aiRouteManage")]
 PERMS_LIMITED=["overview.view","users.view"]
+PERMS_ADMIN_MINUS=[p for p in PERMS_ADMIN if p!="billing.view"]
 class H(SimpleHTTPRequestHandler):
     def __init__(self,*a,**kw): super().__init__(*a,directory=REPO,**kw)
     def log_message(self,*a): pass
@@ -21,6 +22,7 @@ class H(SimpleHTTPRequestHandler):
             m=loadmode(); me=None
             if m["mode"]=="admin": me={"userId":4,"role":"admin","isSuperAdmin":False,"panel":True,"permissions":PERMS_ADMIN}
             elif m["mode"]=="super": me={"userId":5,"role":"super_admin","isSuperAdmin":True,"panel":True,"permissions":PERMS_SUPER,"recentAdminActions":[]}
+            elif m["mode"]=="adminminus": me={"userId":6,"role":"admin","isSuperAdmin":False,"panel":True,"permissions":PERMS_ADMIN_MINUS,"recentAdminActions":[]}
             elif m["mode"]=="limited": me={"userId":7,"role":"admin","isSuperAdmin":False,"panel":True,"permissions":PERMS_LIMITED,"recentAdminActions":[]}
             elif m["mode"]=="user403": self._j(403,{"status":"error","error":{"code":"ADMIN_REQUIRED"}}); return
             elif m["mode"]=="panel_false": me={"userId":9,"role":"user","isSuperAdmin":False,"panel":False,"permissions":[]}
