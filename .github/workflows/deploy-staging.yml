@@ -63,7 +63,7 @@ jobs:
       # آن را می‌گیرد و گیت‌هاب نام مخفف را رد می‌کند (بازتولید محلی:
       # «fatal: couldn't find remote ref 1d100fb»).
       # پس از هر استقرار موفق استیجینگ، همین مقدار به SHA تازه به‌روز شود.
-      base_sha: a3230bb9e59f86c0e7345dc12bbaea5491b1a79b
+      base_sha: fea6809d33da694774b4fd3e0e778615b079867a
 
   guard:
     name: بررسی CSP پیش از staging
