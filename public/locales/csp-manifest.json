@@ -1,10 +1,10 @@
 {
   "algorithm": "sha256",
-  "commitSha": "742636930ae26cb6e645e1b59137c62b79fa8943",
+  "commitSha": "c7a8cd30d2df28c8db619ab3992226a74a18e917",
   "localizationVersion": "2026.08.30.2",
   "policyVersion": 2,
-  "releaseHtmlSha256": "66d75031877e67d0bcb790ffc792446d5cec20cea81368dc65f0e4a11f689a25",
-  "releaseId": "velora-phaseA-L2-2026.09.04",
+  "releaseHtmlSha256": "7830c4a89fa10e9a5a1d2724b59928ef0fd28b2820843aaa3e9d56494e967110",
+  "releaseId": "vic-phase1-2026.09.06",
   "routeCount": 61,
   "routeManifestSha256": "77c267b42c509fae6a9f070298df1548d94a669176ed74999d28945504bdc251",
   "routes": {
@@ -415,7 +415,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "en/index.html",
-      "htmlSha256": "806ada36ad1146ac6d7a17c6d99b22434a22091fc4c57659364df9c6b228e73a",
+      "htmlSha256": "d0896f62f4cc43eb369619c61753e16ac629b325c0bdde0f41b8b38fe1be25f3",
       "inlineScriptCount": 3,
       "inlineScriptHashes": [
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
@@ -1337,7 +1337,7 @@
       "eventHandlerCount": 0,
       "eventHandlerHashes": [],
       "file": "fa/index.html",
-      "htmlSha256": "2d1b228ebef6743e0c826af84a45ab0aa15aca89992fce3f66dee9a6a911af59",
+      "htmlSha256": "ad0ad02ee1da44510f3538e4ab5a871ccfe77d0b38a0063e9771e63ca18e7066",
       "inlineScriptCount": 3,
       "inlineScriptHashes": [
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
@@ -1913,5 +1913,5 @@
       ]
     }
   },
-  "sourceDigest": "9ae3d4157e8f92d3240a5bed92fd7f786af39b853579413d552abab7c56a3bc8"
+  "sourceDigest": "456845145f802a36b32cc90386f6f0c84c5dd4f925fce86817fc907ba735d367"
 }

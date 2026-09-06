@@ -229,13 +229,11 @@
     "pages.trades.new.p05.session_overlap_sub",
     "pages.trades.new.p05.session_select_open",
     "profile.saved",
-    "status.buy",
     "status.completed",
     "status.connected",
     "status.disconnected",
     "status.failed",
     "status.inactive",
-    "status.sell",
     "status.syncing",
     "trades.deleteConfirm",
     "trades.deleted"
