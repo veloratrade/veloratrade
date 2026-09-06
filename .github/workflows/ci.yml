@@ -368,3 +368,6 @@ jobs:
 
       - name: Run F-3 Batch 3 suite (system/analytics/billing)
         run: python admin/v2/tests/test_f3_batch3.py
+
+      - name: Run shell-refinement suite (brand/account/theme/footer)
+        run: python admin/v2/tests/test_shell_refinement.py

@@ -213,10 +213,10 @@ class H(SimpleHTTPRequestHandler):
             self.send_header("Content-Type","text/html"); self.send_header("Content-Length",str(len(b))); self.end_headers(); self.wfile.write(b); return
         if self.path.startswith("/api/v1/admin/me"):
             m=loadmode(); me=None
-            if m["mode"]=="admin": me={"userId":4,"role":"admin","isSuperAdmin":False,"panel":True,"permissions":PERMS_ADMIN}
-            elif m["mode"]=="super": me={"userId":5,"role":"super_admin","isSuperAdmin":True,"panel":True,"permissions":PERMS_SUPER,"recentAdminActions":[]}
+            if m["mode"]=="admin": me={"userId":4,"role":"admin","isSuperAdmin":False,"panel":True,"name":"Sahar Rahimi","email":"s.rahimi@veloratrade.ir","permissions":PERMS_ADMIN}
+            elif m["mode"]=="super": me={"userId":5,"role":"super_admin","isSuperAdmin":True,"panel":True,"name":"Arman Kaveh","email":"a.kaveh@veloratrade.ir","permissions":PERMS_SUPER,"recentAdminActions":[]}
             elif m["mode"]=="adminminus": me={"userId":6,"role":"admin","isSuperAdmin":False,"panel":True,"permissions":PERMS_ADMIN_MINUS,"recentAdminActions":[]}
-            elif m["mode"]=="limited": me={"userId":7,"role":"admin","isSuperAdmin":False,"panel":True,"permissions":PERMS_LIMITED,"recentAdminActions":[]}
+            elif m["mode"]=="limited": me={"userId":7,"role":"admin","isSuperAdmin":False,"panel":True,"name":"Neda Karimi","email":"n.karimi@veloratrade.ir","permissions":PERMS_LIMITED,"recentAdminActions":[]}
             elif m["mode"]=="user403": self._j(403,{"status":"error","error":{"code":"ADMIN_REQUIRED"}}); return
             elif m["mode"]=="panel_false": me={"userId":9,"role":"user","isSuperAdmin":False,"panel":False,"permissions":[]}
             else: self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
