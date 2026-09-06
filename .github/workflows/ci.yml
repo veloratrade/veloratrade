@@ -371,3 +371,6 @@ jobs:
 
       - name: Run shell-refinement suite (brand/account/theme/footer)
         run: python admin/v2/tests/test_shell_refinement.py
+
+      - name: Run mobile scrolling suite (reachability/drawer/modal)
+        run: python admin/v2/tests/test_mobile_scrolling.py
