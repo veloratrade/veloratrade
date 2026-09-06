@@ -741,6 +741,7 @@
         "errors.auth.currentPasswordInvalid": "رمز عبور فعلی نادرست است.",
         "errors.auth.emailAlreadyRegistered": "این ایمیل قبلاً ثبت و تأیید شده است. برای ادامه وارد شوید.",
         "errors.auth.emailNotVerified": "پیش از ورود، ایمیل خود را تأیید کنید.",
+        "errors.auth.emailPendingVerification": "کاربری با این ایمیل ساخته شده اما هنوز ایمیل خود را تأیید نکرده است.",
         "errors.auth.invalidCredentials": "ایمیل یا رمز عبور نادرست است.",
         "errors.auth.invalidToken": "توکن دسترسی نامعتبر یا منقضی شده است.",
         "errors.auth.passwordComplexity": "حداقل از یک حرف انگلیسی و یک عدد استفاده کنید.",

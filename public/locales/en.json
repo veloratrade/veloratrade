@@ -741,6 +741,7 @@
         "errors.auth.currentPasswordInvalid": "The current password is incorrect.",
         "errors.auth.emailAlreadyRegistered": "This email is already registered and verified. Sign in to continue.",
         "errors.auth.emailNotVerified": "Verify your email address before signing in.",
+        "errors.auth.emailPendingVerification": "An account with this email exists but has not verified their email yet.",
         "errors.auth.invalidCredentials": "The email address or password is incorrect.",
         "errors.auth.invalidToken": "The access token is invalid or has expired.",
         "errors.auth.passwordComplexity": "Use at least one English letter and one number.",
