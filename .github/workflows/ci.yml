@@ -57,6 +57,8 @@ jobs:
         run: php tools/tests/test_auth_token_consumption.php
       - name: Admin verify-email B-1 (RBAC / idempotency / tokens / audit / rate-limit)
         run: php tools/tests/test_admin_verify_email.php
+      - name: Admin canonical replacement (/admin/index.html serves Admin v2.2)
+        run: php tools/tests/test_admin_canonical_replacement.php
 
       - name: Database connection resilience contract
         run: php tools/tests/test_database_connection_resilience.php

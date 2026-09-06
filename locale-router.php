@@ -219,6 +219,24 @@ if ($found && in_array($relativeFile, $protectedRoutes, true)) {
         header('Location: /' . $locale . '/dashboard/', true, 302);
         return true;
     }
+    // Canonical Admin implementation (Admin v2.2): the admin route IS Admin
+    // v2.2. The single self-contained artifact is served in place at the
+    // canonical URL — HTTP 200, no user-visible redirect — after the two
+    // fail-closed gates above (anonymous -> login, non-admin -> dashboard,
+    // both unchanged). The artifact is byte-frozen in the repository; the
+    // legacy localized admin page is no longer served to users on this route.
+    // If the v2 artifact is not packaged in a given environment (production
+    // until its packaging is separately updated), fall through unchanged to
+    // the CSP-managed legacy page below — graceful degradation, never broken.
+    // /admin/v2/index.html remains available as a documented internal
+    // compatibility route during the transition.
+    if ($relativeFile === 'admin/index.html' && is_file($root . '/admin/v2/index.html')) {
+        header('Content-Type: text/html; charset=utf-8');
+        header('Cache-Control: no-store');
+        header('X-Content-Type-Options: nosniff');
+        echo (string) file_get_contents($root . '/admin/v2/index.html');
+        return true;
+    }
 }
 
 $failCsp = static function (): bool {
