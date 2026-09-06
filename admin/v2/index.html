@@ -691,7 +691,7 @@ body.drawer-open{overflow:hidden}
 </defs></svg>
 <div class="app">
   <div id="sbBackdrop" aria-hidden="true"></div>
-  <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+  <aside class="sidebar" id="sidebar" aria-label="ناوبری اصلی">
     <div class="brand" aria-label="Velora — Trading OS">
       <span class="logo-mark"><svg aria-hidden="true" focusable="false" viewBox="0 0 64 64"><path d="M8 10L21 10L32 52L43 10L56 10L32 58Z" fill="none" stroke="#e8c45a" stroke-width=".7"/><path d="M8 10L21 10L32 52L43 10L56 10L32 58Z" fill="url(#vl-gD)"/><path d="M21 10L32 52L32 58L8 10Z" fill="url(#vl-gD)" opacity=".55"/><path d="M43 10L32 52L32 58L56 10Z" fill="url(#vl-gA)"/><path d="M32 14V24M32 37V52" stroke="url(#vl-gC)" stroke-width="2.6"/><rect fill="url(#vl-gC)" height="13" width="7" x="28.5" y="24"/><path d="M32 6.5L33.3 9.7L36.5 11L33.3 12.3L32 15.5L30.7 12.3L27.5 11L30.7 9.7Z" fill="#f7e3a1"/></svg></span>
       <div class="logo-txt"><b>VELORA</b><i>TRADING OS</i></div>
@@ -701,7 +701,7 @@ body.drawer-open{overflow:hidden}
     <div class="foot">
       <div class="envblock" role="status"><span class="edot"></span><div><div id="envHost">…</div><div class="sub" id="envSub">محیط</div></div></div>
       <div class="devonly num" style="margin-top:8px;font-size:10px">build <span id="sbBuildId"></span></div>
-      <label style="display:flex;gap:7px;align-items:center;margin-top:9px;font-size:10.5px;color:var(--muted);cursor:pointer"><input type="checkbox" class="rowchk" id="devTgl" onclick="toggleDev()"> حالت توسعه‌دهنده</label>
+      <label style="display:flex;gap:7px;align-items:center;margin-top:9px;font-size:10.5px;color:var(--muted);cursor:pointer"><input type="checkbox" class="rowchk" id="devTgl" onclick="toggleDev()"> <span data-i18n="shell.dev.label">حالت توسعه‌دهنده</span></label>
     </div>
   </aside>
   <div class="main">
@@ -836,7 +836,7 @@ const SHELL_T={
       "shell.403.title":"دسترسی مدیریتی لازم است","shell.403.desc":"این کنسول برای نقش‌های admin و super_admin است.",
       "shell.notfound.title":"چنین صفحه‌ای وجود ندارد","shell.notfound.desc":"مسیر درخواستی در ثبتِ مسیرهای production نیست.",
       "shell.status.title":"وضعیت پوسته","shell.status.ident":"هویت","shell.status.perms":"تعداد پرمیشن‌ها","shell.status.recent":"اقدامات اخیر شما","shell.status.recent.empty":"موردی ثبت نشده","shell.status.env":"محیط (hostname واقعی)",
-      "shell.menu.exit":"خروج از پنل مدیریت","shell.menu.lang":"زبان FA/EN","shell.menu.theme":"تم روشن/تاریک","shell.conn.ready":"متصل","shell.conn.offline":"قطع","shell.conn.demo":"بدون لایهٔ داده","search.placeholder":"جست‌وجوی مسیر…","search.hint":"جست‌وجو در مسیرهای کنسول مدیریتی (F-2)","shell.p404.back":"بازگشت به نمای کلی","shell.pending.badge":"مسیر متصل · صفحه در فاز بعد","shell.user360.none":"هیچ داده‌ای برای این کاربر ساخته نشده است","nav.user360":"نمای کاربر"},
+      "shell.menu.exit":"خروج از پنل مدیریت","shell.menu.nav":"باز کردن منوی ناوبری","shell.menu.account":"منوی کاربر","shell.rail.lbl":"حالت فشردهٔ سایدبار","shell.nav.lbl":"ناوبری اصلی","shell.rail.title":"حالت فشرده","shell.env.title":"محیط","shell.dev.label":"حالت توسعه‌دهنده","usr.act.none":"اقدامی برای این کاربر در دسترس نیست","shell.menu.lang":"زبان FA/EN","shell.menu.theme":"تم روشن/تاریک","shell.conn.ready":"متصل","shell.conn.offline":"قطع","shell.conn.demo":"بدون لایهٔ داده","search.placeholder":"جست‌وجوی مسیر…","search.hint":"جست‌وجو در مسیرهای کنسول مدیریتی (F-2)","shell.p404.back":"بازگشت به نمای کلی","shell.pending.badge":"مسیر متصل · صفحه در فاز بعد","shell.user360.none":"هیچ داده‌ای برای این کاربر ساخته نشده است","nav.user360":"نمای کاربر"},
  en:{ "shell.pending.title":"Page not implemented yet","shell.pending.desc":"The route is wired (F-2); the page implementation itself belongs to a later phase. Nothing is fabricated on this page.",
       "shell.denied.title":"Permission required","shell.denied.desc":"This page requires the following permission:",
       "shell.boot.title":"Loading console…","shell.boot.desc":"Validating session and fetching permissions",
@@ -845,7 +845,7 @@ const SHELL_T={
       "shell.403.title":"Administrator access required","shell.403.desc":"This console is for admin and super_admin roles.",
       "shell.notfound.title":"Page not found","shell.notfound.desc":"The requested hash is not part of the production route registry.",
       "shell.status.title":"Shell status","shell.status.ident":"Identity","shell.status.perms":"Permission count","shell.status.recent":"Your recent actions","shell.status.recent.empty":"Nothing recorded","shell.status.env":"Environment (real hostname)",
-      "shell.menu.exit":"Exit Admin","shell.menu.lang":"Language FA/EN","shell.menu.theme":"Dark/Light theme","shell.conn.ready":"Connected","shell.conn.offline":"Offline","shell.conn.demo":"No data layer","search.placeholder":"Search routes…","search.hint":"Search admin console routes (F-2)","shell.p404.back":"Back to overview","shell.pending.badge":"route live · page pending","shell.user360.none":"No user data is fabricated here","nav.user360":"User360"}
+      "shell.menu.exit":"Exit Admin","shell.menu.nav":"Open navigation menu","shell.menu.account":"Account menu","shell.rail.lbl":"Compact sidebar mode","shell.nav.lbl":"Main navigation","shell.rail.title":"Compact","shell.env.title":"Environment","shell.dev.label":"Developer mode","usr.act.none":"No actions available for this user","shell.menu.lang":"Language FA/EN","shell.menu.theme":"Dark/Light theme","shell.conn.ready":"Connected","shell.conn.offline":"Offline","shell.conn.demo":"No data layer","search.placeholder":"Search routes…","search.hint":"Search admin console routes (F-2)","shell.p404.back":"Back to overview","shell.pending.badge":"route live · page pending","shell.user360.none":"No user data is fabricated here","nav.user360":"User360"}
 };
 const t=k=>(T[lang][k]??SHELL_T[lang][k]??F3T[lang][k]??T.fa[k]??F3T.fa[k]??k);
 
@@ -2429,11 +2429,24 @@ function render(){
 window.addEventListener("hashchange",render);
 
 /* ------------------------------ theme / lang ------------------------------ */
+/* static chrome localization: data-i18n elements + hard-coded control labels
+   (skip link, dev-mode label, rail/menu/account buttons, env tooltip, conn chip) */
+function applyStaticI18n(){
+ document.querySelectorAll("[data-i18n]").forEach(el=>{el.textContent=t(el.getAttribute("data-i18n"))});
+ const rb=$("#railBtn");if(rb){rb.setAttribute("aria-label",t("shell.rail.lbl"));rb.title=t("shell.rail.title")}
+ const sb=$("#sidebar");if(sb)sb.setAttribute("aria-label",t("shell.nav.lbl"))
+ const mb=$("#menuBtn");if(mb)mb.setAttribute("aria-label",t("shell.menu.nav"));
+ const ub=$("#userBtn");if(ub)ub.setAttribute("aria-label",t("shell.menu.account"));
+ const lb=$("#langBtn");if(lb)lb.setAttribute("aria-label",t("shell.menu.lang"));
+ const ec=$("#envChip");if(ec)ec.setAttribute("title",t("shell.env.title"));
+ if(ME.conn!=="boot"){const vm=$("#v2mode");
+  if(vm)vm.textContent=t(ME.conn==="ready"?"shell.conn.ready":ME.conn==="offline"?"shell.conn.offline":"shell.conn.demo")}
+}
 function setLang(l){lang=l;document.documentElement.lang=l;document.documentElement.dir=(l==="fa"?"rtl":"ltr");
  try{localStorage.setItem("velora_locale",l)}catch(e){}
  const lb=$("#langBtn");if(lb)lb.textContent=l==="fa"?"FA/EN":"EN/FA";
  const pl=$("#palLabel");if(pl)pl.textContent=t("search.placeholder");
- syncThemeBtn();setEnv();render()}
+ applyStaticI18n();syncThemeBtn();setEnv();render()}
 function syncThemeBtn(){const s=$("#vl-sun"),mn=$("#vl-moon"),b=$("#themeBtn");if(!s||!mn||!b)return;
  const dark=theme==="dark";
  s.style.display=dark?"none":"block";mn.style.display=dark?"block":"none";
@@ -2577,7 +2590,7 @@ async function boot(){
  setTheme(document.documentElement.dataset.theme==="light"?"light":"dark");
  try{const sl=localStorage.getItem("velora_locale");if(sl==="en"||sl==="fa")lang=sl}catch(e){}
  const lb=$("#langBtn");if(lb)lb.textContent=lang==="fa"?"FA/EN":"EN/FA";
- syncThemeBtn();setEnv();render();
+ syncThemeBtn();setEnv();applyStaticI18n();render();
  if(!window.VeloraData||!window.VeloraData.request||location.protocol==="file:"){
   setConn("demo");bootState(t("shell.nolayer.title"),t("shell.nolayer.desc"));return}
  try{
