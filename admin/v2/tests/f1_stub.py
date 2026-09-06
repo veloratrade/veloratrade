@@ -121,6 +121,93 @@ class H(SimpleHTTPRequestHandler):
               "metaapi":integ_row("metaapi"),"email":integ_row("email"),
               "ai":{"status":"HEALTHY","configured":True,"verifiedProviders":1,
                     "providers":[{"provider":"gemini","status":"VALID","verified":True,"last_checked_at":"2026-09-05 20:58:00","error_code":None}]}}}); return
+        if up.path in ("/api/v1/admin/analytics/users","/api/v1/admin/analytics/trading","/api/v1/admin/analytics/ai","/api/v1/admin/analytics/revenue"):
+            m=loadmode()
+            if m["mode"] in ("noauth","user403","panel_false"): self._j(403,{"status":"error","error":{"code":"PERMISSION_DENIED"}}); return
+            which=up.path.rsplit("/",1)[-1]
+            rng=(up.query.split("range=")[-1].split("&")[0] if "range=" in up.query else "30d")
+            rngdesc={"start":"2026-08-07 00:00:00","end":"2026-09-06 23:59:59","label":rng,"presentation":rng,"timezone":"UTC"}
+            if which=="users":
+                self._j(200,{"range":rngdesc,"total":128,"newInRange":17,
+                    "byRole":[{"key":"user","count":121},{"key":"admin","count":5},{"key":"super_admin","count":2}],
+                    "byStatus":[{"key":"active","count":110},{"key":"suspended","count":18}],
+                    "byLocale":[{"key":"fa","count":101},{"key":"en","count":27}],
+                    "registrationTrend":[{"date":"2026-08-31","count":4},{"date":"2026-09-01","count":9},{"date":"2026-09-02","count":2},
+                                          {"date":"2026-09-03","count":11},{"date":"2026-09-04","count":7},{"date":"2026-09-05","count":14},{"date":"2026-09-06","count":5}]}); return
+            if which=="trading":
+                self._j(200,{"range":rngdesc,"total":1523,"tradesInRange":212,
+                    "bySymbol":[{"key":"XAUUSD","count":137},{"key":"EURUSD","count":75}],
+                    "byDirection":[{"key":"BUY","count":128},{"key":"SELL","count":84}],
+                    "winLoss":{"wins":118,"losses":76,"breakeven":18},
+                    "netPnl":"3421.50","totalVolume":"15234.75",
+                    "trend":[{"date":"2026-09-01","count":33},{"date":"2026-09-02","count":41},{"date":"2026-09-03","count":12},
+                              {"date":"2026-09-04","count":56},{"date":"2026-09-05","count":70}],
+                    "isRevenue":False,
+                    "note":"Aggregate trading P&L is trading performance, NOT platform revenue."}); return
+            if which=="ai":
+                self._j(200,{"range":rngdesc,"total":4210,"inRange":388,
+                    "byStatus":[{"key":"success","count":371},{"key":"failed","count":17}],
+                    "byProvider":[{"key":"gemini","count":380},{"key":"openai","count":8}],
+                    "byFeature":[{"key":"analyze-trades","count":301},{"key":"weekly-report","count":87}],
+                    "byModel":[{"key":"gemini-2.5-flash","count":380}],
+                    "tokensUsed":91234,"cost":"18.4231",
+                    "trend":[{"date":"2026-09-02","count":47},{"date":"2026-09-03","count":61},{"date":"2026-09-04","count":88},
+                              {"date":"2026-09-05","count":102},{"date":"2026-09-06","count":90}]}); return
+            un=lambda:{"available":False,"reason":"NO_BILLING_SOURCE"}
+            self._j(200,{"available":False,"reason":"NO_BILLING_SOURCE",
+                "note":"No authoritative billing source is configured. Financial metrics are unavailable, not zero.",
+                "metrics":{"revenue":un(),"mrr":un(),"arr":un(),"churn":un(),"ltv":un(),"paymentVolume":un(),"refunds":un()}}); return
+        if up.path=="/api/v1/admin/billing":
+            m=loadmode()
+            if m["mode"] in ("noauth","user403","panel_false"): self._j(403,{"status":"error","error":{"code":"PERMISSION_DENIED"}}); return
+            self._j(200,{
+              "provider":{"available":False,"reason":"No external payment/billing integration exists (no provider client, no credit card, no webhook). Subscription state is internal/manual only."},
+              "plans":[
+                {"key":"free","name":"Free","description":"Free plan","price":{"available":False,"reason":"Plan price is not authoritative: no external billing/pricing source exists."},"currency":None,"interval":None,"active":True,"available":True},
+                {"key":"pro","name":"Pro","description":"Professional plan","price":{"available":False,"reason":"Plan price is not authoritative: no external billing/pricing source exists."},"currency":None,"interval":None,"active":True,"available":True}],
+              "subscriptionStatuses":[{"key":"none","name":"None"},{"key":"active","name":"Active"},{"key":"past_due","name":"Past due"}],
+              "distribution":{"available":True,"plan":[{"key":"free","count":96},{"key":"pro","count":32}],
+                              "subscriptionStatus":[{"key":"active","count":32},{"key":"none","count":96}]},
+              "entitlements":{"tradingAccountsPerUser":{"limit":10,"source":"config:metaapi.max_accounts_per_user"},
+                              "providerBudget":{"daily":1500,"used":420}},
+              "history":{"available":False,"reason":"No invoice/payment history exists (no billing provider)."}}); return
+        if up.path=="/api/v1/admin/logs/system":
+            from urllib.parse import parse_qs
+            m=loadmode()
+            if m.get("read500"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
+            q=parse_qs(up.query)
+            rows=[dict(r) for r in self.server.db_logs]
+            if q.get("severity"): rows=[r for r in rows if r["severity"]==q["severity"][0].upper()]
+            if q.get("q"):
+                qq=q["q"][0].lower(); rows=[r for r in rows if qq in r["message"].lower()]
+            try: page=int(q.get("page",["1"])[0])
+            except: page=1
+            try: per=int(q.get("per_page",["50"])[0])
+            except: per=50
+            total=len(rows)
+            self._j(200,{"items":rows[(page-1)*per:page*per],"total":total,"page":page,"per_page":per}); return
+        if up.path=="/api/v1/admin/logs/audit":
+            from urllib.parse import parse_qs
+            m=loadmode()
+            if m.get("read500"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
+            sensitive=(m["mode"]=="super")
+            q=parse_qs(up.query)
+            rows=[dict(r) for r in self.server.db_audit]
+            if q.get("result"): rows=[r for r in rows if r["result"]==q["result"][0]]
+            if not sensitive:
+                rows=[{k:v for k,v in r.items() if k not in ("ipAddress","contextId")} for r in rows]
+            try: page=int(q.get("page",["1"])[0])
+            except: page=1
+            try: per=int(q.get("per_page",["50"])[0])
+            except: per=50
+            total=len(rows)
+            self._j(200,{"items":rows[(page-1)*per:page*per],"total":total,"page":page,"per_page":per}); return
+        if up.path=="/api/v1/admin/feature-flags":
+            m=loadmode()
+            if m["mode"] in ("noauth","user403","panel_false"): self._j(403,{"status":"error","error":{"code":"PERMISSION_DENIED"}}); return
+            self._j(200,{"flags":[dict(v,feature=k) for k,v in self.server.flags.items()],
+                          "environment":"production",
+                          "allowed":list(self.server.flags.keys())}); return
         if self.path.split("?")[0] in ("/login","/login/"):
             b=b"<html><body>login</body></html>"; self.send_response(200)
             self.send_header("Content-Type","text/html"); self.send_header("Content-Length",str(len(b))); self.end_headers(); self.wfile.write(b); return
@@ -301,11 +388,60 @@ class H(SimpleHTTPRequestHandler):
             I["email"].update(resendApiKeyConfigured=False,smtpPasswordConfigured=False,configured=False,reachability="unknown",lastCheckedAt=None,latencyMs=None)
             self._j(200,{"integration":dict(I["email"])}); return
         self._j(404,{})
+    def do_PATCH(self):
+        from urllib.parse import urlparse
+        up=urlparse(self.path)
+        m0=loadmode()
+        if up.path=="/api/v1/admin/feature-flags" or up.path.startswith("/api/v1/admin/feature-flags/"):
+            if m0["mode"]!="super": self._j(403,{"status":"error","error":{"code":"PERMISSION_DENIED"}}); return
+            feat=up.path.rsplit("/",1)[-1]
+            if m0.get("fail_actions"): self._j(500,{"status":"error","error":{"code":"FEATURE_FLAG_PERSIST_FAILED"}}); return
+            if feat not in self.server.flags: self._j(404,{"status":"error","error":{"code":"NOT_FOUND"}}); return
+            length=int(self.headers.get("Content-Length") or 0)
+            body={}
+            if length:
+                try: body=json.loads(self.rfile.read(length) or b"{}")
+                except: body={}
+            enabled=bool(body.get("enabled",False))
+            rollout=int(body.get("rollout",100 if enabled else 0))
+            if rollout<0 or rollout>100:
+                self._j(422,{"status":"error","error":{"code":"ROLLOUT_RANGE"}}); return
+            f=self.server.flags[feat]
+            f.update(enabled=enabled,rollout=(rollout if enabled else 0),persisted=True,
+                     updatedAt="2026-09-06 00:30:00",effective=("on" if enabled and rollout>=100 else ("off" if not enabled or rollout<=0 else "rollout:%d"%rollout)),
+                     runtime=enabled)
+            self._j(200,{"flag":dict(f,feature=feat)}); return
+        self._j(404,{})
+
 class Srv(HTTPServer):
     def __init__(self,*a,**kw):
         super().__init__(*a,**kw)
         self.ai_route=None
         self.last_refresh=None
+        self.flags={
+         "ai_screenshot_extraction":{"enabled":True,"rollout":100,"environment":"production","persisted":False,"updatedBy":None,"updatedAt":None,"effective":"on","runtime":True},
+         "ai_trade_analysis":{"enabled":False,"rollout":0,"environment":"production","persisted":False,"updatedBy":None,"updatedAt":None,"effective":"off","runtime":False},
+         "ai_weekly_report":{"enabled":False,"rollout":0,"environment":"production","persisted":False,"updatedBy":None,"updatedAt":None,"effective":"off","runtime":False},
+         "ai_assistant":{"enabled":True,"rollout":40,"environment":"production","persisted":True,"updatedBy":1,"updatedAt":"2026-09-04 09:00:00","effective":"rollout:40","runtime":True},
+        }
+        self.db_logs=[
+         {"id":41,"severity":"ERROR","source":"api","message":"MetaAPI sync failed for account 12","requestId":"req_9f21","correlationId":"ctx_31","userId":3,"errorCode":"SYNC_FAILED","metadata":{},"createdAt":"2026-09-05 20:44:00"},
+         {"id":40,"severity":"WARN","source":"mailer","message":"Resend returned 429, retry scheduled","requestId":"req_9f18","correlationId":"ctx_29","userId":None,"errorCode":"RATE_LIMITED","metadata":{},"createdAt":"2026-09-05 20:12:00"},
+         {"id":39,"severity":"INFO","source":"auth","message":"Admin session revoked by panel action","requestId":"req_9f10","correlationId":"ctx_25","userId":4,"errorCode":None,"metadata":{},"createdAt":"2026-09-05 19:58:00"},
+         {"id":38,"severity":"ERROR","source":"ai","message":"provider timeout after 2 retries","requestId":"req_9e88","correlationId":"ctx_21","userId":2,"errorCode":"PROVIDER_TIMEOUT","metadata":{},"createdAt":"2026-09-05 18:30:00"},
+         {"id":37,"severity":"INFO","source":"api","message":"feature flag ai_assistant rollout updated","requestId":"req_9e01","correlationId":"ctx_18","userId":1,"errorCode":None,"metadata":{},"createdAt":"2026-09-05 12:00:00"},
+         {"id":36,"severity":"DEBUG","source":"queue","message":"jobs worker heartbeat","requestId":None,"correlationId":None,"userId":None,"errorCode":None,"metadata":{},"createdAt":"2026-09-05 11:45:00"},
+        ]
+        self.db_audit=[
+         {"id":900,"actorUserId":4,"actorRole":"admin","action":"user.verify_email","targetType":"user","targetId":2,"result":"success",
+          "summary":"User #2 email verified by admin","ipAddress":"203.0.113.24","contextId":"ctx_25","createdAt":"2026-09-05 20:30:00"},
+         {"id":899,"actorUserId":5,"actorRole":"super_admin","action":"ai_route.updated","targetType":None,"targetId":None,"result":"success",
+          "summary":"Admin updated AI route.","ipAddress":"198.51.100.7","contextId":"ctx_24","createdAt":"2026-09-05 19:10:00"},
+         {"id":898,"actorUserId":4,"actorRole":"admin","action":"integration.metaapi.test","targetType":"integration","targetId":None,"result":"denied",
+          "summary":"Admin attempted integration test without permission","ipAddress":"203.0.113.24","contextId":"ctx_22","createdAt":"2026-09-05 18:02:00"},
+         {"id":897,"actorUserId":4,"actorRole":"admin","action":"user.status","targetType":"user","targetId":5,"result":"error",
+          "summary":"Admin failed to update user status","ipAddress":"203.0.113.24","contextId":"ctx_20","createdAt":"2026-09-05 17:20:00"},
+        ]
         self.integ={
          "relay":{"configured":False,"urlConfigured":False,"tokenConfigured":False,"urlHost":None},
          "metaapi":{"configured":True,"tokenConfigured":True,"webhookSecretConfigured":False,

@@ -363,3 +363,6 @@ jobs:
 
       - name: Run F-3 Batch 2 suite (integrations + AI health)
         run: python admin/v2/tests/test_f3_batch2.py
+
+      - name: Run F-3 Batch 3 suite (system/analytics/billing)
+        run: python admin/v2/tests/test_f3_batch3.py
