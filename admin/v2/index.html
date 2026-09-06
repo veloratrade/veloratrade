@@ -1801,6 +1801,466 @@ Object.assign(PAGE_IMPL,{
  "ai-health":aiHealthPage
 });
 
+/* ==================== F-3 Batch 3 — System (health/logs/audit/flags) + Analytics ×4 + Billing ====================
+   Wired to EXISTING endpoints via the shared VeloraData layer. Charts (sparklines/bars) are computed ONLY from
+   backend trend arrays; unavailable values render explicit states — never zero, never synthetic history. */
+
+Object.assign(F3T.fa,{
+ "sh.desc":"وضعیت واقعی زیرساخت از بک‌اند","sh.sys":"زیرساخت","sh.lastcheck":"آخرین بررسی",
+ "sh.metaapi.status":"وضعیت MetaAPI","sh.configured_only":"فقط پیکربندی‌شده (پروب زنده فقط با تست اتصال)",
+ "sl.desc":"لاگ‌های واقعی سیستم — دوبار redact‌شده در بک‌اند","sl.col.sev":"شدت","sl.col.src":"منبع","sl.col.msg":"پیام",
+ "sl.col.req":"شناسه درخواست","sl.col.err":"کد خطا","sl.col.time":"زمان","sl.search":"جست‌وجو در پیام‌ها…",
+ "sl.sev.all":"همهٔ شدت‌ها","sl.empty":"لاگی یافت نشد","sl.empty.desc":"با فیلترهای فعلی لاگی نیست.",
+ "sl.page":"صفحه","sl.of":"از","sl.prev":"قبلی","sl.next":"بعدی","sl.per":"ردیف در صفحه",
+ "sa.desc":"ردگیری اقدامات مدیریتی — از audit_logs بک‌اند","sa.col.actor":"عامل","sa.col.role":"نقش","sa.col.action":"اقدام",
+ "sa.col.target":"هدف","sa.col.result":"نتیجه","sa.col.summary":"شرح","sa.col.time":"زمان","sa.col.ip":"IP","sa.col.ctx":"زمینه",
+ "sa.result.all":"همهٔ نتایج","sa.result.success":"موفق","sa.result.denied":"ردشده","sa.result.error":"خطا",
+ "sa.sensitive.note":"نمایش IP و زمینه به پرمیشن audit.view_sensitive نیاز دارد (سرور این مقادیر را بدون آن حذف می‌کند).",
+ "sa.empty":"رکوردی یافت نشد",
+ "sf.desc":"پرچم‌های کانونی AI — منبع واحد رانتایم","sf.col.feature":"ویژگی","sf.col.enabled":"فعال","sf.col.rollout":"رول‌اوت",
+ "sf.col.eff":"وضعیت مؤثر","sf.col.runtime":"رانتایم","sf.col.persisted":"ذخیره‌شده","sf.col.updated":"به‌روزرسانی",
+ "sf.env":"محیط","sf.edit":"تغییر پرچم","sf.feature":"ویژگی","sf.enabled":"فعال","sf.rollout":"رول‌اوت (۰ تا ۱۰۰)",
+ "sf.save":"اعمال","sf.done":"پرچم به‌روزرسانی شد","sf.readonly":"تغییر پرچم‌ها به پرمیشن feature_flags.edit نیاز دارد؛ نمایش فقط‌خواندنی است.",
+ "sf.default":"پیش‌فرض (بدون رکورد ذخیره‌شده)",
+ "an.range":"بازه","an.range.today":"امروز","an.range.7d":"۷ روز","an.range.30d":"۳۰ روز","an.range.90d":"۹۰ روز","an.range.all":"کل",
+ "an.trend":"روند روزانه","an.dist":"توزیع","an.count":"تعداد","an.date":"تاریخ","an.noaccess":"این بخش به پرمیشن analytics.view نیاز دارد.",
+ "anu.desc":"تجمیع واقعی کاربران از بک‌اند","anu.total":"کل کاربران","anu.new":"جدید در بازه","anu.byrole":"بر اساس نقش",
+ "anu.bystatus":"بر اساس وضعیت","anu.bylocale":"بر اساس زبان","anu.reg":"روند ثبت‌نام",
+ "ant.desc":"تجمیع معاملات — عملکرد معاملاتی، نه درآمد پلتفرم","ant.total":"کل معاملات","ant.inrange":"در بازه",
+ "ant.netpnl":"سود/زیان خالص","ant.volume":"حجم کل","ant.wins":"برد","ant.losses":"باخت","ant.be":"سر‌به‌سر",
+ "ant.bysym":"بر اساس نماد","ant.bydir":"بر اساس جهت","ant.note":"یادداشت بک‌اند",
+ "anai.desc":"تجمیع درخواست‌های AI از جدول ai_requests","anai.total":"کل درخواست‌ها","anai.inrange":"در بازه",
+ "anai.tokens":"توکن‌های مصرفی","anai.cost":"هزینهٔ محاسباتی داخلی","anai.bystatus":"بر اساس وضعیت","anai.byprov":"بر اساس ارائه‌دهنده",
+ "anai.byfeat":"بر اساس ویژگی","anai.bymodel":"بر اساس مدل","anai.nodrill":"جزئیات درخواست‌به‌درخواست در بک‌اند موجود نیست و نمایش داده نمی‌شود.",
+ "anr.title":"درآمد","anr.desc":"صادقانه: بدون منبع صورتحساب معتبر","anr.unavail":"درآمد در دسترس نیست",
+ "anr.notzero":"در دسترس نیست ≠ صفر","anr.metrics":"سنجه‌های مالی","anr.reason":"دلیل",
+ "bo.desc":"وضعیت صورتحساب داخلی — بدون ارائه‌دهندهٔ پرداخت","bo.provider":"ارائه‌دهندهٔ پرداخت",
+ "bo.unavail":"در دسترس نیست","bo.plans":"پلن‌ها","bo.col.key":"کلید","bo.col.name":"نام","bo.col.desc":"توضیح","bo.col.price":"قیمت",
+ "bo.col.active":"فعال","bo.substatus":"وضعیت‌های اشتراک","bo.dist":"توزیع","bo.dist.plan":"توزیع پلن","bo.dist.sub":"توزیع وضعیت اشتراک",
+ "bo.ent":"محدودیت‌ها","bo.acct":"سقف حساب به‌ازای کاربر","bo.budget":"سهمیهٔ AI ارائه‌دهنده","bo.limit":"سقف","bo.source":"منبع",
+ "bo.history":"تاریخچهٔ صورت‌حساب","bo.hist.unavail":"تاریخچهٔ فاکتور/پرداخت وجود ندارد (بدون ارائه‌دهنده).",
+ "bo.price.unavail":"قیمت معتبر نیست: منبع صورتحساب خارجی وجود ندارد."
+});
+Object.assign(F3T.en,{
+ "sh.desc":"Real infrastructure status from the backend","sh.sys":"Infrastructure","sh.lastcheck":"Last check",
+ "sh.metaapi.status":"MetaAPI status","sh.configured_only":"Configured only (live probe runs via Test Connection only)",
+ "sl.desc":"Real system logs — redacted twice at the backend","sl.col.sev":"Severity","sl.col.src":"Source","sl.col.msg":"Message",
+ "sl.col.req":"Request ID","sl.col.err":"Error code","sl.col.time":"Time","sl.search":"Search messages…",
+ "sl.sev.all":"All severities","sl.empty":"No log entries found","sl.empty.desc":"Nothing matches the current filters.",
+ "sl.page":"Page","sl.of":"of","sl.prev":"Previous","sl.next":"Next","sl.per":"Rows per page",
+ "sa.desc":"Admin action trail — from backend audit logs","sa.col.actor":"Actor","sa.col.role":"Role","sa.col.action":"Action",
+ "sa.col.target":"Target","sa.col.result":"Result","sa.col.summary":"Summary","sa.col.time":"Time","sa.col.ip":"IP","sa.col.ctx":"Context",
+ "sa.result.all":"All results","sa.result.success":"Success","sa.result.denied":"Denied","sa.result.error":"Error",
+ "sa.sensitive.note":"IP/context columns require the audit.view_sensitive permission (the server strips them otherwise).",
+ "sa.empty":"No records found",
+ "sf.desc":"Canonical AI flags — the runtime's single source","sf.col.feature":"Feature","sf.col.enabled":"Enabled","sf.col.rollout":"Rollout",
+ "sf.col.eff":"Effective","sf.col.runtime":"Runtime","sf.col.persisted":"Persisted","sf.col.updated":"Updated",
+ "sf.env":"Environment","sf.edit":"Edit flag","sf.feature":"Feature","sf.enabled":"Enabled","sf.rollout":"Rollout (0–100)",
+ "sf.save":"Apply","sf.done":"Flag updated","sf.readonly":"Changing flags requires feature_flags.edit; view is read-only.",
+ "sf.default":"Default (no persisted row)",
+ "an.range":"Range","an.range.today":"Today","an.range.7d":"7 days","an.range.30d":"30 days","an.range.90d":"90 days","an.range.all":"All",
+ "an.trend":"Daily trend","an.dist":"Distribution","an.count":"Count","an.date":"Date","an.noaccess":"This section requires the analytics.view permission.",
+ "anu.desc":"Real user aggregates from the backend","anu.total":"Total users","anu.new":"New in range","anu.byrole":"By role",
+ "anu.bystatus":"By status","anu.bylocale":"By locale","anu.reg":"Registration trend",
+ "ant.desc":"Trade aggregates — trading performance, not platform revenue","ant.total":"Total trades","ant.inrange":"In range",
+ "ant.netpnl":"Net P&L","ant.volume":"Total volume","ant.wins":"Wins","ant.losses":"Losses","ant.be":"Break-even",
+ "ant.bysym":"By symbol","ant.bydir":"By direction","ant.note":"Backend note",
+ "anai.desc":"AI request aggregates from the ai_requests table","anai.total":"Total requests","anai.inrange":"In range",
+ "anai.tokens":"Tokens used","anai.cost":"Internal computed cost","anai.bystatus":"By status","anai.byprov":"By provider",
+ "anai.byfeat":"By feature","anai.bymodel":"By model","anai.nodrill":"Per-request drilldown does not exist in the backend and is not rendered.",
+ "anr.title":"Revenue","anr.desc":"Honestly: no authoritative billing source","anr.unavail":"Revenue is unavailable",
+ "anr.notzero":"unavailable ≠ zero","anr.metrics":"Financial metrics","anr.reason":"Reason",
+ "bo.desc":"Internal billing state — no payment provider","bo.provider":"Payment provider",
+ "bo.unavail":"Unavailable","bo.plans":"Plans","bo.col.key":"Key","bo.col.name":"Name","bo.col.desc":"Description","bo.col.price":"Price",
+ "bo.col.active":"Active","bo.substatus":"Subscription statuses","bo.dist":"Distribution","bo.dist.plan":"Plan distribution","bo.dist.sub":"Subscription-status distribution",
+ "bo.ent":"Entitlements","bo.acct":"Trading accounts per user","bo.budget":"Provider AI budget","bo.limit":"Limit","bo.source":"Source",
+ "bo.history":"Billing history","bo.hist.unavail":"No invoice/payment history exists (no billing provider).",
+ "bo.price.unavail":"Price is not authoritative: no external billing/pricing source exists."
+});
+
+/* ---------------- shared batch-3 helpers ---------------- */
+/* unified retry: resets the state container of the current route (batches 1–3) */
+function f3ReloadCurrent(){const c=f3Cur();
+ const m={overview:OV,users:US,"ai-providers":AIP,"ai-route":AIR,
+  "integrations-n8n":N8,"integrations-metaapi":MM,"integrations-email":EM,"ai-health":AH,
+  "system-health":SH,"system-logs":SL,"security-audit":SA,"system-flags":SF,
+  "analytics-users":ANU,"analytics-trading":ANT,"analytics-ai":ANAI,"analytics-revenue":ANR,"billing-overview":BO};
+ const s=m[c];if(s){s.st="idle";s.err=null;if("testSt" in s)s.testSt="idle";render();}}
+const B3_SEV={ERROR:"err",CRITICAL:"err",WARN:"warn",INFO:"neutral",DEBUG:"neutral"};
+const B3_RES={success:"ok",denied:"warn",error:"err"};
+const f3spark=(trend)=>{ /* sparkline computed ONLY from backend trend [{date,count}] */
+ if(!Array.isArray(trend)||trend.length<2)return"";
+ const vals=trend.map(p=>+p.count||0);const mx=Math.max.apply(null,vals);if(mx<=0)return"";
+ const step=100/(vals.length-1);
+ const pts=vals.map((v,i)=>`${(i*step).toFixed(2)},${(22-(v/mx)*20).toFixed(2)}`).join(" ");
+ return `<svg class="spark" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true"><polyline fill="none" stroke="currentColor" stroke-width="1.6" points="${pts}"/></svg>`;
+};
+const f3b3dist=(rows)=>{ /* distribution table from [{key,count}] */
+ if(!Array.isArray(rows)||!rows.length)return f3unavail();
+ return `<div class="twrap"><table class="tbl" data-mstack><thead><tr><th>${esc(t("an.dist"))}</th><th>${esc(t("an.count"))}</th></tr></thead><tbody>${
+  rows.map(r=>`<tr><td class="mono">${esc(String(r.key))}</td><td class="num">${esc(String(r.count))}</td></tr>`).join("")}</tbody></table></div>`;
+};
+const B3_RANGES=["today","7d","30d","90d","all"];
+const b3rangeSel=(cur,onchg)=>`<select class="inp" aria-label="${esc(t("an.range"))}" onchange="${onchg}(this.value)" style="max-width:180px">${
+ B3_RANGES.map(r=>`<option value="${r}"${cur===r?" selected":""}>${esc(t("an.range."+r))}</option>`).join("")}</select>`;
+const b3trendCard=(trend)=>`<div class="card" style="margin-top:12px"><div class="ch"><h3>${esc(t("an.trend"))}</h3></div><div class="cb">${
+ Array.isArray(trend)&&trend.length?f3spark(trend)+`<div class="twrap"><table class="tbl" data-mstack><thead><tr><th>${esc(t("an.date"))}</th><th>${esc(t("an.count"))}</th></tr></thead><tbody>${
+  trend.map(p=>`<tr><td class="mono cellsub">${esc(String(p.date))}</td><td class="num">${esc(String(p.count))}</td></tr>`).join("")}</tbody></table></div>`:f3unavail()}</div></div>`;
+const b3pageNav=(st,navigate)=>`<div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">
+ <span class="cellsub">${esc(t("sl.page"))} ${esc(String(st.page))} ${esc(t("sl.of"))} ${esc(String(Math.max(1,Math.ceil((st.total||0)/(st.per||50)))))}</span>
+ <button class="btn sm" onclick="${navigate}(-1)"${st.page<=1?" disabled":""}>${esc(t("sl.prev"))}</button>
+ <button class="btn sm" onclick="${navigate}(1)"${st.hasMore===false||st.page>=Math.ceil((st.total||0)/(st.per||50))?" disabled":""}>${esc(t("sl.next"))}</button></div>`;
+
+/* ---------------- system-health ---------------- */
+const SH={health:null,diag:null,st:"idle",err:null,refreshing:false};
+async function f3LoadSH(){
+ SH.st="loading";f3RenderIf("system-health");
+ const jobs=[];
+ if(can("system.health.view"))jobs.push(VeloraData.request("/api/v1/admin/system/health").then(d=>{SH.health=d&&d.health?d.health:{};}).catch(e=>{SH.err=e;}));
+ jobs.push(can("system.health.view")?VeloraData.request("/api/v1/admin/system/diagnostics").then(d=>{SH.diag=d&&d.health?d.health:{};}).catch(e=>{if(!SH.err)SH.err=e;}):Promise.resolve());
+ await Promise.all(jobs);SH.st=SH.err?"error":"ok";f3RenderIf("system-health");
+}
+async function f3SHRefresh(){
+ if(SH.refreshing||!can("system.health.view"))return;SH.refreshing=true;f3RenderIf("system-health");
+ try{await VeloraData.request("/api/v1/admin/system/diagnostics/refresh",{method:"POST"});
+  const d=await VeloraData.request("/api/v1/admin/system/diagnostics");SH.diag=d&&d.health?d.health:SH.diag;toast(t("ah.done.refresh"));}
+ catch(e){toast((e&&e.code?e.code+" · ":"")+t("f3.load.err"),"err");}
+ SH.refreshing=false;f3RenderIf("system-health");
+}
+function systemHealthPage(){
+ if(SH.st==="idle")f3LoadSH();
+ let h=pagehead(t("nav.system-health"),t("sh.desc"));
+ if(SH.st==="loading")return h+`<div class="grid g2"><div class="card"><div class="cb">${f3skel(4)}</div></div><div class="card"><div class="cb">${f3skel(4)}</div></div></div>`;
+ if(SH.st==="error"&&!SH.health)return h+f3errBox(SH.err);
+ if(!SH.health){return h+`<div class="alert warn"><span class="amark" aria-hidden="true">!</span><div>${esc(t("f3.noperm"))}<div class="note mono">system.health.view</div></div></div>`;}
+ const H=SH.health||{};
+ const api=H.api||{},db=H.database||{},mm=H.metaapi||{},em=H.email||{},wk=H.workers||{};
+ const sdot=s=>bdot(/ok|healthy/i.test(String(s))?"ok":(/error|fail/i.test(String(s))?"err":"neutral"),esc(String(s||"—")));
+ h+=`<div class="grid g2">
+ <div class="card"><div class="ch"><h3>${esc(t("sh.sys"))}</h3></div><div class="cb">
+  <div class="kv"><span class="k">${esc(t("ah.api"))}</span><span class="v">${sdot(api.status)}</span></div>
+  ${api.uptimeNote?`<div class="kv"><span class="k">${esc(t("ah.uptime"))}</span><span class="v cellsub">${esc(String(api.uptimeNote))}</span></div>`:""}
+  <div class="kv"><span class="k">${esc(t("ah.db"))}</span><span class="v">${db.status?bdot(db.status==="ok"?"ok":"warn",esc(String(db.status))+(db.latencyMs!=null?" · "+db.latencyMs+"ms":"")):f3unavail()}</span></div>
+  ${db.lastCheck?`<div class="kv"><span class="k">${esc(t("sh.lastcheck"))}</span><span class="v cellsub">${esc(String(db.lastCheck))}</span></div>`:""}
+ </div></div>
+ <div class="card"><div class="ch"><h3>${esc(t("ov.health.metaapi"))} / ${esc(t("ah.email"))}</h3></div><div class="cb">
+  <div class="kv"><span class="k">${esc(t("sh.metaapi.status"))}</span><span class="v">${mm.configured?bdot("neutral",t("sh.configured_only")):bdot("warn",t("f3.notconfigured"))}</span></div>
+  <div class="kv"><span class="k">${esc(t("iem.driver"))}</span><span class="v mono">${em.driver?esc(String(em.driver)):f3unavail()}</span></div>
+  <div class="kv"><span class="k">${esc(t("ah.sent24"))}</span><span class="v num">${em.sentLast24h!=null?esc(String(em.sentLast24h)):f3unavail()}</span></div>
+  <div class="kv"><span class="k">${esc(t("ah.failed24"))}</span><span class="v num">${em.failedLast24h!=null?esc(String(em.failedLast24h)):f3unavail()}</span></div>
+ </div></div>
+ <div class="card"><div class="ch"><h3>${esc(t("ah.workers"))}</h3></div><div class="cb">
+  <div class="kv"><span class="k">${esc(t("ah.jp"))}</span><span class="v num">${wk.jobsPending!=null?esc(String(wk.jobsPending)):f3unavail()}</span></div>
+  <div class="kv"><span class="k">${esc(t("ah.jf"))}</span><span class="v num">${wk.jobsFailed!=null?esc(String(wk.jobsFailed)):f3unavail()}</span></div>
+  <div class="kv"><span class="k">${esc(t("ah.sf"))}</span><span class="v num">${wk.syncFailed!=null?esc(String(wk.syncFailed)):f3unavail()}</span></div>
+ </div></div>`;
+ /* AI provider health rows (real backend rows only) */
+ const ps=Array.isArray(H.aiProviders)?H.aiProviders:[];
+ h+=`<div class="card"><div class="ch"><h3>${esc(t("ah.provs"))}</h3></div><div class="cb">${
+  ps.length?`<div class="twrap"><table class="tbl" data-mstack><thead><tr><th>${esc(t("ov.provider"))}</th><th>${esc(t("ah.col.status"))}</th><th>${esc(t("ov.lastcheck"))}</th><th>${esc(t("aip.errorcode"))}</th></tr></thead><tbody>${
+   ps.map(p=>`<tr><td class="mono">${esc(String(p.provider))}</td><td>${p.status?bdot(p.status==="VALID"?"ok":"warn",esc(String(p.status))):f3unavail()}</td><td class="cellsub">${p.last_checked_at?esc(String(p.last_checked_at)):f3unavail()}</td><td class="mono cellsub">${p.error_code?esc(String(p.error_code)):"—"}</td></tr>`).join("")}</tbody></table></div>`:f3unavail()
+ }<div class="note">${esc(t("sh.configured_only"))}</div></div></div></div>`;
+ /* integration health + refresh (diagnostics) */
+ if(SH.diag){
+  const rows=[["metaapi",SH.diag.metaapi],["email",SH.diag.email],["ai",SH.diag.ai]];
+  h+=`<div class="card" style="margin-top:12px"><div class="ch"><h3>${esc(t("ah.integ"))}</h3></div><div class="cb">
+   <div class="twrap"><table class="tbl" data-mstack><thead><tr><th>${esc(t("ah.col.name"))}</th><th>${esc(t("ah.col.status"))}</th><th>${esc(t("ah.col.lat"))}</th><th>${esc(t("ah.col.err"))}</th><th>${esc(t("ah.col.chk"))}</th></tr></thead><tbody>${
+    rows.map(([n,r])=>{r=r||{};return `<tr><td class="mono">${esc(n)}</td><td>${r.status?bdot(IINT_ST[String(r.status).replace("HEALTHY","SUCCESS").replace("DEGRADED","TIMEOUT")]||"neutral",esc(String(r.status))):f3unavail()}</td><td class="num">${r.latencyMs!=null?esc(String(r.latencyMs))+"ms":f3unavail()}</td><td class="mono cellsub">${r.errorCode||r.error_code?esc(String(r.errorCode||r.error_code)):"—"}</td><td class="cellsub">${r.checkedAt||r.checked_at?esc(String(r.checkedAt||r.checked_at)):f3unavail()}</td></tr>`;}).join("")
+   }</tbody></table></div>
+   <div style="margin-top:10px"><button class="btn sm" onclick="f3SHRefresh()"${SH.refreshing?" disabled":""}>${SH.refreshing?esc(t("ah.refreshing")):esc(t("ah.refresh"))}</button></div></div></div>`;
+ }
+ return h;
+}
+
+/* ---------------- system-logs ---------------- */
+const SL={data:null,st:"idle",err:null,page:1,per:25,sev:"",q:"",busy:false};
+function f3LogsQuery(){const qq=new URLSearchParams({page:String(SL.page),per_page:String(SL.per)});
+ if(SL.sev)qq.set("severity",SL.sev);if(SL.q)qq.set("q",SL.q);return qq.toString();}
+async function f3LoadLogs(){
+ SL.st="loading";f3RenderIf("system-logs");
+ try{const d=await VeloraData.request("/api/v1/admin/logs/system?"+f3LogsQuery());SL.data=d||{};SL.st="ok";}
+ catch(e){SL.err=e;SL.st="error";}
+ f3RenderIf("system-logs");
+}
+function f3LogsSearch(v){SL.q=v.trim();SL.page=1;clearTimeout(f3LogT);f3LogT=setTimeout(f3LoadLogs,350)}
+function f3LogsSev(v){SL.sev=v;SL.page=1;f3LoadLogs()}
+function f3LogsPage(d){SL.page=Math.max(1,SL.page+d);f3LoadLogs()}
+var f3LogT=null;
+function systemLogsPage(){
+ if(SL.st==="idle")f3LoadLogs();
+ let h=pagehead(t("nav.system-logs"),t("sl.desc"));
+ if(SL.st==="loading"&&!SL.data)return h+`<div class="card"><div class="cb">${f3skel(6)}</div></div>`;
+ if(SL.st==="error")return h+f3errBox(SL.err);
+ const d=SL.data||{};const items=Array.isArray(d.items)?d.items:[];
+ h+=`<div class="card"><div class="ch"><h3>${esc(t("nav.system-logs"))}</h3></div><div class="cb">
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+   <input class="inp" id="slSearch" placeholder="${esc(t("sl.search"))}" value="${esc(SL.q)}" oninput="f3LogsSearch(this.value)" aria-label="${esc(t("sl.search"))}" style="flex:1;min-width:180px">
+   <select class="inp" aria-label="${esc(t("sl.col.sev"))}" onchange="f3LogsSev(this.value)" style="max-width:170px">
+    <option value=""${SL.sev===""?" selected":""}>${esc(t("sl.sev.all"))}</option>
+    ${["DEBUG","INFO","WARN","ERROR"].map(s=>`<option value="${s}"${SL.sev===s?" selected":""}>${s}</option>`).join("")}
+   </select></div>`;
+ if(!items.length){h+=empty(VI.box,t("sl.empty"),t("sl.empty.desc"));h+="</div></div>";return h;}
+ h+=`<div class="twrap"><table class="tbl" data-mstack><thead><tr><th>${esc(t("sl.col.sev"))}</th><th>${esc(t("sl.col.src"))}</th><th>${esc(t("sl.col.msg"))}</th><th>${esc(t("sl.col.err"))}</th><th>${esc(t("sl.col.time"))}</th></tr></thead><tbody>${
+  items.map(r=>`<tr><td>${bdot(B3_SEV[r.severity]||"neutral",esc(String(r.severity||"—")))}</td><td class="mono cellsub">${esc(String(r.source||"—"))}</td><td>${esc(String(r.message||""))}${r.requestId?` <span class="cellsub mono">#${esc(String(r.requestId))}</span>`:""}</td><td class="mono cellsub">${r.errorCode?esc(String(r.errorCode)):"—"}</td><td class="cellsub">${esc(String(r.createdAt||"—"))}</td></tr>`).join("")
+ }</tbody></table></div>`;
+ h+=b3pageNav({page:d.page||1,per:d.per_page||25,total:d.total||0},"f3LogsPage");
+ h+=`</div></div>`;
+ return h;
+}
+
+/* ---------------- security-audit ---------------- */
+const SA={data:null,st:"idle",err:null,page:1,per:25,result:""};
+function f3AuditQuery(){const qq=new URLSearchParams({page:String(SA.page),per_page:String(SA.per)});if(SA.result)qq.set("result",SA.result);return qq.toString();}
+async function f3LoadAudit(){
+ SA.st="loading";f3RenderIf("security-audit");
+ try{const d=await VeloraData.request("/api/v1/admin/logs/audit?"+f3AuditQuery());SA.data=d||{};SA.st="ok";}
+ catch(e){SA.err=e;SA.st="error";}
+ f3RenderIf("security-audit");
+}
+function f3AuditResult(v){SA.result=v;SA.page=1;f3LoadAudit()}
+function f3AuditPage(d){SA.page=Math.max(1,SA.page+d);f3LoadAudit()}
+function securityAuditPage(){
+ if(SA.st==="idle")f3LoadAudit();
+ let h=pagehead(t("nav.security-audit"),t("sa.desc"));
+ if(SA.st==="loading"&&!SA.data)return h+`<div class="card"><div class="cb">${f3skel(6)}</div></div>`;
+ if(SA.st==="error")return h+f3errBox(SA.err);
+ const d=SA.data||{};const items=Array.isArray(d.items)?d.items:[];
+ const sens=items.length>0&&("ipAddress" in items[0]||"contextId" in items[0]);
+ h+=`<div class="card"><div class="ch"><h3>${esc(t("nav.security-audit"))}</h3><div class="right">${sens?bdot("ok",t("sa.col.ip")+" / "+t("sa.col.ctx")):bdot("neutral","audit.view_sensitive")}</div></div><div class="cb">
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+   <select class="inp" aria-label="${esc(t("sa.col.result"))}" onchange="f3AuditResult(this.value)" style="max-width:190px">
+    <option value=""${SA.result===""?" selected":""}>${esc(t("sa.result.all"))}</option>
+    <option value="success"${SA.result==="success"?" selected":""}>${esc(t("sa.result.success"))}</option>
+    <option value="denied"${SA.result==="denied"?" selected":""}>${esc(t("sa.result.denied"))}</option>
+    <option value="error"${SA.result==="error"?" selected":""}>${esc(t("sa.result.error"))}</option>
+   </select></div>`;
+ if(!items.length){h+=empty(VI.box,t("sa.empty"),"");h+="</div></div>";return h;}
+ h+=`<div class="twrap"><table class="tbl" data-mstack><thead><tr><th>${esc(t("sa.col.action"))}</th><th>${esc(t("sa.col.actor"))}</th><th>${esc(t("sa.col.target"))}</th><th>${esc(t("sa.col.result"))}</th><th>${esc(t("sa.col.summary"))}</th>${sens?`<th>${esc(t("sa.col.ip"))}</th><th>${esc(t("sa.col.ctx"))}</th>`:""}<th>${esc(t("sa.col.time"))}</th></tr></thead><tbody>${
+  items.map(r=>`<tr><td class="mono">${esc(String(r.action||"—"))}</td>
+   <td class="cellsub">#${esc(String(r.actorUserId))} · ${esc(f3RoleLbl(String(r.actorRole||"")))}</td>
+   <td class="mono cellsub">${r.targetType?esc(String(r.targetType))+(r.targetId!=null?"#"+esc(String(r.targetId)):""):"—"}</td>
+   <td>${bdot(B3_RES[r.result]||"neutral",esc(String(r.result||"—")))}</td>
+   <td class="cellsub">${esc(String(r.summary||""))}</td>
+   ${sens?`<td class="mono cellsub">${r.ipAddress?esc(String(r.ipAddress)):"—"}</td><td class="mono cellsub">${r.contextId?esc(String(r.contextId)):"—"}</td>`:""}
+   <td class="cellsub">${esc(String(r.createdAt||"—"))}</td></tr>`).join("")
+ }</tbody></table></div>`;
+ if(!can("audit.view_sensitive"))h+=`<div class="note" style="margin-top:8px">${esc(t("sa.sensitive.note"))}</div>`;
+ h+=b3pageNav({page:d.page||1,per:d.per_page||25,total:d.total||0},"f3AuditPage");
+ h+=`</div></div>`;
+ return h;
+}
+
+/* ---------------- system-flags ---------------- */
+const SF={data:null,st:"idle",err:null,busy:false,sel:"",enabled:false,rollout:""};
+async function f3LoadFlags(){
+ SF.st="loading";f3RenderIf("system-flags");
+ try{const d=await VeloraData.request("/api/v1/admin/feature-flags");SF.data=d||{};SF.st="ok";}
+ catch(e){SF.err=e;SF.st="error";}
+ f3RenderIf("system-flags");
+}
+function f3FlagPick(v){SF.sel=v;const f=((SF.data||{}).flags||[]).find(x=>x.feature===v);
+ SF.enabled=f?!!f.enabled:false;SF.rollout=f?String(f.rollout!=null?f.rollout:0):"";f3RenderIf("system-flags");}
+function f3FlagEnabled(v){SF.enabled=v==="1";f3RenderIf("system-flags")}
+function f3FlagRollout(v){SF.rollout=v}
+async function f3FlagSave(){
+ if(SF.busy||!SF.sel)return;
+ const ro=parseInt(SF.rollout,10);
+ if(isNaN(ro)||ro<0||ro>100){toast("ROLLOUT_RANGE · "+t("f3.load.err"),"err");return;}
+ SF.busy=true;f3RenderIf("system-flags");
+ try{const d=await VeloraData.request("/api/v1/admin/feature-flags/"+encodeURIComponent(SF.sel),{method:"PATCH",body:{enabled:SF.enabled,rollout:ro}});
+  if(d&&d.flag){const fs=((SF.data||{}).flags||[]);const i=fs.findIndex(x=>x.feature===SF.sel);if(i>=0)fs[i]=d.flag;}
+  toast(t("sf.done"));}
+ catch(e){toast((e&&e.code?e.code+" · ":"")+t("f3.load.err"),"err");}
+ SF.busy=false;f3RenderIf("system-flags");
+}
+function systemFlagsPage(){
+ if(SF.st==="idle")f3LoadFlags();
+ let h=pagehead(t("nav.system-flags"),t("sf.desc"));
+ if(SF.st==="loading"&&!SF.data)return h+`<div class="card"><div class="cb">${f3skel(5)}</div></div>`;
+ if(SF.st==="error")return h+f3errBox(SF.err);
+ const d=SF.data||{};const flags=Array.isArray(d.flags)?d.flags:[];
+ h+=`<div class="card"><div class="ch"><h3>${esc(t("nav.system-flags"))}</h3><div class="right"><span class="cellsub mono">${esc(String(d.environment||"—"))}</span></div></div><div class="cb">
+  <div class="twrap"><table class="tbl" data-mstack><thead><tr><th>${esc(t("sf.col.feature"))}</th><th>${esc(t("sf.col.enabled"))}</th><th>${esc(t("sf.col.rollout"))}</th><th>${esc(t("sf.col.eff"))}</th><th>${esc(t("sf.col.runtime"))}</th><th>${esc(t("sf.col.persisted"))}</th><th>${esc(t("sf.col.updated"))}</th></tr></thead><tbody>${
+   flags.map(f=>`<tr id="flagrow-${esc(String(f.feature))}"><td class="mono">${esc(String(f.feature))}</td>
+    <td>${bdot(f.enabled?"ok":"neutral",f.enabled?t("aip.flag.on"):t("aip.flag.off"))}</td>
+    <td class="num">${f.rollout!=null?esc(String(f.rollout))+"%":f3unavail()}</td>
+    <td class="mono cellsub">${f.effective!=null?esc(String(f.effective)):"—"}</td>
+    <td>${bdot(f.runtime?"ok":"neutral",f.runtime?t("aip.flag.on"):t("aip.flag.off"))}</td>
+    <td>${f.persisted?bdot("ok",t("i8n.set")):`<span class="cellsub">${esc(t("sf.default"))}</span>`}</td>
+    <td class="cellsub">${f.updatedAt?esc(String(f.updatedAt)):"—"}</td></tr>`).join("")
+  }</tbody></table></div></div></div>`;
+ if(!can("feature_flags.edit")){h+=`<div class="alert warn" style="margin-top:12px"><span class="amark" aria-hidden="true">!</span><div>${esc(t("sf.readonly"))}<div class="note mono">feature_flags.edit</div></div></div>`;return h;}
+ h+=`<div class="card" style="margin-top:12px"><div class="ch"><h3>${esc(t("sf.edit"))}</h3></div><div class="cb">
+  <select class="inp" aria-label="${esc(t("sf.feature"))}" onchange="f3FlagPick(this.value)" style="max-width:280px">
+   <option value="">— ${esc(t("sf.feature"))} —</option>${flags.map(f=>`<option value="${esc(String(f.feature))}">${esc(String(f.feature))}</option>`).join("")}</select>
+  <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;align-items:center">
+   <select class="inp" aria-label="${esc(t("sf.enabled"))}" onchange="f3FlagEnabled(this.value)" style="max-width:150px">
+    <option value="1"${SF.enabled?" selected":""}>${esc(t("aip.flag.on"))}</option>
+    <option value="0"${!SF.enabled?" selected":""}>${esc(t("aip.flag.off"))}</option></select>
+   <input class="inp" id="sfRollout" type="number" min="0" max="100" value="${esc(SF.rollout)}" oninput="f3FlagRollout(this.value)" aria-label="${esc(t("sf.rollout"))}" style="max-width:130px">
+   <button class="btn sm primary" onclick="f3FlagSave()"${SF.busy||!SF.sel?" disabled":""}>${esc(t("sf.save"))}</button></div>
+  <div class="note">${esc(t("sf.readonly")===""?"":t("sf.rollout"))}</div></div></div>`;
+ return h;
+}
+
+/* ---------------- analytics (shared) ---------------- */
+function b3RangeState(k){const s={users:ANU,trading:ANT,ai:ANAI}[k];return s?s.range||"30d":"30d";}
+function f3AnRange(k,v){const s={users:ANU,trading:ANT,ai:ANAI}[k];if(!s)return;s.range=v;s.st="idle";s.data=null;f3RenderIf("analytics-"+k);}
+const ANU={data:null,st:"idle",err:null,range:"30d"};
+const ANT={data:null,st:"idle",err:null,range:"30d"};
+const ANAI={data:null,st:"idle",err:null,range:"30d"};
+async function f3LoadAn(k){
+ const s={users:ANU,trading:ANT,ai:ANAI}[k];if(!s)return;
+ s.st="loading";f3RenderIf("analytics-"+k);
+ try{const d=await VeloraData.request("/api/v1/admin/analytics/"+k+"?range="+encodeURIComponent(s.range||"30d"));s.data=d||{};s.st="ok";}
+ catch(e){s.err=e;s.st="error";}
+ f3RenderIf("analytics-"+k);
+}
+function b3rangeHead(k,descKey){
+ const s={users:ANU,trading:ANT,ai:ANAI}[k];
+ if(s.st==="idle")f3LoadAn(k);
+ let h=pagehead(t("nav.analytics-"+({users:"users",trading:"trading",ai:"ai"}[k])),t(descKey));
+ h+=`<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap"><span class="cellsub">${esc(t("an.range"))}</span>${b3rangeSel(s.range,`v=>f3AnRange('${k}',v)`)}</div>`;
+ if(s.st==="loading"&&!s.data)return h+`<div class="card"><div class="cb">${f3skel(5)}</div></div>`;
+ if(s.st==="error")return h+f3errBox(s.err);
+ return h;
+}
+function analyticsUsersPage(){
+ const head=b3rangeHead("users","anu.desc");
+ const d=ANU.data||{};const tr=Array.isArray(d.registrationTrend)?d.registrationTrend:[];
+ return head+`<div class="grid g2">
+  <div class="card"><div class="ch"><h3>${esc(t("anu.total"))}</h3></div><div class="cb">
+   <div class="kpi"><div class="lbl">${esc(t("anu.total"))}</div><div class="val num">${d.total!=null?esc(String(d.total)):f3unavail()}</div>${f3spark(tr)}</div>
+   <div class="kpi" style="margin-top:10px"><div class="lbl">${esc(t("anu.new"))}</div><div class="val num">${d.newInRange!=null?esc(String(d.newInRange)):f3unavail()}</div></div>
+  </div></div>
+  <div class="card"><div class="ch"><h3>${esc(t("anu.byrole"))}</h3></div><div class="cb">${f3b3dist(d.byRole)}</div></div>
+  <div class="card"><div class="ch"><h3>${esc(t("anu.bystatus"))}</h3></div><div class="cb">${f3b3dist(d.byStatus)}</div></div>
+  <div class="card"><div class="ch"><h3>${esc(t("anu.bylocale"))}</h3></div><div class="cb">${f3b3dist(d.byLocale)}</div></div>
+ </div>`+b3trendCard(tr);
+}
+function analyticsTradingPage(){
+ const head=b3rangeHead("trading","ant.desc");
+ const d=ANT.data||{};const wl=d.winLoss||{};const tr=Array.isArray(d.trend)?d.trend:[];
+ return head+`<div class="grid g2">
+  <div class="card"><div class="ch"><h3>${esc(t("ant.inrange"))}</h3></div><div class="cb">
+   <div class="kpi"><div class="lbl">${esc(t("ant.inrange"))}</div><div class="val num">${d.tradesInRange!=null?esc(String(d.tradesInRange)):f3unavail()}</div>${f3spark(tr)}</div>
+   <div class="kpi" style="margin-top:10px"><div class="lbl">${esc(t("ant.netpnl"))}</div><div class="val num">${d.netPnl!=null?esc(String(d.netPnl)):f3unavail()}</div></div>
+   <div class="kpi" style="margin-top:10px"><div class="lbl">${esc(t("ant.volume"))}</div><div class="val num">${d.totalVolume!=null?esc(String(d.totalVolume)):f3unavail()}</div></div>
+  </div></div>
+  <div class="card"><div class="ch"><h3>${esc(t("ant.bysym"))}</h3></div><div class="cb">${f3b3dist(d.bySymbol)}</div></div>
+  <div class="card"><div class="ch"><h3>${esc(t("ant.bydir"))}</h3></div><div class="cb">${f3b3dist(d.byDirection)}</div></div>
+  <div class="card"><div class="ch"><h3>W/L</h3></div><div class="cb">
+   <div class="kv"><span class="k">${esc(t("ant.wins"))}</span><span class="v num">${wl.wins!=null?esc(String(wl.wins)):f3unavail()}</span></div>
+   <div class="kv"><span class="k">${esc(t("ant.losses"))}</span><span class="v num">${wl.losses!=null?esc(String(wl.losses)):f3unavail()}</span></div>
+   <div class="kv"><span class="k">${esc(t("ant.be"))}</span><span class="v num">${wl.breakeven!=null?esc(String(wl.breakeven)):f3unavail()}</span></div>
+   <div class="note">${esc(t("ant.note"))}: ${d.note?esc(String(d.note)):f3unavail()}</div>
+  </div></div>
+ </div>`+b3trendCard(tr);
+}
+function analyticsAiPage(){
+ const head=b3rangeHead("ai","anai.desc");
+ const d=ANAI.data||{};const tr=Array.isArray(d.trend)?d.trend:[];
+ return head+`<div class="alert info" style="margin-bottom:12px"><span class="amark" aria-hidden="true">i</span><div>${esc(t("anai.nodrill"))}</div></div>
+ <div class="grid g2">
+  <div class="card"><div class="ch"><h3>${esc(t("anai.total"))}</h3></div><div class="cb">
+   <div class="kpi"><div class="lbl">${esc(t("anai.total"))}</div><div class="val num">${d.total!=null?esc(String(d.total)):f3unavail()}</div>${f3spark(tr)}</div>
+   <div class="kpi" style="margin-top:10px"><div class="lbl">${esc(t("anai.inrange"))}</div><div class="val num">${d.inRange!=null?esc(String(d.inRange)):f3unavail()}</div></div>
+   <div class="kpi" style="margin-top:10px"><div class="lbl">${esc(t("anai.tokens"))}</div><div class="val num">${d.tokensUsed!=null?esc(String(d.tokensUsed)):f3unavail()}</div></div>
+   <div class="kpi" style="margin-top:10px"><div class="lbl">${esc(t("anai.cost"))}</div><div class="val num">${d.cost!=null?esc(String(d.cost)):f3unavail()}</div></div>
+  </div></div>
+  <div class="card"><div class="ch"><h3>${esc(t("anai.bystatus"))}</h3></div><div class="cb">${f3b3dist(d.byStatus)}</div></div>
+  <div class="card"><div class="ch"><h3>${esc(t("anai.byprov"))}</h3></div><div class="cb">${f3b3dist(d.byProvider)}</div></div>
+  <div class="card"><div class="ch"><h3>${esc(t("anai.byfeat"))}</h3></div><div class="cb">${f3b3dist(d.byFeature)}</div></div>
+ </div>
+ <div class="card" style="margin-top:12px"><div class="ch"><h3>${esc(t("anai.bymodel"))}</h3></div><div class="cb">${f3b3dist(d.byModel)}</div></div>
+ `+b3trendCard(tr);
+}
+const ANR={data:null,st:"idle",err:null};
+async function f3LoadANR(){
+ ANR.st="loading";f3RenderIf("analytics-revenue");
+ try{const d=await VeloraData.request("/api/v1/admin/analytics/revenue");ANR.data=d||{};ANR.st="ok";}
+ catch(e){ANR.err=e;ANR.st="error";}
+ f3RenderIf("analytics-revenue");
+}
+function analyticsRevenuePage(){
+ if(ANR.st==="idle")f3LoadANR();
+ let h=pagehead(t("anr.title"),t("anr.desc"));
+ if(ANR.st==="loading")return h+`<div class="card"><div class="cb">${f3skel(4)}</div></div>`;
+ if(ANR.st==="error")return h+f3errBox(ANR.err);
+ const d=ANR.data||{};
+ if(d.available===false){
+  h+=`<div class="card"><div class="cb"><div class="statebox"><div class="t mono" style="font-size:34px">i</div><div class="h">${esc(t("anr.unavail"))}</div><div class="d">${esc(t("anr.notzero"))}</div>
+   <div class="kv" style="margin-top:10px"><span class="k">${esc(t("anr.reason"))}</span><span class="v mono">${esc(String(d.reason||"—"))}</span></div>
+   ${d.note?`<div class="note">${esc(String(d.note))}</div>`:""}</div></div></div>`;
+  const mx=d.metrics||{};const mk=Object.keys(mx);
+  if(mk.length)h+=`<div class="card" style="margin-top:12px"><div class="ch"><h3>${esc(t("anr.metrics"))}</h3></div><div class="cb">${
+   mk.map(k=>`<div class="kv"><span class="k mono">${esc(k)}</span><span class="v">${(mx[k]&&mx[k].available===false)?bdot("neutral",t("f3.unavailable")):(mx[k]&&mx[k].available===true?bdot("ok",t("i8n.set")):f3unavail())}</span></div>`).join("")
+  }</div></div>`;
+  return h;
+ }
+ /* future-proof: if a real source ever exists, render real numbers only */
+ h+=`<div class="grid g2"><div class="card"><div class="ch"><h3>${esc(t("anr.title"))}</h3></div><div class="cb">${
+  Object.keys(d.metrics||{}).map(k=>{const m=d.metrics[k]||{};return `<div class="kv"><span class="k mono">${esc(k)}</span><span class="v num">${m.available===true&&m.value!=null?esc(String(m.value)):f3unavail()}</span></div>`;}).join("")
+ }</div></div></div>`;
+ return h;
+}
+
+/* ---------------- billing overview ---------------- */
+const BO={data:null,st:"idle",err:null};
+async function f3LoadBO(){
+ BO.st="loading";f3RenderIf("billing-overview");
+ try{const d=await VeloraData.request("/api/v1/admin/billing");BO.data=d||{};BO.st="ok";}
+ catch(e){BO.err=e;BO.st="error";}
+ f3RenderIf("billing-overview");
+}
+function billingOverviewPage(){
+ if(BO.st==="idle")f3LoadBO();
+ let h=pagehead(t("nav.billing-overview"),t("bo.desc"));
+ if(BO.st==="loading"&&!BO.data)return h+`<div class="card"><div class="cb">${f3skel(5)}</div></div>`;
+ if(BO.st==="error")return h+f3errBox(BO.err);
+ const d=BO.data||{};
+ const prov=d.provider||{};
+ h+=`<div class="card"><div class="ch"><h3>${esc(t("bo.provider"))}</h3><div class="right">${bdot("warn",t("bo.unavail"))}</div></div><div class="cb">
+  <div class="kv"><span class="k">${esc(t("bo.provider"))}</span><span class="v">${prov.available===true?bdot("ok",t("i8n.set")):bdot("warn",t("bo.unavail"))}</span></div>
+  ${prov.reason?`<div class="note">${esc(String(prov.reason))}</div>`:""}
+ </div></div>`;
+ const plans=Array.isArray(d.plans)?d.plans:[];
+ h+=`<div class="card" style="margin-top:12px"><div class="ch"><h3>${esc(t("bo.plans"))}</h3></div><div class="cb">${
+  plans.length?`<div class="twrap"><table class="tbl" data-mstack><thead><tr><th>${esc(t("bo.col.key"))}</th><th>${esc(t("bo.col.name"))}</th><th>${esc(t("bo.col.desc"))}</th><th>${esc(t("bo.col.price"))}</th><th>${esc(t("bo.col.active"))}</th></tr></thead><tbody>${
+   plans.map(p=>{const pr=p.price||{};return `<tr><td class="mono">${esc(String(p.key))}</td><td>${esc(String(p.name||p.key))}</td><td class="cellsub">${esc(String(p.description||""))}</td><td>${pr.available===true?`<span class="num">${esc(String(pr.value!=null?pr.value:pr.price))}</span>`:`<span class="cellsub">${esc(t("bo.price.unavail"))}</span>`}</td><td>${p.active?bdot("ok",t("i8n.set")):bdot("neutral",t("aip.flag.off"))}</td></tr>`;}).join("")
+  }</tbody></table></div>`:f3unavail()}</div></div>`;
+ const dist=d.distribution||{};
+ h+=`<div class="grid g2" style="margin-top:12px">
+  <div class="card"><div class="ch"><h3>${esc(t("bo.dist.plan"))}</h3></div><div class="cb">${dist.available?f3b3dist(dist.plan):f3unavail()}</div></div>
+  <div class="card"><div class="ch"><h3>${esc(t("bo.dist.sub"))}</h3></div><div class="cb">${dist.available?f3b3dist(dist.subscriptionStatus):f3unavail()}</div></div>
+ </div>`;
+ const subs=Array.isArray(d.subscriptionStatuses)?d.subscriptionStatuses:[];
+ h+=`<div class="card" style="margin-top:12px"><div class="ch"><h3>${esc(t("bo.substatus"))}</h3></div><div class="cb">${subs.length?`<div class="twrap"><table class="tbl" data-mstack><thead><tr><th>${esc(t("bo.col.key"))}</th><th>${esc(t("bo.col.name"))}</th></tr></thead><tbody>${subs.map(x=>`<tr><td class="mono">${esc(String(x.key))}</td><td>${esc(String(x.name||x.key))}</td></tr>`).join("")}</tbody></table></div>`:f3unavail()}</div></div>`;
+ const ent=d.entitlements||{};const ta=ent.tradingAccountsPerUser||{};
+ h+=`<div class="card" style="margin-top:12px"><div class="ch"><h3>${esc(t("bo.ent"))}</h3></div><div class="cb">
+  <div class="kv"><span class="k">${esc(t("bo.acct"))}</span><span class="v num">${ta.limit!=null?esc(String(ta.limit)):f3unavail()}</span></div>
+  <div class="kv"><span class="k">${esc(t("bo.source"))}</span><span class="v mono cellsub">${ta.source?esc(String(ta.source)):"—"}</span></div>
+  <div class="kv"><span class="k">${esc(t("bo.budget"))}</span><span class="v">${ent.providerBudget!=null?`<span class="mono cellsub">${esc(JSON.stringify(ent.providerBudget))}</span>`:f3unavail()}</span></div>
+ </div></div>`;
+ const hist=d.history||{};
+ if(hist.available===false)h+=`<div class="card" style="margin-top:12px"><div class="cb"><div class="note">${esc(t("bo.hist.unavail"))}${hist.reason?" — "+esc(String(hist.reason)):""}</div></div></div>`;
+ return h;
+}
+
+/* registry honesty: batch-3 routes are implemented now (extends batch 1+2) */
+["system-health","system-logs","security-audit","system-flags","analytics-users","analytics-trading","analytics-ai","analytics-revenue","billing-overview"].forEach(rt=>{const d=REG_BY_ROUTE[rt];if(d)d.status="implemented";});
+Object.assign(PAGE_IMPL,{
+ "system-health":systemHealthPage,
+ "system-logs":systemLogsPage,
+ "security-audit":securityAuditPage,
+ "system-flags":systemFlagsPage,
+ "analytics-users":analyticsUsersPage,
+ "analytics-trading":analyticsTradingPage,
+ "analytics-ai":analyticsAiPage,
+ "analytics-revenue":analyticsRevenuePage,
+ "billing-overview":billingOverviewPage
+});
+
 
 function activeGroupOf(cur){for(const n of NAV){const items=n.items||[n];if(n.g&&items.length>1&&items.some(it=>it.id===cur))return n.g}return null}
 function navDefs(){const out=[];NAV.forEach(n=>{(n.items||[n]).forEach(it=>{const d=REG_BY_ROUTE[it.id];if(d&&d.nav&&navAllowed(d.route))out.push(d)})});return out}
