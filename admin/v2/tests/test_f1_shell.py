@@ -74,12 +74,15 @@ try:
         OUT["F_en_no_fa_leak"]=pg.evaluate("()=>!document.body.innerText.includes('شell')&&!document.querySelector('#nav').innerText.match(/[\\u0600-\\u06FF]/)")
         # back to fa/dark
         pg.click("#langBtn"); pg.wait_for_timeout(400); pg.click("#themeBtn"); pg.wait_for_timeout(200)
-        # user menu + logout
+        # user menu + EXIT ADMIN (owner contract: leave Admin -> dashboard, NO logout call)
         pg.click("#userBtn"); pg.wait_for_timeout(250)
         OUT["F_umenu"]=pg.evaluate("()=>{const m=document.querySelector('#umenu');return m?m.innerText.slice(0,60):'NO MENU'}")
-        pg.click("#logoutBtn"); pg.wait_for_timeout(800)
-        OUT["F_logout_redirect"]=pg.evaluate("()=>location.pathname")
-        OUT["F_logout_api"]=json.load(open(os.path.join(HERE,"mode.json")))["logout_called"]
+        pg.click("#exitAdminBtn")
+        try: pg.wait_for_url("**/dashboard/", timeout=6000)
+        except: pass
+        pg.wait_for_timeout(300)
+        OUT["F_exit_redirect"]=pg.evaluate("()=>location.pathname")
+        OUT["F_exit_no_logout_api"]=json.load(open(os.path.join(HERE,"mode.json")))["logout_called"] is False
         pg.close()
         # ---------- G) accordion/drawer/Escape @390 ----------
         pg=newpg(390,844); pg.goto("http://127.0.0.1:8141/admin/v2/index.html"); pg.wait_for_timeout(1300)
@@ -147,7 +150,7 @@ chk("C_401",OUT["C_401_redirect"] is True)
 chk("D_403",OUT["D_403_panel"]); chk("E_panel",OUT["E_panel_false"])
 chk("F_theme",OUT["F_theme_persist"]=="light"); chk("F_lang",OUT["F_lang_persist"]=="ltr")
 chk("F_enleak",OUT["F_en_no_fa_leak"])
-chk("F_umenu","#" in str(OUT["F_umenu"])); chk("F_logout",OUT["F_logout_redirect"]=="/login" and OUT["F_logout_api"])
+chk("F_umenu","#" in str(OUT["F_umenu"])); chk("F_exit",str(OUT["F_exit_redirect"]).endswith("/dashboard/") and OUT["F_exit_no_logout_api"])  # owner contract: Exit Admin, session kept, logout NOT called
 chk("G_drawer",OUT["G_drawer_open"] and OUT["G_hamburger_aria"]=="true")
 chk("G_acc",OUT["G_acc_open"]=="true" and OUT["G_acc_single"]==["nav.security"])
 chk("G_close",OUT["G_nav_closedrawer"] and OUT["G_escape_closes"] and OUT["G_backdrop_closes"])

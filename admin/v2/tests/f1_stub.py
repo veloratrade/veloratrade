@@ -208,6 +208,11 @@ class H(SimpleHTTPRequestHandler):
             self._j(200,{"flags":[dict(v,feature=k) for k,v in self.server.flags.items()],
                           "environment":"production",
                           "allowed":list(self.server.flags.keys())}); return
+        if self.path.split("?")[0] in ("/fa/dashboard/","/en/dashboard/","/fa/dashboard","/en/dashboard"):
+            loc="fa" if self.path.startswith("/fa") else "en"
+            b=("<html><body><div id='dashboardPage' data-locale='"+loc+"'>VELORA DASHBOARD</div></body></html>").encode()
+            self.send_response(200)
+            self.send_header("Content-Type","text/html; charset=utf-8"); self.send_header("Content-Length",str(len(b))); self.end_headers(); self.wfile.write(b); return
         if self.path.split("?")[0] in ("/login","/login/"):
             b=b"<html><body>login</body></html>"; self.send_response(200)
             self.send_header("Content-Type","text/html"); self.send_header("Content-Length",str(len(b))); self.end_headers(); self.wfile.write(b); return
@@ -298,7 +303,15 @@ class H(SimpleHTTPRequestHandler):
             self._j(200,{"test":st,"integration":upd}); return
         if self.path.startswith("/api/v1/auth/refresh"):
             if loadmode()["mode"]=="noauth": self._j(401,{"status":"error","error":{"code":"UNAUTHORIZED"}})
-            else: self._j(200,{"tokens":{"accessToken":"stub-token","user":{"id":4,"role":"admin","locale":"fa"}}})
+            else:
+                # session identity mirrors /admin/me per mode (as in production: same logged-in user)
+                ident={"admin":(4,"Sahar Rahimi","s.rahimi@veloratrade.ir"),
+                       "super":(5,"Arman Kaveh","a.kaveh@veloratrade.ir"),
+                       "limited":(7,"Neda Karimi","n.karimi@veloratrade.ir")}
+                _id,_fn,_em=ident.get(loadmode()["mode"],(4,None,None))
+                _u={"id":_id,"role":"admin","locale":"fa"}
+                if _fn: _u["fullName"]=_fn; _u["email"]=_em
+                self._j(200,{"tokens":{"accessToken":"stub-token","user":_u}})
         elif self.path.startswith("/api/v1/auth/logout"):
             m=loadmode(); m["logout_called"]=True; json.dump(m,open(os.path.join(ROOT,"mode.json"),"w")); self._j(200,{"ok":True})
         else: self._j(404,{})
