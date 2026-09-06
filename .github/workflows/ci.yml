@@ -357,3 +357,9 @@ jobs:
 
       - name: Run F-2 navigation suite
         run: python admin/v2/tests/test_f2_navigation.py
+
+      - name: Run F-3 Batch 1 suite (real-data wiring)
+        run: python admin/v2/tests/test_f3_batch1.py
+
+      - name: Run F-3 Batch 2 suite (integrations + AI health)
+        run: python admin/v2/tests/test_f3_batch2.py

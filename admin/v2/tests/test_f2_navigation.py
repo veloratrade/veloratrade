@@ -70,7 +70,7 @@ try:
                 title:document.title,
                 active:(document.querySelector('.navitem.active')||{}).dataset?document.querySelector('.navitem.active').dataset.route:null}}""",
                 {"nf":NF,"badge":BADGE})
-            if st["nf"] or (rt not in ("overview","users","ai-providers","ai-route") and not st["badge"]):
+            if st["nf"] or (rt not in ("overview","users","ai-providers","ai-route","integrations-n8n","integrations-metaapi","integrations-email","ai-health") and not st["badge"]):
                 bad.append((rt,"page",st))
             if not st["crumb"].strip().endswith(lbl[rt]) and rt!="overview":
                 bad.append((rt,"crumb:"+st["crumb"]))
@@ -248,10 +248,10 @@ try:
 
         # ---------- W. no fake data anywhere ----------
         wbad=[]
-        IMPL={"overview","users","ai-providers","ai-route"}
+        IMPL={"overview","users","ai-providers","ai-route","integrations-n8n","integrations-metaapi","integrations-email","ai-health"}
         for rt in sorted(expected):
             pgp.evaluate(f"()=>location.hash='#/{rt}'"); pgp.wait_for_timeout(70)
-            if rt in IMPL: continue  # F-3 batch1: wired pages (data-source proof in test_f3_batch1)
+            if rt in IMPL: continue  # F-3 batch1+2: wired pages (data-source proof in the F-3 suites)
             st=pgp.evaluate("()=>({tbl:!!document.querySelector('#view table'),kpi:!!document.querySelector('#view .ktile'),big:!!document.querySelector('#view canvas')})")
             if st["tbl"] or st["kpi"] or st["big"]: wbad.append(rt)
         pgp.evaluate("()=>location.hash='#/users/77'"); pgp.wait_for_timeout(150)
@@ -307,7 +307,7 @@ def chk(k,cond):
 chk("js",len(OUT["js"])==0)
 chk("A_count",OUT["A_count"]==33)  # 32 static + users/:id dynamic
 chk("A_static",OUT["A_static_ok"]); chk("A_no_design",OUT["A_no_design"])
-chk("A_meta",OUT["A_meta_ok"] and OUT["A_impl_set"]==["ai-providers","ai-route","overview","users"]); chk("A_u360",OUT["A_u360"])
+chk("A_meta",OUT["A_meta_ok"] and OUT["A_impl_set"]==["ai-health","ai-providers","ai-route","integrations-email","integrations-metaapi","integrations-n8n","overview","users"]); chk("A_u360",OUT["A_u360"])
 chk("B_routes",not OUT["B_bad"]); chk("B_events",OUT["B_events"])
 chk("C_nf",OUT["C_nf"]); chk("C_design",OUT["C_design"]); chk("C_deep",OUT["C_deep"]); chk("C_back",OUT["C_back"])
 chk("D_u360",OUT["D_u360"]); chk("D_nosidebar",OUT["D_nosidebar"])

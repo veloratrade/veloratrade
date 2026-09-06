@@ -101,6 +101,26 @@ class H(SimpleHTTPRequestHandler):
               "configured":self.server.ai_route,"effective":self.server.ai_route or "direct",
               "source":("admin" if self.server.ai_route else "default"),
               "allowed":["direct","n8n_relay"],"providerEffective":(self.server.ai_route or "direct")}}); return
+        if up.path=="/api/v1/admin/integrations/relay/config":
+            I=self.server.integ
+            self._j(200,{"config":dict(I["relay"])}); return
+        if up.path=="/api/v1/admin/integrations/metaapi":
+            I=self.server.integ
+            self._j(200,{"integration":dict(I["metaapi"])}); return
+        if up.path=="/api/v1/admin/integrations/email":
+            I=self.server.integ
+            self._j(200,{"integration":dict(I["email"])}); return
+        if up.path=="/api/v1/admin/system/diagnostics":
+            m=loadmode()
+            if m["mode"] in ("noauth","user403","panel_false"): self._j(403,{"status":"error","error":{"code":"PERMISSION_DENIED"}}); return
+            lr=getattr(self.server,"last_refresh",None)
+            integ_row=lambda name:({"status":"SUCCESS","latencyMs":120 if name=="metaapi" else 95,"errorCode":None,"message":None,"checkedAt":lr} if lr else {"status":"UNKNOWN","latencyMs":None,"errorCode":None,"message":None,"checkedAt":None})
+            self._j(200,{"health":{
+              "api":{"status":"HEALTHY","latencyMs":4,"message":"API responding"},
+              "database":{"status":"HEALTHY","latencyMs":3,"message":"Database reachable"},
+              "metaapi":integ_row("metaapi"),"email":integ_row("email"),
+              "ai":{"status":"HEALTHY","configured":True,"verifiedProviders":1,
+                    "providers":[{"provider":"gemini","status":"VALID","verified":True,"last_checked_at":"2026-09-05 20:58:00","error_code":None}]}}}); return
         if self.path.split("?")[0] in ("/login","/login/"):
             b=b"<html><body>login</body></html>"; self.send_response(200)
             self.send_header("Content-Type","text/html"); self.send_header("Content-Length",str(len(b))); self.end_headers(); self.wfile.write(b); return
@@ -165,6 +185,30 @@ class H(SimpleHTTPRequestHandler):
             self._j(200,{"provider":"gemini","status":"VALID","verified":True,"reachable":True if op=="test-connection" else None,
                          "checked_at":"2026-09-05 21:12:00","latency_ms":318 if op=="test-connection" else None,
                          "error_code":None,"message":None,"retryable":False,"source":"panel"}); return
+        if up.path=="/api/v1/admin/system/diagnostics/refresh":
+            if m0.get("fail_actions"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
+            ts="2026-09-05 21:30:00"
+            self.server.last_refresh=ts
+            self._j(200,{"results":{"metaapi":{"status":"SUCCESS","latencyMs":120,"checkedAt":ts},
+                                    "email":{"status":"SUCCESS","latencyMs":95,"checkedAt":ts}}}); return
+        if up.path in ("/api/v1/admin/integrations/metaapi/test","/api/v1/admin/integrations/email/test"):
+            if m0["mode"]=="admin": self._j(403,{"status":"error","error":{"code":"PERMISSION_DENIED"}}); return
+            which="metaapi" if "metaapi" in up.path else "email"
+            I=self.server.integ[which]
+            cfgok=I.get("tokenConfigured",True) and I.get("configured",True)
+            if not cfgok:
+                self._j(200,{"test":{"status":"NOT_CONFIGURED","checkedAt":"2026-09-05 21:31:00","latencyMs":None,"message":which+" is not configured."},
+                             "integration":dict(I,reachability="NOT_CONFIGURED")}); return
+            if m0.get("fail_actions"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
+            if m0.get("probe_timeout"):
+                st={"status":"TIMEOUT","checkedAt":"2026-09-05 21:31:00","latencyMs":8000,"message":"upstream did not answer in time"}
+            elif m0.get("probe_authfail"):
+                st={"status":"AUTH_FAILED","checkedAt":"2026-09-05 21:31:00","latencyMs":140,"message":"upstream rejected the credential"}
+            else:
+                st={"status":"SUCCESS","checkedAt":"2026-09-05 21:31:00","latencyMs":213 if which=="metaapi" else 95,"message":None}
+            upd=dict(I,reachability=st["status"],lastCheckedAt=st["checkedAt"],latencyMs=st["latencyMs"])
+            self.server.integ[which]=upd
+            self._j(200,{"test":st,"integration":upd}); return
         if self.path.startswith("/api/v1/auth/refresh"):
             if loadmode()["mode"]=="noauth": self._j(401,{"status":"error","error":{"code":"UNAUTHORIZED"}})
             else: self._j(200,{"tokens":{"accessToken":"stub-token","user":{"id":4,"role":"admin","locale":"fa"}}})
@@ -187,6 +231,54 @@ class H(SimpleHTTPRequestHandler):
                 self._j(422,{"status":"error","error":{"code":"VALIDATION_FAILED","details":{"route":{"code":"INVALID_AI_ROUTE"}}}}); return
             self.server.ai_route=r
             self._j(200,{"route":{"configured":r,"effective":r,"source":"admin","allowed":["direct","n8n_relay"],"providerEffective":r}}); return
+        if up.path in ("/api/v1/admin/integrations/relay/config","/api/v1/admin/integrations/metaapi","/api/v1/admin/integrations/email"):
+            m0=loadmode()
+            if m0["mode"]=="admin": self._j(403,{"status":"error","error":{"code":"PERMISSION_DENIED"}}); return
+            if m0.get("fail_actions"):
+                code={"relay/config":"RELAY_CONFIG_PERSIST_FAILED","metaapi":"METAAPI_CONFIG_PERSIST_FAILED","email":"EMAIL_CONFIG_PERSIST_FAILED"}[up.path.rsplit("/",1)[-1] if up.path.endswith(("metaapi","email")) else "relay/config"]
+                self._j(500,{"status":"error","error":{"code":code}}); return
+            if m0.get("relay429") and "relay" in up.path:
+                self._j(429,{"status":"error","error":{"code":"RATE_LIMITED"}}); return
+            length=int(self.headers.get("Content-Length") or 0)
+            body={}
+            if length:
+                try: body=json.loads(self.rfile.read(length) or b"{}")
+                except: body={}
+            I=self.server.integ
+            def badhost(u):
+                return not u.startswith("https://") or "@" in u or "localhost" in u
+            if "relay" in up.path:
+                url=str(body.get("url") or "").strip(); tok=str(body.get("token") or "")
+                if url=="" and tok=="": self._j(422,{"status":"error","error":{"code":"RELAY_CONFIG_EMPTY"}}); return
+                if url and badhost(url): self._j(422,{"status":"error","error":{"code":"INVALID_ENDPOINT_URL"}}); return
+                if url:
+                    I["relay"].update(urlConfigured=True,tokenConfigured=I["relay"]["tokenConfigured"],urlHost=url.split("/")[2],configured=True)
+                if tok: I["relay"].update(tokenConfigured=True,configured=True)
+                self._j(200,{"config":dict(I["relay"])}); return
+            if up.path.endswith("metaapi"):
+                tok=str(body.get("token") or ""); whs=str(body.get("webhook_secret") or ""); bu=str(body.get("base_url") or "").strip()
+                if tok=="" and whs=="" and bu=="": self._j(422,{"status":"error","error":{"code":"INTEGRATION_CONFIG_EMPTY"}}); return
+                if bu and badhost(bu): self._j(422,{"status":"error","error":{"code":"INVALID_ENDPOINT_URL"}}); return
+                if tok: I["metaapi"]["tokenConfigured"]=True; I["metaapi"]["configured"]=True
+                if whs: I["metaapi"]["webhookSecretConfigured"]=True
+                if bu: I["metaapi"]["baseUrl"]=bu; I["metaapi"]["baseUrlHost"]=bu.split("/")[2]
+                self._j(200,{"integration":dict(I["metaapi"])}); return
+            drv=str(body.get("driver") or "").strip().lower()
+            frm=str(body.get("from") or "").strip()
+            if drv and drv not in ("log","mail","smtp","resend"): self._j(422,{"status":"error","error":{"code":"INVALID_MAIL_DRIVER"}}); return
+            if frm and "@" not in frm: self._j(422,{"status":"error","error":{"code":"INVALID_FROM_EMAIL"}}); return
+            port=str(body.get("smtp_port") or "").strip()
+            if port and not (port.isdigit() and 1<=int(port)<=65535): self._j(422,{"status":"error","error":{"code":"INVALID_FORMAT"}}); return
+            E=I["email"]
+            if drv: E["driver"]=drv; E["configured"]=True
+            if frm: E["from"]=frm
+            if str(body.get("from_name") or "").strip(): E["fromName"]=str(body["from_name"]).strip()
+            if str(body.get("smtp_host") or "").strip(): E["smtpHost"]=str(body["smtp_host"]).strip()
+            if port: E["smtpPort"]=port
+            if str(body.get("smtp_user") or "").strip(): E["smtpUser"]=str(body["smtp_user"]).strip()
+            if str(body.get("smtp_password") or ""): E["smtpPasswordConfigured"]=True
+            if str(body.get("resend_api_key") or ""): E["resendApiKeyConfigured"]=True
+            self._j(200,{"integration":dict(E)}); return
         self._j(404,{})
     def do_DELETE(self):
         from urllib.parse import urlparse
@@ -195,11 +287,34 @@ class H(SimpleHTTPRequestHandler):
             if loadmode().get("fail_actions"): self._j(500,{"status":"error","error":{"code":"AI_ROUTE_PERSIST_FAILED"}}); return
             self.server.ai_route=None
             self._j(200,{"route":{"configured":None,"effective":"direct","source":"default","allowed":["direct","n8n_relay"],"providerEffective":"direct"}}); return
+        if up.path in ("/api/v1/admin/integrations/relay/config","/api/v1/admin/integrations/metaapi","/api/v1/admin/integrations/email"):
+            m0=loadmode()
+            if m0["mode"]=="admin": self._j(403,{"status":"error","error":{"code":"PERMISSION_DENIED"}}); return
+            if m0.get("fail_actions"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
+            I=self.server.integ
+            if "relay" in up.path:
+                I["relay"]={"configured":False,"urlConfigured":False,"tokenConfigured":False,"urlHost":None}
+                self._j(200,{"config":dict(I["relay"])}); return
+            if up.path.endswith("metaapi"):
+                I["metaapi"].update(tokenConfigured=False,webhookSecretConfigured=False,configured=False,reachability="unknown",lastCheckedAt=None,latencyMs=None)
+                self._j(200,{"integration":dict(I["metaapi"])}); return
+            I["email"].update(resendApiKeyConfigured=False,smtpPasswordConfigured=False,configured=False,reachability="unknown",lastCheckedAt=None,latencyMs=None)
+            self._j(200,{"integration":dict(I["email"])}); return
         self._j(404,{})
 class Srv(HTTPServer):
     def __init__(self,*a,**kw):
         super().__init__(*a,**kw)
         self.ai_route=None
+        self.last_refresh=None
+        self.integ={
+         "relay":{"configured":False,"urlConfigured":False,"tokenConfigured":False,"urlHost":None},
+         "metaapi":{"configured":True,"tokenConfigured":True,"webhookSecretConfigured":False,
+                    "baseUrlHost":"api.metaapi.cloud","baseUrl":"https://api.metaapi.cloud","source":"env",
+                    "reachability":"unknown","lastCheckedAt":None,"latencyMs":None},
+         "email":{"configured":True,"driver":"resend","from":"no-reply@velora.test","fromName":"Velora",
+                  "smtpHost":None,"smtpPort":None,"smtpUser":None,"resendApiKeyConfigured":True,
+                  "smtpPasswordConfigured":False,"source":"env","reachability":"unknown","lastCheckedAt":None,"latencyMs":None},
+        }
         now="2026-09-01 10:00:00"
         self.db_users=[
          {"id":1,"email":"owner@velora.test","fullName":"Owner","role":"super_admin","status":"active","emailVerified":True,"emailVerifiedAt":now,"createdAt":now,"plan":"pro","subscriptionStatus":"active"},

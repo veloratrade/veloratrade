@@ -1071,7 +1071,11 @@ function f3ReloadCurrent(){const c=f3Cur();
  if(c==="overview"){OV.st="idle";OV.err=null;render()}
  else if(c==="users"){US.st="idle";US.err=null;render()}
  else if(c==="ai-providers"){AIP.st="idle";AIP.err=null;render()}
- else if(c==="ai-route"){AIR.st="idle";AIR.err=null;render()}}
+ else if(c==="ai-route"){AIR.st="idle";AIR.err=null;render()}
+ else if(c==="integrations-n8n"){N8.st="idle";N8.err=null;render()}
+ else if(c==="integrations-metaapi"){MM.st="idle";MM.err=null;MM.testSt="idle";render()}
+ else if(c==="integrations-email"){EM.st="idle";EM.err=null;EM.testSt="idle";render()}
+ else if(c==="ai-health"){AH.st="idle";AH.err=null;render()}}
 
 /* ---------------- Overview (GET /api/v1/admin/overview) ---------------- */
 const OV={data:null,st:"idle",err:null,health:null,healthSt:"idle"};
@@ -1423,6 +1427,379 @@ function aiRoutePage(){
 /* registry honesty: these four routes are implemented now */
 ["overview","users","ai-providers","ai-route"].forEach(rt=>{const d=REG_BY_ROUTE[rt];if(d)d.status="implemented"});
 const PAGE_IMPL={overview:overviewPage,users:usersPage,"ai-providers":aiProvidersPage,"ai-route":aiRoutePage};
+
+/* ==================== F-3 Batch 2 — Integrations (n8n / MetaAPI / Email) + AI Health ====================
+   Wired to EXISTING endpoints via the shared VeloraData layer. No probes invented (n8n has none by
+   design), secrets are write-only booleans, reachability is only ever a real backend probe result. */
+
+Object.assign(F3T.fa,{
+ "i8n.title":"رلهٔ n8n (Gemini)","i8n.desc":"پیکربندی امن رله؛ توکن هرگز نمایش داده نمی‌شود",
+ "i8n.configured":"وضعیت پیکربندی","i8n.urlconf":"URL رله","i8n.tokconf":"توکن رله","i8n.host":"میزبان (فقط host)",
+ "i8n.set":"تنظیم‌شده","i8n.unset":"تنظیم نشده",
+ "i8n.noprobe":"طبق طراحی، پروب زندهٔ اتصال n8n وجود ندارد؛ فقط وضعیت پیکربندی نمایش داده می‌شود.",
+ "i8n.url.lbl":"URL جدید (فقط https)","i8n.tok.lbl":"توکن جدید — خالی بگذارید تا بدون تغییر بماند",
+ "i8n.save":"ذخیرهٔ پیکربندی","i8n.reset":"حذف پیکربندی (ارث‌بری)",
+ "i8n.done.save":"پیکربندی رله ذخیره شد","i8n.done.reset":"پیکربندی رله حذف شد",
+ "imm.title":"یکپارچگی MetaAPI","imm.desc":"وضعیت امن و پروب واقعی سمت سرور؛ توکن/رمز هرگز برنمی‌گردند",
+ "imm.token":"توکن API","imm.webhook":"رمز Webhook","imm.basehost":"میزبان پایه","imm.baseurl":"URL پایه (عملیاتی، غیرمحرمانه)",
+ "imm.url.lbl":"URL پایهٔ جدید (https)","imm.tok.lbl":"توکن جدید — خالی = بدون تغییر","imm.whs.lbl":"رمز Webhook جدید — خالی = بدون تغییر",
+ "imm.done.save":"پیکربندی MetaAPI ذخیره شد","imm.done.reset":"پیکربندی MetaAPI به ارث‌بری بازگشت",
+ "iem.title":"یکپارچگی ایمیل","iem.desc":"درایور، SMTP و رسیاند؛ مقادیر محرمانه فقط نوشتنی هستند",
+ "iem.driver":"درایور","iem.from":"نشانی فرستنده","iem.fromname":"نام فرستنده","iem.host":"میزبان SMTP","iem.port":"پورت SMTP","iem.user":"کاربر SMTP",
+ "iem.pass":"گذرواژهٔ SMTP (فقط نوشتنی)","iem.resend":"کلید API رسیاند (فقط نوشتنی)",
+ "iem.done.save":"پیکربندی ایمیل ذخیره شد","iem.done.reset":"پیکربندی ایمیل به ارث‌بری بازگشت",
+ "iem.err.driver":"درایور پست الکترونیکی پشتیبانی نمی‌شود","iem.err.from":"نشانی فرستنده نامعتبر است","iem.err.port":"پورت SMTP نامعتبر است",
+ "iint.readonly":"تغییر این یکپارچگی به پرمیشن مدیریت یکپارچه‌سازی‌ها نیاز دارد؛ نمایش فقط‌خواندنی است.",
+ "iint.source":"منبع پیکربندی","iint.reach":"وضعیت دسترسی","iint.reach.unknown":"آزمایش نشده",
+ "iint.test":"تست اتصال (پروب واقعی سرور)","iint.test.running":"در حال آزمون…","iint.result":"نتیجهٔ آزمون",
+ "iint.latency":"تأخیر","iint.checked":"زمان بررسی","iint.msg":"پیام",
+ "iint.nomail":"این آزمون هرگز ایمیلی ارسال نمی‌کند؛ فقط اتصال/احراز هویت بررسی می‌شود.",
+ "iint.done.test":"آزمون اتصال انجام شد",
+ "ah.title":"سلامت و تشخیص هوش مصنوعی","ah.desc":"وضعیت واقعی سیستم، یکپارچه‌سازی‌ها و ارائه‌دهندگان AI",
+ "ah.sys":"سیستم","ah.api":"API","ah.db":"پایگاه‌داده","ah.uptime":"پاسخ‌گویی",
+ "ah.integ":"سلامت یکپارچه‌سازی‌ها","ah.col.name":"یکپارچگی","ah.col.status":"وضعیت","ah.col.lat":"تأخیر","ah.col.err":"کد خطا","ah.col.chk":"آخرین بررسی",
+ "ah.provs":"ارائه‌دهندگان AI","ah.healthneed":"بخش سلامت سیستم به پرمیشن زیر نیاز دارد:",
+ "ah.refresh":"به‌روزرسانی تشخیص‌ها","ah.refreshing":"در حال به‌روزرسانی…","ah.done.refresh":"تشخیص‌ها به‌روزرسانی شد",
+ "ah.email":"ایمیل","ah.sent24":"ارسالی (۲۴ ساعت)","ah.failed24":"ناموفق (۲۴ ساعت)","ah.workers":"کارگرها",
+ "ah.jp":"کارهای در انتظار","ah.jf":"کارهای ناموفق","ah.sf":"همگام‌سازی ناموفق",
+ "iint.err.empty":"حداقل یکی از فیلدها لازم است"
+});
+Object.assign(F3T.en,{
+ "i8n.title":"n8n relay (Gemini)","i8n.desc":"Secure relay configuration; the token is never displayed",
+ "i8n.configured":"Configuration state","i8n.urlconf":"Relay URL","i8n.tokconf":"Relay token","i8n.host":"Host (host only)",
+ "i8n.set":"Set","i8n.unset":"Not set",
+ "i8n.noprobe":"By design there is no live n8n connectivity probe; configuration status only.",
+ "i8n.url.lbl":"New URL (https only)","i8n.tok.lbl":"New token — leave blank to keep unchanged",
+ "i8n.save":"Save configuration","i8n.reset":"Clear configuration (inherit)",
+ "i8n.done.save":"Relay configuration saved","i8n.done.reset":"Relay configuration cleared",
+ "imm.title":"MetaAPI integration","imm.desc":"Safe status and a real server-side probe; token/secret are never returned",
+ "imm.token":"API token","imm.webhook":"Webhook secret","imm.basehost":"Base host","imm.baseurl":"Base URL (operational, non-secret)",
+ "imm.url.lbl":"New base URL (https)","imm.tok.lbl":"New token — blank = unchanged","imm.whs.lbl":"New webhook secret — blank = unchanged",
+ "imm.done.save":"MetaAPI configuration saved","imm.done.reset":"MetaAPI configuration reset to inherit",
+ "iem.title":"Email integration","iem.desc":"Driver, SMTP and Resend; secret values are write-only",
+ "iem.driver":"Driver","iem.from":"From address","iem.fromname":"From name","iem.host":"SMTP host","iem.port":"SMTP port","iem.user":"SMTP user",
+ "iem.pass":"SMTP password (write-only)","iem.resend":"Resend API key (write-only)",
+ "iem.done.save":"Email configuration saved","iem.done.reset":"Email configuration reset to inherit",
+ "iem.err.driver":"Unsupported mail driver","iem.err.from":"Invalid from address","iem.err.port":"Invalid SMTP port",
+ "iint.readonly":"Changing this integration requires the integrations-manage permission; view is read-only.",
+ "iint.source":"Config source","iint.reach":"Reachability","iint.reach.unknown":"Not tested",
+ "iint.test":"Test connection (real server probe)","iint.test.running":"Testing…","iint.result":"Test result",
+ "iint.latency":"Latency","iint.checked":"Checked at","iint.msg":"Message",
+ "iint.nomail":"This test never sends an email; it only verifies connectivity/authentication.",
+ "iint.done.test":"Connectivity test completed",
+ "ah.title":"AI health & diagnostics","ah.desc":"Real system, integration and AI provider status",
+ "ah.sys":"System","ah.api":"API","ah.db":"Database","ah.uptime":"Responsiveness",
+ "ah.integ":"Integration health","ah.col.name":"Integration","ah.col.status":"Status","ah.col.lat":"Latency","ah.col.err":"Error code","ah.col.chk":"Last check",
+ "ah.provs":"AI providers","ah.healthneed":"The system-health section requires the following permission:",
+ "ah.refresh":"Refresh diagnostics","ah.refreshing":"Refreshing…","ah.done.refresh":"Diagnostics refreshed",
+ "ah.email":"Email","ah.sent24":"Sent (24h)","ah.failed24":"Failed (24h)","ah.workers":"Workers",
+ "ah.jp":"Jobs pending","ah.jf":"Jobs failed","ah.sf":"Sync failed",
+ "iint.err.empty":"At least one field is required"
+});
+
+/* ---------------- shared integration helpers ---------------- */
+const IINT_ST={SUCCESS:"ok",AUTH_FAILED:"err",TIMEOUT:"err",NETWORK_ERROR:"err",SERVICE_UNAVAILABLE:"err",NOT_CONFIGURED:"warn",UNKNOWN:"neutral"};
+const iintReach=v=>{
+ if(!v||v==="unknown")return bdot("neutral",t("iint.reach.unknown"));
+ const s=String(v);return bdot(IINT_ST[s]||"neutral",s);
+};
+const iintResult=(T)=>{ /* T = test object from backend */
+ if(!T)return"";
+ let h=`<div style="border-top:1px dashed var(--border);margin-top:10px;padding-top:8px"><div class="cellsub">${esc(t("iint.result"))}</div>`;
+ h+=`<div class="kv"><span class="k">${esc(t("ah.col.status"))}</span><span class="v">${bdot(IINT_ST[T.status]||"neutral",esc(String(T.status||"—")))}</span></div>`;
+ if(T.latencyMs!=null)h+=`<div class="kv"><span class="k">${esc(t("iint.latency"))}</span><span class="v num">${esc(String(T.latencyMs))}ms</span></div>`;
+ if(T.checkedAt)h+=`<div class="kv"><span class="k">${esc(t("iint.checked"))}</span><span class="v cellsub">${esc(String(T.checkedAt))}</span></div>`;
+ if(T.message)h+=`<div class="kv"><span class="k">${esc(t("iint.msg"))}</span><span class="v cellsub">${esc(String(T.message))}</span></div>`;
+ return h+`</div>`;
+};
+const iintReadonly=()=>`<div class="alert warn" style="margin-top:12px"><span class="amark" aria-hidden="true">!</span><div>${esc(t("iint.readonly"))}<div class="note mono">integrations.manage</div></div></div>`;
+const iintPermErr=st=>(st&&st.status===403&&st.code==="PERMISSION_DENIED");
+
+/* ---------------- Page 1: integrations-n8n ---------------- */
+const N8={data:null,st:"idle",err:null,busy:false};
+async function f3LoadN8(){
+ N8.st="loading";f3RenderIf("integrations-n8n");
+ try{const d=await VeloraData.request("/api/v1/admin/integrations/relay/config");N8.data=d&&d.config?d.config:{};N8.st="ok";}
+ catch(e){N8.err=e;N8.st="error";}
+ f3RenderIf("integrations-n8n");
+}
+async function f3N8Save(){
+ const url=($("#n8nUrl")||{}).value||"",tok=($("#n8nToken")||{}).value||"";
+ if(N8.busy)return;N8.busy=true;f3RenderIf("integrations-n8n");
+ const body={};if(url.trim())body.url=url.trim();if(tok)body.token=tok;
+ try{
+  const d=await VeloraData.request("/api/v1/admin/integrations/relay/config",{method:"PUT",body});
+  N8.data=d&&d.config?d.config:N8.data;toast(t("i8n.done.save"));
+ }catch(e){toast((e&&e.code?e.code+" · ":"")+t("f3.load.err"),"err");}
+ N8.busy=false;f3RenderIf("integrations-n8n");
+}
+async function f3N8Reset(){
+ if(N8.busy)return;N8.busy=true;f3RenderIf("integrations-n8n");
+ try{const d=await VeloraData.request("/api/v1/admin/integrations/relay/config",{method:"DELETE"});
+  N8.data=d&&d.config?d.config:N8.data;toast(t("i8n.done.reset"));}
+ catch(e){toast((e&&e.code?e.code+" · ":"")+t("f3.load.err"),"err");}
+ N8.busy=false;f3RenderIf("integrations-n8n");
+}
+function integrationsN8nPage(){
+ if(N8.st==="idle")f3LoadN8();
+ let h=pagehead(t("i8n.title"),t("i8n.desc"));
+ if(N8.st==="loading"&&!N8.data)return h+`<div class="card"><div class="cb">${f3skel(4)}</div></div>`;
+ if(N8.st==="error")return h+f3errBox(N8.err);
+ const c=N8.data||{};
+ h+=`<div class="card"><div class="ch"><h3>${esc(t("i8n.title"))}</h3><div class="right">${c.configured?bdot("ok",t("i8n.set")):bdot("warn",t("i8n.unset"))}</div></div><div class="cb">
+  <div class="kv"><span class="k">${esc(t("i8n.urlconf"))}</span><span class="v">${c.urlConfigured?bdot("ok",t("i8n.set")):bdot("warn",t("i8n.unset"))}</span></div>
+  <div class="kv"><span class="k">${esc(t("i8n.tokconf"))}</span><span class="v">${c.tokenConfigured?bdot("ok",t("i8n.set")):bdot("warn",t("i8n.unset"))}</span></div>
+  <div class="kv"><span class="k">${esc(t("i8n.host"))}</span><span class="v mono">${c.urlHost?esc(String(c.urlHost)):bdot("neutral",t("i8n.unset"))}</span></div>
+  <div class="note">${esc(t("i8n.noprobe"))}</div></div></div>`;
+ if(!can("integrations.manage"))return h+iintReadonly();
+ h+=`<div class="card" style="margin-top:12px"><div class="ch"><h3>${esc(t("i8n.save"))}</h3></div><div class="cb">
+  <input class="inp" id="n8nUrl" placeholder="${esc(t("i8n.url.lbl"))}" autocomplete="off" spellcheck="false" dir="ltr" aria-label="${esc(t("i8n.url.lbl"))}" style="width:100%;max-width:460px">
+  <input class="inp" id="n8nToken" type="password" autocomplete="new-password" placeholder="${esc(t("i8n.tok.lbl"))}" aria-label="${esc(t("i8n.tok.lbl"))}" style="width:100%;max-width:460px;margin-top:8px">
+  <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+   <button class="btn sm primary" onclick="f3N8Save()"${N8.busy?" disabled":""}>${esc(t("i8n.save"))}</button>
+   <button class="btn sm" onclick="f3N8Reset()"${N8.busy?" disabled":""}>${esc(t("i8n.reset"))}</button></div>
+  <div class="note">${esc(t("aip.note"))}</div></div></div>`;
+ return h;
+}
+
+/* ---------------- Page 2: integrations-metaapi ---------------- */
+const MM={data:null,st:"idle",err:null,busy:false,test:null,testSt:"idle"};
+async function f3LoadMM(){
+ MM.st="loading";f3RenderIf("integrations-metaapi");
+ try{const d=await VeloraData.request("/api/v1/admin/integrations/metaapi");MM.data=d&&d.integration?d.integration:{};MM.st="ok";}
+ catch(e){MM.err=e;MM.st="error";}
+ f3RenderIf("integrations-metaapi");
+}
+async function f3MMSave(){
+ const v=id=>{const el=$(id);return el?el.value:"";};
+ const u=v("#mmUrl").trim(),tk=v("#mmToken"),ws=v("#mmSecret");
+ if(MM.busy)return;MM.busy=true;f3RenderIf("integrations-metaapi");
+ const body={};if(u)body.base_url=u;if(tk)body.token=tk;if(ws)body.webhook_secret=ws;
+ try{const d=await VeloraData.request("/api/v1/admin/integrations/metaapi",{method:"PUT",body});
+  MM.data=d&&d.integration?d.integration:MM.data;toast(t("imm.done.save"));}
+ catch(e){toast((e&&e.code?e.code+" · ":"")+t("f3.load.err"),"err");}
+ MM.busy=false;f3RenderIf("integrations-metaapi");
+}
+async function f3MMReset(){
+ if(MM.busy)return;MM.busy=true;f3RenderIf("integrations-metaapi");
+ try{const d=await VeloraData.request("/api/v1/admin/integrations/metaapi",{method:"DELETE"});
+  MM.data=d&&d.integration?d.integration:MM.data;MM.test=null;toast(t("imm.done.reset"));}
+ catch(e){toast((e&&e.code?e.code+" · ":"")+t("f3.load.err"),"err");}
+ MM.busy=false;f3RenderIf("integrations-metaapi");
+}
+async function f3MMTest(){
+ if(MM.busy)return;MM.busy=true;MM.testSt="running";f3RenderIf("integrations-metaapi");
+ try{const d=await VeloraData.request("/api/v1/admin/integrations/metaapi/test",{method:"POST"});
+  MM.test=d&&d.test?d.test:null;if(d&&d.integration)MM.data=d.integration;toast(t("iint.done.test"));}
+ catch(e){MM.test=null;MM.testSt="err";MM.err=e;toast((e&&e.code?e.code+" · ":"")+t("f3.load.err"),"err");}
+ MM.busy=false;MM.testSt="done";f3RenderIf("integrations-metaapi");
+}
+function integrationsMetaapiPage(){
+ if(MM.st==="idle")f3LoadMM();
+ let h=pagehead(t("imm.title"),t("imm.desc"));
+ if(MM.st==="loading"&&!MM.data)return h+`<div class="card"><div class="cb">${f3skel(5)}</div></div>`;
+ if(MM.st==="error"&&!MM.data)return h+f3errBox(MM.err);
+ const s=MM.data||{};
+ h+=`<div class="card"><div class="ch"><h3>${esc(t("imm.title"))}</h3><div class="right">${s.configured?bdot("ok",t("i8n.set")):bdot("warn",t("i8n.unset"))}</div></div><div class="cb">
+  <div class="kv"><span class="k">${esc(t("imm.token"))}</span><span class="v">${s.tokenConfigured?bdot("ok",t("i8n.set")):bdot("warn",t("i8n.unset"))}</span></div>
+  <div class="kv"><span class="k">${esc(t("imm.webhook"))}</span><span class="v">${s.webhookSecretConfigured?bdot("ok",t("i8n.set")):bdot("warn",t("i8n.unset"))}</span></div>
+  <div class="kv"><span class="k">${esc(t("imm.basehost"))}</span><span class="v mono">${s.baseUrlHost?esc(String(s.baseUrlHost)):f3unavail()}</span></div>
+  <div class="kv"><span class="k">${esc(t("imm.baseurl"))}</span><span class="v mono cellsub">${s.baseUrl?esc(String(s.baseUrl)):f3unavail()}</span></div>
+  <div class="kv"><span class="k">${esc(t("iint.source"))}</span><span class="v">${s.source?esc(f3srcLabel(s.source)):f3unavail()}</span></div>
+  <div class="kv"><span class="k">${esc(t("iint.reach"))}</span><span class="v">${iintReach(s.reachability)}</span></div>
+  </div></div>`;
+ if(MM.testSt==="done")h+=`<div class="card" style="margin-top:12px"><div class="cb">${iintResult(MM.test)}</div></div>`;
+ if(!can("integrations.manage"))return h+iintReadonly();
+ h+=`<div class="card" style="margin-top:12px"><div class="ch"><h3>${esc(t("i8n.save"))}</h3></div><div class="cb">
+  <input class="inp" id="mmUrl" placeholder="${esc(t("imm.url.lbl"))}" autocomplete="off" spellcheck="false" dir="ltr" aria-label="${esc(t("imm.url.lbl"))}" style="width:100%;max-width:460px">
+  <input class="inp" id="mmToken" type="password" autocomplete="new-password" placeholder="${esc(t("imm.tok.lbl"))}" aria-label="${esc(t("imm.tok.lbl"))}" style="width:100%;max-width:460px;margin-top:8px">
+  <input class="inp" id="mmSecret" type="password" autocomplete="new-password" placeholder="${esc(t("imm.whs.lbl"))}" aria-label="${esc(t("imm.whs.lbl"))}" style="width:100%;max-width:460px;margin-top:8px">
+  <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+   <button class="btn sm primary" onclick="f3MMSave()"${MM.busy?" disabled":""}>${esc(t("i8n.save"))}</button>
+   <button class="btn sm" onclick="f3MMReset()"${MM.busy?" disabled":""}>${esc(t("i8n.reset"))}</button>
+   <button class="btn sm" id="mmTestBtn" onclick="f3MMTest()"${MM.busy?" disabled":""}>${MM.busy&&MM.testSt==="running"?esc(t("iint.test.running")):esc(t("iint.test"))}</button></div>
+  <div class="note">${esc(t("aip.note"))}</div></div></div>`;
+ return h;
+}
+
+/* ---------------- Page 3: integrations-email ---------------- */
+const EM={data:null,st:"idle",err:null,busy:false,test:null,testSt:"idle"};
+async function f3LoadEM(){
+ EM.st="loading";f3RenderIf("integrations-email");
+ try{const d=await VeloraData.request("/api/v1/admin/integrations/email");EM.data=d&&d.integration?d.integration:{};EM.st="ok";}
+ catch(e){EM.err=e;EM.st="error";}
+ f3RenderIf("integrations-email");
+}
+async function f3EMSave(){
+ const v=id=>{const el=$(id);return el?el.value:"";};
+ const vals={driver:v("#emDriver"),from:v("#emFrom").trim(),from_name:v("#emFromName").trim(),smtp_host:v("#emHost").trim(),smtp_port:v("#emPort").trim(),smtp_user:v("#emUser").trim(),smtp_password:v("#emPass"),resend_api_key:v("#emResend")};
+ if(EM.busy)return;EM.busy=true;f3RenderIf("integrations-email");
+ const body={};
+ if(vals.driver)body.driver=vals.driver;
+ if(vals.from)body.from=vals.from;
+ if(vals.from_name)body.from_name=vals.from_name;
+ if(vals.smtp_host)body.smtp_host=vals.smtp_host;
+ if(vals.smtp_port)body.smtp_port=vals.smtp_port;
+ if(vals.smtp_user)body.smtp_user=vals.smtp_user;
+ if(vals.smtp_password)body.smtp_password=vals.smtp_password;
+ if(vals.resend_api_key)body.resend_api_key=vals.resend_api_key;
+ if(!Object.keys(body).length){EM.busy=false;toast(t("iint.err.empty"),"err");f3RenderIf("integrations-email");return;}
+ try{const d=await VeloraData.request("/api/v1/admin/integrations/email",{method:"PUT",body});
+  EM.data=d&&d.integration?d.integration:EM.data;toast(t("iem.done.save"));}
+ catch(e){const c=e&&e.code;const k=c==="INVALID_MAIL_DRIVER"?"iem.err.driver":(c==="INVALID_FROM_EMAIL"?"iem.err.from":(c==="INVALID_FORMAT"?"iem.err.port":null));
+  toast((c?c+" · ":"")+(k?t(k)+" — ":"")+t("f3.load.err"),"err");}
+ EM.busy=false;f3RenderIf("integrations-email");
+}
+async function f3EMReset(){
+ if(EM.busy)return;EM.busy=true;f3RenderIf("integrations-email");
+ try{const d=await VeloraData.request("/api/v1/admin/integrations/email",{method:"DELETE"});
+  EM.data=d&&d.integration?d.integration:EM.data;EM.test=null;toast(t("iem.done.reset"));}
+ catch(e){toast((e&&e.code?e.code+" · ":"")+t("f3.load.err"),"err");}
+ EM.busy=false;f3RenderIf("integrations-email");
+}
+async function f3EMTest(){
+ if(EM.busy)return;EM.busy=true;EM.testSt="running";f3RenderIf("integrations-email");
+ try{const d=await VeloraData.request("/api/v1/admin/integrations/email/test",{method:"POST"});
+  EM.test=d&&d.test?d.test:null;if(d&&d.integration)EM.data=d.integration;toast(t("iint.done.test"));}
+ catch(e){EM.test=null;EM.testSt="err";EM.err=e;toast((e&&e.code?e.code+" · ":"")+t("f3.load.err"),"err");}
+ EM.busy=false;EM.testSt="done";f3RenderIf("integrations-email");
+}
+function integrationsEmailPage(){
+ if(EM.st==="idle")f3LoadEM();
+ let h=pagehead(t("iem.title"),t("iem.desc"));
+ if(EM.st==="loading"&&!EM.data)return h+`<div class="card"><div class="cb">${f3skel(6)}</div></div>`;
+ if(EM.st==="error"&&!EM.data)return h+f3errBox(EM.err);
+ const s=EM.data||{};
+ const drvOpt=v=>`<option value="${v}"${s.driver===v?" selected":""}>${v}</option>`;
+ h+=`<div class="card"><div class="ch"><h3>${esc(t("iem.title"))}</h3><div class="right">${s.configured?bdot("ok",t("i8n.set")):bdot("warn",t("i8n.unset"))}</div></div><div class="cb">
+  <div class="kv"><span class="k">${esc(t("iem.driver"))}</span><span class="v mono">${s.driver?esc(String(s.driver)):f3unavail()}</span></div>
+  <div class="kv"><span class="k">${esc(t("iem.from"))}</span><span class="v mono">${s.from?esc(String(s.from)):f3unavail()}</span></div>
+  <div class="kv"><span class="k">${esc(t("iint.source"))}</span><span class="v">${s.source?esc(f3srcLabel(s.source)):f3unavail()}</span></div>
+  <div class="kv"><span class="k">${esc(t("iem.resend"))}</span><span class="v">${s.resendApiKeyConfigured?bdot("ok",t("i8n.set")):bdot("warn",t("i8n.unset"))}</span></div>
+  <div class="kv"><span class="k">${esc(t("iem.pass"))}</span><span class="v">${s.smtpPasswordConfigured?bdot("ok",t("i8n.set")):bdot("warn",t("i8n.unset"))}</span></div>
+  <div class="kv"><span class="k">${esc(t("iint.reach"))}</span><span class="v">${iintReach(s.reachability)}</span></div>
+  </div></div>`;
+ if(EM.testSt==="done")h+=`<div class="card" style="margin-top:12px"><div class="cb">${iintResult(EM.test)}<div class="note">${esc(t("iint.nomail"))}</div></div></div>`;
+ if(!can("integrations.manage"))return h+iintReadonly();
+ const inp=(id,ph,extra)=>`<input class="inp" id="${id}" placeholder="${esc(ph)}" aria-label="${esc(ph)}" ${extra||""} style="width:100%;max-width:460px">`;
+ h+=`<div class="card" style="margin-top:12px"><div class="ch"><h3>${esc(t("i8n.save"))}</h3></div><div class="cb">
+  <select class="inp" id="emDriver" aria-label="${esc(t("iem.driver"))}" style="max-width:240px"><option value="">— ${esc(t("iem.driver"))} —</option>${drvOpt("log")}${drvOpt("mail")}${drvOpt("smtp")}${drvOpt("resend")}</select>
+  ${inp("emFrom",t("iem.from"),'autocomplete="off" dir="ltr"')}
+  ${inp("emFromName",t("iem.fromname"),'autocomplete="off"')}
+  ${inp("emHost",t("iem.host"),'autocomplete="off" dir="ltr"')}
+  ${inp("emPort",t("iem.port"),'autocomplete="off" dir="ltr" inputmode="numeric"')}
+  ${inp("emUser",t("iem.user"),'autocomplete="off" dir="ltr"')}
+  ${inp("emPass",t("iem.pass"),'type="password" autocomplete="new-password"')}
+  ${inp("emResend",t("iem.resend"),'type="password" autocomplete="new-password"')}
+  <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+   <button class="btn sm primary" onclick="f3EMSave()"${EM.busy?" disabled":""}>${esc(t("i8n.save"))}</button>
+   <button class="btn sm" onclick="f3EMReset()"${EM.busy?" disabled":""}>${esc(t("i8n.reset"))}</button>
+   <button class="btn sm" id="emTestBtn" onclick="f3EMTest()"${EM.busy?" disabled":""}>${EM.busy&&EM.testSt==="running"?esc(t("iint.test.running")):esc(t("iint.test"))}</button></div>
+  <div class="note">${esc(t("iint.nomail"))}</div></div></div>`;
+ return h;
+}
+
+/* ---------------- Page 4: ai-health ---------------- */
+const AH={health:null,diag:null,st:"idle",err:null,busy:{},refreshing:false,results:{}};
+async function f3LoadAH(){
+ AH.st="loading";f3RenderIf("ai-health");
+ const jobs=[];
+ if(can("system.health.view"))jobs.push(VeloraData.request("/api/v1/admin/system/health").then(d=>{AH.health=d&&d.health?d.health:{};}).catch(e=>{AH.err=e;}));
+ else AH.health=null;
+ jobs.push(VeloraData.request("/api/v1/admin/system/diagnostics").then(d=>{AH.diag=d&&d.health?d.health:{};}).catch(e=>{if(!AH.err)AH.err=e;}));
+ await Promise.all(jobs);
+ AH.st=AH.err?"error":"ok";f3RenderIf("ai-health");
+}
+async function f3AHRefresh(){
+ if(AH.refreshing||!can("system.health.view"))return;AH.refreshing=true;f3RenderIf("ai-health");
+ try{await VeloraData.request("/api/v1/admin/system/diagnostics/refresh",{method:"POST"});
+  const d=await VeloraData.request("/api/v1/admin/system/diagnostics");
+  AH.diag=d&&d.health?d.health:AH.diag;toast(t("ah.done.refresh"));}
+ catch(e){toast((e&&e.code?e.code+" · ":"")+t("f3.load.err"),"err");}
+ AH.refreshing=false;f3RenderIf("ai-health");
+}
+async function f3AHAction(prov,op){
+ if(AH.busy[prov])return;AH.busy[prov]=true;f3RenderIf("ai-health");
+ try{const r=await VeloraData.request("/api/v1/admin/providers/"+encodeURIComponent(prov)+"/"+(op==="verify"?"verify":"test-connection"),{method:"POST"});
+  AH.results[prov]={ok:true,res:r||{}};}
+ catch(e){AH.results[prov]={ok:false,err:e};}
+ AH.busy[prov]=false;f3RenderIf("ai-health");
+}
+function aiHealthPage(){
+ if(AH.st==="idle")f3LoadAH();
+ let h=pagehead(t("ah.title"),t("ah.desc"));
+ if(AH.st==="loading")return h+`<div class="grid g2"><div class="card"><div class="cb">${f3skel(4)}</div></div><div class="card"><div class="cb">${f3skel(4)}</div></div></div>`;
+ if(AH.st==="error"&&!AH.diag&&!AH.health)return h+f3errBox(AH.err);
+ const H=AH.health||{},D=AH.diag||{};
+ /* system strip (needs system.health.view — gate before fetch happened) */
+ if(AH.health){
+  const api=H.api||{},db=H.database||{},em=H.email||{},wk=H.workers||{};
+  h+=`<div class="grid g2"><div class="card"><div class="ch"><h3>${esc(t("ah.sys"))}</h3></div><div class="cb">
+   <div class="kv"><span class="k">${esc(t("ah.api"))}</span><span class="v">${api.status?bdot(api.status==="ok"?"ok":"err",esc(String(api.status))):f3unavail()}</span></div>
+   ${api.uptimeNote?`<div class="kv"><span class="k">${esc(t("ah.uptime"))}</span><span class="v cellsub">${esc(String(api.uptimeNote))}</span></div>`:""}
+   <div class="kv"><span class="k">${esc(t("ah.db"))}</span><span class="v">${db.status?bdot(db.status==="ok"?"ok":"err",esc(String(db.status))+(db.latencyMs!=null?" · "+db.latencyMs+"ms":"")):f3unavail()}</span></div>
+   <div class="kv"><span class="k">${esc(t("ah.email"))}</span><span class="v cellsub">${em.driver?esc(String(em.driver))+(em.configured?" · "+esc(t("i8n.set")):""):f3unavail()}</span></div>
+   <div class="kv"><span class="k">${esc(t("ah.sent24"))}</span><span class="v num">${em.sentLast24h!=null?esc(String(em.sentLast24h)):f3unavail()}</span></div>
+   <div class="kv"><span class="k">${esc(t("ah.failed24"))}</span><span class="v num">${em.failedLast24h!=null?esc(String(em.failedLast24h)):f3unavail()}</span></div>
+   <div class="kv"><span class="k">${esc(t("ah.jp"))}</span><span class="v num">${wk.jobsPending!=null?esc(String(wk.jobsPending)):f3unavail()}</span></div>
+   <div class="kv"><span class="k">${esc(t("ah.jf"))}</span><span class="v num">${wk.jobsFailed!=null?esc(String(wk.jobsFailed)):f3unavail()}</span></div>
+  </div></div>`;
+ }else{
+  h+=`<div class="alert warn" style="margin-top:12px"><span class="amark" aria-hidden="true">!</span><div>${esc(t("ah.healthneed"))}<div class="note mono">system.health.view</div></div></div>`;
+ }
+ /* integration health (from diagnostics snapshot) */
+ const rows=[["metaapi",D.metaapi],["email",D.email],["ai",D.ai]];
+ h+=`<div class="card"><div class="ch"><h3>${esc(t("ah.integ"))}</h3></div><div class="cb">
+  <div class="twrap"><table class="tbl" data-mstack><thead><tr><th>${esc(t("ah.col.name"))}</th><th>${esc(t("ah.col.status"))}</th><th>${esc(t("ah.col.lat"))}</th><th>${esc(t("ah.col.err"))}</th><th>${esc(t("ah.col.chk"))}</th></tr></thead><tbody>`;
+ rows.forEach(([name,r])=>{
+  r=r||{};
+  h+=`<tr><td class="mono">${esc(name)}</td>
+   <td>${r.status?bdot(IINT_ST[String(r.status).replace("HEALTHY","SUCCESS").replace("DEGRADED","TIMEOUT").replace("UNKNOWN","UNKNOWN")]||"neutral",esc(String(r.status))):f3unavail()}</td>
+   <td class="num">${r.latencyMs!=null?esc(String(r.latencyMs))+"ms":f3unavail()}</td>
+   <td class="mono cellsub">${r.errorCode||r.error_code?esc(String(r.errorCode||r.error_code)):"—"}</td>
+   <td class="cellsub">${r.checkedAt||r.checked_at?esc(String(r.checkedAt||r.checked_at)):f3unavail()}</td></tr>`;
+ });
+ h+=`</tbody></table></div>
+  <div style="margin-top:10px"><button class="btn sm" onclick="f3AHRefresh()"${AH.refreshing||!can("system.health.view")?" disabled":""}>${AH.refreshing?esc(t("ah.refreshing")):esc(t("ah.refresh"))}</button></div>
+  </div></div>`;
+ /* AI providers (system/health block) with real verify/test actions */
+ const ps=Array.isArray(H.aiProviders)?H.aiProviders:(D.ai&&Array.isArray(D.ai.providers)?D.ai.providers:[]);
+ h+=`<div class="card" style="margin-top:12px"><div class="ch"><h3>${esc(t("ah.provs"))}</h3></div><div class="cb">`;
+ if(ps.length){
+  h+=`<div class="twrap"><table class="tbl" data-mstack><thead><tr><th>${esc(t("ov.provider"))}</th><th>${esc(t("ah.col.status"))}</th><th>${esc(t("ov.lastcheck"))}</th><th>${esc(t("aip.errorcode"))}</th><th>${esc(t("usr.col.actions"))}</th></tr></thead><tbody>`;
+  ps.forEach(p=>{
+   h+=`<tr><td class="mono">${esc(String(p.provider))}</td>
+    <td>${p.status?bdot(p.status==="VALID"?"ok":"warn",esc(String(p.status))):f3unavail()}</td>
+    <td class="cellsub">${p.last_checked_at?esc(String(p.last_checked_at)):f3unavail()}</td>
+    <td class="mono cellsub">${p.error_code?esc(String(p.error_code)):"—"}</td>
+    <td><div style="display:flex;gap:6px;flex-wrap:wrap">
+     <button class="btn sm" onclick="f3AHAction('${esc(String(p.provider))}','verify')"${AH.busy[p.provider]?" disabled":""}>${esc(t("aip.verify"))}</button>
+     <button class="btn sm" onclick="f3AHAction('${esc(String(p.provider))}','test')"${AH.busy[p.provider]?" disabled":""}>${esc(t("aip.test"))}</button></div></td></tr>`;
+  });
+  h+=`</tbody></table></div>`;
+ }else h+=f3unavail();
+ const R=AH.results;
+ Object.keys(R).forEach(pk=>{
+  const r=R[pk];
+  if(r.ok){const v=r.res;
+   h+=`<div style="border-top:1px dashed var(--border);margin-top:10px;padding-top:8px"><div class="cellsub mono">${esc(pk)}</div>
+    <div class="kv"><span class="k">${esc(t("ah.col.status"))}</span><span class="v">${bdot(v.status==="VALID"?"ok":(v.reachable===true?"ok":"err"),esc(String(v.status||"—")))}</span></div>
+    ${v.latency_ms!=null?`<div class="kv"><span class="k">${esc(t("iint.latency"))}</span><span class="v num">${esc(String(v.latency_ms))}ms</span></div>`:""}
+    ${v.error_code?`<div class="kv"><span class="k">${esc(t("aip.errorcode"))}</span><span class="v mono">${esc(String(v.error_code))}</span></div>`:""}</div>`;}
+  else h+=`<div class="alert warn" style="margin-top:10px"><span class="amark" aria-hidden="true">!</span><div>${esc((r.err&&r.err.code)?r.err.code+" — ":"")}${esc(t("f3.load.err"))}</div></div>`;
+ });
+ h+=`<div class="note">${esc(t("aip.note"))}</div></div></div>`;
+ return h;
+}
+
+/* registry honesty: batch-2 routes are implemented now (extends Batch-1 map) */
+["integrations-n8n","integrations-metaapi","integrations-email","ai-health"].forEach(rt=>{const d=REG_BY_ROUTE[rt];if(d)d.status="implemented";});
+Object.assign(PAGE_IMPL,{
+ "integrations-n8n":integrationsN8nPage,
+ "integrations-metaapi":integrationsMetaapiPage,
+ "integrations-email":integrationsEmailPage,
+ "ai-health":aiHealthPage
+});
 
 
 function activeGroupOf(cur){for(const n of NAV){const items=n.items||[n];if(n.g&&items.length>1&&items.some(it=>it.id===cur))return n.g}return null}
