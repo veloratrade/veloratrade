@@ -219,6 +219,18 @@ if ($found && in_array($relativeFile, $protectedRoutes, true)) {
         header('Location: /' . $locale . '/dashboard/', true, 302);
         return true;
     }
+    // Canonical Admin entry point -> Admin v2.2. Reached only by a valid session
+    // that passed the fail-closed gates above (anonymous users still go to
+    // login; signed-in non-admins still go to the dashboard — both unchanged).
+    // The v2 shell applies its own locale behavior; a locale-prefixed request
+    // already refreshed the velora_locale cookie above, so FA/EN entry context
+    // is preserved. The legacy localized admin page remains packaged; only what
+    // the canonical entry serves to authorized admins changes.
+    if ($relativeFile === 'admin/index.html') {
+        header('Cache-Control: no-store');
+        header('Location: /admin/v2/index.html', true, 302);
+        return true;
+    }
 }
 
 $failCsp = static function (): bool {

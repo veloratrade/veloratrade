@@ -173,6 +173,25 @@ if ($path === '/velora-live-reload') {
 }
 
 // =====================================================================
+// ۲.۵) Admin v2.2 shell — pass-through تک‌فایلی (آینهٔ قانون staging)
+// =====================================================================
+// دقیقاً مانند قانون ^admin/v2/index\.html$ در .htaccess استیجینگ: این فایل
+// فیزیکی بیرون localized/** است و باید مستقیم سرو شود، نه از مسیر
+// locale-router. (Production این مسیر را بسته‌بندی نمی‌کند — بدون تغییر.)
+if ($path === '/admin/v2/index.html' && is_file(__DIR__ . $path)) {
+    header('Content-Type: text/html; charset=utf-8');
+    $shell = (string) file_get_contents(__DIR__ . $path);
+    if ($DEV) {
+        velora_no_store();
+        echo velora_inject_dev($shell);
+    } else {
+        header('Cache-Control: private, max-age=0, must-revalidate');
+        echo $shell;
+    }
+    return true;
+}
+
+// =====================================================================
 // ۳) درخواست صفحه → همان resolver تولیدی cPanel/LiteSpeed
 // =====================================================================
 // HTML توسعه نیز از /localized/{locale} سرو می‌شود تا first paint، cookie و
