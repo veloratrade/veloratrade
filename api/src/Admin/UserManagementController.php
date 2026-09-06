@@ -9,6 +9,7 @@ use Velora\Core\Response;
 use Velora\Core\Exceptions\NotFoundException;
 use Velora\Core\Exceptions\ValidationException;
 use Velora\Core\RateLimiter;
+use Velora\Core\Validation;
 use Velora\Auth\Role;
 use Velora\Trades\TradeRepository;
 
@@ -223,6 +224,48 @@ final class UserManagementController
             ['revoked' => $n],
         );
         Response::json(['ok' => true, 'revoked' => $n]);
+    }
+
+    /**
+     * Admin Create User — POST /api/v1/admin/users
+     * RBAC: users.create (admin + super_admin) via requirePermission in
+     * api/index.php; privileged-role creation additionally requires
+     * users.change_role (super_admin only), enforced in the service.
+     * Audited (user.create) with secret-free metadata; the response never
+     * carries the password or the verification token.
+     */
+    public function store(Request $request, array $params): never
+    {
+        RateLimiter::hit('admin-user-create', 10, 3600);
+
+        Validation::assert($request->body, [
+            'email' => 'required|string|email|max:255',
+            'password' => 'required|string|min:8|max:72',
+            'fullName' => 'string|max:120',
+            'full_name' => 'string|max:120',
+            'role' => 'string|max:20',
+            'plan' => 'string|max:10',
+            'timezone' => 'string|max:64',
+            'locale' => 'string|max:35',
+        ]);
+
+        $actorId = (int) ($request->attributes['user_id'] ?? 0);
+        $actorRole = (string) ($request->attributes['user_role'] ?? '');
+
+        $result = $this->service->createUser($request->body, $actorId, $actorRole);
+
+        $this->audit->record(
+            $actorId, $actorRole,
+            'user.create',
+            'user', (int) $result['id'], 'success',
+            'User #' . $result['id'] . ' created (' . $result['role'] . ')',
+            $request->clientIp() ?? null,
+            $request->headers['user-agent'] ?? null,
+            $request->contextId(),
+            ['role' => $result['role'], 'plan' => $result['plan'], 'emailSent' => $result['emailSent']],
+        );
+
+        Response::json(['ok' => true, 'user' => $result], 201);
     }
 
     /**

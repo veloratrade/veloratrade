@@ -4,11 +4,16 @@ declare(strict_types=1);
 
 namespace Velora\Admin;
 
+use Velora\Core\Config;
 use Velora\Core\Database;
+use Velora\Core\Exceptions\ConflictException;
 use Velora\Core\Exceptions\ForbiddenException;
 use Velora\Core\Exceptions\NotFoundException;
 use Velora\Core\Exceptions\ValidationException;
+use Velora\Auth\EmailVerificationRepository;
+use Velora\Auth\PasswordService;
 use Velora\Auth\Role;
+use Velora\Auth\UserRepository;
 
 /**
  * Professional User Management (Module B).
@@ -27,6 +32,131 @@ use Velora\Auth\Role;
 final class UserManagementService
 {
     private const SORTABLE = ['created_at', 'email', 'full_name', 'role', 'status'];
+
+    /**
+     * Admin Create User (real users-table insert; no mock data).
+     *
+     * Authorization is SERVER-SIDE and derived from the canonical permission
+     * model, never from the client:
+     *   - the route already requires `users.create` (admin + super_admin);
+     *   - creating a PRIVILEGED account (admin/super_admin) additionally
+     *     requires `users.change_role` (Super Admin only) — the same
+     *     privilege-escalation rule as setRole();
+     *   - plan=pro additionally requires `users.manage_subscription`;
+     *   - status is always created 'active' (suspension is a separate,
+     *     audited action — not settable at creation).
+     *
+     * Email verification follows the existing public-registration
+     * architecture: the account starts UNVERIFIED and a one-time,
+     * expiring verification token is stored hashed + emailed. The token is
+     * NEVER returned or audited; the caller reports the honest delivery
+     * state (emailSent) coming from NotificationService.
+     */
+    public function createUser(array $data, int $actorId, string $actorRole): array
+    {
+        // ---- role (authorization first — never trust the client) ----
+        $role = strtolower(trim((string) ($data['role'] ?? Role::USER)));
+        if ($role === '') {
+            $role = Role::USER;
+        }
+        if (!Role::isValidStored($role)) {
+            throw new ValidationException('Invalid role.', ['role' => ['code' => 'INVALID_CHOICE', 'messageKey' => 'errors.validation.choice', 'params' => []]]);
+        }
+        if (Role::isPrivileged($role) && !Role::can($actorRole, Role::P_USERS_CHANGE_ROLE)) {
+            throw new ForbiddenException('Only Super Admin may create admin-level accounts.', 'PRIVILEGE_ESCALATION_DENIED');
+        }
+
+        // ---- plan (RBAC-neutral, but its assignment is a managed action) ----
+        $plan = strtolower(trim((string) ($data['plan'] ?? 'free')));
+        if ($plan === '') {
+            $plan = 'free';
+        }
+        if (!in_array($plan, ['free', 'pro'], true)) {
+            throw new ValidationException('Invalid plan.', ['plan' => ['code' => 'INVALID_PLAN']]);
+        }
+        if ($plan === 'pro' && !Role::can($actorRole, Role::P_USERS_MANAGE_SUBSCRIPTION)) {
+            throw new ForbiddenException('Assigning a paid plan requires subscription management permission.', 'SUBSCRIPTION_MANAGE_DENIED');
+        }
+
+        // ---- identity fields ----
+        $email = mb_strtolower(trim((string) ($data['email'] ?? '')));
+        $fullName = trim((string) ($data['fullName'] ?? ($data['full_name'] ?? '')));
+        if ($fullName === '') {
+            throw new ValidationException('Full name is required.', ['fullName' => ['code' => 'REQUIRED', 'messageKey' => 'errors.validation.required', 'params' => []]]);
+        }
+        $timezone = trim((string) ($data['timezone'] ?? '')) ?: 'UTC';
+        if (mb_strlen($timezone) > 64) {
+            throw new ValidationException('Invalid timezone.', ['timezone' => ['code' => 'INVALID_TIMEZONE']]);
+        }
+        $localeInput = strtolower(trim((string) ($data['locale'] ?? '')));
+        $locale = 'fa';
+        if ($localeInput !== '') {
+            $i18n = \Velora\Core\Locale\LocaleManager::getInstance();
+            if (!$i18n->supports($localeInput)) {
+                throw new ValidationException('Unsupported locale.', ['locale' => ['code' => 'INVALID_LOCALE']]);
+            }
+            $locale = $i18n->resolve($localeInput);
+        }
+
+        // ---- duplicate email (distinct, actionable codes) ----
+        $users = new UserRepository();
+        if ($users->emailExists($email)) {
+            $existing = $users->findByEmail($email);
+            if ($existing !== null && $existing['email_verified_at'] !== null) {
+                throw new ConflictException('Email already registered.', 'EMAIL_ALREADY_REGISTERED', 'errors.auth.emailAlreadyRegistered');
+            }
+            throw new ConflictException('A user with this email is pending email verification.', 'EMAIL_PENDING_VERIFICATION', 'errors.auth.emailPendingVerification');
+        }
+
+        // ---- password: single shared policy, never stored/returned raw ----
+        $password = (string) ($data['password'] ?? '');
+        PasswordService::assertResetPasswordRules($password, 'password');
+        $cost = (int) Config::get('bcrypt_cost', 12);
+        $passwordHash = password_hash($password, PASSWORD_BCRYPT, ['cost' => $cost]);
+
+        // ---- real insert ----
+        $userId = $users->createByAdmin([
+            'email' => $email,
+            'password_hash' => $passwordHash,
+            'full_name' => $fullName,
+            'role' => $role,
+            'plan' => $plan,
+            'subscription_status' => $plan === 'pro' ? 'active' : 'none',
+            'timezone' => $timezone,
+            'locale' => $locale,
+        ]);
+
+        // ---- email verification (existing architecture; one-time, hashed, expiring) ----
+        $verifications = new EmailVerificationRepository();
+        $token = bin2hex(random_bytes(32));
+        $verifications->invalidateAllForUser($userId);
+        $verifications->create($userId, hash('sha256', $token), 86400);
+        $verifyUrl = rtrim((string) Config::get('frontend_url', 'https://veloratrade.ir'), '/') . '/verify-email#token=' . rawurlencode($token);
+        $emailSent = false;
+        try {
+            $emailSent = \Velora\Core\NotificationService::sendVerificationEmail(
+                $email,
+                $fullName,
+                $verifyUrl,
+                $userId,
+                null,
+            );
+        } catch (\Throwable $e) {
+            $emailSent = false; // honest state — the UI never claims a send that did not happen
+        }
+
+        return [
+            'id' => $userId,
+            'email' => $email,
+            'fullName' => $fullName,
+            'role' => $role,
+            'plan' => $plan,
+            'status' => 'active',
+            'emailVerified' => false,
+            'verificationRequired' => true,
+            'emailSent' => $emailSent,
+        ];
+    }
 
     /** @return array<string,mixed> */
     public function listUsers(array $filters = [], int $page = 1, int $perPage = 25): array

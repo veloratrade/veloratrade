@@ -47,6 +47,7 @@ final class Role
     public const P_USERS_CHANGE_ROLE = 'users.change_role';       // Super Admin only
     public const P_USERS_MANAGE_SUBSCRIPTION = 'users.manage_subscription';
     public const P_USERS_VERIFY_EMAIL = 'users.verify_email';       // Admin-triggered email verification (Phase 3 B-1)
+    public const P_USERS_CREATE = 'users.create';                    // Admin Create User (operational; privileged-role creation still requires users.change_role)
     public const P_AUDIT_VIEW = 'audit.view';
     public const P_AUDIT_SENSITIVE_VIEW = 'audit.view_sensitive'; // Super Admin only
     public const P_SYSTEM_HEALTH_VIEW = 'system.health.view';
@@ -96,6 +97,7 @@ final class Role
                 self::P_USERS_ACTIVATE,
                 self::P_USERS_MANAGE_SUBSCRIPTION,
                 self::P_USERS_VERIFY_EMAIL,
+                self::P_USERS_CREATE,
                 self::P_AUDIT_VIEW,
                 self::P_SYSTEM_HEALTH_VIEW,
                 self::P_SYSTEM_LOGS_VIEW,
@@ -114,6 +116,7 @@ final class Role
                 self::P_USERS_CHANGE_ROLE,
                 self::P_USERS_MANAGE_SUBSCRIPTION,
                 self::P_USERS_VERIFY_EMAIL,
+                self::P_USERS_CREATE,
                 self::P_AUDIT_VIEW,
                 self::P_AUDIT_SENSITIVE_VIEW,
                 self::P_SYSTEM_HEALTH_VIEW,
