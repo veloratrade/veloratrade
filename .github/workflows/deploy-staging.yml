@@ -63,7 +63,8 @@ jobs:
       # آن را می‌گیرد و گیت‌هاب نام مخفف را رد می‌کند (بازتولید محلی:
       # «fatal: couldn't find remote ref 1d100fb»).
       # پس از هر استقرار موفق استیجینگ، همین مقدار به SHA تازه به‌روز شود.
-      base_sha: fea6809d33da694774b4fd3e0e778615b079867a
+      # آخرین به‌روزرسانی: run 34003819586 — استقرار موفق 14b45011e6d… (2026-09-06).
+      base_sha: 14b45011e6d312bd068916fa4bef5af93b8798dd
 
   guard:
     name: بررسی CSP پیش از staging
@@ -131,6 +132,14 @@ jobs:
              icon-192.png icon-512.png apple-icon.png manifest.json velora-logo.svg "$DEST/"
           mkdir -p "$DEST/checkout" && cp checkout/index.html "$DEST/checkout/"
 
+          # --- شل Admin v2.2 (فازهای F-1/F-2/F-3) — فقط فایل runtime ---
+          # این صفحه خودکفاست؛ تنها وابستگی‌هایش /public/assets/velora-data.js و
+          # /public/assets/velora-latin-digits.js (هر دو از طریق «cp -a public»
+          # بالا وارد بسته می‌شوند) و APIهای /api/v1 هستند. پوشه tests عمداً بسته
+          # نمی‌شود (هیچ ابزار تستی به docroot نمی‌رود — همان قاعده api و public).
+          mkdir -p "$DEST/admin/v2"
+          cp admin/v2/index.html "$DEST/admin/v2/index.html"
+
           # --- خروجی‌های لوکال‌سازی (شامل فایل مخفی .csp-release.json) ---
           cp -a localized "$DEST/localized"
 
@@ -149,7 +158,7 @@ jobs:
           cp -a api/locales "$DEST/api/locales"
           cp -a api/workers "$DEST/api/workers"
 
-          # --- .htaccess استیجینگ: دقیقاً ۲ تغییر مصوب ---
+          # --- .htaccess استیجینگ: دقیقاً ۳ تغییر مصوب ---
           sed 's|^SetEnv VELORA_PRIVATE_ROOT /home/piknet/velora_private$|SetEnv VELORA_PRIVATE_ROOT /home/piknet/velora_private_staging|' \
             .htaccess > "$DEST/.htaccess"
           python3 - << 'PY'
@@ -158,6 +167,28 @@ jobs:
           marker = 'Header always set X-Content-Type-Options "nosniff"'
           assert marker in s, ".htaccess marker not found"
           s = s.replace(marker, 'Header always set X-Robots-Tag "noindex, nofollow"\n  ' + marker, 1)
+          # تغییر سوم (فقط staging): پاس‌طور استاتیکِ دقیقاً تک‌فایلی برای شل
+          # Admin v2.2. router لوکال‌سازی فقط localized/** را سرو می‌کند و
+          # admin/v2/index.html بیرون آن است؛ بدون این قانون، .htaccess همهٔ
+          # درخواست‌های .html را به router می‌فرستد و شل 404 می‌شود (ریشهٔ
+          # باگ بسته‌بندی). الگوی همان قانون آزمودهٔ بالای همین فایل
+          # (RewriteCond -f) عیناً تکرار می‌شود؛ فقط مسیر exact تک‌فایل باز
+          # می‌شود و هیچ مسیر یا DirectoryIndex دیگری فعال نمی‌شود. داده‌های
+          # ادمین همچنان فقط از مسیر APIهای احراز-هویت‌شدهٔ /api/v1/admin/*
+          # در دسترس‌اند (401 بدون توکن — در راستی‌آزمایی staging تأیید شد).
+          admin_v2_rule = (
+              "# STAGING ONLY — Admin v2.2 shell (self-contained static app under\n"
+              "# admin/v2/). The localization router only serves localized/**, so\n"
+              "# without this exact-file pass-through the shell 404s. Single exact\n"
+              "# file, guarded by -f; all admin data stays behind authenticated\n"
+              "# /api/v1/admin/* endpoints.\n"
+              "RewriteCond %{REQUEST_FILENAME} -f\n"
+              "RewriteRule ^admin/v2/index\\.html$ - [L]"
+          )
+          catch_all = "RewriteRule ^ locale-router.php [L,QSA]"
+          assert catch_all in s, ".htaccess router catch-all not found"
+          assert "admin/v2" not in s, ".htaccess admin/v2 rule already present"
+          s = s.replace(catch_all, admin_v2_rule + "\n" + catch_all, 1)
           open(p, "w").write(s)
           PY
 
@@ -170,6 +201,9 @@ jobs:
           test "$(find "$DEST" -name '*.sqlite*' -o -name '*.log' -o -name 'error_log' | wc -l)" = 0
           test "$(find "$DEST" -name 'sitemap.xml' -o -name 'google*.html' | wc -l)" = 0
           test -f "$DEST/localized/.csp-release.json"
+          test -f "$DEST/admin/v2/index.html"
+          cmp -s admin/v2/index.html "$DEST/admin/v2/index.html"
+          grep -q "RewriteRule \^admin/v2/index" "$DEST/.htaccess"
           grep -q "velora_private_staging" "$DEST/.htaccess"
           grep -q "X-Robots-Tag" "$DEST/.htaccess"
           echo "بسته سالم است: $(find "$DEST" -type f | wc -l) فایل"
@@ -411,6 +445,7 @@ jobs:
             "localized/en/profile/index.html"
             "localized/fa/admin/index.html"
             "localized/en/admin/index.html"
+            "admin/v2/index.html"
             "localized/fa/dashboard/index.html"
             "localized/en/dashboard/index.html"
             "locale-router.php"
