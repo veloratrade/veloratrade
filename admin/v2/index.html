@@ -654,6 +654,25 @@ body.drawer-open{overflow:hidden}
 @media (max-width:768px){.sidebar .navitem{min-height:46px}.sidebar .ghead{min-height:40px}}
 /* F-2: keyboard-selection parity with the frozen hover token (no redesign) */
 .pal-item.sel,.pal-item.sel:hover{background:rgba(233,196,92,.1)}
+/* ============ mobile scrolling fix (surgical; no visual redesign) ============
+   RC1 modals: cap the modal to the viewport and scroll only its body — the
+   header and footer actions always stay reachable (was: overflow:hidden in a
+   fixed, non-scrolling, center-aligned wrapper -> tall content unreachable).
+   RC2 full-height surfaces: use the dynamic viewport so nothing sits under
+   mobile browser chrome (100vh fallback preserved for old engines).
+   RC3 topbar: the breadcrumb row may shrink/truncate so trailing controls
+   (account, theme, language, connection) can never be pushed out of view. */
+.sidebar{height:100vh;height:100dvh}
+.overlay{height:100vh;height:100dvh}
+.umenu{max-height:70vh;max-height:70dvh}
+.pal-groups{max-height:46vh;max-height:46dvh}
+.topbar>.tbtn,.topbar>.envchip,.topbar>.chip,.topbar>.avatar,.topbar>.palbtn{flex:none}
+@media(max-width:430px){.topbar{gap:5px;padding:0 10px}}  /* keep every control on narrow phones */
+.crumb{min-width:0;overflow:hidden;white-space:nowrap}
+.crumb>span,.crumb>b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.modalwrap{overflow-y:auto;overscroll-behavior:contain;place-items:safe center}
+.modal{display:flex;flex-direction:column;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px)}
+.modal .mb{overflow-y:auto;min-height:0;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 </style>
 </head>
 <body>
