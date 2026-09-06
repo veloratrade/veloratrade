@@ -10,8 +10,10 @@ served artifact with a stubbed data layer:
       impossible), dev-only build tag from real provenance token
   R4  theme control: sun/moon SVG, localized accessible label, persistence,
       keyboard operation
-  R5  account control: real /admin/me identity (initials/name/email/role),
-      popover, real logout via /api/v1/auth/logout, keyboard + Escape/focus
+  R5  account control: REAL dashboard identity treatment (single-letter avatar
+      from the session user's fullName, name/email/role), popover, EXIT ADMIN
+      (-> canonical dashboard, session preserved, logout NOT called),
+      keyboard + Escape/focus
   R6  no console errors, no overflow (fa/en × dark/light × 1440/390)
 """
 import json, os, subprocess, sys, time, re
@@ -34,11 +36,11 @@ try:
         # ---------- A) brand: real logo ----------
         setmode("admin")
         pg = newpg(); pg.goto(URL); pg.wait_for_timeout(1500)
-        OUT["R1_svg_paths"] = pg.evaluate("()=>document.querySelectorAll('.brand .logo svg path, .brand .logo svg rect').length")
-        OUT["R1_grad"] = pg.evaluate("()=>{const s=document.querySelector('.brand .logo svg'); return s? (s.outerHTML.match(/url\\(#vl-g[A-Z]\\)/g)||[]).length : 0}")
+        OUT["R1_svg_paths"] = pg.evaluate("()=>document.querySelectorAll('.brand .logo-mark svg path, .brand .logo-mark svg rect').length")
+        OUT["R1_grad"] = pg.evaluate("()=>{const s=document.querySelector('.brand .logo-mark svg'); return s? (s.outerHTML.match(/url\\(#vl-g[A-Z]\\)/g)||[]).length : 0}")
         OUT["R1_defs"] = pg.evaluate("()=>!!document.querySelector('#vl-gA')&&!!document.querySelector('#vl-gC')&&!!document.querySelector('#vl-gD')")
-        OUT["R1_no_text_V"] = pg.evaluate("()=>document.querySelector('.brand .logo').textContent.trim()===''")
-        OUT["R1_no_img"] = pg.evaluate("()=>document.querySelectorAll('.brand .logo img').length===0")
+        OUT["R1_no_text_V"] = pg.evaluate("()=>document.querySelector('.brand .logo-mark').textContent.trim()==='' && document.querySelector('.brand .logo-txt b').textContent==='VELORA'")
+        OUT["R1_no_img"] = pg.evaluate("()=>document.querySelectorAll('.brand img').length===0")
         pg.close()
         # ---------- B) header environment: no hostnames/URLs ----------
         pg = newpg(); pg.goto(URL); pg.wait_for_timeout(1500)
@@ -89,12 +91,16 @@ try:
           return {name:(m.querySelector('.uname')||{}).textContent, email:(m.querySelector('.uemail')||{}).textContent,
                   role:(m.querySelector('.urole')||{}).textContent, av:(m.querySelector('.uav')||{}).textContent,
                   noImg:m.querySelectorAll('img').length===0,
-                  logoutTxt:((m.querySelector('#logoutBtn')||{}).textContent||'').trim(),
-                  logoutSvg:!!(m.querySelector('#logoutBtn svg')),
+                  exitTxt:((m.querySelector('#exitAdminBtn')||{}).textContent||'').trim(),
+                  exitSvg:!!(m.querySelector('#exitAdminBtn svg')),
+                  hasLogout:!!m.querySelector('#logoutBtn'),
                   menuRole:m.getAttribute('role'), expanded:document.querySelector('#userBtn').getAttribute('aria-expanded')} }""")
-        pg.click("#logoutBtn"); pg.wait_for_timeout(800)
-        OUT["R5_logout_path"] = pg.evaluate("()=>location.pathname")
-        OUT["R5_logout_api"] = json.load(open(os.path.join(HERE, "mode.json")))["logout_called"]
+        pg.click("#exitAdminBtn")
+        try: pg.wait_for_url("**/dashboard/", timeout=6000)
+        except: pass
+        pg.wait_for_timeout(400)
+        OUT["R5_exit_path"] = pg.evaluate("()=>location.pathname")
+        OUT["R5_exit_no_logout_api"] = json.load(open(os.path.join(HERE, "mode.json")))["logout_called"] is False
         pg.close()
         # keyboard: open via Enter, focus lands in menu, Escape closes + restores focus
         pg = newpg(); pg.goto(URL); pg.wait_for_timeout(1500)
@@ -148,7 +154,7 @@ chk("js", len(OUT["js"]) == 0)
 chk("R1_logo_paths", OUT["R1_svg_paths"] >= 7)
 chk("R1_grad_refs", OUT["R1_grad"] >= 3)
 chk("R1_defs", OUT["R1_defs"] is True)
-chk("R1_no_text_V", OUT["R1_no_text_V"] is True)
+chk("R1_no_text_V", OUT["R1_no_text_V"] is True)  # real-site structure: no stray text in the tile; wordmark VELORA in .logo-txt
 chk("R1_no_img", OUT["R1_no_img"] is True)
 chk("R2_ready_env", OUT["R2_env"]["chip"] == "LIVE" and OUT["R2_env"]["host"] == "متصل به بک‌اند" and OUT["R2_env"]["sub"] == "زنده · پاسخ‌گوی واقعی")
 chk("R2_demo_env", OUT["R2_demo"]["chip"] == "LOCAL" and OUT["R2_demo"]["host"] == "بدون لایهٔ داده")
@@ -165,18 +171,18 @@ chk("R4_persist", OUT["R4_persist"] == "light")
 chk("R4_dark_label", OUT["R4_dark_label"] == "تم روشن")
 chk("R4_kbd", OUT["R4_kbd"] == "light")
 chk("R4_en_label", OUT["R4_en_label"] == "Light theme")  # label = the action the toggle performs (state was dark)
-chk("R5_initials_real", OUT["R5_initials"] == "SR")
+chk("R5_initials_real", OUT["R5_initials"] == "S")  # dashboard parity: FIRST letter of fullName, fallback V
 chk("R5_no_img_avatar", OUT["R5_no_img_avatar"] is True)
 chk("R5_menu_identity", OUT["R5_menu"] and OUT["R5_menu"]["name"] == "Sahar Rahimi" and OUT["R5_menu"]["email"] == "s.rahimi@veloratrade.ir"
-    and "admin" in (OUT["R5_menu"]["role"] or "") and "#4" in (OUT["R5_menu"]["role"] or "") and OUT["R5_menu"]["av"] == "SR")
+    and "admin" in (OUT["R5_menu"]["role"] or "") and "#4" in (OUT["R5_menu"]["role"] or "") and OUT["R5_menu"]["av"] == "S")
 chk("R5_menu_no_img", OUT["R5_menu"]["noImg"] is True)
-chk("R5_logout_control", OUT["R5_menu"]["logoutTxt"] == "خروج از حساب" and OUT["R5_menu"]["logoutSvg"] is True)
+chk("R5_exit_control", OUT["R5_menu"]["exitTxt"] == "خروج از پنل مدیریت" and OUT["R5_menu"]["exitSvg"] is True and OUT["R5_menu"]["hasLogout"] is False)  # owner contract: popover has Exit Admin, never logout
 chk("R5_menu_aria", OUT["R5_menu"]["menuRole"] == "menu" and OUT["R5_menu"]["expanded"] == "true")
-chk("R5_logout_real", OUT["R5_logout_path"] == "/login" and OUT["R5_logout_api"] is True)
+chk("R5_exit_real", OUT["R5_exit_path"].endswith("/dashboard/") and OUT["R5_exit_no_logout_api"] is True)  # Exit Admin lands on the localized dashboard WITHOUT calling logout
 chk("R5_popover_in_view", OUT["R5_menu_bounds"] is not None and OUT["R5_menu_bounds"]["inView"] is True)  # direction-aware anchor (RTL bug fixed)
 chk("R5_kbd_open", OUT["R5_kbd_open"]["menu"] is True and OUT["R5_kbd_open"]["focusInMenu"] is True)
 chk("R5_kbd_escape", OUT["R5_kbd_escape"]["menuGone"] is True and OUT["R5_kbd_escape"]["focusBack"] is True)
-chk("R5_limited_initials", OUT["R5_limited_initials"] == "NK")
+chk("R5_limited_initials", OUT["R5_limited_initials"] == "N")  # dashboard parity (first letter of Neda Karimi)
 chk("R6_overflow_zero", OUT["R6_all_zero"] is True)
 chk("R6_no_object_final", OUT["R6_no_object_final"] is False)
 print("FAILS:", fails if fails else "NONE — ALL GREEN")

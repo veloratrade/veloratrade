@@ -70,11 +70,18 @@ svg{display:block}
 /* --- sidebar --- */
 .sidebar{width:var(--sb-w);flex-shrink:0;background:var(--surface);border-inline-end:1px solid var(--border);
   display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;z-index:40;transition:width .18s}
-.sidebar .brand{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border)}
-.brand .logo{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#d9a93f,#8f6b1d);
-  display:grid;place-items:center;color:#141005;font-weight:800;font-size:13px;flex-shrink:0}
-.brand .name{font-weight:800;letter-spacing:.4px;font-size:13.5px}
-.brand .sub{font-size:10px;color:var(--muted);margin-top:1px}
+.sidebar .brand{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border)}
+/* Real VELORA site logo (verbatim site treatment): glass tile + wordmark + gradient tagline */
+.brand .logo-mark{width:40px;height:40px;flex:none;display:grid;place-items:center;border-radius:12px;
+  background:linear-gradient(140deg,rgba(212,175,55,.16),rgba(212,175,55,.04));
+  border:1px solid rgba(212,175,55,.34);
+  box-shadow:0 0 22px rgba(212,175,55,.28),inset 0 0 14px rgba(212,175,55,.08)}
+.brand .logo-mark svg{width:26px;height:26px;filter:drop-shadow(0 0 6px rgba(233,196,92,.5))}
+.brand .logo-txt{display:flex;flex-direction:column;line-height:1.25;min-width:0}
+.brand .logo-txt b{font-size:18px;font-weight:700;color:var(--text);letter-spacing:.2px;line-height:1.15}
+.brand .logo-txt i{font-style:normal;font-size:9.5px;font-weight:700;letter-spacing:.42em;margin-top:2px;
+  background:linear-gradient(120deg,#f9e6a8 0%,#e8c45a 38%,#c9942b 68%,#f2d67c 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;white-space:nowrap}
 .navgroup{padding:12px 10px 2px}
 .navgroup .gtitle{font-size:10px;font-weight:700;letter-spacing:.8px;color:var(--muted);text-transform:uppercase;padding:0 8px 6px}
 .navitem{display:flex;align-items:center;gap:9px;width:100%;text-align:start;padding:7px 10px;border-radius:var(--r);
@@ -98,8 +105,9 @@ svg{display:block}
 .tbtn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:32px;min-width:32px;padding:0 9px;
   border:1px solid var(--border);border-radius:var(--r);background:var(--surface2);color:var(--text2);font-size:12px}
 .tbtn:hover{border-color:var(--border2);color:var(--text)}
-.avatar{width:28px;height:28px;border-radius:50%;background:var(--surface3);border:1px solid var(--border2);
-  display:grid;place-items:center;font-size:11px;font-weight:700;color:var(--text2)}
+.avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#ffb703,#d4af37);
+  border:2px solid #fff0bd;box-shadow:0 0 15px rgba(255,183,3,.45);
+  display:grid;place-items:center;font-size:11px;font-weight:900;color:#060a14}
 .view{padding:18px 20px 60px;max-width:1440px;width:100%;margin:0 auto}
 /* --- mockup banner --- */
 .mockbanner{background:linear-gradient(90deg,var(--accent-soft),transparent);border-bottom:1px dashed var(--accent);
@@ -284,9 +292,10 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
 .num,.mono{font-family:var(--mono)}
 h1{letter-spacing:-.01em}
 /* ---- brand block ---- */
-.brand .logo{background:linear-gradient(135deg,#f0cd6a,#c9942b);color:#1c1303;border:none;
- box-shadow:0 4px 18px rgba(212,175,55,.35),inset 0 1px rgba(255,255,255,.5);font-weight:900}
-.brand .name{letter-spacing:.4em;font-weight:800}
+.brand .logo-mark{background:linear-gradient(140deg,rgba(212,175,55,.22),rgba(212,175,55,.08));
+ border-color:rgba(138,106,31,.35);box-shadow:0 0 18px rgba(212,175,55,.25),inset 0 0 12px rgba(212,175,55,.1)}
+.brand .logo-txt i{background:linear-gradient(120deg,#b8862a 0%,#8f6b1d 38%,#7a5a15 68%,#a67c1e 100%);
+ -webkit-background-clip:text;background-clip:text}
 .foot .envpill{border:1px solid rgba(61,220,132,.3);color:var(--ok);background:rgba(61,220,132,.07)}
 /* ---- cards: white-alpha, deep shadow, inset top light ---- */
 .card{background:linear-gradient(165deg,rgba(255,255,255,.04),rgba(255,255,255,.014));
@@ -343,8 +352,6 @@ h1{letter-spacing:-.01em}
 /* ---- topbar ---- */
 .topbar{background:rgba(4,5,10,.72);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.05)}
 [data-theme="light"] .topbar{background:rgba(244,241,233,.82)}
-.avatar{background:linear-gradient(135deg,#f0cd6a,#c9942b);color:#1c1303;font-weight:800;border:none;
- box-shadow:0 3px 14px rgba(212,175,55,.3)}
 /* ---- tables ---- */
 .tbl th{background:transparent;font-size:10px;letter-spacing:.08em;color:var(--muted);border-bottom:1px solid rgba(255,255,255,.08)}
 .tbl td{border-bottom:1px solid rgba(255,255,255,.04)}
@@ -467,16 +474,16 @@ th.sortable .arr{opacity:.6;font-size:9px}
 /* account identity (real /admin/me data — shell refinement) */
 .umenu .uid{display:flex;gap:10px;align-items:center;padding:9px 10px;border-bottom:1px solid var(--border);margin-bottom:5px}
 .umenu .uid .uav{width:34px;height:34px;flex:none;border-radius:50%;display:grid;place-items:center;
- background:linear-gradient(135deg,#f0cd6a,#c9942b);color:#1c1303;font-weight:800;font-size:12.5px;letter-spacing:.5px;
- border:1px solid rgba(233,196,92,.45)}
+ background:linear-gradient(135deg,#ffb703,#d4af37);color:#060a14;font-weight:900;font-size:13px;
+ border:2px solid #fff0bd;box-shadow:0 0 12px rgba(255,183,3,.4)}
 .umenu .uid .uinfo{display:flex;flex-direction:column;min-width:0}
 .umenu .uid .uname{font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px}
 .umenu .uid .uemail{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px;direction:ltr}
 .umenu .uid .urole{font-size:10px;color:var(--muted);margin-top:2px}
 .umenu .usec{border-top:1px solid var(--border);margin-top:5px;padding-top:5px}
-.umenu .usec button{color:#ff9d9d}
+.umenu .usec button{color:var(--text2)}
 .umenu .umeta{padding:6px 10px 4px;font-size:9px;color:var(--muted);border-top:1px solid var(--border);margin-top:5px;direction:ltr;text-align:start;letter-spacing:.4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-[data-theme="light"] .umenu .usec button{color:#a33333}
+[data-theme="light"] .umenu .usec button{color:var(--text2)}
 /* dev mode */
 .devonly{display:none!important}
 body.dev .devonly{display:block!important}
@@ -619,7 +626,6 @@ body.drawer-open{overflow:hidden}
   .ghead{min-height:42px;font-size:10.5px;color:rgba(233,196,92,.85);letter-spacing:.13em;padding:10px 14px 6px}
   .ghead .gchev{color:var(--text2)}
   [data-theme="light"] .ghead{color:#8a6a1f}
-  .brand .name{font-size:13px;letter-spacing:.34em}
   .envblock{font-size:11px;padding:9px 11px}
   .envblock .sub{font-size:9.5px;opacity:.8}
   .umenu{max-height:70vh;overflow:auto}
@@ -686,9 +692,9 @@ body.drawer-open{overflow:hidden}
 <div class="app">
   <div id="sbBackdrop" aria-hidden="true"></div>
   <aside class="sidebar" id="sidebar" aria-label="Main navigation">
-    <div class="brand">
-      <div class="logo"><svg viewBox="0 0 64 64" role="img" aria-label="Velora"><path d="M8 10L21 10L32 52L43 10L56 10L32 58Z" fill="none" stroke="#e8c45a" stroke-width=".7"/><path d="M8 10L21 10L32 52L43 10L56 10L32 58Z" fill="url(#vl-gD)"/><path d="M21 10L32 52L32 58L8 10Z" fill="url(#vl-gD)" opacity=".55"/><path d="M43 10L32 52L32 58L56 10Z" fill="url(#vl-gA)"/><path d="M32 14V24M32 37V52" stroke="url(#vl-gC)" stroke-width="2.6"/><rect fill="url(#vl-gC)" height="13" width="7" x="28.5" y="24"/><path d="M32 6.5L33.3 9.7L36.5 11L33.3 12.3L32 15.5L30.7 12.3L27.5 11L30.7 9.7Z" fill="#f7e3a1"/></svg></div>
-      <div><div class="name">VELORA</div><div class="sub" data-i18n="brand.sub">کنسول مدیریت</div></div>
+    <div class="brand" aria-label="Velora — Trading OS">
+      <span class="logo-mark"><svg aria-hidden="true" focusable="false" viewBox="0 0 64 64"><path d="M8 10L21 10L32 52L43 10L56 10L32 58Z" fill="none" stroke="#e8c45a" stroke-width=".7"/><path d="M8 10L21 10L32 52L43 10L56 10L32 58Z" fill="url(#vl-gD)"/><path d="M21 10L32 52L32 58L8 10Z" fill="url(#vl-gD)" opacity=".55"/><path d="M43 10L32 52L32 58L56 10Z" fill="url(#vl-gA)"/><path d="M32 14V24M32 37V52" stroke="url(#vl-gC)" stroke-width="2.6"/><rect fill="url(#vl-gC)" height="13" width="7" x="28.5" y="24"/><path d="M32 6.5L33.3 9.7L36.5 11L33.3 12.3L32 15.5L30.7 12.3L27.5 11L30.7 9.7Z" fill="#f7e3a1"/></svg></span>
+      <div class="logo-txt"><b>VELORA</b><i>TRADING OS</i></div>
     </div>
     <button class="tbtn railbtn" id="railBtn" aria-label="حالت فشردهٔ سایدبار" title="حالت فشرده">«</button>
     <nav id="nav"></nav>
@@ -830,7 +836,7 @@ const SHELL_T={
       "shell.403.title":"دسترسی مدیریتی لازم است","shell.403.desc":"این کنسول برای نقش‌های admin و super_admin است.",
       "shell.notfound.title":"چنین صفحه‌ای وجود ندارد","shell.notfound.desc":"مسیر درخواستی در ثبتِ مسیرهای production نیست.",
       "shell.status.title":"وضعیت پوسته","shell.status.ident":"هویت","shell.status.perms":"تعداد پرمیشن‌ها","shell.status.recent":"اقدامات اخیر شما","shell.status.recent.empty":"موردی ثبت نشده","shell.status.env":"محیط (hostname واقعی)",
-      "shell.menu.logout":"خروج از حساب","shell.menu.lang":"زبان FA/EN","shell.menu.theme":"تم روشن/تاریک","shell.conn.ready":"متصل","shell.conn.offline":"قطع","shell.conn.demo":"بدون لایهٔ داده","search.placeholder":"جست‌وجوی مسیر…","search.hint":"جست‌وجو در مسیرهای کنسول مدیریتی (F-2)","shell.p404.back":"بازگشت به نمای کلی","shell.pending.badge":"مسیر متصل · صفحه در فاز بعد","shell.user360.none":"هیچ داده‌ای برای این کاربر ساخته نشده است","nav.user360":"نمای کاربر"},
+      "shell.menu.exit":"خروج از پنل مدیریت","shell.menu.lang":"زبان FA/EN","shell.menu.theme":"تم روشن/تاریک","shell.conn.ready":"متصل","shell.conn.offline":"قطع","shell.conn.demo":"بدون لایهٔ داده","search.placeholder":"جست‌وجوی مسیر…","search.hint":"جست‌وجو در مسیرهای کنسول مدیریتی (F-2)","shell.p404.back":"بازگشت به نمای کلی","shell.pending.badge":"مسیر متصل · صفحه در فاز بعد","shell.user360.none":"هیچ داده‌ای برای این کاربر ساخته نشده است","nav.user360":"نمای کاربر"},
  en:{ "shell.pending.title":"Page not implemented yet","shell.pending.desc":"The route is wired (F-2); the page implementation itself belongs to a later phase. Nothing is fabricated on this page.",
       "shell.denied.title":"Permission required","shell.denied.desc":"This page requires the following permission:",
       "shell.boot.title":"Loading console…","shell.boot.desc":"Validating session and fetching permissions",
@@ -839,14 +845,14 @@ const SHELL_T={
       "shell.403.title":"Administrator access required","shell.403.desc":"This console is for admin and super_admin roles.",
       "shell.notfound.title":"Page not found","shell.notfound.desc":"The requested hash is not part of the production route registry.",
       "shell.status.title":"Shell status","shell.status.ident":"Identity","shell.status.perms":"Permission count","shell.status.recent":"Your recent actions","shell.status.recent.empty":"Nothing recorded","shell.status.env":"Environment (real hostname)",
-      "shell.menu.logout":"Sign out","shell.menu.lang":"Language FA/EN","shell.menu.theme":"Dark/Light theme","shell.conn.ready":"Connected","shell.conn.offline":"Offline","shell.conn.demo":"No data layer","search.placeholder":"Search routes…","search.hint":"Search admin console routes (F-2)","shell.p404.back":"Back to overview","shell.pending.badge":"route live · page pending","shell.user360.none":"No user data is fabricated here","nav.user360":"User360"}
+      "shell.menu.exit":"Exit Admin","shell.menu.lang":"Language FA/EN","shell.menu.theme":"Dark/Light theme","shell.conn.ready":"Connected","shell.conn.offline":"Offline","shell.conn.demo":"No data layer","search.placeholder":"Search routes…","search.hint":"Search admin console routes (F-2)","shell.p404.back":"Back to overview","shell.pending.badge":"route live · page pending","shell.user360.none":"No user data is fabricated here","nav.user360":"User360"}
 };
 const t=k=>(T[lang][k]??SHELL_T[lang][k]??F3T[lang][k]??T.fa[k]??F3T.fa[k]??k);
 
 /* ---------- shell refinement strings (header/account/theme/footer) ---------- */
 /* Env wording is intentionally hostname-free and route-free. */
-Object.assign(T.fa,{"env.label.live":"متصل به بک‌اند","env.label.local":"بدون لایهٔ داده","env.sub.ready":"زنده · پاسخ‌گوی واقعی","env.sub.local":"اجرای محلی بدون API","env.chip.live":"LIVE","env.chip.local":"LOCAL","theme.to.light":"تم روشن","theme.to.dark":"تم تاریک","menu.signout":"خروج از حساب","acct.identify":"حساب کاربری"});
-Object.assign(T.en,{"env.label.live":"Live backend","env.label.local":"No data layer","env.sub.ready":"connected to the real API","env.sub.local":"local execution, no API","env.chip.live":"LIVE","env.chip.local":"LOCAL","theme.to.light":"Light theme","theme.to.dark":"Dark theme","menu.signout":"Sign out","acct.identify":"Account"});
+Object.assign(T.fa,{"env.label.live":"متصل به بک‌اند","env.label.local":"بدون لایهٔ داده","env.sub.ready":"زنده · پاسخ‌گوی واقعی","env.sub.local":"اجرای محلی بدون API","env.chip.live":"LIVE","env.chip.local":"LOCAL","theme.to.light":"تم روشن","theme.to.dark":"تم تاریک","menu.exit":"خروج از پنل مدیریت","acct.identify":"حساب کاربری","acct.user":"کاربر"});
+Object.assign(T.en,{"env.label.live":"Live backend","env.label.local":"No data layer","env.sub.ready":"connected to the real API","env.sub.local":"local execution, no API","env.chip.live":"LIVE","env.chip.local":"LOCAL","theme.to.light":"Light theme","theme.to.dark":"Dark theme","menu.exit":"Exit Admin","acct.identify":"Account","acct.user":"User"});
 T.fa["shell.status.env"]="نسخهٔ بک‌اند";T.en["shell.status.env"]="Backend release";
 /* Release provenance: filled ONLY from the real token injected by the official
    deploy build (packaging provenance). Never invented client-side; empty →
@@ -2506,34 +2512,32 @@ function palRender(){const box=$("#palGroups");if(!box)return;const raw=faNorm((
   el.onmousemove=()=>{if(palIdx!==i){palIdx=i;palSync()}}});
  palSync()}
 
-/* ------------------- user menu (real identity + real logout) ------------------- */
-/* Identity comes ONLY from the authenticated /admin/me payload — no generic
-   photo, no fabricated profile data (shell refinement). */
-function userInitials(){const m=ME.user||{};
- const name=String(m.name||m.fullName||m.username||"").trim();
- if(name){const parts=name.split(/\s+/).filter(Boolean);
-  const s=((parts[0]||" ")[0]+(parts[1]?parts[1][0]:"")).toUpperCase();
-  if(/[A-Z]/.test(s))return s}
- const em=String(m.email||"");
- if(em&&em.indexOf("@")>0)return em.slice(0,2).toUpperCase();
- return "V"}
-function identityName(){const m=ME.user||{};return String(m.name||m.fullName||m.username||"").trim()}
-function identityEmail(){const m=ME.user||{};return String(m.email||"")}
+/* --------------- user menu (real identity + EXIT ADMIN semantics) ---------------
+   Identity = the SAME authenticated session user the normal Velora dashboard
+   uses (VeloraData.getUser(): fullName/email — identical source, identical
+   single-letter avatar rule). No photo, no fabricated data.
+   Authorization remains /admin/me + me.permissions[] exclusively. */
+function sessionUser(){try{return (window.VeloraData&&VeloraData.getUser())||{}}catch(e){return{}}}
+function identityName(){const m=ME.user||{};return String(sessionUser().fullName||m.name||m.fullName||"").trim()}
+function identityEmail(){const m=ME.user||{};return String(sessionUser().email||m.email||"").trim()}
+/* Dashboard parity: the real dashboard avatar is the FIRST character of
+   fullName with fallback "V" — mirrored exactly. */
+function dashboardAvatarLetter(){const n=String(identityName()||"");return n.trim().charAt(0)||"V"}
 function closeUserMenu(){const m=$("#umenu");if(m)m.remove();const ub=$("#userBtn");if(ub)ub.setAttribute("aria-expanded","false")}
 function toggleUserMenu(){
  const old=$("#umenu");if(old){closeUserMenu();return}
  const m=ME.user||{};
- const em=identityEmail(),nm=identityName(),ini=userInitials();
+ const em=identityEmail(),nm=identityName(),ini=dashboardAvatarLetter();
  const role=String(m.role||"");
  const el=document.createElement("div");el.id="umenu";el.className="umenu";el.setAttribute("role","menu");el.setAttribute("aria-label",t("acct.identify"));
  el.innerHTML=`<div class="uid" id="uidBlock">
    <span class="uav" aria-hidden="true">${esc(ini)}</span>
-   <span class="uinfo"><span class="uname">${esc(nm||("User #"+String(m.userId??"")))}</span>
+   <span class="uinfo"><span class="uname">${esc(nm||t("acct.user"))}</span>
    ${em&&em!==nm?`<span class="uemail">${esc(em)}</span>`:""}
    <span class="urole">${esc(role||"—")} · #${esc(String(m.userId??""))}</span></span></div>
   <button role="menuitem" onclick="setLang(lang==='fa'?'en':'fa');closeUserMenu()">${esc(t("shell.menu.lang"))}</button>
   <button role="menuitem" onclick="setTheme(theme==='dark'?'light':'dark');closeUserMenu()">${esc(t("shell.menu.theme"))}</button>
-  <div class="usec"><button role="menuitem" id="logoutBtn"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M6.2 2.5H3.5v11h2.7M10 5.2l2.8 2.8-2.8 2.8M12.8 8H6.5"/></svg>${esc(t("menu.signout"))}</button></div>
+  <div class="usec"><button role="menuitem" id="exitAdminBtn"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="2" width="5" height="5" rx="1.2"/><rect x="9" y="2" width="5" height="5" rx="1.2"/><rect x="2" y="9" width="5" height="5" rx="1.2"/><rect x="9" y="9" width="5" height="5" rx="1.2"/></svg>${esc(t("shell.menu.exit"))}</button></div>
   ${__REL?`<div class="umeta mono">${esc(__REL)}</div>`:""}`;
  document.body.appendChild(el);
  /* Physical anchor that works in both directions: the popover's inline-end
@@ -2544,8 +2548,11 @@ function toggleUserMenu(){
  if(document.documentElement.dir==="rtl"){el.style.left=Math.max(8,r.left)+"px";el.style.right="auto"}
  else{el.style.right=Math.max(8,(window.innerWidth-r.right))+"px";el.style.left="auto"}
  $("#userBtn").setAttribute("aria-expanded","true");
- $("#logoutBtn").onclick=async()=>{try{if(window.VeloraData&&VeloraData.logout)await VeloraData.logout()}catch(e){}
-  location.replace("/login")};
+ /* EXIT ADMIN ≠ LOGOUT: plain navigation to the canonical authenticated
+    dashboard for the current locale. The session stays fully valid and the
+    real logout endpoint is never called from the Admin shell — real logout
+    lives on the normal dashboard (its single official trigger). */
+ $("#exitAdminBtn").onclick=()=>{closeUserMenu();location.assign("/"+lang+"/dashboard/")};
  el.addEventListener("keydown",e=>{if(e.key==="Escape"){e.stopPropagation();closeUserMenu();const ub=$("#userBtn");if(ub)ub.focus()}});
  const fb=el.querySelector("button");if(fb)fb.focus();
 }
@@ -2557,7 +2564,7 @@ function syncUserBtn(){const ub=$("#userBtn");if(!ub)return;
      (v-latn-num span) and swap the button's hit target mid-click; initials
      avoid that too. Identity details live inside the account menu. */
   const em=identityEmail(),nm=identityName();
-  ub.innerHTML=`<span id="userInit" aria-hidden="true">${esc(userInitials())}</span>`;
+  ub.innerHTML=`<span id="userInit" aria-hidden="true">${esc(dashboardAvatarLetter())}</span>`;
   ub.title=nm?(nm+(em?" · "+em:"")):String(m.role||"");ub.disabled=false}
  else{ub.textContent="…";ub.disabled=true}}
 document.addEventListener("click",e=>{const m=$("#umenu");if(!m)return;const ub=$("#userBtn");
