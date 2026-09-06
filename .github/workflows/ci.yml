@@ -374,3 +374,9 @@ jobs:
 
       - name: Run mobile scrolling suite (reachability/drawer/modal)
         run: python admin/v2/tests/test_mobile_scrolling.py
+
+      - name: Runtime locale integrity — admin (EN+FA, full canonical route registry, blocking)
+        run: python -m tools.localization.runtime_locale_integrity --app admin
+
+      - name: "Runtime locale integrity — site (baseline ratchet, NEW leakage blocks)"
+        run: python -m tools.localization.runtime_locale_integrity --app site --baseline tools/localization/baseline-runtime-locale-site.json

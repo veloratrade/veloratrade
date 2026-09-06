@@ -1,0 +1,170 @@
+{
+  "version": "2026.09.07.1",
+  "doc": "Runtime locale integrity allowlist. Values legitimately NOT localized, matched against application-owned UI text/attributes only. match: 'exact' (default) compares the whole trimmed value; 'regex' searches; contains:true allows a token inside a longer value. Every entry needs a category and a reason. NO broad bypasses (no 'allow all English/Persian', no per-file/per-route blanket rules).",
+  "tokens": [
+    {
+      "value": "VELORA",
+      "category": "brand-name",
+      "reason": "Product wordmark (rendered latin in both locales, per real veloratrade.ir brand)."
+    },
+    {
+      "value": "Velora",
+      "category": "brand-name",
+      "reason": "Product name in copy."
+    },
+    {
+      "value": "TRADING OS",
+      "category": "brand-name",
+      "reason": "Product tagline (latin wordmark in both locales)."
+    },
+    {
+      "value": "MetaAPI",
+      "category": "provider-name",
+      "reason": "Third-party trading API provider brand."
+    },
+    {
+      "value": "Resend",
+      "category": "provider-name",
+      "reason": "Third-party email provider brand."
+    },
+    {
+      "value": "n8n",
+      "category": "provider-name",
+      "reason": "Third-party automation provider brand (lowercase product name)."
+    },
+    {
+      "value": "Cloudflare",
+      "category": "provider-name",
+      "reason": "Infrastructure provider brand."
+    },
+    {
+      "value": "S3",
+      "category": "api-name",
+      "reason": "Storage API identifier shown in provider state."
+    },
+    {
+      "value": "API",
+      "category": "api-name",
+      "reason": "Generic API term used as a status-row label."
+    },
+    {
+      "value": "Free",
+      "category": "product-tier-name",
+      "reason": "Subscription tier display name (backend enum 'free' shown as product tier; also used inside FA UI)."
+    },
+    {
+      "value": "Pro",
+      "category": "product-tier-name",
+      "reason": "Subscription tier display name (backend enum 'pro'; also used inside FA UI)."
+    },
+    {
+      "value": "FA/EN",
+      "category": "technical-identifier",
+      "reason": "Locale toggle button label — intentionally bilingual shorthand."
+    },
+    {
+      "value": "EN/FA",
+      "category": "technical-identifier",
+      "reason": "Locale toggle button label in the opposite state."
+    },
+    {
+      "value": "⌘K",
+      "category": "technical-identifier",
+      "reason": "Keyboard shortcut glyph (locale-neutral)."
+    },
+    {
+      "value": "K⌘",
+      "category": "technical-identifier",
+      "reason": "Keyboard shortcut glyph under RTL bidi reordering."
+    },
+    {
+      "value": "XAUUSD",
+      "category": "market-symbol",
+      "reason": "Trading symbol (backend data surfaced in UI)."
+    },
+    {
+      "value": "admin · #",
+      "category": "technical-identifier",
+      "contains": true,
+      "reason": "Role line 'admin · #<id>' — backend role enum plus numeric id."
+    },
+    {
+      "value": "403 · PERMISSION_DENIED",
+      "category": "technical-identifier",
+      "reason": "Backend error code surfaced verbatim for honest diagnostics."
+    },
+    {
+      "value": "NO_BILLING_SOURCE",
+      "category": "technical-identifier",
+      "reason": "Backend reason code surfaced verbatim (honest unavailable state)."
+    },
+    {
+      "value": "pro",
+      "category": "product-tier-name",
+      "match": "regex",
+      "reason": "Raw backend plan enums rendered as data chips (e.g. 'pro: 96 · free: 32')."
+    },
+    {
+      "value": "\\bfree\\b",
+      "category": "product-tier-name",
+      "match": "regex",
+      "reason": "Raw backend plan enums rendered as data chips."
+    },
+    {
+      "value": "Velora — Trading OS",
+      "category": "brand-name",
+      "reason": "Brand aria-label on the logo block (PR #124 real brand); latin brand in both locales."
+    },
+    {
+      "value": "n8n Relay",
+      "category": "provider-name",
+      "reason": "Feature is named after the n8n relay integration; product name kept latin in FA nav/labels by design."
+    },
+    {
+      "value": "DEBUG",
+      "category": "technical-identifier",
+      "reason": "Backend log-level enum in the system-logs filter."
+    },
+    {
+      "value": "INFO",
+      "category": "technical-identifier",
+      "reason": "Backend log-level enum in the system-logs filter."
+    },
+    {
+      "value": "WARN",
+      "category": "technical-identifier",
+      "reason": "Backend log-level enum in the system-logs filter."
+    },
+    {
+      "value": "ERROR",
+      "category": "technical-identifier",
+      "reason": "Backend log-level enum in the system-logs filter."
+    },
+    {
+      "value": "smtp",
+      "category": "technical-identifier",
+      "reason": "Backend email-provider enum in the integrations-email filter."
+    },
+    {
+      "value": "resend",
+      "category": "technical-identifier",
+      "reason": "Backend email-provider enum (provider id) in the integrations-email filter."
+    },
+    {
+      "value": "mail",
+      "category": "technical-identifier",
+      "reason": "Backend email-provider enum in the integrations-email filter."
+    },
+    {
+      "value": "log",
+      "category": "technical-identifier",
+      "reason": "Backend email-provider enum in the integrations-email filter."
+    },
+    {
+      "value": "^ai_[a-z_]+$",
+      "category": "technical-identifier",
+      "match": "regex",
+      "reason": "Backend feature-flag identifiers rendered verbatim in the system-flags filter."
+    }
+  ]
+}
