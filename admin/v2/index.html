@@ -398,7 +398,7 @@ kbd{font-family:var(--mono);font-size:9.5px;border:1px solid rgba(255,255,255,.1
 [data-theme="light"] .app.rail .navitem:hover::after{background:#fff;border-color:rgba(28,19,3,.16)}
 /* environment indicator */
 .envblock{display:flex;gap:8px;align-items:center;border:1px solid rgba(61,220,132,.3);background:rgba(61,220,132,.07);border-radius:12px;padding:7px 10px;color:var(--ok);font-weight:800;font-size:10.5px;letter-spacing:.1em;text-align:start}
-.envblock .sub{font-size:9px;font-weight:600;letter-spacing:0;color:var(--muted);margin-top:2px}
+.envblock .sub{font-size:9.5px;font-weight:600;letter-spacing:0;color:var(--muted);margin-top:2px}
 .envblock .edot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px rgba(61,220,132,.7);flex:none;animation:none}
 .envblock.production{border-color:rgba(255,107,107,.4);background:rgba(255,107,107,.09);color:#ff8d8d}
 [data-theme="light"] .envblock.production{color:#c93b3b}
@@ -461,8 +461,22 @@ th.sortable .arr{opacity:.6;font-size:9px}
 /* user menu */
 .umenu{position:fixed;z-index:80;background:#0c1019;border:1px solid rgba(255,255,255,.12);border-radius:12px;box-shadow:var(--shadow);min-width:200px;padding:5px}
 [data-theme="light"] .umenu{background:#fff;border-color:rgba(28,19,3,.12)}
-.umenu button{display:flex;gap:9px;width:100%;text-align:start;padding:8px 10px;border-radius:8px;font-size:12px}
+.umenu button{display:flex;gap:9px;width:100%;text-align:start;padding:8px 10px;border-radius:8px;font-size:12px;align-items:center}
 .umenu button:hover{background:rgba(233,196,92,.12)}
+.umenu button svg{flex:none;opacity:.85}
+/* account identity (real /admin/me data — shell refinement) */
+.umenu .uid{display:flex;gap:10px;align-items:center;padding:9px 10px;border-bottom:1px solid var(--border);margin-bottom:5px}
+.umenu .uid .uav{width:34px;height:34px;flex:none;border-radius:50%;display:grid;place-items:center;
+ background:linear-gradient(135deg,#f0cd6a,#c9942b);color:#1c1303;font-weight:800;font-size:12.5px;letter-spacing:.5px;
+ border:1px solid rgba(233,196,92,.45)}
+.umenu .uid .uinfo{display:flex;flex-direction:column;min-width:0}
+.umenu .uid .uname{font-size:12px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px}
+.umenu .uid .uemail{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px;direction:ltr}
+.umenu .uid .urole{font-size:10px;color:var(--muted);margin-top:2px}
+.umenu .usec{border-top:1px solid var(--border);margin-top:5px;padding-top:5px}
+.umenu .usec button{color:#ff9d9d}
+.umenu .umeta{padding:6px 10px 4px;font-size:9px;color:var(--muted);border-top:1px solid var(--border);margin-top:5px;direction:ltr;text-align:start;letter-spacing:.4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-theme="light"] .umenu .usec button{color:#a33333}
 /* dev mode */
 .devonly{display:none!important}
 body.dev .devonly{display:block!important}
@@ -644,18 +658,24 @@ body.drawer-open{overflow:hidden}
 </head>
 <body>
 <a class="skip" href="#view" data-i18n="a11y.skip">پرش به محتوا</a>
+<!-- official VELORA logo gradients (verbatim from the main site's inline defs) -->
+<svg aria-hidden="true" focusable="false" width="0" height="0" style="position:absolute"><defs>
+<linearGradient id="vl-gA" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#f9e6a8"/><stop offset=".55" stop-color="#e8c45a"/><stop offset="1" stop-color="#b8862a"/></linearGradient>
+<linearGradient id="vl-gD" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#9a741f"/><stop offset="1" stop-color="#5f4510"/></linearGradient>
+<linearGradient id="vl-gC" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#fdf3cd"/><stop offset="1" stop-color="#d9a936"/></linearGradient>
+</defs></svg>
 <div class="app">
   <div id="sbBackdrop" aria-hidden="true"></div>
   <aside class="sidebar" id="sidebar" aria-label="Main navigation">
     <div class="brand">
-      <div class="logo">V</div>
+      <div class="logo"><svg viewBox="0 0 64 64" role="img" aria-label="Velora"><path d="M8 10L21 10L32 52L43 10L56 10L32 58Z" fill="none" stroke="#e8c45a" stroke-width=".7"/><path d="M8 10L21 10L32 52L43 10L56 10L32 58Z" fill="url(#vl-gD)"/><path d="M21 10L32 52L32 58L8 10Z" fill="url(#vl-gD)" opacity=".55"/><path d="M43 10L32 52L32 58L56 10Z" fill="url(#vl-gA)"/><path d="M32 14V24M32 37V52" stroke="url(#vl-gC)" stroke-width="2.6"/><rect fill="url(#vl-gC)" height="13" width="7" x="28.5" y="24"/><path d="M32 6.5L33.3 9.7L36.5 11L33.3 12.3L32 15.5L30.7 12.3L27.5 11L30.7 9.7Z" fill="#f7e3a1"/></svg></div>
       <div><div class="name">VELORA</div><div class="sub" data-i18n="brand.sub">کنسول مدیریت</div></div>
     </div>
     <button class="tbtn railbtn" id="railBtn" aria-label="حالت فشردهٔ سایدبار" title="حالت فشرده">«</button>
     <nav id="nav"></nav>
     <div class="foot">
       <div class="envblock" role="status"><span class="edot"></span><div><div id="envHost">…</div><div class="sub" id="envSub">محیط</div></div></div>
-      <div class="devonly num" style="margin-top:8px;font-size:10px">admin/v2 · shell F-1</div>
+      <div class="devonly num" style="margin-top:8px;font-size:10px">build <span id="sbBuildId"></span></div>
       <label style="display:flex;gap:7px;align-items:center;margin-top:9px;font-size:10.5px;color:var(--muted);cursor:pointer"><input type="checkbox" class="rowchk" id="devTgl" onclick="toggleDev()"> حالت توسعه‌دهنده</label>
     </div>
   </aside>
@@ -666,8 +686,8 @@ body.drawer-open{overflow:hidden}
       <button class="tbtn palbtn" id="palBtn" onclick="openPalette()" aria-haspopup="dialog"><svg class="si" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="7" cy="7" r="4.4"/><path d="M10.4 10.4L14 14"/></svg> <span id="palLabel">جست‌وجو…</span> <kbd>⌘K</kbd></button>
       <div class="tb-spacer"></div>
       <span class="envchip" id="envChip" title="Environment"><span class="dotc" aria-hidden="true"></span><span id="envChipTxt">…</span></span><button class="tbtn" id="langBtn" aria-label="Language">FA/EN</button>
-      <button class="tbtn" id="themeBtn" aria-label="Theme"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="6.2"/><path d="M8 1.8v12.4A6.2 6.2 0 0 0 8 1.8z" fill="currentColor" stroke="none"/></svg></button><span class="chip" id="v2mode" style="color:var(--muted)">DEMO</span>
-      <button class="avatar" id="userBtn" aria-haspopup="menu" aria-expanded="false" aria-label="منوی کاربر">…</button>
+      <button class="tbtn" id="themeBtn" aria-label="Theme" title="Theme"><svg id="themeIco" viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" aria-hidden="true"><g id="vl-moon"><path d="M10.8 2.1a6.1 6.1 0 1 0 3.1 8A5.1 5.1 0 0 1 10.8 2.1z" fill="currentColor" stroke="none"/></g><g id="vl-sun" style="display:none" stroke-width="1.4" stroke-linecap="round"><circle cx="8" cy="8" r="3.4" fill="currentColor" stroke="none"/><path d="M8 1.3v1.7M8 13v1.7M1.3 8H3M13 8h1.7M3.3 3.3l1.2 1.2M11.5 11.5l1.2 1.2M12.7 3.3l-1.2 1.2M4.5 11.5l-1.2 1.2"/></g></svg></button><span class="chip" id="v2mode" style="color:var(--muted)">DEMO</span>
+      <button class="avatar" id="userBtn" aria-haspopup="menu" aria-expanded="false" aria-label="منوی کاربر"><span id="userInit" aria-hidden="true">…</span></button>
     </header>
     <main class="view" id="view" tabindex="-1"></main>
   </div>
@@ -676,7 +696,7 @@ body.drawer-open{overflow:hidden}
 <div id="modal-root"></div>
 <div id="palette-root"></div>
 <div id="toasts"></div>
-<div class="watermark"><span id="wmtext">VELORA ADMIN · v2 SHELL</span></div>
+<div class="watermark"><span id="wmtext">VELORA ADMIN</span><span class="devonly" id="wmBuild" style="margin-inline-start:8px"></span></div>
 
 <script>
 "use strict";
@@ -804,6 +824,17 @@ const SHELL_T={
 };
 const t=k=>(T[lang][k]??SHELL_T[lang][k]??F3T[lang][k]??T.fa[k]??F3T.fa[k]??k);
 
+/* ---------- shell refinement strings (header/account/theme/footer) ---------- */
+/* Env wording is intentionally hostname-free and route-free. */
+Object.assign(T.fa,{"env.label.live":"متصل به بک‌اند","env.label.local":"بدون لایهٔ داده","env.sub.ready":"زنده · پاسخ‌گوی واقعی","env.sub.local":"اجرای محلی بدون API","env.chip.live":"LIVE","env.chip.local":"LOCAL","theme.to.light":"تم روشن","theme.to.dark":"تم تاریک","menu.signout":"خروج از حساب","acct.identify":"حساب کاربری"});
+Object.assign(T.en,{"env.label.live":"Live backend","env.label.local":"No data layer","env.sub.ready":"connected to the real API","env.sub.local":"local execution, no API","env.chip.live":"LIVE","env.chip.local":"LOCAL","theme.to.light":"Light theme","theme.to.dark":"Dark theme","menu.signout":"Sign out","acct.identify":"Account"});
+T.fa["shell.status.env"]="نسخهٔ بک‌اند";T.en["shell.status.env"]="Backend release";
+/* Release provenance: filled ONLY from the real token injected by the official
+   deploy build (packaging provenance). Never invented client-side; empty →
+   nothing is displayed. */
+const __REL=String(window.__VELORA_RELEASE__||document.documentElement.getAttribute("data-release")||"");
+(function(){if(!__REL)return;const a=$("#sbBuildId"),b=$("#wmBuild");if(a)a.textContent=__REL;if(b)b.textContent=__REL})();
+
 /* ---------- helpers (VERBATIM) ---------- */
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const badge=(k,txt)=>({ok:'b-ok',err:'b-err',warn:'b-warn',info:'b-info',neutral:'b-neutral',accent:'b-accent'}[k]||'b-neutral');
@@ -924,9 +955,16 @@ const can=p=>ME.perms.has(p);
 function setConn(k){ME.conn=k;const b=$("#v2mode");if(!b)return;
  b.textContent=k==="ready"?t("shell.conn.ready"):k==="offline"?t("shell.conn.offline"):t("shell.conn.demo");
  b.style.color=k==="ready"?"var(--ok)":"var(--muted)";
- b.style.borderColor=k==="ready"?"var(--ok)":"var(--border)";}
-function setEnv(){const h=location.hostname||"local";const eh=$("#envHost");const es=$("#envSub");const ec=$("#envChipTxt");
- if(eh)eh.textContent=h; if(es)es.textContent=(lang==="fa"?"محیط واقعی (hostname)":"real environment (hostname)"); if(ec)ec.textContent=h;}
+ b.style.borderColor=k==="ready"?"var(--ok)":"var(--border)";
+ setEnv()}
+/* Environment indicator: real, actionable admin semantics — the live backend
+   connection state. Hostnames, URLs and internal routes are intentionally
+   never displayed as UI content (shell refinement). */
+function setEnv(){const eh=$("#envHost"),es=$("#envSub"),ec=$("#envChipTxt");
+ const live=ME.conn==="ready";
+ if(eh)eh.textContent=live?t("env.label.live"):t("env.label.local");
+ if(es)es.textContent=live?t("env.sub.ready"):t("env.sub.local");
+ if(ec)ec.textContent=live?t("env.chip.live"):t("env.chip.local")}
 
 /* ---- permission gate ---- */
 function deniedPanel(perm){return pagehead(t("shell.denied.title"),t("shell.denied.desc")+" <b class='mono'>"+esc(perm)+"</b>",
@@ -951,7 +989,7 @@ function shellStatusPage(){
  +`<div class="grid g2"><div class="card"><div class="ch"><h3>${esc(t("shell.status.title"))}</h3></div><div class="cb">
    <div class="kv"><span class="k">${esc(t("shell.status.ident"))}</span><span class="v mono">#${esc(String(m.userId??""))} · ${esc(String(m.role||""))}</span></div>
    <div class="kv"><span class="k">${esc(t("shell.status.perms"))}</span><span class="v num">${ME.perms.size}</span></div>
-   <div class="kv"><span class="k">${esc(t("shell.status.env"))}</span><span class="v mono">${esc(location.hostname||"local")}</span></div>
+   <div class="kv"><span class="k">${esc(t("shell.status.env"))}</span><span class="v mono">${esc(ME.conn==="ready"?(window.__VELORA_RELEASE__||t("env.label.live")):t("env.label.local"))}</span></div>
   </div></div>
   <div class="card"><div class="ch"><h3>${esc(t("shell.status.recent"))}</h3></div><div class="cb">${rows}</div></div></div>`;
 }
@@ -2370,10 +2408,16 @@ function setLang(l){lang=l;document.documentElement.lang=l;document.documentElem
  try{localStorage.setItem("velora_locale",l)}catch(e){}
  const lb=$("#langBtn");if(lb)lb.textContent=l==="fa"?"FA/EN":"EN/FA";
  const pl=$("#palLabel");if(pl)pl.textContent=t("search.placeholder");
- setEnv();render()}
+ syncThemeBtn();setEnv();render()}
+function syncThemeBtn(){const s=$("#vl-sun"),mn=$("#vl-moon"),b=$("#themeBtn");if(!s||!mn||!b)return;
+ const dark=theme==="dark";
+ s.style.display=dark?"none":"block";mn.style.display=dark?"block":"none";
+ const lbl=dark?t("theme.to.light"):t("theme.to.dark");
+ b.setAttribute("aria-label",lbl);b.title=lbl}
 function setTheme(th){theme=th;document.documentElement.dataset.theme=th;
- try{localStorage.setItem("velora_theme",th)}catch(e){}}
-$("#langBtn").onclick=()=>setLang(lang==="fa"?"en":"fa");
+ try{localStorage.setItem("velora_theme",th)}catch(e){}
+ syncThemeBtn()}
+$("#langBtn").onclick=()=>{closeUserMenu();setLang(lang==="fa"?"en":"fa")};
 $("#themeBtn").onclick=()=>setTheme(theme==="dark"?"light":"dark");
 
 /* ------------------------------ mobile drawer (VERBATIM behavior) ------------------------------ */
@@ -2443,31 +2487,59 @@ function palRender(){const box=$("#palGroups");if(!box)return;const raw=faNorm((
   el.onmousemove=()=>{if(palIdx!==i){palIdx=i;palSync()}}});
  palSync()}
 
-/* ------------------------------ user menu (real identity + real logout) ------------------------------ */
+/* ------------------- user menu (real identity + real logout) ------------------- */
+/* Identity comes ONLY from the authenticated /admin/me payload — no generic
+   photo, no fabricated profile data (shell refinement). */
+function userInitials(){const m=ME.user||{};
+ const name=String(m.name||m.fullName||m.username||"").trim();
+ if(name){const parts=name.split(/\s+/).filter(Boolean);
+  const s=((parts[0]||" ")[0]+(parts[1]?parts[1][0]:"")).toUpperCase();
+  if(/[A-Z]/.test(s))return s}
+ const em=String(m.email||"");
+ if(em&&em.indexOf("@")>0)return em.slice(0,2).toUpperCase();
+ return "V"}
+function identityName(){const m=ME.user||{};return String(m.name||m.fullName||m.username||"").trim()}
+function identityEmail(){const m=ME.user||{};return String(m.email||"")}
 function closeUserMenu(){const m=$("#umenu");if(m)m.remove();const ub=$("#userBtn");if(ub)ub.setAttribute("aria-expanded","false")}
 function toggleUserMenu(){
  const old=$("#umenu");if(old){closeUserMenu();return}
  const m=ME.user||{};
- const el=document.createElement("div");el.id="umenu";el.className="umenu";el.role="menu";el.setAttribute("aria-label",t("shell.status.ident"));
- el.innerHTML=`<div style="padding:8px 10px;font-size:11px" class="cellsub mono">#${esc(String(m.userId??""))} · ${esc(String(m.role||""))}</div>
+ const em=identityEmail(),nm=identityName(),ini=userInitials();
+ const role=String(m.role||"");
+ const el=document.createElement("div");el.id="umenu";el.className="umenu";el.setAttribute("role","menu");el.setAttribute("aria-label",t("acct.identify"));
+ el.innerHTML=`<div class="uid" id="uidBlock">
+   <span class="uav" aria-hidden="true">${esc(ini)}</span>
+   <span class="uinfo"><span class="uname">${esc(nm||("User #"+String(m.userId??"")))}</span>
+   ${em&&em!==nm?`<span class="uemail">${esc(em)}</span>`:""}
+   <span class="urole">${esc(role||"—")} · #${esc(String(m.userId??""))}</span></span></div>
   <button role="menuitem" onclick="setLang(lang==='fa'?'en':'fa');closeUserMenu()">${esc(t("shell.menu.lang"))}</button>
   <button role="menuitem" onclick="setTheme(theme==='dark'?'light':'dark');closeUserMenu()">${esc(t("shell.menu.theme"))}</button>
-  <button role="menuitem" id="logoutBtn">${esc(t("shell.menu.logout"))}</button>`;
+  <div class="usec"><button role="menuitem" id="logoutBtn"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M6.2 2.5H3.5v11h2.7M10 5.2l2.8 2.8-2.8 2.8M12.8 8H6.5"/></svg>${esc(t("menu.signout"))}</button></div>
+  ${__REL?`<div class="umeta mono">${esc(__REL)}</div>`:""}`;
  document.body.appendChild(el);
+ /* Physical anchor that works in both directions: the popover's inline-end
+    edge aligns with the button's inline-end edge (RTL flips the topbar, so
+    inset-inline-end + getBoundingClientRect().right mis-anchors in FA). */
  const r=$("#userBtn").getBoundingClientRect();
  el.style.top=(r.bottom+8)+"px";
- el.style.insetInlineEnd=Math.max(8,(window.innerWidth-r.right))+"px";
+ if(document.documentElement.dir==="rtl"){el.style.left=Math.max(8,r.left)+"px";el.style.right="auto"}
+ else{el.style.right=Math.max(8,(window.innerWidth-r.right))+"px";el.style.left="auto"}
  $("#userBtn").setAttribute("aria-expanded","true");
  $("#logoutBtn").onclick=async()=>{try{if(window.VeloraData&&VeloraData.logout)await VeloraData.logout()}catch(e){}
   location.replace("/login")};
+ el.addEventListener("keydown",e=>{if(e.key==="Escape"){e.stopPropagation();closeUserMenu();const ub=$("#userBtn");if(ub)ub.focus()}});
+ const fb=el.querySelector("button");if(fb)fb.focus();
 }
 function syncUserBtn(){const ub=$("#userBtn");if(!ub)return;
  if(ME.ok){const m=ME.user||{};
-  /* Icon-only avatar: numeric text here would be wrapped by the site-wide
-     Latin-digit layer (v-latn-num span) and swap the button's hit target
-     mid-click. Identity (#id · role) lives inside the user menu. */
-  ub.innerHTML='<svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="5.4" r="2.6"/><path d="M2.8 13.6c1-2.6 3-3.9 5.2-3.9s4.2 1.3 5.2 3.9"/></svg>';
-  ub.title=String(m.role||"");ub.disabled=false}
+  /* Real identity: initials derived from the authenticated /admin/me payload
+     (name/username/email — never a generic photo, never fabricated data).
+     Numeric text here would be wrapped by the site-wide Latin-digit layer
+     (v-latn-num span) and swap the button's hit target mid-click; initials
+     avoid that too. Identity details live inside the account menu. */
+  const em=identityEmail(),nm=identityName();
+  ub.innerHTML=`<span id="userInit" aria-hidden="true">${esc(userInitials())}</span>`;
+  ub.title=nm?(nm+(em?" · "+em:"")):String(m.role||"");ub.disabled=false}
  else{ub.textContent="…";ub.disabled=true}}
 document.addEventListener("click",e=>{const m=$("#umenu");if(!m)return;const ub=$("#userBtn");
  if(!m.contains(e.target)&&!(ub&&ub.contains(e.target)))closeUserMenu()});
@@ -2479,7 +2551,7 @@ async function boot(){
  setTheme(document.documentElement.dataset.theme==="light"?"light":"dark");
  try{const sl=localStorage.getItem("velora_locale");if(sl==="en"||sl==="fa")lang=sl}catch(e){}
  const lb=$("#langBtn");if(lb)lb.textContent=lang==="fa"?"FA/EN":"EN/FA";
- setEnv();render();
+ syncThemeBtn();setEnv();render();
  if(!window.VeloraData||!window.VeloraData.request||location.protocol==="file:"){
   setConn("demo");bootState(t("shell.nolayer.title"),t("shell.nolayer.desc"));return}
  try{

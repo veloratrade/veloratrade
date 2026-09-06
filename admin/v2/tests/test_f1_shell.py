@@ -134,7 +134,7 @@ fails=[]
 def chk(k,cond):
     if not cond: fails.append(k)
 chk("js",len(OUT["js"])==0)
-chk("A_conn",OUT["A_conn"]=="متصل"); chk("A_env",OUT["A_envchip"]=="127.0.0.1")
+chk("A_conn",OUT["A_conn"]=="متصل"); chk("A_env",OUT["A_envchip"] in ("LIVE","LOCAL"))  # shell refinement: env chip = real backend-connection state (never a hostname)
 chk("A_nav",OUT["A_navitems_admin"]==32)  # user360 not in NAV by frozen design (33 routes, 32 nav entries)
 chk("A_overview_real",OUT["A_overview_real"])
 chk("A_users_pending",OUT["A_users_pending"])
