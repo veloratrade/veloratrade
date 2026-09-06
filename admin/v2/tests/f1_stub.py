@@ -8,6 +8,7 @@ PERMS_SUPER=["overview.view","users.view","users.suspend","users.activate","user
 PERMS_ADMIN=[p for p in PERMS_SUPER if p not in ("users.change_role","audit.view_sensitive","system.settings.manage","feature_flags.edit","integrations.manage","aiRouteManage")]
 PERMS_LIMITED=["overview.view","users.view"]
 PERMS_ADMIN_MINUS=[p for p in PERMS_ADMIN if p!="billing.view"]
+PERMS_CREATOR=PERMS_ADMIN+["users.create"]
 class H(SimpleHTTPRequestHandler):
     def __init__(self,*a,**kw): super().__init__(*a,directory=REPO,**kw)
     def log_message(self,*a): pass
@@ -221,6 +222,7 @@ class H(SimpleHTTPRequestHandler):
             if m["mode"]=="admin": me={"userId":4,"role":"admin","isSuperAdmin":False,"panel":True,"name":"Sahar Rahimi","email":"s.rahimi@veloratrade.ir","permissions":PERMS_ADMIN}
             elif m["mode"]=="super": me={"userId":5,"role":"super_admin","isSuperAdmin":True,"panel":True,"name":"Arman Kaveh","email":"a.kaveh@veloratrade.ir","permissions":PERMS_SUPER,"recentAdminActions":[]}
             elif m["mode"]=="adminminus": me={"userId":6,"role":"admin","isSuperAdmin":False,"panel":True,"permissions":PERMS_ADMIN_MINUS,"recentAdminActions":[]}
+            elif m["mode"]=="creator": me={"userId":8,"role":"admin","isSuperAdmin":False,"panel":True,"name":"Sahar Rahimi","email":"s.rahimi@veloratrade.ir","permissions":PERMS_CREATOR,"recentAdminActions":[]}
             elif m["mode"]=="limited": me={"userId":7,"role":"admin","isSuperAdmin":False,"panel":True,"name":"Neda Karimi","email":"n.karimi@veloratrade.ir","permissions":PERMS_LIMITED,"recentAdminActions":[]}
             elif m["mode"]=="user403": self._j(403,{"status":"error","error":{"code":"ADMIN_REQUIRED"}}); return
             elif m["mode"]=="panel_false": me={"userId":9,"role":"user","isSuperAdmin":False,"panel":False,"permissions":[]}
@@ -233,6 +235,28 @@ class H(SimpleHTTPRequestHandler):
         from urllib.parse import urlparse
         up=urlparse(self.path)
         m0=loadmode()
+        if up.path=="/api/v1/admin/users":
+            # Create User (Phase 1) — mirrors the real UserManagementController::store shape.
+            m=loadmode()
+            length=int(self.headers.get("Content-Length") or 0)
+            body={}
+            if length:
+                try: body=json.loads(self.rfile.read(length) or b"{}")
+                except: body={}
+            m["create_body"]=body; m["create_calls"]=m.get("create_calls",0)+1
+            json.dump(m,open(os.path.join(ROOT,"mode.json"),"w"))
+            res=m.get("create_result","ok")
+            if res=="dup":
+                self._j(409,{"status":"error","error":{"code":"EMAIL_ALREADY_REGISTERED","message":"This email is already registered.","messageKey":"errors.admin.emailAlreadyRegistered","params":{},"details":None}}); return
+            if res=="invalid":
+                self._j(422,{"status":"error","error":{"code":"VALIDATION_FAILED","message":"Validation failed.","messageKey":"errors.validation","params":{},"details":{"fields":{"email":{"code":"INVALID_EMAIL","messageKey":"errors.validation.email","params":[]}}}}}); return
+            nu={"id":99,"email":body.get("email") or "new@velora.test","fullName":body.get("fullName") or "New User",
+                "role":body.get("role") or "user","status":"active","emailVerified":False,"emailVerifiedAt":None,
+                "createdAt":"2026-09-07 10:00:00","plan":body.get("plan") or "free",
+                "subscriptionStatus":"active" if (body.get("plan")=="pro") else "none"}
+            self.server.db_users.append(dict(nu))
+            self._j(201,{"status":"success","data":{"ok":True,"user":nu,"verificationRequired":True,
+                        "emailSent": res!="notsent"},"error":None,"timestamp":"2026-09-07T10:00:00+00:00"}); return
         mm=_re.match(r"^/api/v1/admin/users/(\d+)/(status|role|subscription|revoke-sessions|verify-email)$",up.path)
         if mm:
             uid=int(mm.group(1)); act=mm.group(2)

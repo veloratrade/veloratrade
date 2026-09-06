@@ -65,6 +65,36 @@ final class UserRepository
     }
 
     /**
+     * Admin-managed account creation (Create User): inserts with an explicit
+     * role/plan while the shared defaults stay canonical. The caller (admin
+     * service layer) has already enforced authorization, the password policy
+     * and duplicate handling; this method only persists.
+     */
+    public function createByAdmin(array $data): int
+    {
+        $stmt = Database::connection()->prepare(
+            'INSERT INTO users (email, password_hash, full_name, role, plan, subscription_status,
+                                timezone, locale, locale_source, plan_started_at, plan_updated_at)
+             VALUES (:email, :password_hash, :full_name, :role, :plan, :subscription_status,
+                     :timezone, :locale, :source, :plan_started_at, :plan_updated_at)'
+        );
+        $stmt->execute([
+            'email' => $data['email'],
+            'password_hash' => $data['password_hash'],
+            'full_name' => $data['full_name'],
+            'role' => $data['role'] ?? 'user',
+            'plan' => $data['plan'] ?? 'free',
+            'subscription_status' => $data['subscription_status'] ?? 'none',
+            'timezone' => $data['timezone'] ?? 'UTC',
+            'locale' => $data['locale'] ?? 'fa',
+            'source' => 'default',
+            'plan_started_at' => ($data['plan'] ?? 'free') === 'pro' ? gmdate('Y-m-d H:i:s') : null,
+            'plan_updated_at' => ($data['plan'] ?? 'free') === 'pro' ? gmdate('Y-m-d H:i:s') : null,
+        ]);
+        return (int) Database::connection()->lastInsertId();
+    }
+
+    /**
      * Persist an explicit language preference (PR-03). $source records how the
      * preference was established (default|browser|cookie|user). Returns false
      * when no row was updated (unknown user id).

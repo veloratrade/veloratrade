@@ -1069,6 +1069,7 @@ const F3T={
   "usr.md.confirm":"انجام","usr.done.verify":"ایمیل کاربر تأیید شد","usr.done.verify.already":"ایمیل این کاربر قبلاً تأیید شده بود",
   "usr.done.suspend":"کاربر مسدود شد","usr.done.activate":"کاربر فعال شد","usr.done.role":"نقش کاربر تغییر کرد","usr.done.plan":"اشتراک کاربر به‌روزرسانی شد","usr.done.revoke":"نشست‌های کاربر لغو شد",
   "usr.self.err":"این اقدام روی حساب خودتان مجاز نیست",
+  "usr.act.create":"ایجاد کاربر","usr.md.create.title":"ایجاد کاربر","usr.md.create.email":"ایمیل","usr.md.create.name":"نام و نام خانوادگی","usr.md.create.password":"گذرواژه","usr.md.create.password.hint":"حداقل ۸ نویسه","usr.md.create.submit":"ایجاد","usr.done.create.sent":"کاربر ایجاد شد و ایمیل تأیید ارسال شد","usr.done.create.notsent":"کاربر ایجاد شد اما ارسال ایمیل تأیید ممکن نشد",
   "aip.title.desc":"وضعیت واقعی ارائه‌دهندگان از بک‌اند","aip.provider":"ارائه‌دهنده","aip.available":"در دسترس","aip.unavailable":"در دسترس نیست",
   "aip.cred":"اعتبارنامه","aip.configured":"پیکربندی‌شده","aip.notconfigured":"پیکربندی نشده","aip.envkey":"نام متغیر محیطی","aip.caps":"قابلیت‌ها",
   "aip.relay":"مسیر رله (Gemini)","aip.relay.url":"URL رله","aip.relay.token":"توکن رله","aip.effroute":"مسیر مؤثر","aip.quota":"سهمیه",
@@ -1108,6 +1109,7 @@ const F3T={
   "usr.md.confirm":"Apply","usr.done.verify":"User email verified","usr.done.verify.already":"This user's email was already verified",
   "usr.done.suspend":"User suspended","usr.done.activate":"User activated","usr.done.role":"User role changed","usr.done.plan":"User subscription updated","usr.done.revoke":"User sessions revoked",
   "usr.self.err":"This action is not allowed on your own account",
+  "usr.act.create":"Create User","usr.md.create.title":"Create user","usr.md.create.email":"Email","usr.md.create.name":"Full name","usr.md.create.password":"Password","usr.md.create.password.hint":"At least 8 characters","usr.md.create.submit":"Create","usr.done.create.sent":"User created and verification email sent","usr.done.create.notsent":"User created but the verification email could not be sent",
   "aip.title.desc":"Real provider state from the backend","aip.provider":"Provider","aip.available":"Available","aip.unavailable":"Unavailable",
   "aip.cred":"Credential","aip.configured":"Configured","aip.notconfigured":"Not configured","aip.envkey":"Env key name","aip.caps":"Capabilities",
   "aip.relay":"Relay route (Gemini)","aip.relay.url":"Relay URL","aip.relay.token":"Relay token","aip.effroute":"Effective route","aip.quota":"Quota",
@@ -1270,6 +1272,7 @@ function usersPage(){
    <option value=""${US.verified===""?" selected":""}>${esc(t("usr.verified.any"))}</option>
    <option value="1"${US.verified==="1"?" selected":""}>${esc(t("usr.verified.yes"))}</option>
    <option value="0"${US.verified==="0"?" selected":""}>${esc(t("usr.verified.no"))}</option></select>
+  ${can("users.create")?`<button class="btn sm primary" onclick="usrCreateOpen()" aria-haspopup="dialog">${esc(t("usr.act.create"))}</button>`:""}
  </div></div>`;
  if(US.st==="loading"&&!US.data)return h+`<div class="card"><div class="cb">${f3skel(8)}</div></div>`;
  if(US.st==="error")return h+`<div class="card"><div class="cb">${f3errBox(US.err)}</div></div>`;
@@ -1347,6 +1350,45 @@ function usrPlan(id){
   <select id="f3subSel" class="inp" style="width:100%;margin-top:6px">${subs}</select><div id="f3acterr"></div></div>
   <div class="mf"><button class="btn" onclick="f3CloseModal()">${esc(t("act.cancel"))}</button>
   <button class="btn primary" onclick="usrDo('plan',${id})">${esc(t("usr.md.confirm"))}</button></div>`);
+}
+function usrCreateOpen(){
+ const roleOpt=r=>`<option value="${r}">${esc(f3RoleLbl(r))}</option>`;
+ f3OpenModal(`<div class="mh">${esc(t("usr.md.create.title"))}<button class="tbtn" onclick="f3CloseModal()" aria-label="${esc(t("act.close"))}">${VI.x||"×"}</button></div>
+  <div class="mb">
+   <label class="cellsub" for="f3cuEmail">${esc(t("usr.md.create.email"))}</label>
+   <input id="f3cuEmail" class="inp" type="email" autocomplete="off" style="width:100%;margin:6px 0 10px">
+   <label class="cellsub" for="f3cuName">${esc(t("usr.md.create.name"))}</label>
+   <input id="f3cuName" class="inp" type="text" autocomplete="off" style="width:100%;margin:6px 0 10px">
+   <label class="cellsub" for="f3cuPass">${esc(t("usr.md.create.password"))}</label>
+   <input id="f3cuPass" class="inp" type="password" autocomplete="new-password" style="width:100%;margin:6px 0 4px">
+   <div class="cellsub" style="margin-bottom:10px">${esc(t("usr.md.create.password.hint"))}</div>
+   <label class="cellsub" for="f3cuRole">${esc(t("usr.md.role.lbl"))}</label>
+   <select id="f3cuRole" class="inp" style="width:100%;margin:6px 0 10px">${roleOpt("user")}${roleOpt("admin")}${roleOpt("super_admin")}</select>
+   <label class="cellsub" for="f3cuPlan">${esc(t("usr.md.plan.lbl"))}</label>
+   <select id="f3cuPlan" class="inp" style="width:100%;margin-top:6px"><option value="free">Free</option><option value="pro">Pro</option></select>
+   <div id="f3acterr"></div></div>
+  <div class="mf"><button class="btn" onclick="f3CloseModal()">${esc(t("act.cancel"))}</button>
+  <button class="btn primary" id="f3actgo" onclick="usrCreate()">${esc(t("usr.md.create.submit"))}</button></div>`);
+}
+let f3CreateBusy=false;
+async function usrCreate(){
+ if(f3CreateBusy)return;f3CreateBusy=true;
+ const g=$("#f3actgo");if(g)g.disabled=true;
+ try{
+  const r=await VeloraData.request("/api/v1/admin/users",{method:"POST",body:{
+   email:($("#f3cuEmail")||{}).value||"",
+   password:($("#f3cuPass")||{}).value||"",
+   fullName:($("#f3cuName")||{}).value||"",
+   role:($("#f3cuRole")||{}).value||"user",
+   plan:($("#f3cuPlan")||{}).value||"free"}});
+  toast(r&&r.emailSent===false?t("usr.done.create.notsent"):t("usr.done.create.sent"));
+  f3CloseModal();US.st="refreshing";render();f3LoadUsers();   /* server-truthful refresh; no optimistic mutation */
+ }catch(e){
+  const code=e&&e.code||"";
+  toast((code?esc(code)+" · ":"")+(e&&e.message?t("f3.errprefix"):""),"err");
+  f3ActErr((code?code+" — ":"")+(e&&e.message?String(e.message):t("f3.load.err")));
+ }
+ f3CreateBusy=false;
 }
 function f3ActErr(msg){const d=$("#f3acterr");if(d)d.innerHTML=`<div class="alert warn" style="margin-top:8px"><span class="amark" aria-hidden="true">!</span><div>${esc(msg)}</div></div>`;
  const g=$("#f3actgo");if(g){g.disabled=false}}
