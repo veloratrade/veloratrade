@@ -13,6 +13,7 @@ NAMES = [
     "security",
     "first-trade",
     "achievement",
+    "admin-invite",
 ]
 
 notification = (ROOT / "api/src/Core/NotificationService.php").read_text(encoding="utf-8")
@@ -43,11 +44,11 @@ for emoji in ("✉️", "✔", "📊", "🏆"):
     if emoji in notification:
         raise SystemExit(f"legacy emoji remains in NotificationService: {emoji}")
 
-if notification.count("return self::sendWithIcon(") != 7:
-    raise SystemExit("all seven transactional methods must use sendWithIcon")
+if notification.count("return self::sendWithIcon(") != 8:
+    raise SystemExit("all eight transactional methods must use sendWithIcon")
 if 'src="cid:{$iconCidSafe}"' not in template:
     raise SystemExit("EmailTemplate CID image contract missing")
 if "'content_id' => mb_substr((string) $cid" not in mailer:
     raise SystemExit("Resend attachment content_id contract missing")
 
-print("Transactional CID icons: PASS (7/7 PNG assets, mappings, no legacy emoji)")
+print("Transactional CID icons: PASS (8/8 PNG assets, mappings, no legacy emoji)")

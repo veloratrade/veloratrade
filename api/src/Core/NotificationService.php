@@ -227,13 +227,11 @@ final class NotificationService
             $t('email.invite.notice'),
             $t('email.common.subtitleSecurity'),
             $notificationLocale,
-            'password-reset',
+            'admin-invite',
             $t('email.invite.badge')
         );
 
-        // Existing icon asset (password-reset) is reused for the visual; the
-        // notification-log event type remains distinct (ADMIN_INVITE).
-        return self::sendWithIcon($email, $subject, $html, 'password-reset', 'ADMIN_INVITE', $userId);
+        return self::sendWithIcon($email, $subject, $html, 'admin-invite', 'ADMIN_INVITE', $userId);
     }
 
     /**
