@@ -195,6 +195,12 @@ $router->post('/api/v1/admin/users/{id}/subscription', [\Velora\Admin\UserManage
 // ---- Phase E: User 360 detail endpoints (read = P_USERS_VIEW; action = its own perm) ----
 $router->get('/api/v1/admin/users/{id}/accounts', [\Velora\Admin\UserManagementController::class, 'accounts'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_USERS_VIEW)]);
 $router->get('/api/v1/admin/users/{id}/trades', [\Velora\Admin\UserManagementController::class, 'trades'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_USERS_VIEW)]);
+// Phase 4: platform-wide trading data for the frozen Admin v2.2 Trading
+// Accounts / Trades pages. Read-only; users.view at the route (the permission
+// the frozen frontend already assigns to these routes). Whitelisted
+// filters/sorts, bounded pagination, projections exclude credential material.
+$router->get('/api/v1/admin/trading-accounts', [\Velora\Admin\GlobalTradingController::class, 'accounts'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_USERS_VIEW)]);
+$router->get('/api/v1/admin/trades', [\Velora\Admin\GlobalTradingController::class, 'trades'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_USERS_VIEW)]);
 $router->get('/api/v1/admin/users/{id}/activity', [\Velora\Admin\UserManagementController::class, 'activity'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_USERS_VIEW)]);
 $router->get('/api/v1/admin/users/{id}/audit', [\Velora\Admin\UserManagementController::class, 'audit'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_AUDIT_VIEW)]);
 $router->post('/api/v1/admin/users/{id}/revoke-sessions', [\Velora\Admin\UserManagementController::class, 'revokeSessions'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_USERS_SUSPEND)]);

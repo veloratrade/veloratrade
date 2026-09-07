@@ -105,6 +105,89 @@ final class TradeRepository
     }
 
     /**
+     * Phase 4 — global Admin search across ALL users' trades (users.view at
+     * the route). Same whitelisted conventions as search(); `user_id` becomes
+     * an OPTIONAL filter and `account_id` / P/L bounds are added. Order is
+     * match-whitelisted with an `id` tiebreaker (deterministic pagination).
+     * Global `q` is deliberately scoped to symbol/strategy_tag only — the
+     * user's private `notes` are NOT searched platform-wide (documented
+     * privacy decision; per-user search keeps notes).
+     *
+     * @param array<string,mixed> $filters ['user_id'?, 'account_id'?, 'symbol'?, 'direction'?, 'from'?, 'to'?, 'pnl_min'?, 'pnl_max'?, 'q'?]
+     * @param array{limit:int, offset:int, order?:string} $page
+     * @return array{items: array<int,array>, total: int}
+     */
+    public function searchGlobal(array $filters, array $page): array
+    {
+        $where = [];
+        $params = [];
+        if (!empty($filters['user_id'])) {
+            $where[] = 't.user_id = :user_id';
+            $params['user_id'] = (int) $filters['user_id'];
+        }
+        if (!empty($filters['account_id'])) {
+            $where[] = 't.account_id = :account_id';
+            $params['account_id'] = (int) $filters['account_id'];
+        }
+        if (!empty($filters['symbol'])) {
+            $where[] = 't.symbol = :symbol';
+            $params['symbol'] = (string) $filters['symbol'];
+        }
+        if (!empty($filters['direction'])) {
+            $where[] = 't.direction = :direction';
+            $params['direction'] = (string) $filters['direction'];
+        }
+        if (!empty($filters['from'])) {
+            $where[] = 't.close_time >= :from';
+            $params['from'] = (string) $filters['from'];
+        }
+        if (!empty($filters['to'])) {
+            $where[] = 't.close_time <= :to';
+            $params['to'] = (string) $filters['to'];
+        }
+        if (isset($filters['pnl_min']) && $filters['pnl_min'] !== '') {
+            $where[] = 't.profit_loss >= :pnl_min';
+            $params['pnl_min'] = (string) $filters['pnl_min'];
+        }
+        if (isset($filters['pnl_max']) && $filters['pnl_max'] !== '') {
+            $where[] = 't.profit_loss <= :pnl_max';
+            $params['pnl_max'] = (string) $filters['pnl_max'];
+        }
+        if (!empty($filters['q'])) {
+            $where[] = '(t.symbol LIKE :q OR t.strategy_tag LIKE :q)';
+            $params['q'] = '%' . (string) $filters['q'] . '%';
+        }
+
+        $whereSql = $where === [] ? '1=1' : implode(' AND ', $where);
+        $orderSql = match ($page['order'] ?? 'close_time') {
+            'open_time' => 't.open_time DESC, t.id DESC',
+            'profit_loss' => 't.profit_loss DESC, t.id DESC',
+            default => 't.close_time DESC, t.id DESC',
+        };
+
+        $countStmt = Database::connection()->prepare(
+            "SELECT COUNT(*) FROM trades t WHERE {$whereSql}"
+        );
+        $countStmt->execute($params);
+        $total = (int) $countStmt->fetchColumn();
+
+        $stmt = Database::connection()->prepare(
+            "SELECT " . self::PUBLIC_COLUMNS . " FROM trades t
+             WHERE {$whereSql}
+             ORDER BY {$orderSql}
+             LIMIT :limit OFFSET :offset"
+        );
+        $stmt->bindValue(':limit', $page['limit'], PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $page['offset'], PDO::PARAM_INT);
+        foreach ($params as $k => $v) {
+            $stmt->bindValue(':' . $k, $v);
+        }
+        $stmt->execute();
+
+        return ['items' => $stmt->fetchAll(), 'total' => $total];
+    }
+
+    /**
      * Insert trade row. All monetary values pass through as strings.
      *
      * @return int new trade id
