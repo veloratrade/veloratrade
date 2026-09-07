@@ -152,4 +152,7 @@ print("FAILS:",fails if fails else "NONE — ALL GREEN")
 for k,v in OUT.items():
     if k not in ("X_bad","reqs"): print(k,"=",str(v)[:110])
 srv.terminate()
+import os as _os
+try: _os.remove(os.path.join(HERE,"mode.json"))
+except OSError: pass
 sys.exit(1 if fails else 0)

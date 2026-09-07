@@ -192,10 +192,10 @@ mkdir($ROOTC . '/data', 0700, true);
 file_put_contents($ROOTC . '/config/velora.env', "APP_ENV=local\nDB_DRIVER=sqlite\nDB_DATABASE={$ROOTC}/data/velora.sqlite\nJWT_SECRET=" . str_repeat('j', 48) . "\nAPP_ENCRYPTION_KEY=" . base64_encode(random_bytes(32)) . "\nCORS_ALLOWED_ORIGINS=http://localhost\nFRONTEND_URL=http://localhost\nMAIL_DRIVER=log\n");
 putenv('APP_ENV=local');
 putenv('VELORA_PRIVATE_ROOT=' . $ROOTC);
-putenv('VELORA_DOCUMENT_ROOT=/tmp/repo');
+putenv('VELORA_DOCUMENT_ROOT=' . dirname(__DIR__, 2));
 putenv('DB_DRIVER=sqlite');
 putenv('DB_DATABASE=' . $ROOTC . '/data/velora.sqlite');
-require '/tmp/repo/api/src/bootstrap.php';
+require dirname(__DIR__, 2) . '/api/src/bootstrap.php';
 
 $pdo = \Velora\Core\Database::connection();
 $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
