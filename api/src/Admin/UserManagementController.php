@@ -9,6 +9,7 @@ use Velora\Core\Response;
 use Velora\Core\Exceptions\NotFoundException;
 use Velora\Core\Exceptions\ValidationException;
 use Velora\Core\RateLimiter;
+use Velora\Core\Validation;
 use Velora\Auth\Role;
 use Velora\Trades\TradeRepository;
 
@@ -223,5 +224,109 @@ final class UserManagementController
             ['revoked' => $n],
         );
         Response::json(['ok' => true, 'revoked' => $n]);
+    }
+
+    /**
+     * Admin Create User — POST /api/v1/admin/users
+     * RBAC: users.create (admin + super_admin) via requirePermission in
+     * api/index.php; privileged-role creation additionally requires
+     * users.change_role (super_admin only), enforced in the service.
+     * Audited (user.create) with secret-free metadata; the response never
+     * carries the password or the verification token.
+     */
+    public function store(Request $request, array $params): never
+    {
+        RateLimiter::hit('admin-user-create', 10, 3600);
+
+        Validation::assert($request->body, [
+            'email' => 'required|string|email|max:255',
+            'password' => 'required|string|min:8|max:72',
+            'fullName' => 'string|max:120',
+            'full_name' => 'string|max:120',
+            'role' => 'string|max:20',
+            'plan' => 'string|max:10',
+            'timezone' => 'string|max:64',
+            'locale' => 'string|max:35',
+        ]);
+
+        $actorId = (int) ($request->attributes['user_id'] ?? 0);
+        $actorRole = (string) ($request->attributes['user_role'] ?? '');
+
+        $result = $this->service->createUser($request->body, $actorId, $actorRole);
+
+        $this->audit->record(
+            $actorId, $actorRole,
+            'user.create',
+            'user', (int) $result['id'], 'success',
+            'User #' . $result['id'] . ' created (' . $result['role'] . ')',
+            $request->clientIp() ?? null,
+            $request->headers['user-agent'] ?? null,
+            $request->contextId(),
+            ['role' => $result['role'], 'plan' => $result['plan'], 'emailSent' => $result['emailSent']],
+        );
+
+        Response::json(['ok' => true, 'user' => $result], 201);
+    }
+
+    /**
+     * Admin Invite (Phase 2) — POST /api/v1/admin/users/invitations
+     * RBAC: users.create via requirePermission in api/index.php; the service
+     * additionally requires users.change_role because invited roles are
+     * always privileged (Super Admin only). Audited (user.invite) with
+     * secret-free metadata; the acceptance token is NEVER returned here.
+     */
+    public function invite(Request $request, array $params): never
+    {
+        RateLimiter::hit('admin-user-invite', 10, 3600);
+
+        Validation::assert($request->body, [
+            'email' => 'required|string|email|max:255',
+            'fullName' => 'string|max:120',
+            'full_name' => 'string|max:120',
+            'role' => 'string|max:20',
+        ]);
+
+        $actorId = (int) ($request->attributes['user_id'] ?? 0);
+        $actorRole = (string) ($request->attributes['user_role'] ?? '');
+
+        $result = $this->service->inviteAdmin($request->body, $actorId, $actorRole);
+
+        $this->audit->record(
+            $actorId, $actorRole,
+            'user.invite',
+            'user', (int) $result['id'], 'success',
+            'Admin #' . $result['id'] . ' invited (' . $result['role'] . ')',
+            $request->clientIp() ?? null,
+            $request->headers['user-agent'] ?? null,
+            $request->contextId(),
+            ['role' => $result['role'], 'emailSent' => $result['emailSent']],
+        );
+
+        Response::json(['ok' => true, 'user' => $result], 201);
+    }
+
+    /**
+     * Phase 3 B-1 (decision D1): POST /api/v1/admin/users/{id}/verify-email
+     * RBAC: users.verify_email (admin + super_admin) via requirePermission in
+     * api/index.php. Idempotent; audited as user.verify_email with
+     * metadata {changed: bool}. Never echoes tokens or secrets.
+     */
+    public function verifyEmail(Request $request, array $params): never
+    {
+        RateLimiter::hit('admin-user-action', 30, 300);
+        $id = (int) ($params['id'] ?? 0);
+        $actorId = (int) ($request->attributes['user_id'] ?? 0);
+        $actorRole = (string) ($request->attributes['user_role'] ?? '');
+
+        $result = $this->service->verifyEmail($id, $actorId, $actorRole);
+        $this->audit->record(
+            $actorId, $actorRole, 'user.verify_email', 'user', $id, 'success',
+            "User #$id email verified by admin" . ($result['changed'] ? '' : ' (already verified)'),
+            $request->clientIp() ?? null,
+            $request->headers['user-agent'] ?? null,
+            $request->contextId(),
+            ['changed' => $result['changed']],
+        );
+        Response::json(['ok' => true, 'changed' => $result['changed'], 'user' => $result['user']]);
     }
 }

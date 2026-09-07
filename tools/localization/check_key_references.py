@@ -269,6 +269,14 @@ def scan_repo(root: Path) -> tuple[dict[str, list[str]], list[str]]:
         rel = p.relative_to(root)
         if rel.parts and rel.parts[0] in EXCLUDED_DIRS:
             continue
+        if rel.as_posix().startswith("admin/v2/"):
+            # F-1 admin v2 shell is a self-contained single file with its own
+            # inline FA/EN catalog (SHELL_T) and its own Playwright suite
+            # (admin/v2/tests/test_f1_shell.py). It intentionally does not use
+            # the site-wide public/locales catalog, so repo key-reference
+            # scanning does not apply to it. Scoped to admin/v2 only — the
+            # legacy admin/index.html stays scanned.
+            continue
         keys, warns = extract_from_html(p.read_text(encoding="utf-8", errors="replace"))
         for k in keys:
             add(k, p)

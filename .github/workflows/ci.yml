@@ -55,6 +55,10 @@ jobs:
 
       - name: Auth token consumption integration
         run: php tools/tests/test_auth_token_consumption.php
+      - name: Admin verify-email B-1 (RBAC / idempotency / tokens / audit / rate-limit)
+        run: php tools/tests/test_admin_verify_email.php
+      - name: Admin canonical replacement (/admin/index.html serves Admin v2.2)
+        run: php tools/tests/test_admin_canonical_replacement.php
 
       - name: Database connection resilience contract
         run: php tools/tests/test_database_connection_resilience.php
@@ -326,3 +330,53 @@ jobs:
       - name: Stop local test server
         if: always()
         run: pkill -f 'php -S 127.0.0.1:8080' || true
+
+  admin-v2-shell:
+    name: Admin v2 shell (F-1) browser test
+    # F-1 shell suite boots its own self-contained stub API (no PHP/DB needed),
+    # so this job stays cheap; browser minutes follow the same PR-only policy
+    # as the dashboard job (cost guard).
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Playwright (Python)
+        run: |
+          pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Run F-1 shell suite
+        run: python admin/v2/tests/test_f1_shell.py
+
+      - name: Run F-2 navigation suite
+        run: python admin/v2/tests/test_f2_navigation.py
+
+      - name: Run F-3 Batch 1 suite (real-data wiring)
+        run: python admin/v2/tests/test_f3_batch1.py
+
+      - name: Run F-3 Batch 2 suite (integrations + AI health)
+        run: python admin/v2/tests/test_f3_batch2.py
+
+      - name: Run F-3 Batch 3 suite (system/analytics/billing)
+        run: python admin/v2/tests/test_f3_batch3.py
+
+      - name: Run shell-refinement suite (brand/account/theme/footer)
+        run: python admin/v2/tests/test_shell_refinement.py
+
+      - name: Run mobile scrolling suite (reachability/drawer/modal)
+        run: python admin/v2/tests/test_mobile_scrolling.py
+
+      - name: Runtime locale integrity — admin (EN+FA, full canonical route registry, blocking)
+        run: python -m tools.localization.runtime_locale_integrity --app admin
+
+      - name: "Runtime locale integrity — site (baseline ratchet, NEW leakage blocks)"
+        run: python -m tools.localization.runtime_locale_integrity --app site --baseline tools/localization/baseline-runtime-locale-site.json

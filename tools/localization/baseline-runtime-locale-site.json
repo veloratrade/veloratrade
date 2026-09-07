@@ -1,0 +1,3291 @@
+{
+  "version": "2026.09.06.1",
+  "doc": "Site runtime-locale baseline (ratchet). Every entry is a KNOWN, classified pre-existing finding; any NEW locale leakage (not matching a pin) fails CI. Entries are removed by FIXING the finding, never by blanket rules.",
+  "pins": [
+    {
+      "locale": "EN",
+      "route": "/en/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "فارسی",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher endonym (option 'فارسی' shown in EN UI too); not application copy."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/404.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "فارسی",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher endonym (option 'فارسی' shown in EN UI too); not application copy."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/404/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "فارسی",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher endonym (option 'فارسی' shown in EN UI too); not application copy."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/accounts/connect/index.html",
+      "element": "<title>",
+      "attribute": "(text)",
+      "text": "ورود | VELORA — ژورنال هوشمند معاملات",
+      "category": "brand-name",
+      "reason": "Product brand in latin per brand policy (both locales)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/accounts/connect/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "در",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/accounts/connect/index.html",
+      "element": "<span.grad>",
+      "attribute": "(text)",
+      "text": "سطح جهانی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/accounts/connect/index.html",
+      "element": "<p.sub>",
+      "attribute": "(text)",
+      "text": "هر معامله‌تان را ثبت کنید و با شاخص‌های حرفه‌ای، استراتژی‌های خود را به سطح بعدی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/accounts/connect/index.html",
+      "element": "<span.lbl>",
+      "attribute": "(text)",
+      "text": "منحنی سرمایه — نمونه",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/accounts/connect/index.html",
+      "element": "<small>",
+      "attribute": "(text)",
+      "text": "رشد ماهانه",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/accounts/connect/index.html",
+      "element": "<small>",
+      "attribute": "(text)",
+      "text": "میانگین ریسک",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/accounts/connect/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "امنیت بانکی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/accounts/connect/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "سرعت بالا",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/accounts/connect/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "تحلیل حرفه‌ای",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/accounts/connect/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "خوش برگشتید",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/accounts/connect/index.html",
+      "element": "<p.auth-sub>",
+      "attribute": "(text)",
+      "text": "برای دسترسی به داشبورد معاملاتی خود وارد شوید",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/accounts/connect/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "ایمیل",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/accounts/connect/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "رمز عبور",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/accounts/connect/index.html",
+      "element": "<a.forgot>",
+      "attribute": "(text)",
+      "text": "فراموشی رمز؟",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/accounts/connect/index.html",
+      "element": "<button#submitBtn.btn-gold>",
+      "attribute": "(text)",
+      "text": "ورود به حساب",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/accounts/connect/index.html",
+      "element": "<div.divider>",
+      "attribute": "(text)",
+      "text": "ورود با حساب VELORA",
+      "category": "brand-name",
+      "reason": "Product brand in latin per brand policy (both locales)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/accounts/connect/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "حساب ندارید؟",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/accounts/connect/index.html",
+      "element": "<a>",
+      "attribute": "(text)",
+      "text": "ساخت حساب",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/accounts/connect/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "اطلاعات شما با رمزنگاری پیشرفته محافظت می‌شود",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/accounts/connect/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "فارسی",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher endonym (option 'فارسی' shown in EN UI too); not application copy."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/accounts/connect/index.html",
+      "element": "<button#togglePass.toggle>",
+      "attribute": "aria-label",
+      "text": "نمایش رمز",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/admin/index.html",
+      "element": "<title>",
+      "attribute": "(text)",
+      "text": "ورود | VELORA — ژورنال هوشمند معاملات",
+      "category": "brand-name",
+      "reason": "Product brand in latin per brand policy (both locales)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/admin/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "در",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/admin/index.html",
+      "element": "<span.grad>",
+      "attribute": "(text)",
+      "text": "سطح جهانی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/admin/index.html",
+      "element": "<p.sub>",
+      "attribute": "(text)",
+      "text": "هر معامله‌تان را ثبت کنید و با شاخص‌های حرفه‌ای، استراتژی‌های خود را به سطح بعدی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/admin/index.html",
+      "element": "<span.lbl>",
+      "attribute": "(text)",
+      "text": "منحنی سرمایه — نمونه",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/admin/index.html",
+      "element": "<small>",
+      "attribute": "(text)",
+      "text": "رشد ماهانه",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/admin/index.html",
+      "element": "<small>",
+      "attribute": "(text)",
+      "text": "میانگین ریسک",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/admin/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "امنیت بانکی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/admin/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "سرعت بالا",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/admin/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "تحلیل حرفه‌ای",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/admin/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "خوش برگشتید",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/admin/index.html",
+      "element": "<p.auth-sub>",
+      "attribute": "(text)",
+      "text": "برای دسترسی به داشبورد معاملاتی خود وارد شوید",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/admin/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "ایمیل",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/admin/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "رمز عبور",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/admin/index.html",
+      "element": "<a.forgot>",
+      "attribute": "(text)",
+      "text": "فراموشی رمز؟",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/admin/index.html",
+      "element": "<button#submitBtn.btn-gold>",
+      "attribute": "(text)",
+      "text": "ورود به حساب",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/admin/index.html",
+      "element": "<div.divider>",
+      "attribute": "(text)",
+      "text": "ورود با حساب VELORA",
+      "category": "brand-name",
+      "reason": "Product brand in latin per brand policy (both locales)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/admin/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "حساب ندارید؟",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/admin/index.html",
+      "element": "<a>",
+      "attribute": "(text)",
+      "text": "ساخت حساب",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/admin/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "اطلاعات شما با رمزنگاری پیشرفته محافظت می‌شود",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/admin/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "فارسی",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher endonym (option 'فارسی' shown in EN UI too); not application copy."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/admin/index.html",
+      "element": "<button#togglePass.toggle>",
+      "attribute": "aria-label",
+      "text": "نمایش رمز",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/dashboard/index.html",
+      "element": "<title>",
+      "attribute": "(text)",
+      "text": "ورود | VELORA — ژورنال هوشمند معاملات",
+      "category": "brand-name",
+      "reason": "Product brand in latin per brand policy (both locales)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/dashboard/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "در",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/dashboard/index.html",
+      "element": "<span.grad>",
+      "attribute": "(text)",
+      "text": "سطح جهانی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/dashboard/index.html",
+      "element": "<p.sub>",
+      "attribute": "(text)",
+      "text": "هر معامله‌تان را ثبت کنید و با شاخص‌های حرفه‌ای، استراتژی‌های خود را به سطح بعدی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/dashboard/index.html",
+      "element": "<span.lbl>",
+      "attribute": "(text)",
+      "text": "منحنی سرمایه — نمونه",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/dashboard/index.html",
+      "element": "<small>",
+      "attribute": "(text)",
+      "text": "رشد ماهانه",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/dashboard/index.html",
+      "element": "<small>",
+      "attribute": "(text)",
+      "text": "میانگین ریسک",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/dashboard/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "امنیت بانکی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/dashboard/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "سرعت بالا",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/dashboard/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "تحلیل حرفه‌ای",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/dashboard/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "خوش برگشتید",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/dashboard/index.html",
+      "element": "<p.auth-sub>",
+      "attribute": "(text)",
+      "text": "برای دسترسی به داشبورد معاملاتی خود وارد شوید",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/dashboard/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "ایمیل",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/dashboard/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "رمز عبور",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/dashboard/index.html",
+      "element": "<a.forgot>",
+      "attribute": "(text)",
+      "text": "فراموشی رمز؟",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/dashboard/index.html",
+      "element": "<button#submitBtn.btn-gold>",
+      "attribute": "(text)",
+      "text": "ورود به حساب",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/dashboard/index.html",
+      "element": "<div.divider>",
+      "attribute": "(text)",
+      "text": "ورود با حساب VELORA",
+      "category": "brand-name",
+      "reason": "Product brand in latin per brand policy (both locales)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/dashboard/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "حساب ندارید؟",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/dashboard/index.html",
+      "element": "<a>",
+      "attribute": "(text)",
+      "text": "ساخت حساب",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/dashboard/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "اطلاعات شما با رمزنگاری پیشرفته محافظت می‌شود",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/dashboard/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "فارسی",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher endonym (option 'فارسی' shown in EN UI too); not application copy."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/dashboard/index.html",
+      "element": "<button#togglePass.toggle>",
+      "attribute": "aria-label",
+      "text": "نمایش رمز",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/forgot-password/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "فارسی",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher endonym (option 'فارسی' shown in EN UI too); not application copy."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/intelligence/index.html",
+      "element": "<title>",
+      "attribute": "(text)",
+      "text": "ورود | VELORA — ژورنال هوشمند معاملات",
+      "category": "brand-name",
+      "reason": "Product brand in latin per brand policy (both locales)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/intelligence/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "در",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/intelligence/index.html",
+      "element": "<span.grad>",
+      "attribute": "(text)",
+      "text": "سطح جهانی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/intelligence/index.html",
+      "element": "<p.sub>",
+      "attribute": "(text)",
+      "text": "هر معامله‌تان را ثبت کنید و با شاخص‌های حرفه‌ای، استراتژی‌های خود را به سطح بعدی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/intelligence/index.html",
+      "element": "<span.lbl>",
+      "attribute": "(text)",
+      "text": "منحنی سرمایه — نمونه",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/intelligence/index.html",
+      "element": "<small>",
+      "attribute": "(text)",
+      "text": "رشد ماهانه",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/intelligence/index.html",
+      "element": "<small>",
+      "attribute": "(text)",
+      "text": "میانگین ریسک",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/intelligence/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "امنیت بانکی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/intelligence/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "سرعت بالا",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/intelligence/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "تحلیل حرفه‌ای",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/intelligence/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "خوش برگشتید",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/intelligence/index.html",
+      "element": "<p.auth-sub>",
+      "attribute": "(text)",
+      "text": "برای دسترسی به داشبورد معاملاتی خود وارد شوید",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/intelligence/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "ایمیل",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/intelligence/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "رمز عبور",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/intelligence/index.html",
+      "element": "<a.forgot>",
+      "attribute": "(text)",
+      "text": "فراموشی رمز؟",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/intelligence/index.html",
+      "element": "<button#submitBtn.btn-gold>",
+      "attribute": "(text)",
+      "text": "ورود به حساب",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/intelligence/index.html",
+      "element": "<div.divider>",
+      "attribute": "(text)",
+      "text": "ورود با حساب VELORA",
+      "category": "brand-name",
+      "reason": "Product brand in latin per brand policy (both locales)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/intelligence/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "حساب ندارید؟",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/intelligence/index.html",
+      "element": "<a>",
+      "attribute": "(text)",
+      "text": "ساخت حساب",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/intelligence/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "اطلاعات شما با رمزنگاری پیشرفته محافظت می‌شود",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/intelligence/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "فارسی",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher endonym (option 'فارسی' shown in EN UI too); not application copy."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/intelligence/index.html",
+      "element": "<button#togglePass.toggle>",
+      "attribute": "aria-label",
+      "text": "نمایش رمز",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/login/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "فارسی",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher endonym (option 'فارسی' shown in EN UI too); not application copy."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/markets/index.html",
+      "element": "<title>",
+      "attribute": "(text)",
+      "text": "ورود | VELORA — ژورنال هوشمند معاملات",
+      "category": "brand-name",
+      "reason": "Product brand in latin per brand policy (both locales)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/markets/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "در",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/markets/index.html",
+      "element": "<span.grad>",
+      "attribute": "(text)",
+      "text": "سطح جهانی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/markets/index.html",
+      "element": "<p.sub>",
+      "attribute": "(text)",
+      "text": "هر معامله‌تان را ثبت کنید و با شاخص‌های حرفه‌ای، استراتژی‌های خود را به سطح بعدی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/markets/index.html",
+      "element": "<span.lbl>",
+      "attribute": "(text)",
+      "text": "منحنی سرمایه — نمونه",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/markets/index.html",
+      "element": "<small>",
+      "attribute": "(text)",
+      "text": "رشد ماهانه",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/markets/index.html",
+      "element": "<small>",
+      "attribute": "(text)",
+      "text": "میانگین ریسک",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/markets/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "امنیت بانکی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/markets/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "سرعت بالا",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/markets/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "تحلیل حرفه‌ای",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/markets/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "خوش برگشتید",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/markets/index.html",
+      "element": "<p.auth-sub>",
+      "attribute": "(text)",
+      "text": "برای دسترسی به داشبورد معاملاتی خود وارد شوید",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/markets/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "ایمیل",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/markets/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "رمز عبور",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/markets/index.html",
+      "element": "<a.forgot>",
+      "attribute": "(text)",
+      "text": "فراموشی رمز؟",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/markets/index.html",
+      "element": "<button#submitBtn.btn-gold>",
+      "attribute": "(text)",
+      "text": "ورود به حساب",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/markets/index.html",
+      "element": "<div.divider>",
+      "attribute": "(text)",
+      "text": "ورود با حساب VELORA",
+      "category": "brand-name",
+      "reason": "Product brand in latin per brand policy (both locales)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/markets/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "حساب ندارید؟",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/markets/index.html",
+      "element": "<a>",
+      "attribute": "(text)",
+      "text": "ساخت حساب",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/markets/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "اطلاعات شما با رمزنگاری پیشرفته محافظت می‌شود",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/markets/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "فارسی",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher endonym (option 'فارسی' shown in EN UI too); not application copy."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/markets/index.html",
+      "element": "<button#togglePass.toggle>",
+      "attribute": "aria-label",
+      "text": "نمایش رمز",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/news/index.html",
+      "element": "<title>",
+      "attribute": "(text)",
+      "text": "ورود | VELORA — ژورنال هوشمند معاملات",
+      "category": "brand-name",
+      "reason": "Product brand in latin per brand policy (both locales)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/news/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "در",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/news/index.html",
+      "element": "<span.grad>",
+      "attribute": "(text)",
+      "text": "سطح جهانی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/news/index.html",
+      "element": "<p.sub>",
+      "attribute": "(text)",
+      "text": "هر معامله‌تان را ثبت کنید و با شاخص‌های حرفه‌ای، استراتژی‌های خود را به سطح بعدی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/news/index.html",
+      "element": "<span.lbl>",
+      "attribute": "(text)",
+      "text": "منحنی سرمایه — نمونه",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/news/index.html",
+      "element": "<small>",
+      "attribute": "(text)",
+      "text": "رشد ماهانه",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/news/index.html",
+      "element": "<small>",
+      "attribute": "(text)",
+      "text": "میانگین ریسک",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/news/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "امنیت بانکی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/news/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "سرعت بالا",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/news/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "تحلیل حرفه‌ای",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/news/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "خوش برگشتید",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/news/index.html",
+      "element": "<p.auth-sub>",
+      "attribute": "(text)",
+      "text": "برای دسترسی به داشبورد معاملاتی خود وارد شوید",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/news/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "ایمیل",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/news/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "رمز عبور",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/news/index.html",
+      "element": "<a.forgot>",
+      "attribute": "(text)",
+      "text": "فراموشی رمز؟",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/news/index.html",
+      "element": "<button#submitBtn.btn-gold>",
+      "attribute": "(text)",
+      "text": "ورود به حساب",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/news/index.html",
+      "element": "<div.divider>",
+      "attribute": "(text)",
+      "text": "ورود با حساب VELORA",
+      "category": "brand-name",
+      "reason": "Product brand in latin per brand policy (both locales)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/news/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "حساب ندارید؟",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/news/index.html",
+      "element": "<a>",
+      "attribute": "(text)",
+      "text": "ساخت حساب",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/news/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "اطلاعات شما با رمزنگاری پیشرفته محافظت می‌شود",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/news/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "فارسی",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher endonym (option 'فارسی' shown in EN UI too); not application copy."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/news/index.html",
+      "element": "<button#togglePass.toggle>",
+      "attribute": "aria-label",
+      "text": "نمایش رمز",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/performance/index.html",
+      "element": "<title>",
+      "attribute": "(text)",
+      "text": "ورود | VELORA — ژورنال هوشمند معاملات",
+      "category": "brand-name",
+      "reason": "Product brand in latin per brand policy (both locales)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/performance/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "در",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/performance/index.html",
+      "element": "<span.grad>",
+      "attribute": "(text)",
+      "text": "سطح جهانی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/performance/index.html",
+      "element": "<p.sub>",
+      "attribute": "(text)",
+      "text": "هر معامله‌تان را ثبت کنید و با شاخص‌های حرفه‌ای، استراتژی‌های خود را به سطح بعدی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/performance/index.html",
+      "element": "<span.lbl>",
+      "attribute": "(text)",
+      "text": "منحنی سرمایه — نمونه",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/performance/index.html",
+      "element": "<small>",
+      "attribute": "(text)",
+      "text": "رشد ماهانه",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/performance/index.html",
+      "element": "<small>",
+      "attribute": "(text)",
+      "text": "میانگین ریسک",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/performance/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "امنیت بانکی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/performance/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "سرعت بالا",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/performance/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "تحلیل حرفه‌ای",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/performance/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "خوش برگشتید",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/performance/index.html",
+      "element": "<p.auth-sub>",
+      "attribute": "(text)",
+      "text": "برای دسترسی به داشبورد معاملاتی خود وارد شوید",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/performance/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "ایمیل",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/performance/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "رمز عبور",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/performance/index.html",
+      "element": "<a.forgot>",
+      "attribute": "(text)",
+      "text": "فراموشی رمز؟",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/performance/index.html",
+      "element": "<button#submitBtn.btn-gold>",
+      "attribute": "(text)",
+      "text": "ورود به حساب",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/performance/index.html",
+      "element": "<div.divider>",
+      "attribute": "(text)",
+      "text": "ورود با حساب VELORA",
+      "category": "brand-name",
+      "reason": "Product brand in latin per brand policy (both locales)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/performance/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "حساب ندارید؟",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/performance/index.html",
+      "element": "<a>",
+      "attribute": "(text)",
+      "text": "ساخت حساب",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/performance/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "اطلاعات شما با رمزنگاری پیشرفته محافظت می‌شود",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/performance/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "فارسی",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher endonym (option 'فارسی' shown in EN UI too); not application copy."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/performance/index.html",
+      "element": "<button#togglePass.toggle>",
+      "attribute": "aria-label",
+      "text": "نمایش رمز",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/profile/index.html",
+      "element": "<title>",
+      "attribute": "(text)",
+      "text": "ورود | VELORA — ژورنال هوشمند معاملات",
+      "category": "brand-name",
+      "reason": "Product brand in latin per brand policy (both locales)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/profile/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "در",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/profile/index.html",
+      "element": "<span.grad>",
+      "attribute": "(text)",
+      "text": "سطح جهانی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/profile/index.html",
+      "element": "<p.sub>",
+      "attribute": "(text)",
+      "text": "هر معامله‌تان را ثبت کنید و با شاخص‌های حرفه‌ای، استراتژی‌های خود را به سطح بعدی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/profile/index.html",
+      "element": "<span.lbl>",
+      "attribute": "(text)",
+      "text": "منحنی سرمایه — نمونه",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/profile/index.html",
+      "element": "<small>",
+      "attribute": "(text)",
+      "text": "رشد ماهانه",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/profile/index.html",
+      "element": "<small>",
+      "attribute": "(text)",
+      "text": "میانگین ریسک",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/profile/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "امنیت بانکی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/profile/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "سرعت بالا",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/profile/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "تحلیل حرفه‌ای",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/profile/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "خوش برگشتید",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/profile/index.html",
+      "element": "<p.auth-sub>",
+      "attribute": "(text)",
+      "text": "برای دسترسی به داشبورد معاملاتی خود وارد شوید",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/profile/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "ایمیل",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/profile/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "رمز عبور",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/profile/index.html",
+      "element": "<a.forgot>",
+      "attribute": "(text)",
+      "text": "فراموشی رمز؟",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/profile/index.html",
+      "element": "<button#submitBtn.btn-gold>",
+      "attribute": "(text)",
+      "text": "ورود به حساب",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/profile/index.html",
+      "element": "<div.divider>",
+      "attribute": "(text)",
+      "text": "ورود با حساب VELORA",
+      "category": "brand-name",
+      "reason": "Product brand in latin per brand policy (both locales)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/profile/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "حساب ندارید؟",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/profile/index.html",
+      "element": "<a>",
+      "attribute": "(text)",
+      "text": "ساخت حساب",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/profile/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "اطلاعات شما با رمزنگاری پیشرفته محافظت می‌شود",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/profile/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "فارسی",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher endonym (option 'فارسی' shown in EN UI too); not application copy."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/profile/index.html",
+      "element": "<button#togglePass.toggle>",
+      "attribute": "aria-label",
+      "text": "نمایش رمز",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/register/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "فارسی",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher endonym (option 'فارسی' shown in EN UI too); not application copy."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/reset-password/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "فارسی",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher endonym (option 'فارسی' shown in EN UI too); not application copy."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/support/index.html",
+      "element": "<title>",
+      "attribute": "(text)",
+      "text": "ورود | VELORA — ژورنال هوشمند معاملات",
+      "category": "brand-name",
+      "reason": "Product brand in latin per brand policy (both locales)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/support/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "در",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/support/index.html",
+      "element": "<span.grad>",
+      "attribute": "(text)",
+      "text": "سطح جهانی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/support/index.html",
+      "element": "<p.sub>",
+      "attribute": "(text)",
+      "text": "هر معامله‌تان را ثبت کنید و با شاخص‌های حرفه‌ای، استراتژی‌های خود را به سطح بعدی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/support/index.html",
+      "element": "<span.lbl>",
+      "attribute": "(text)",
+      "text": "منحنی سرمایه — نمونه",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/support/index.html",
+      "element": "<small>",
+      "attribute": "(text)",
+      "text": "رشد ماهانه",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/support/index.html",
+      "element": "<small>",
+      "attribute": "(text)",
+      "text": "میانگین ریسک",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/support/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "امنیت بانکی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/support/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "سرعت بالا",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/support/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "تحلیل حرفه‌ای",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/support/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "خوش برگشتید",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/support/index.html",
+      "element": "<p.auth-sub>",
+      "attribute": "(text)",
+      "text": "برای دسترسی به داشبورد معاملاتی خود وارد شوید",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/support/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "ایمیل",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/support/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "رمز عبور",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/support/index.html",
+      "element": "<a.forgot>",
+      "attribute": "(text)",
+      "text": "فراموشی رمز؟",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/support/index.html",
+      "element": "<button#submitBtn.btn-gold>",
+      "attribute": "(text)",
+      "text": "ورود به حساب",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/support/index.html",
+      "element": "<div.divider>",
+      "attribute": "(text)",
+      "text": "ورود با حساب VELORA",
+      "category": "brand-name",
+      "reason": "Product brand in latin per brand policy (both locales)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/support/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "حساب ندارید؟",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/support/index.html",
+      "element": "<a>",
+      "attribute": "(text)",
+      "text": "ساخت حساب",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/support/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "اطلاعات شما با رمزنگاری پیشرفته محافظت می‌شود",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/support/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "فارسی",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher endonym (option 'فارسی' shown in EN UI too); not application copy."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/support/index.html",
+      "element": "<button#togglePass.toggle>",
+      "attribute": "aria-label",
+      "text": "نمایش رمز",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/index.html",
+      "element": "<title>",
+      "attribute": "(text)",
+      "text": "ورود | VELORA — ژورنال هوشمند معاملات",
+      "category": "brand-name",
+      "reason": "Product brand in latin per brand policy (both locales)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "در",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/index.html",
+      "element": "<span.grad>",
+      "attribute": "(text)",
+      "text": "سطح جهانی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/index.html",
+      "element": "<p.sub>",
+      "attribute": "(text)",
+      "text": "هر معامله‌تان را ثبت کنید و با شاخص‌های حرفه‌ای، استراتژی‌های خود را به سطح بعدی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/index.html",
+      "element": "<span.lbl>",
+      "attribute": "(text)",
+      "text": "منحنی سرمایه — نمونه",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/index.html",
+      "element": "<small>",
+      "attribute": "(text)",
+      "text": "رشد ماهانه",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/index.html",
+      "element": "<small>",
+      "attribute": "(text)",
+      "text": "میانگین ریسک",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "امنیت بانکی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "سرعت بالا",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "تحلیل حرفه‌ای",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "خوش برگشتید",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/index.html",
+      "element": "<p.auth-sub>",
+      "attribute": "(text)",
+      "text": "برای دسترسی به داشبورد معاملاتی خود وارد شوید",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "ایمیل",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "رمز عبور",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/index.html",
+      "element": "<a.forgot>",
+      "attribute": "(text)",
+      "text": "فراموشی رمز؟",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/index.html",
+      "element": "<button#submitBtn.btn-gold>",
+      "attribute": "(text)",
+      "text": "ورود به حساب",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/index.html",
+      "element": "<div.divider>",
+      "attribute": "(text)",
+      "text": "ورود با حساب VELORA",
+      "category": "brand-name",
+      "reason": "Product brand in latin per brand policy (both locales)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "حساب ندارید؟",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/index.html",
+      "element": "<a>",
+      "attribute": "(text)",
+      "text": "ساخت حساب",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "اطلاعات شما با رمزنگاری پیشرفته محافظت می‌شود",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "فارسی",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher endonym (option 'فارسی' shown in EN UI too); not application copy."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/index.html",
+      "element": "<button#togglePass.toggle>",
+      "attribute": "aria-label",
+      "text": "نمایش رمز",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/new/index.html",
+      "element": "<title>",
+      "attribute": "(text)",
+      "text": "ورود | VELORA — ژورنال هوشمند معاملات",
+      "category": "brand-name",
+      "reason": "Product brand in latin per brand policy (both locales)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/new/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "در",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/new/index.html",
+      "element": "<span.grad>",
+      "attribute": "(text)",
+      "text": "سطح جهانی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/new/index.html",
+      "element": "<p.sub>",
+      "attribute": "(text)",
+      "text": "هر معامله‌تان را ثبت کنید و با شاخص‌های حرفه‌ای، استراتژی‌های خود را به سطح بعدی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/new/index.html",
+      "element": "<span.lbl>",
+      "attribute": "(text)",
+      "text": "منحنی سرمایه — نمونه",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/new/index.html",
+      "element": "<small>",
+      "attribute": "(text)",
+      "text": "رشد ماهانه",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/new/index.html",
+      "element": "<small>",
+      "attribute": "(text)",
+      "text": "میانگین ریسک",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/new/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "امنیت بانکی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/new/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "سرعت بالا",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/new/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "تحلیل حرفه‌ای",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/new/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "خوش برگشتید",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/new/index.html",
+      "element": "<p.auth-sub>",
+      "attribute": "(text)",
+      "text": "برای دسترسی به داشبورد معاملاتی خود وارد شوید",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/new/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "ایمیل",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/new/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "رمز عبور",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/new/index.html",
+      "element": "<a.forgot>",
+      "attribute": "(text)",
+      "text": "فراموشی رمز؟",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/new/index.html",
+      "element": "<button#submitBtn.btn-gold>",
+      "attribute": "(text)",
+      "text": "ورود به حساب",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/new/index.html",
+      "element": "<div.divider>",
+      "attribute": "(text)",
+      "text": "ورود با حساب VELORA",
+      "category": "brand-name",
+      "reason": "Product brand in latin per brand policy (both locales)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/new/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "حساب ندارید؟",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/new/index.html",
+      "element": "<a>",
+      "attribute": "(text)",
+      "text": "ساخت حساب",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/new/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "اطلاعات شما با رمزنگاری پیشرفته محافظت می‌شود",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/new/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "فارسی",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher endonym (option 'فارسی' shown in EN UI too); not application copy."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/trades/new/index.html",
+      "element": "<button#togglePass.toggle>",
+      "attribute": "aria-label",
+      "text": "نمایش رمز",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/verify-email/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "فارسی",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher endonym (option 'فارسی' shown in EN UI too); not application copy."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/wallet/index.html",
+      "element": "<title>",
+      "attribute": "(text)",
+      "text": "ورود | VELORA — ژورنال هوشمند معاملات",
+      "category": "brand-name",
+      "reason": "Product brand in latin per brand policy (both locales)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/wallet/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "در",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/wallet/index.html",
+      "element": "<span.grad>",
+      "attribute": "(text)",
+      "text": "سطح جهانی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/wallet/index.html",
+      "element": "<p.sub>",
+      "attribute": "(text)",
+      "text": "هر معامله‌تان را ثبت کنید و با شاخص‌های حرفه‌ای، استراتژی‌های خود را به سطح بعدی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/wallet/index.html",
+      "element": "<span.lbl>",
+      "attribute": "(text)",
+      "text": "منحنی سرمایه — نمونه",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/wallet/index.html",
+      "element": "<small>",
+      "attribute": "(text)",
+      "text": "رشد ماهانه",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/wallet/index.html",
+      "element": "<small>",
+      "attribute": "(text)",
+      "text": "میانگین ریسک",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/wallet/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "امنیت بانکی",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/wallet/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "سرعت بالا",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/wallet/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "تحلیل حرفه‌ای",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/wallet/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "خوش برگشتید",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/wallet/index.html",
+      "element": "<p.auth-sub>",
+      "attribute": "(text)",
+      "text": "برای دسترسی به داشبورد معاملاتی خود وارد شوید",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/wallet/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "ایمیل",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/wallet/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "رمز عبور",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/wallet/index.html",
+      "element": "<a.forgot>",
+      "attribute": "(text)",
+      "text": "فراموشی رمز؟",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/wallet/index.html",
+      "element": "<button#submitBtn.btn-gold>",
+      "attribute": "(text)",
+      "text": "ورود به حساب",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/wallet/index.html",
+      "element": "<div.divider>",
+      "attribute": "(text)",
+      "text": "ورود با حساب VELORA",
+      "category": "brand-name",
+      "reason": "Product brand in latin per brand policy (both locales)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/wallet/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "حساب ندارید؟",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/wallet/index.html",
+      "element": "<a>",
+      "attribute": "(text)",
+      "text": "ساخت حساب",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/wallet/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "اطلاعات شما با رمزنگاری پیشرفته محافظت می‌شود",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/wallet/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "فارسی",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher endonym (option 'فارسی' shown in EN UI too); not application copy."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/wallet/index.html",
+      "element": "<button#togglePass.toggle>",
+      "attribute": "aria-label",
+      "text": "نمایش رمز",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/blog/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "فارسی",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher endonym (option 'فارسی' shown in EN UI too); not application copy."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/blog/what-is-trading-journal/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "فارسی",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher endonym (option 'فارسی' shown in EN UI too); not application copy."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/blog/forex-trading-journal/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "فارسی",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher endonym (option 'فارسی' shown in EN UI too); not application copy."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/blog/why-traders-need-journal/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "فارسی",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher endonym (option 'فارسی' shown in EN UI too); not application copy."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/blog/risk-management-trading/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "فارسی",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher endonym (option 'فارسی' shown in EN UI too); not application copy."
+    },
+    {
+      "locale": "EN",
+      "route": "/en/blog/mt4-mt5-trading-journal/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "فارسی",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher endonym (option 'فارسی' shown in EN UI too); not application copy."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "English",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher lists language ENDONYMS by convention (option 'English' shown in FA UI too); not application copy."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/index.html",
+      "element": "<span.db-url>",
+      "attribute": "(text)",
+      "text": "app.VELORA.io/dashboard",
+      "category": "brand-name",
+      "reason": "Product brand in latin per brand policy (both locales)."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "Stripe",
+      "category": "provider-name",
+      "reason": "Payment provider brand kept latin in FA marketing UI."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/index.html",
+      "element": "<b>",
+      "attribute": "(text)",
+      "text": "AI TRADING BRIEFING",
+      "category": "brand-marketing-latin",
+      "reason": "Deliberate latin marketing tag on FA landing hero (design choice, brand-adjacent)."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "LIVE ANALYSIS",
+      "category": "brand-marketing-latin",
+      "reason": "Deliberate latin marketing tag on FA landing."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/index.html",
+      "element": "<small>",
+      "attribute": "(text)",
+      "text": "INSIGHT OF THE WEEK",
+      "category": "brand-marketing-latin",
+      "reason": "Deliberate latin marketing tag on FA landing."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/index.html",
+      "element": "<button.product-story-tab>",
+      "attribute": "(text)",
+      "text": "AI Coach",
+      "category": "brand-marketing-latin",
+      "reason": "Product-story tab kept latin on FA landing (marketing design)."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/index.html",
+      "element": "<button.product-story-tab>",
+      "attribute": "(text)",
+      "text": "Portfolio",
+      "category": "brand-marketing-latin",
+      "reason": "Product-story tab kept latin on FA landing (marketing design)."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/index.html",
+      "element": "<button.product-story-tab>",
+      "attribute": "(text)",
+      "text": "Mobile",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/index.html",
+      "element": "<button.product-story-tab>",
+      "attribute": "(text)",
+      "text": "Data Engine",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/404.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "English",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher lists language ENDONYMS by convention (option 'English' shown in FA UI too); not application copy."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/404.html",
+      "element": "<img.logo>",
+      "attribute": "alt",
+      "text": "VELORA TRADE",
+      "category": "brand-name",
+      "reason": "Product brand in latin per brand policy (both locales)."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/404/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "English",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher lists language ENDONYMS by convention (option 'English' shown in FA UI too); not application copy."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/404/index.html",
+      "element": "<img.logo>",
+      "attribute": "alt",
+      "text": "VELORA TRADE",
+      "category": "brand-name",
+      "reason": "Product brand in latin per brand policy (both locales)."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/accounts/connect/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "Trading journal",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/accounts/connect/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/accounts/connect/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "English",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher lists language ENDONYMS by convention (option 'English' shown in FA UI too); not application copy."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/accounts/connect/index.html",
+      "element": "<div.velora-locale-switcher>",
+      "attribute": "title",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/accounts/connect/index.html",
+      "element": "<select#velora-locale-select>",
+      "attribute": "aria-label",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/admin/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "Trading journal",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/admin/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/admin/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "English",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher lists language ENDONYMS by convention (option 'English' shown in FA UI too); not application copy."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/admin/index.html",
+      "element": "<div.velora-locale-switcher>",
+      "attribute": "title",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/admin/index.html",
+      "element": "<select#velora-locale-select>",
+      "attribute": "aria-label",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/checkout/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "CHECKOUT / PROFESSIONAL",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/dashboard/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "Trading journal",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/dashboard/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/dashboard/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "English",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher lists language ENDONYMS by convention (option 'English' shown in FA UI too); not application copy."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/dashboard/index.html",
+      "element": "<div.velora-locale-switcher>",
+      "attribute": "title",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/dashboard/index.html",
+      "element": "<select#velora-locale-select>",
+      "attribute": "aria-label",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/forgot-password/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "English",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher lists language ENDONYMS by convention (option 'English' shown in FA UI too); not application copy."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/intelligence/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "Trading journal",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/intelligence/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/intelligence/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "English",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher lists language ENDONYMS by convention (option 'English' shown in FA UI too); not application copy."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/intelligence/index.html",
+      "element": "<div.velora-locale-switcher>",
+      "attribute": "title",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/intelligence/index.html",
+      "element": "<select#velora-locale-select>",
+      "attribute": "aria-label",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/login/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "English",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher lists language ENDONYMS by convention (option 'English' shown in FA UI too); not application copy."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/markets/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "Trading journal",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/markets/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/markets/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "English",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher lists language ENDONYMS by convention (option 'English' shown in FA UI too); not application copy."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/markets/index.html",
+      "element": "<div.velora-locale-switcher>",
+      "attribute": "title",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/markets/index.html",
+      "element": "<select#velora-locale-select>",
+      "attribute": "aria-label",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/news/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "Trading journal",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/news/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/news/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "English",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher lists language ENDONYMS by convention (option 'English' shown in FA UI too); not application copy."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/news/index.html",
+      "element": "<div.velora-locale-switcher>",
+      "attribute": "title",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/news/index.html",
+      "element": "<select#velora-locale-select>",
+      "attribute": "aria-label",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/performance/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "Trading journal",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/performance/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/performance/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "English",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher lists language ENDONYMS by convention (option 'English' shown in FA UI too); not application copy."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/performance/index.html",
+      "element": "<div.velora-locale-switcher>",
+      "attribute": "title",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/performance/index.html",
+      "element": "<select#velora-locale-select>",
+      "attribute": "aria-label",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/profile/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "Trading journal",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/profile/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/profile/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "English",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher lists language ENDONYMS by convention (option 'English' shown in FA UI too); not application copy."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/profile/index.html",
+      "element": "<div.velora-locale-switcher>",
+      "attribute": "title",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/profile/index.html",
+      "element": "<select#velora-locale-select>",
+      "attribute": "aria-label",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/register/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "English",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher lists language ENDONYMS by convention (option 'English' shown in FA UI too); not application copy."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/reset-password/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "English",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher lists language ENDONYMS by convention (option 'English' shown in FA UI too); not application copy."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/support/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "Trading journal",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/support/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/support/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "English",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher lists language ENDONYMS by convention (option 'English' shown in FA UI too); not application copy."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/support/index.html",
+      "element": "<div.velora-locale-switcher>",
+      "attribute": "title",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/support/index.html",
+      "element": "<select#velora-locale-select>",
+      "attribute": "aria-label",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/trades/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "Trading journal",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/trades/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/trades/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "English",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher lists language ENDONYMS by convention (option 'English' shown in FA UI too); not application copy."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/trades/index.html",
+      "element": "<div.velora-locale-switcher>",
+      "attribute": "title",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/trades/index.html",
+      "element": "<select#velora-locale-select>",
+      "attribute": "aria-label",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/trades/new/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "Trading journal",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/trades/new/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/trades/new/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "English",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher lists language ENDONYMS by convention (option 'English' shown in FA UI too); not application copy."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/trades/new/index.html",
+      "element": "<div.velora-locale-switcher>",
+      "attribute": "title",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/trades/new/index.html",
+      "element": "<select#velora-locale-select>",
+      "attribute": "aria-label",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/verify-email/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "English",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher lists language ENDONYMS by convention (option 'English' shown in FA UI too); not application copy."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/wallet/index.html",
+      "element": "<span>",
+      "attribute": "(text)",
+      "text": "Trading journal",
+      "category": "legacy-deferred-debt",
+      "reason": "Pre-existing finding pinned by baseline ratchet (classify me)."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/wallet/index.html",
+      "element": "<label>",
+      "attribute": "(text)",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/wallet/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "English",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher lists language ENDONYMS by convention (option 'English' shown in FA UI too); not application copy."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/wallet/index.html",
+      "element": "<div.velora-locale-switcher>",
+      "attribute": "title",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/wallet/index.html",
+      "element": "<select#velora-locale-select>",
+      "attribute": "aria-label",
+      "text": "Language",
+      "category": "legacy-deferred-debt",
+      "reason": "Locale-switcher label/title not yet localized in FA — follow-up content task."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/blog/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "English",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher lists language ENDONYMS by convention (option 'English' shown in FA UI too); not application copy."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/blog/what-is-trading-journal/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "English",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher lists language ENDONYMS by convention (option 'English' shown in FA UI too); not application copy."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/blog/forex-trading-journal/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "English",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher lists language ENDONYMS by convention (option 'English' shown in FA UI too); not application copy."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/blog/why-traders-need-journal/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "English",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher lists language ENDONYMS by convention (option 'English' shown in FA UI too); not application copy."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/blog/risk-management-trading/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "English",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher lists language ENDONYMS by convention (option 'English' shown in FA UI too); not application copy."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/blog/mt4-mt5-trading-journal/index.html",
+      "element": "<option>",
+      "attribute": "(text)",
+      "text": "English",
+      "category": "locale-switcher-endonym",
+      "reason": "Locale switcher lists language ENDONYMS by convention (option 'English' shown in FA UI too); not application copy."
+    },
+    {
+      "locale": "FA",
+      "route": "/fa/blog/mt4-mt5-trading-journal/index.html",
+      "element": "<span.tag>",
+      "attribute": "(text)",
+      "text": "MetaApi",
+      "category": "provider-name",
+      "reason": "Trading API provider brand (site spelling 'MetaApi') kept latin in FA."
+    }
+  ]
+}

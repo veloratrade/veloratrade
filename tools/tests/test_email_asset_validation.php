@@ -183,8 +183,8 @@ require dirname(__DIR__, 2) . '/api/src/Core/NotificationService.php';
         }
     }
 
-    // Icon mapping completeness: 7 dedicated icons, valid PNGs on disk.
-    foreach (['verification', 'welcome', 'password-reset', 'password-changed', 'security', 'first-trade', 'achievement'] as $icon) {
+    // Icon mapping completeness: 8 dedicated icons, valid PNGs on disk.
+    foreach (['verification', 'welcome', 'password-reset', 'password-changed', 'security', 'first-trade', 'achievement', 'admin-invite'] as $icon) {
         $path = $repoRoot . '/public/assets/email-icons/' . $icon . '.png';
         $expect(is_file($path) && filesize($path) > 0, "icon '{$icon}.png' must exist on disk");
         $raw = (string) @file_get_contents($path);

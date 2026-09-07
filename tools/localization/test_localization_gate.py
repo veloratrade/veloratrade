@@ -18,12 +18,16 @@ class LocalizationGateTestCase(unittest.TestCase):
     test_validate_localization.py and test_pr01_freeze.py."""
 
     def test_gate_passes_on_current_repository_tree(self) -> None:
+        # skip_runtime: the browser layer needs Playwright and is covered
+        # end-to-end by test_runtime_locale_integrity (Test I); this test
+        # proves the composition of the non-browser validators.
         root = Path(__file__).resolve().parents[2]
-        ok, messages = run_gate(root)
+        ok, messages = run_gate(root, skip_runtime=True)
         self.assertTrue(ok, msg="\n".join(messages))
         joined = "\n".join(messages)
         self.assertIn("Catalog validation OK", joined)
         self.assertIn("Hardcoded-UI freeze OK", joined)
+        self.assertIn("Static attribute localization OK", joined)
 
     def test_gate_fails_when_catalog_parity_breaks(self) -> None:
         root = Path(__file__).resolve().parents[2]
@@ -35,7 +39,7 @@ class LocalizationGateTestCase(unittest.TestCase):
             en_path.write_text(
                 json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
             )
-            ok, messages = run_gate(root)
+            ok, messages = run_gate(root, skip_runtime=True)
             self.assertFalse(ok)
             self.assertTrue(
                 any("CATALOG VALIDATION FAILED" in m for m in messages),
@@ -53,7 +57,7 @@ class LocalizationGateTestCase(unittest.TestCase):
                 original + "\nvar __gateTestLiteral = '\u06cc\u06a9 \u0645\u062a\u0646 \u062c\u062f\u06cc\u062f \u0641\u0627\u0631\u0633\u06cc';\n",
                 encoding="utf-8",
             )
-            ok, messages = run_gate(root)
+            ok, messages = run_gate(root, skip_runtime=True)
             self.assertFalse(ok)
             self.assertTrue(
                 any("HARDCODED-UI CHECK FAILED" in m for m in messages),
@@ -71,7 +75,7 @@ class LocalizationGateTestCase(unittest.TestCase):
                 original + "\nvar __gateEnglishLiteral = 'Workspace Sentinel';\n",
                 encoding="utf-8",
             )
-            ok, messages = run_gate(root)
+            ok, messages = run_gate(root, skip_runtime=True)
             self.assertFalse(ok)
             self.assertTrue(
                 any("HARDCODED-UI CHECK FAILED" in m for m in messages),
