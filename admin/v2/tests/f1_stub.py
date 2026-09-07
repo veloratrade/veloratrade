@@ -335,6 +335,56 @@ class H(SimpleHTTPRequestHandler):
             except: per=50
             total=len(rows)
             self._j(200,{"items":rows[(page-1)*per:page*per],"total":total,"page":page,"per_page":per}); return
+        if up.path=="/api/v1/admin/security/signups":
+            from urllib.parse import parse_qs as _sq
+            m=loadmode()
+            if m["mode"] in ("noauth","user403","panel_false"): self._j(403,{"status":"error","error":{"code":"PERMISSION_DENIED"}}); return
+            if m.get("fail_security"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
+            sensitive=(m["mode"]=="super")
+            q=_sq(up.query)
+            cl=[{"clusterKey":"198.51.100.7","memberCount":2,"firstSignupAt":"2026-09-05 10:00:00","lastSignupAt":"2026-09-05 11:00:00",
+                 "members":[{"userId":2,"email":"sara@velora.test","fullName":"Sara Ahmadi","signupAt":"2026-09-05 10:00:00","verified":False,"ipAddress":"198.51.100.7","userAgent":"SharedUA/1"},
+                            {"userId":5,"email":"mina@velora.test","fullName":"Mina Nouri","signupAt":"2026-09-05 11:00:00","verified":False,"ipAddress":"198.51.100.7","userAgent":"SharedUA/1"}]},
+                {"clusterKey":"198.51.100.9","memberCount":2,"firstSignupAt":"2026-09-06 09:00:00","lastSignupAt":"2026-09-06 09:30:00",
+                 "members":[{"userId":3,"email":"reza@velora.test","fullName":"Reza Karami","signupAt":"2026-09-06 09:00:00","verified":True,"ipAddress":"198.51.100.9","userAgent":"SharedUA/2"},
+                            {"userId":7,"email":"neda@velora.test","fullName":"Neda Karimi","signupAt":"2026-09-06 09:30:00","verified":True,"ipAddress":"198.51.100.9","userAgent":"SharedUA/2"}]}]
+            cl=[dict(c,keyMasked="198.51.*.*") for c in cl]
+            for c in cl:
+                if sensitive:
+                    c["key"]=c.pop("clusterKey")   # real contract: raw key ONLY for sensitive viewers
+                else:
+                    c.pop("clusterKey",None)
+                    c["members"]=[{k:v for k,v in mm.items() if k not in ("ipAddress","userAgent")} for mm in c["members"]]
+            try: page=int(q.get("page",["1"])[0])
+            except: page=1
+            try: per=int(q.get("per_page",["20"])[0])
+            except: per=20
+            self._j(200,{"range":{"days":int(q.get("days",["30"])[0] or 30),"start":"2026-08-09 00:00:00"},"sensitiveVisible":sensitive,
+                         "kpis":{"totalUsers":25,"newInRange":3,"verified":2,"unverified":1},
+                         "trend":[{"date":"2026-09-04","count":1},{"date":"2026-09-05","count":2},{"date":"2026-09-06","count":3}],
+                         "clusters":cl[(page-1)*per:page*per],"pagination":{"total":2,"page":page,"per_page":per,"has_more":page*per<2}})
+            return
+        if up.path=="/api/v1/admin/security/logins":
+            m=loadmode()
+            if m["mode"] in ("noauth","user403","panel_false"): self._j(403,{"status":"error","error":{"code":"PERMISSION_DENIED"}}); return
+            if m.get("fail_security"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
+            from urllib.parse import parse_qs as _sq
+            sensitive=(m["mode"]=="super")
+            q=_sq(up.query)
+            ev=[{"id":52,"userId":None,"eventType":"login","result":"failure","reason":"unknown_account","createdAt":"2026-09-06 12:10:00","ipAddress":"9.9.9.9","userAgent":"Bot/1"},
+                {"id":51,"userId":2,"eventType":"login","result":"failure","reason":"bad_password","createdAt":"2026-09-06 12:05:00","ipAddress":"198.51.100.7","userAgent":"Mozilla/5.0 StubUA","userEmail":"sara@velora.test","userFullName":"Sara Ahmadi"},
+                {"id":50,"userId":2,"eventType":"login","result":"success","reason":None,"createdAt":"2026-09-06 12:00:00","ipAddress":"198.51.100.7","userAgent":"Mozilla/5.0 StubUA","userEmail":"sara@velora.test","userFullName":"Sara Ahmadi"},
+                {"id":49,"userId":3,"eventType":"login","result":"success","reason":None,"createdAt":"2026-09-05 08:00:00","ipAddress":"198.51.100.9","userAgent":"SharedUA/2","userEmail":"reza@velora.test","userFullName":"Reza Karami"}]
+            res=q.get("result",[None])[0]
+            if res: ev=[r for r in ev if r["result"]==res]
+            if not sensitive:
+                ev=[{k:v for k,v in r.items() if k not in ("ipAddress","userAgent")} for r in ev]
+            try: page=int(q.get("page",["1"])[0])
+            except: page=1
+            try: per=int(q.get("per_page",["25"])[0])
+            except: per=25
+            self._j(200,{"events":ev[(page-1)*per:page*per],"sensitiveVisible":sensitive,"pagination":{"total":len(ev),"page":page,"per_page":per,"has_more":page*per<len(ev)}})
+            return
         if up.path=="/api/v1/admin/feature-flags":
             m=loadmode()
             if m["mode"] in ("noauth","user403","panel_false"): self._j(403,{"status":"error","error":{"code":"PERMISSION_DENIED"}}); return
