@@ -10,7 +10,10 @@ use Velora\Core\Exceptions\ConflictException;
 use Velora\Core\Exceptions\ForbiddenException;
 use Velora\Core\Exceptions\NotFoundException;
 use Velora\Core\Exceptions\ValidationException;
+use Velora\Auth\AuthEventRepository;
 use Velora\Auth\EmailVerificationRepository;
+use Velora\Auth\SessionRepository;
+use Velora\Auth\UserDeviceRepository;
 use Velora\Auth\PasswordService;
 use Velora\Auth\Role;
 use Velora\Auth\UserRepository;
@@ -637,6 +640,129 @@ final class UserManagementService
     }
 
     /** Revoke all live sessions of a user (logout everywhere). Idempotent. */
+    /**
+     * Phase 3 — real sessions/devices/login-history visibility for User360.
+     *
+     * Reads require `users.view` (enforced by the route); revocation requires
+     * `users.suspend` (enforced by the route) — the SAME authority as the
+     * pre-existing revoke-all action, plus the same service guards
+     * (SELF_ACTION_DENIED + assertTargetManipulable). Sessions are listed
+     * WITHOUT their token hashes (never secrets); active status is derived
+     * from real state (revoked_at IS NULL AND expires_at >= now). Devices
+     * are read-only by architecture (no revocation concept exists in the
+     * schema — documented limitation, not faked). Login history rows come
+     * from auth_events (real recorded events only — nothing retrofitted).
+     */
+
+    /** @return array{sessions:array<int,array<string,mixed>>,total:int,page:int,perPage:int} */
+    public function userSessions(int $id, int $requesterId, string $requesterRole, int $page = 1, int $perPage = 25): array
+    {
+        if ($this->findUser($id) === null) {
+            throw new NotFoundException('User not found.', 'USER_NOT_FOUND');
+        }
+        $page = max(1, $page);
+        $perPage = min(100, max(1, $perPage));
+        $now = gmdate('Y-m-d H:i:s');
+        $pdo = Database::connection();
+
+        $c = $pdo->prepare('SELECT COUNT(*) AS n FROM user_sessions WHERE user_id = :id');
+        $c->execute(['id' => $id]);
+        $total = (int) $c->fetch()['n'];
+
+        $offset = ($page - 1) * $perPage;
+        $q = $pdo->prepare(
+            "SELECT id, ip_address, user_agent, expires_at, revoked_at, created_at
+             FROM user_sessions WHERE user_id = :id
+             ORDER BY created_at DESC, id DESC
+             LIMIT {$perPage} OFFSET {$offset}"
+        );
+        $q->execute(['id' => $id]);
+        $sessions = array_map(static fn (array $r): array => [
+            'id' => (int) $r['id'],
+            'active' => $r['revoked_at'] === null && (string) $r['expires_at'] >= $now,
+            'createdAt' => (string) $r['created_at'],
+            'expiresAt' => $r['expires_at'] !== null ? (string) $r['expires_at'] : null,
+            'revokedAt' => $r['revoked_at'] !== null ? (string) $r['revoked_at'] : null,
+            'ipAddress' => $r['ip_address'] !== null ? (string) $r['ip_address'] : null,
+            'userAgent' => $r['user_agent'] !== null ? (string) $r['user_agent'] : null,
+        ], $q->fetchAll());
+
+        return ['sessions' => $sessions, 'total' => $total, 'page' => $page, 'perPage' => $perPage];
+    }
+
+    /** Idempotent single-session revocation; audited by the controller. @return array{id:int,changed:bool} */
+    public function revokeSession(int $id, int $sessionId, int $requesterId, string $requesterRole): array
+    {
+        if ($id === $requesterId) {
+            throw new ForbiddenException('Action on self is not allowed.', 'SELF_ACTION_DENIED');
+        }
+        $target = $this->findUser($id);
+        if ($target === null) {
+            throw new NotFoundException('User not found.', 'USER_NOT_FOUND');
+        }
+        $this->assertTargetManipulable($target, $requesterRole);
+
+        $stmt = Database::connection()->prepare(
+            'SELECT id, revoked_at, expires_at FROM user_sessions WHERE id = :sid AND user_id = :id LIMIT 1'
+        );
+        $stmt->execute(['sid' => $sessionId, 'id' => $id]);
+        $session = $stmt->fetch();
+        if ($session === false) {
+            // Unknown id OR a session belonging to a different user — identical answer.
+            throw new NotFoundException('Session not found.', 'SESSION_NOT_FOUND');
+        }
+
+        // revoke() itself is idempotent (UPDATE ... WHERE revoked_at IS NULL);
+        // `changed` reflects real usability: an already-revoked OR already
+        // expired session is dead regardless, so revoking it changes nothing.
+        $now = gmdate('Y-m-d H:i:s');
+        $changed = $session['revoked_at'] === null && (string) $session['expires_at'] >= $now;
+        (new SessionRepository())->revoke($sessionId);
+        return ['id' => $sessionId, 'changed' => $changed];
+    }
+
+    /** @return array{devices:array<int,array<string,mixed>>,total:int,page:int,perPage:int} */
+    public function userDevices(int $id, int $requesterId, string $requesterRole, int $page = 1, int $perPage = 25): array
+    {
+        if ($this->findUser($id) === null) {
+            throw new NotFoundException('User not found.', 'USER_NOT_FOUND');
+        }
+        $page = max(1, $page);
+        $perPage = min(100, max(1, $perPage));
+
+        // Existing repository deliberately excludes the internal fingerprint
+        // correlation key; ordering: most recently seen first.
+        $all = (new UserDeviceRepository())->listForUser($id);
+        $total = count($all);
+        $slice = array_slice($all, ($page - 1) * $perPage, $perPage);
+        $devices = array_map(static fn (array $r): array => [
+            'id' => (int) $r['id'],
+            'ipAddress' => $r['ip_address'] !== null ? (string) $r['ip_address'] : null,
+            'userAgent' => $r['user_agent'] !== null ? (string) $r['user_agent'] : null,
+            'firstSeenAt' => (string) $r['first_seen_at'],
+            'lastSeenAt' => (string) $r['last_seen_at'],
+        ], $slice);
+
+        return ['devices' => $devices, 'total' => $total, 'page' => $page, 'perPage' => $perPage];
+    }
+
+    /** @return array{events:array<int,array<string,mixed>>,total:int,page:int,perPage:int} */
+    public function loginHistory(int $id, int $requesterId, string $requesterRole, int $page = 1, int $perPage = 25, ?string $result = null): array
+    {
+        if ($this->findUser($id) === null) {
+            throw new NotFoundException('User not found.', 'USER_NOT_FOUND');
+        }
+        if ($result !== null && $result !== '' && !in_array($result, ['success', 'failure'], true)) {
+            throw new ValidationException('Invalid result filter.', ['result' => ['code' => 'INVALID_CHOICE', 'messageKey' => 'errors.validation.choice', 'params' => []]]);
+        }
+        $page = max(1, $page);
+        $perPage = min(100, max(1, $perPage));
+
+        $res = (new AuthEventRepository())->listForUser($id, $page, $perPage, $result !== '' ? $result : null);
+
+        return ['events' => $res['items'], 'total' => $res['total'], 'page' => $page, 'perPage' => $perPage];
+    }
+
     public function revokeSessions(int $id, int $requesterId, string $requesterRole): int
     {
         if ($id === $requesterId) {

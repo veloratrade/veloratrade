@@ -227,6 +227,92 @@ final class UserManagementController
     }
 
     /**
+     * Phase 3 — GET /api/v1/admin/users/{id}/sessions
+     * users.view at the route. Real rows only; token hashes never leave the DB.
+     */
+    public function sessions(Request $request, array $params): never
+    {
+        $id = (int) ($params['id'] ?? 0);
+        $result = $this->service->userSessions(
+            $id,
+            (int) ($request->attributes['user_id'] ?? 0),
+            (string) ($request->attributes['user_role'] ?? ''),
+            max(1, (int) ($request->query['page'] ?? 1)),
+            (int) ($request->query['per_page'] ?? 25),
+        );
+        Response::json([
+            'sessions' => $result['sessions'],
+            'pagination' => ['total' => $result['total'], 'page' => $result['page'], 'per_page' => $result['perPage'], 'has_more' => $result['page'] * $result['perPage'] < $result['total']],
+        ]);
+    }
+
+    /**
+     * Phase 3 — POST /api/v1/admin/users/{id}/sessions/{sessionId}/revoke
+     * users.suspend at the route (same authority as revoke-all); idempotent;
+     * audited user.session.revoke with secret-free metadata.
+     */
+    public function revokeSession(Request $request, array $params): never
+    {
+        RateLimiter::hit('admin-user-action', 30, 300);
+        $id = (int) ($params['id'] ?? 0);
+        $sessionId = (int) ($params['sessionId'] ?? 0);
+        $actorId = (int) ($request->attributes['user_id'] ?? 0);
+        $actorRole = (string) ($request->attributes['user_role'] ?? '');
+
+        $result = $this->service->revokeSession($id, $sessionId, $actorId, $actorRole);
+        $this->audit->record(
+            $actorId, $actorRole, 'user.session.revoke', 'user', $id, 'success',
+            "User #$id session #" . $result['id'] . ' revoked' . ($result['changed'] ? '' : ' (already revoked)'),
+            $request->clientIp() ?? null,
+            $request->headers['user-agent'] ?? null,
+            $request->contextId(),
+            ['sessionId' => $result['id'], 'changed' => $result['changed']],
+        );
+        Response::json(['ok' => true, 'changed' => $result['changed']]);
+    }
+
+    /**
+     * Phase 3 — GET /api/v1/admin/users/{id}/devices (read-only: the device
+     * model has no revocation concept; limitation documented, not faked).
+     */
+    public function devices(Request $request, array $params): never
+    {
+        $id = (int) ($params['id'] ?? 0);
+        $result = $this->service->userDevices(
+            $id,
+            (int) ($request->attributes['user_id'] ?? 0),
+            (string) ($request->attributes['user_role'] ?? ''),
+            max(1, (int) ($request->query['page'] ?? 1)),
+            (int) ($request->query['per_page'] ?? 25),
+        );
+        Response::json([
+            'devices' => $result['devices'],
+            'pagination' => ['total' => $result['total'], 'page' => $result['page'], 'per_page' => $result['perPage'], 'has_more' => $result['page'] * $result['perPage'] < $result['total']],
+        ]);
+    }
+
+    /**
+     * Phase 3 — GET /api/v1/admin/users/{id}/login-history (auth_events;
+     * real recorded events only; result filter success|failure).
+     */
+    public function loginHistory(Request $request, array $params): never
+    {
+        $id = (int) ($params['id'] ?? 0);
+        $result = $this->service->loginHistory(
+            $id,
+            (int) ($request->attributes['user_id'] ?? 0),
+            (string) ($request->attributes['user_role'] ?? ''),
+            max(1, (int) ($request->query['page'] ?? 1)),
+            (int) ($request->query['per_page'] ?? 25),
+            isset($request->query['result']) ? (string) $request->query['result'] : null,
+        );
+        Response::json([
+            'events' => $result['events'],
+            'pagination' => ['total' => $result['total'], 'page' => $result['page'], 'per_page' => $result['perPage'], 'has_more' => $result['page'] * $result['perPage'] < $result['total']],
+        ]);
+    }
+
+    /**
      * Admin Create User — POST /api/v1/admin/users
      * RBAC: users.create (admin + super_admin) via requirePermission in
      * api/index.php; privileged-role creation additionally requires
