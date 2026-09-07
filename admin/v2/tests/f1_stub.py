@@ -4,6 +4,7 @@ import os
 REPO=os.path.abspath(os.path.join(os.path.dirname(__file__),"..","..",".."))
 ROOT=os.path.dirname(os.path.abspath(__file__))
 def loadmode(): return json.load(open(os.path.join(ROOT,"mode.json")))
+def u_find(self,uid): return self._find(uid)
 PERMS_SUPER=["overview.view","users.view","users.suspend","users.activate","users.manage_subscription","users.verify_email","audit.view","audit.view_sensitive","system.health.view","system.logs.view","settings.view","feature_flags.view","billing.view","integrations.view","aiManage","analytics.view","users.change_role","system.settings.manage","feature_flags.edit","integrations.manage","aiRouteManage"]
 PERMS_ADMIN=[p for p in PERMS_SUPER if p not in ("users.change_role","audit.view_sensitive","system.settings.manage","feature_flags.edit","integrations.manage","aiRouteManage")]
 PERMS_LIMITED=["overview.view","users.view"]
@@ -50,6 +51,39 @@ class H(SimpleHTTPRequestHandler):
             if m["mode"]=="users403": self._j(403,{"status":"error","error":{"code":"PERMISSION_DENIED"}}); return
             self._j(200,self._users(up.query)); return
         import re as _re
+        mm=_re.match(r"^/api/v1/admin/users/(\d+)/(sessions|devices|login-history)$",up.path)
+        if mm:
+            # Phase 3 User360 sections — mirror the real controller envelopes.
+            from urllib.parse import parse_qs as _pqs
+            uid=int(mm.group(1)); kind=mm.group(2); q=_pqs(up.query)
+            m=loadmode()
+            if not u_find(self,uid): self._j(404,{"status":"error","error":{"code":"USER_NOT_FOUND"}}); return
+            if m.get("fail_actions"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
+            page=int(q.get("page",["1"])[0]); per=int(q.get("per_page",["10"])[0])
+            if kind=="sessions":
+                if uid==4: rows=[]
+                else: rows=[
+                 {"id":101,"active":True,"createdAt":"2026-09-05 09:15:00","expiresAt":"2026-10-05 09:15:00","revokedAt":None,"ipAddress":"198.51.100.7","userAgent":"Mozilla/5.0 (Windows NT 10.0) velora"},
+                 {"id":102,"active":False,"createdAt":"2026-09-04 11:00:00","expiresAt":"2026-10-04 11:00:00","revokedAt":"2026-09-05 12:00:00","ipAddress":"198.51.100.8","userAgent":"Mozilla/5.0 (Linux) velora"},
+                 {"id":103,"active":False,"createdAt":"2026-08-20 08:00:00","expiresAt":"2026-08-30 08:00:00","revokedAt":None,"ipAddress":"198.51.100.9","userAgent":"Mozilla/5.0 (Mac) velora"}]
+                if uid==2: rows=[r for r in rows if r["id"]!=102] or rows
+                total=len(rows); chunk=rows[(page-1)*per:page*per]
+                self._j(200,{"sessions":chunk,"pagination":{"total":total,"page":page,"per_page":per,"has_more":page*per<total}}); return
+            if kind=="devices":
+                rows=[] if uid==4 else [
+                 {"id":301,"ipAddress":"198.51.100.7","userAgent":"Mozilla/5.0 (Windows NT 10.0) velora","firstSeenAt":"2026-08-01 10:00:00","lastSeenAt":"2026-09-05 09:15:00"},
+                 {"id":302,"ipAddress":"198.51.100.9","userAgent":"Mozilla/5.0 (Mac) velora","firstSeenAt":"2026-08-20 08:00:00","lastSeenAt":"2026-09-01 18:30:00"}]
+                total=len(rows); chunk=rows[(page-1)*per:page*per]
+                self._j(200,{"devices":chunk,"pagination":{"total":total,"page":page,"per_page":per,"has_more":page*per<total}}); return
+            # login-history
+            want=q.get("result",[None])[0]
+            rows=[] if uid==4 else [
+             {"id":501,"eventType":"login","result":"success","reason":None,"ipAddress":"198.51.100.7","userAgent":"Mozilla/5.0 (Windows NT 10.0) velora","createdAt":"2026-09-05 09:15:00"},
+             {"id":502,"eventType":"login","result":"failure","reason":"INVALID_CREDENTIALS","ipAddress":"198.51.100.11","userAgent":"Mozilla/5.0 (Windows NT 10.0) velora","createdAt":"2026-09-04 21:40:00"},
+             {"id":503,"eventType":"login","result":"success","reason":None,"ipAddress":"198.51.100.9","userAgent":"Mozilla/5.0 (Mac) velora","createdAt":"2026-09-01 18:30:00"}]
+            if want: rows=[r for r in rows if r["result"]==want]
+            total=len(rows); chunk=rows[(page-1)*per:page*per]
+            self._j(200,{"events":chunk,"pagination":{"total":total,"page":page,"per_page":per,"has_more":page*per<total}}); return
         mm=_re.match(r"^/api/v1/admin/users/(\d+)$",up.path)
         if mm:
             u=self._find(int(mm.group(1)))
@@ -259,6 +293,16 @@ class H(SimpleHTTPRequestHandler):
             self.server.db_users.append(dict(nu))
             self._j(201,{"status":"success","data":{"ok":True,"user":nu,"verificationRequired":True,
                         "emailSent": res!="notsent"},"error":None,"timestamp":"2026-09-07T10:00:00+00:00"}); return
+        mm=_re.match(r"^/api/v1/admin/users/(\d+)/sessions/(\d+)/revoke$",up.path)
+        if mm:
+            m=loadmode()
+            if m.get("fail_actions"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
+            uid=int(mm.group(1)); sid=int(mm.group(2))
+            if sid==777: self._j(404,{"status":"error","error":{"code":"SESSION_NOT_FOUND"}}); return
+            already = m.get("revoke_already") and sid==102
+            m["revoke_last"]={"uid":uid,"sid":sid}
+            json.dump(m,open(os.path.join(ROOT,"mode.json"),"w"))
+            self._j(200,{"status":"success","data":{"ok":True,"changed": not already},"error":None,"timestamp":"2026-09-07T12:00:00+00:00"}); return
         if up.path=="/api/v1/admin/users/invitations":
             # Invite Admin (Phase 2) — mirrors the real controller::invite shape.
             m=loadmode()

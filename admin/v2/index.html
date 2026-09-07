@@ -1000,9 +1000,121 @@ function navAllowed(id){if(id==="design")return false;const p=VIEW_PERM[id];retu
 function pendingPage(def){return pagehead(t(def.labelKey),t("shell.pending.desc"),`<span class="badge">${esc(t("shell.pending.badge"))}</span>`)
  +empty(VI.box,t("shell.pending.title"),t("shell.pending.desc"),
    `<button class="btn sm" onclick="go('overview')">${esc(t("shell.p404.back"))}</button>`);}
-function user360Page(uid){return pagehead(t("nav.user360")+" <span class='mono num'>#"+esc(String(uid))+"</span>",t("shell.pending.desc"),`<span class="badge">${esc(t("shell.pending.badge"))}</span>`)
- +empty(NAVID_IC.users||VI.box,t("shell.pending.title"),t("shell.user360.none"),
-   `<button class="btn sm" onclick="go('users')">${esc(t("nav.users"))}</button>`);}
+/* ---------------- User360 (Phase 3): real identity + sessions/devices/login history ---------------- */
+const U36={uid:null,user:null,dst:"idle",derr:null,sess:null,sst:"idle",serr:null,spage:1,
+ dev:null,dvt:"idle",dverr:null,dpage:1,hist:null,hst:"idle",herr:null,hpage:1,histFilter:"",busy:{}};
+function u360Cur(){return "users/"+U36.uid}
+async function f3Load360User(uid){U36.dst="loading";f3RenderIf(u360Cur());
+ try{const d=await VeloraData.request("/api/v1/admin/users/"+uid);U36.user=d&&d.user?d.user:null;U36.dst="ok";}
+ catch(e){U36.derr=e;U36.dst="error";} f3RenderIf(u360Cur())}
+async function f3Load360Sessions(uid){U36.sst="loading";f3RenderIf(u360Cur());
+ try{const d=await VeloraData.request("/api/v1/admin/users/"+uid+"/sessions?page="+U36.spage+"&per_page=10");U36.sess=d;U36.sst="ok";}
+ catch(e){U36.serr=e;U36.sst="error";} f3RenderIf(u360Cur())}
+async function f3Load360Devices(uid){U36.dvt="loading";f3RenderIf(u360Cur());
+ try{const d=await VeloraData.request("/api/v1/admin/users/"+uid+"/devices?page="+U36.dpage+"&per_page=10");U36.dev=d;U36.dvt="ok";}
+ catch(e){U36.dverr=e;U36.dvt="error";} f3RenderIf(u360Cur())}
+async function f3Load360History(uid){U36.hst="loading";f3RenderIf(u360Cur());
+ try{const f=U36.histFilter?"&result="+encodeURIComponent(U36.histFilter):"";
+  const d=await VeloraData.request("/api/v1/admin/users/"+uid+"/login-history?page="+U36.hpage+"&per_page=10"+f);U36.hist=d;U36.hst="ok";}
+ catch(e){U36.herr=e;U36.hst="error";} f3RenderIf(u360Cur())}
+function u360SessBadge(x){return x==="active"?bdot("ok",t("u360.active")):x==="revoked"?bdot("neutral",t("u360.revoked")):bdot("warn",t("u360.expired"))}
+function u360ResultBadge(r){return r==="success"?bdot("ok",t("u360.hist.success")):bdot("err",t("u360.hist.failure"))}
+function u360Reason(r){if(!r)return"—";const k="u360.reason."+String(r).toLowerCase();return t(k)!==k?t(k):esc(String(r))}
+function u360Ua(ua){return ua?`<div class="cellsub" style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(ua)}">${esc(ua)}</div>`:"—"}
+function u360PageOf(state,total,perPage,goFn){const pages=Math.max(1,Math.ceil(total/perPage));
+ return `<div style="display:flex;gap:10px;align-items:center;margin-top:10px">
+  <button class="btn sm" onclick="${goFn}(-1)"${state<=1?" disabled":""}>${esc(t("usr.prev"))}</button>
+  <span class="cellsub">${esc(t("usr.page"))} <span class="num">${state}</span> ${esc(t("usr.of"))} <span class="num">${pages}</span> · <span class="num">${total}</span></span>
+  <button class="btn sm" onclick="${goFn}(1)"${pages<=state?" disabled":""}>${esc(t("usr.next"))}</button></div>`}
+function u360Section(title,body){return `<div class="card" style="margin-bottom:12px"><div class="ch"><h3>${esc(title)}</h3></div><div class="cb">${body}</div></div>`}
+function user360Page(uid){
+ uid=String(uid);
+ if(U36.uid!==uid){U36.uid=uid;U36.user=null;U36.sess=null;U36.dev=null;U36.hist=null;
+  U36.spage=1;U36.dpage=1;U36.hpage=1;U36.histFilter="";U36.sst=U36.dvt=U36.hst="idle";U36.dst="idle";
+  f3Load360User(uid);f3Load360Sessions(uid);f3Load360Devices(uid);f3Load360History(uid);}
+ const cur=String(uid);
+ let h=pagehead(t("nav.user360")+" <span class='mono num'>#"+esc(cur)+"</span>","",`<button class="btn sm" onclick="go('users')">${esc(t("nav.users"))}</button>`);
+ /* identity header — real data from GET /users/{id} */
+ if(U36.dst==="loading"&&!U36.user)h+=`<div class="card" style="margin-bottom:12px"><div class="cb">${f3skel(4)}</div></div>`;
+ else if(U36.dst==="error")h+=`<div class="card" style="margin-bottom:12px"><div class="cb">${f3errBox(U36.derr)}</div></div>`;
+ else if(U36.user){const u=U36.user;
+  h+=`<div class="card" style="margin-bottom:12px"><div class="cb" style="display:flex;gap:14px;flex-wrap:wrap;align-items:center">
+   <div style="min-width:0"><div style="font-weight:800;font-size:14px">${esc(u.fullName||"—")}</div>
+   <div class="cellsub mono" style="direction:ltr">${esc(u.email||"—")}</div></div>
+   ${bdot(u.role==="super_admin"?"accent":u.role==="admin"?"info":"neutral",f3RoleLbl(u.role))}
+   ${u.status==="active"?bdot("ok",t("ov.active")):bdot("err",t("ov.suspended"))}
+   ${u.emailVerified?bdot("ok",t("usr.verified.yes")):bdot("warn",t("usr.verified.no"))}
+   <span class="cellsub">${esc(t("usr.col.created"))}: <span class="mono">${esc(String(u.createdAt||"—"))}</span></span>
+  </div></div>`;}
+ /* sessions */
+ h+=u360Section(t("u360.sess.title"),
+  U36.sst==="loading"&&!U36.sess?f3skel(6)
+  :U36.sst==="error"?f3errBox(U36.serr)
+  :!(U36.sess&&U36.sess.sessions&&U36.sess.sessions.length)?empty(NAVID_IC.users||VI.box,t("u360.empty"),"")
+  :(()=>{const S=U36.sess;let t2=`<div class="twrap"><table class="tbl" data-mstack><thead><tr>
+    <th class="nom">${esc(t("u360.col.session"))}</th><th>${esc(t("usr.col.status"))}</th><th>${esc(t("u360.col.ip"))}</th>
+    <th>${esc(t("u360.col.ua"))}</th><th>${esc(t("u360.col.created"))}</th><th>${esc(t("u360.col.expires"))}</th>
+    ${can("users.suspend")?`<th>${esc(t("usr.col.actions"))}</th>`:""}</tr></thead><tbody>`;
+   t2+=S.sessions.map(x=>{const st=x.active?"active":(x.revokedAt?"revoked":"expired");
+    return `<tr><td class="nom mono num">${x.id}</td><td>${u360SessBadge(st)}</td>
+    <td class="mono cellsub">${esc(x.ipAddress||"—")}</td><td>${u360Ua(x.userAgent)}</td>
+    <td class="cellsub mono">${esc(String(x.createdAt||"—"))}</td><td class="cellsub mono">${esc(String(x.expiresAt||"—"))}</td>
+    ${can("users.suspend")?`<td>${x.active?`<button class="btn sm danger" onclick="usr360Revoke(${cur},${x.id})" aria-haspopup="dialog">${esc(t("u360.act.revoke"))}</button>`:""}</td>`:""}</tr>`;}).join("");
+   t2+=`</tbody></table></div>`+u360PageOf(U36.spage,S.pagination&&S.pagination.total||0,S.pagination&&S.pagination.per_page||10,"f360SessPage");return t2})());
+ /* devices (read-only by architecture) */
+ h+=u360Section(t("u360.dev.title"),
+  `<div class="alert info"><span class="amark" aria-hidden="true">i</span><div>${esc(t("u360.dev.readonly"))}</div></div>`+
+  (U36.dvt==="loading"&&!U36.dev?f3skel(6)
+  :U36.dvt==="error"?f3errBox(U36.dverr)
+  :!(U36.dev&&U36.dev.devices&&U36.dev.devices.length)?empty(NAVID_IC.users||VI.box,t("u360.empty"),"")
+  :(()=>{const D=U36.dev;let t2=`<div class="twrap"><table class="tbl" data-mstack><thead><tr>
+    <th class="nom">${esc(t("u360.col.session"))}</th><th>${esc(t("u360.col.ip"))}</th><th>${esc(t("u360.col.ua"))}</th>
+    <th>${esc(t("u360.col.firstseen"))}</th><th>${esc(t("u360.col.lastseen"))}</th></tr></thead><tbody>`;
+   t2+=D.devices.map(x=>`<tr><td class="nom mono num">${x.id}</td><td class="mono cellsub">${esc(x.ipAddress||"—")}</td>
+    <td>${u360Ua(x.userAgent)}</td><td class="cellsub mono">${esc(String(x.firstSeenAt||"—"))}</td>
+    <td class="cellsub mono">${esc(String(x.lastSeenAt||"—"))}</td></tr>`).join("");
+   t2+=`</tbody></table></div>`+u360PageOf(U36.dpage,D.pagination&&D.pagination.total||0,D.pagination&&D.pagination.per_page||10,"f360DevPage");return t2})()));
+ /* login history (real auth_events; nothing retrofitted) */
+ h+=u360Section(t("u360.hist.title"),
+  `<div style="margin-bottom:10px"><select class="inp" onchange="f360HistFilter(this.value)" aria-label="${esc(t("u360.col.result"))}">
+    <option value=""${U36.histFilter===""?" selected":""}>${esc(t("u360.hist.all"))}</option>
+    <option value="success"${U36.histFilter==="success"?" selected":""}>${esc(t("u360.hist.success"))}</option>
+    <option value="failure"${U36.histFilter==="failure"?" selected":""}>${esc(t("u360.hist.failure"))}</option></select></div>`+
+  (U36.hst==="loading"&&!U36.hist?f3skel(6)
+  :U36.hst==="error"?f3errBox(U36.herr)
+  :!(U36.hist&&U36.hist.events&&U36.hist.events.length)?empty(NAVID_IC.users||VI.box,t("u360.empty"),"")
+  :(()=>{const H=U36.hist;let t2=`<div class="twrap"><table class="tbl" data-mstack><thead><tr>
+    <th>${esc(t("u360.col.time"))}</th><th>${esc(t("u360.col.event"))}</th><th>${esc(t("u360.col.result"))}</th>
+    <th>${esc(t("u360.col.reason"))}</th><th>${esc(t("u360.col.ip"))}</th><th>${esc(t("u360.col.ua"))}</th></tr></thead><tbody>`;
+   t2+=H.events.map(x=>`<tr><td class="cellsub mono">${esc(String(x.createdAt||"—"))}</td>
+    <td class="mono">${esc(String(x.eventType||"—"))}</td><td>${u360ResultBadge(x.result)}</td>
+    <td class="cellsub">${x.result==="failure"?u360Reason(x.reason):"—"}</td>
+    <td class="mono cellsub">${esc(x.ipAddress||"—")}</td><td>${u360Ua(x.userAgent)}</td></tr>`).join("");
+   t2+=`</tbody></table></div>`+u360PageOf(U36.hpage,H.pagination&&H.pagination.total||0,H.pagination&&H.pagination.per_page||10,"f360HistPage");return t2})()));
+ return h;
+}
+function f360SessPage(d){U36.spage=Math.max(1,U36.spage+d);f3Load360Sessions(U36.uid)}
+function f360DevPage(d){U36.dpage=Math.max(1,U36.dpage+d);f3Load360Devices(U36.uid)}
+function f360HistPage(d){U36.hpage=Math.max(1,U36.hpage+d);f3Load360History(U36.uid)}
+function f360HistFilter(v){U36.histFilter=v;U36.hpage=1;f3Load360History(U36.uid)}
+function usr360Revoke(uid,sid){
+ f3OpenModal(`<div class="mh">${esc(t("u360.md.revoke.title"))}<button class="tbtn" onclick="f3CloseModal()" aria-label="${esc(t("act.close"))}">${VI.x||"×"}</button></div>
+  <div class="mb">${esc(t("u360.md.revoke.body"))}<div class="note mono">#${esc(String(sid))}</div><div id="f3acterr"></div></div>
+  <div class="mf"><button class="btn" onclick="f3CloseModal()">${esc(t("act.cancel"))}</button>
+  <button class="btn danger" id="f3actgo" onclick="usr360DoRevoke(${uid},${sid})">${esc(t("u360.act.revoke"))}</button></div>`);
+}
+async function usr360DoRevoke(uid,sid){
+ const g=$("#f3actgo");if(g){g.disabled=true}
+ try{
+  const r=await VeloraData.request("/api/v1/admin/users/"+uid+"/sessions/"+sid+"/revoke",{method:"POST"});
+  toast(r&&r.changed===false?t("u360.done.revoke.already"):t("u360.done.revoke"));
+  f3CloseModal();U36.sess=null;U36.sst="idle";f3RenderIf(u360Cur());f3Load360Sessions(String(uid));   /* server-truthful refresh */
+ }catch(e){
+  const code=e&&e.code||"";
+  toast((code?esc(code)+" · ":"")+(e&&e.message?t("f3.errprefix"):""),"err");
+  f3ActErr((code?code+" — ":"")+(e&&e.message?String(e.message):t("f3.load.err")));
+ }
+}
 function notFoundPage(){return pagehead(t("shell.notfound.title"),t("shell.notfound.desc"),`<span class="badge b-err">404</span>`)
  +empty(VI.box,t("shell.notfound.title"),t("shell.notfound.desc"),
    `<button class="btn sm" onclick="go('overview')">${esc(t("shell.p404.back"))}</button>`);}
@@ -1030,7 +1142,7 @@ NAV.forEach(n=>{const grouped=n.g!==null&&(n.items||[n]).length>1;
    perm:VIEW_PERM[it.id]||null,status:"placeholder",nav:true,dynamic:false});
  })});
 REG.push({route:"users/:id",labelKey:"nav.user360",group:"nav.users",icon:"users",
- perm:VIEW_PERM.user360||"users.view",status:"placeholder",nav:false,dynamic:true,
+ perm:VIEW_PERM.user360||"users.view",status:"implemented",nav:false,dynamic:true,
  kw:["user360","user","profile","users"]});
 const REG_BY_ROUTE={};REG.forEach(d=>{REG_BY_ROUTE[d.route]=d});
 const iconFor=d=>NAVID_IC[d.icon||d.route]||IC[d.icon||d.route]||"";
@@ -1071,6 +1183,7 @@ const F3T={
   "usr.self.err":"این اقدام روی حساب خودتان مجاز نیست",
   "usr.act.create":"ایجاد کاربر","usr.md.create.title":"ایجاد کاربر","usr.md.create.email":"ایمیل","usr.md.create.name":"نام و نام خانوادگی","usr.md.create.password":"گذرواژه","usr.md.create.password.hint":"حداقل ۸ نویسه","usr.md.create.submit":"ایجاد","usr.done.create.sent":"کاربر ایجاد شد و ایمیل تأیید ارسال شد","usr.done.create.notsent":"کاربر ایجاد شد اما ارسال ایمیل تأیید ممکن نشد",
   "usr.act.invite":"دعوت مدیر","usr.md.invite.title":"دعوت مدیر","usr.md.invite.email":"ایمیل","usr.md.invite.name":"نام و نام خانوادگی","usr.md.invite.role":"نقش","usr.md.invite.note":"لینک فعال‌سازی یک‌بارمصرف (۲۴ ساعت) ایمیل می‌شود و گذرواژه توسط خود کاربر تعیین می‌شود.","usr.md.invite.submit":"ارسال دعوت","usr.done.invite.sent":"دعوت ایجاد شد و ایمیل ارسال شد","usr.done.invite.notsent":"دعوت ایجاد شد اما ارسال ایمیل ممکن نشد",
+  "u360.sess.title":"نشست‌ها","u360.dev.title":"دستگاه‌ها","u360.hist.title":"تاریخچه ورود","u360.col.session":"شناسه","u360.col.ip":"IP","u360.col.ua":"دستگاه / مرورگر","u360.col.created":"ایجاد","u360.col.expires":"انقضا","u360.col.revoked":"باطل‌شده","u360.col.firstseen":"اولین بازدید","u360.col.lastseen":"آخرین بازدید","u360.col.event":"رویداد","u360.col.result":"نتیجه","u360.col.time":"زمان","u360.col.reason":"دلیل","u360.active":"فعال","u360.revoked":"باطل‌شده","u360.expired":"منقضی","u360.act.revoke":"باطل‌کردن نشست","u360.md.revoke.title":"باطل‌کردن نشست","u360.md.revoke.body":"این نشست بلافاصله باطل می‌شود و کاربر از آن خارج می‌شود.","u360.done.revoke":"نشست باطل شد","u360.done.revoke.already":"این نشست قبلاً باطل شده بود","u360.hist.all":"همهٔ نتایج","u360.hist.success":"موفق","u360.hist.failure":"ناموفق","u360.empty":"موردی ثبت نشده","u360.dev.readonly":"فهرست دستگاه‌ها فقط خواندنی است؛ معماری فعلی حذف دستگاه ندارد.","u360.reason.invalid_credentials":"اعتبارات نامعتبر","u360.reason.account_inactive":"حساب غیرفعال","u360.reason.email_not_verified":"ایمیل تأییدنشده",
   "aip.title.desc":"وضعیت واقعی ارائه‌دهندگان از بک‌اند","aip.provider":"ارائه‌دهنده","aip.available":"در دسترس","aip.unavailable":"در دسترس نیست",
   "aip.cred":"اعتبارنامه","aip.configured":"پیکربندی‌شده","aip.notconfigured":"پیکربندی نشده","aip.envkey":"نام متغیر محیطی","aip.caps":"قابلیت‌ها",
   "aip.relay":"مسیر رله (Gemini)","aip.relay.url":"URL رله","aip.relay.token":"توکن رله","aip.effroute":"مسیر مؤثر","aip.quota":"سهمیه",
@@ -1112,6 +1225,7 @@ const F3T={
   "usr.self.err":"This action is not allowed on your own account",
   "usr.act.create":"Create User","usr.md.create.title":"Create user","usr.md.create.email":"Email","usr.md.create.name":"Full name","usr.md.create.password":"Password","usr.md.create.password.hint":"At least 8 characters","usr.md.create.submit":"Create","usr.done.create.sent":"User created and verification email sent","usr.done.create.notsent":"User created but the verification email could not be sent",
   "usr.act.invite":"Invite Admin","usr.md.invite.title":"Invite admin","usr.md.invite.email":"Email","usr.md.invite.name":"Full name","usr.md.invite.role":"Role","usr.md.invite.note":"A one-time activation link (valid 24 hours) will be emailed; the invitee chooses their own password.","usr.md.invite.submit":"Send invite","usr.done.invite.sent":"Invitation created and email sent","usr.done.invite.notsent":"Invitation created but the email could not be sent",
+  "u360.sess.title":"Sessions","u360.dev.title":"Devices","u360.hist.title":"Login history","u360.col.session":"ID","u360.col.ip":"IP","u360.col.ua":"Device / browser","u360.col.created":"Created","u360.col.expires":"Expires","u360.col.revoked":"Revoked","u360.col.firstseen":"First seen","u360.col.lastseen":"Last seen","u360.col.event":"Event","u360.col.result":"Result","u360.col.time":"Time","u360.col.reason":"Reason","u360.active":"Active","u360.revoked":"Revoked","u360.expired":"Expired","u360.act.revoke":"Revoke session","u360.md.revoke.title":"Revoke session","u360.md.revoke.body":"This session will be revoked immediately, signing the user out of it.","u360.done.revoke":"Session revoked","u360.done.revoke.already":"This session was already revoked","u360.hist.all":"All results","u360.hist.success":"Successful","u360.hist.failure":"Failed","u360.empty":"Nothing recorded","u360.dev.readonly":"The device list is read-only; the current architecture has no device removal.","u360.reason.invalid_credentials":"Invalid credentials","u360.reason.account_inactive":"Account inactive","u360.reason.email_not_verified":"Email not verified",
   "aip.title.desc":"Real provider state from the backend","aip.provider":"Provider","aip.available":"Available","aip.unavailable":"Unavailable",
   "aip.cred":"Credential","aip.configured":"Configured","aip.notconfigured":"Not configured","aip.envkey":"Env key name","aip.caps":"Capabilities",
   "aip.relay":"Relay route (Gemini)","aip.relay.url":"Relay URL","aip.relay.token":"Relay token","aip.effroute":"Effective route","aip.quota":"Quota",
