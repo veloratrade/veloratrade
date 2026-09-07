@@ -321,15 +321,27 @@ final class AuthService
         $notificationLocale = trim((string) ($data['notificationLocale'] ?? '')) ?: null;
         $user = $this->users->findByEmail($email);
 
-        if ($user === null || !password_verify($data['password'], $user['password_hash'])) {
-            throw new UnauthorizedException('Invalid credentials.', 'INVALID_CREDENTIALS', 'errors.auth.invalidCredentials');
-        }
+        try {
+            if ($user === null || !password_verify($data['password'], $user['password_hash'])) {
+                throw new UnauthorizedException('Invalid credentials.', 'INVALID_CREDENTIALS', 'errors.auth.invalidCredentials');
+            }
 
-        if ($user['status'] !== 'active') {
-            throw new UnauthorizedException('Account is inactive.', 'ACCOUNT_INACTIVE', 'errors.auth.accountInactive');
-        }
-        if ($user['email_verified_at'] === null) {
-            throw new UnauthorizedException('Email verification required.', 'EMAIL_NOT_VERIFIED', 'errors.auth.emailNotVerified');
+            if ($user['status'] !== 'active') {
+                throw new UnauthorizedException('Account is inactive.', 'ACCOUNT_INACTIVE', 'errors.auth.accountInactive');
+            }
+            if ($user['email_verified_at'] === null) {
+                throw new UnauthorizedException('Email verification required.', 'EMAIL_NOT_VERIFIED', 'errors.auth.emailNotVerified');
+            }
+        } catch (UnauthorizedException $e) {
+            // Phase 3: real authentication-failure history at the boundary.
+            // user_id stays NULL for unknown accounts (anti-enumeration is
+            // preserved — nothing about account existence is revealed to the
+            // caller). The recorder never breaks authentication.
+            (new AuthEventRepository())->record(
+                is_array($user) ? (int) $user['id'] : null,
+                'login', 'failure', $e->errorCode(), $ip, $userAgent,
+            );
+            throw $e;
         }
 
         $userId = (int) $user['id'];
@@ -346,7 +358,12 @@ final class AuthService
             );
         }
 
-        return $this->issueTokenPair($userId, $ip, $userAgent);
+        $pair = $this->issueTokenPair($userId, $ip, $userAgent);
+
+        // Phase 3: real authentication-success history (recorder never breaks login).
+        (new AuthEventRepository())->record($userId, 'login', 'success', null, $ip, $userAgent);
+
+        return $pair;
     }
 
     public function refresh(string $refreshToken, ?string $ip, ?string $userAgent): array

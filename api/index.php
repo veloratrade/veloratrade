@@ -198,6 +198,13 @@ $router->get('/api/v1/admin/users/{id}/trades', [\Velora\Admin\UserManagementCon
 $router->get('/api/v1/admin/users/{id}/activity', [\Velora\Admin\UserManagementController::class, 'activity'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_USERS_VIEW)]);
 $router->get('/api/v1/admin/users/{id}/audit', [\Velora\Admin\UserManagementController::class, 'audit'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_AUDIT_VIEW)]);
 $router->post('/api/v1/admin/users/{id}/revoke-sessions', [\Velora\Admin\UserManagementController::class, 'revokeSessions'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_USERS_SUSPEND)]);
+// Phase 3: real session/device/login-history visibility for User360.
+// Reads = users.view (same perm as the user detail itself); per-session
+// revocation = users.suspend (same authority as revoke-all above).
+$router->get('/api/v1/admin/users/{id}/sessions', [\Velora\Admin\UserManagementController::class, 'sessions'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_USERS_VIEW)]);
+$router->post('/api/v1/admin/users/{id}/sessions/{sessionId}/revoke', [\Velora\Admin\UserManagementController::class, 'revokeSession'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_USERS_SUSPEND)]);
+$router->get('/api/v1/admin/users/{id}/devices', [\Velora\Admin\UserManagementController::class, 'devices'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_USERS_VIEW)]);
+$router->get('/api/v1/admin/users/{id}/login-history', [\Velora\Admin\UserManagementController::class, 'loginHistory'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_USERS_VIEW)]);
 // Phase 3 B-1: admin-triggered email verification (idempotent; audited user.verify_email).
 $router->post('/api/v1/admin/users/{id}/verify-email', [\Velora\Admin\UserManagementController::class, 'verifyEmail'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_USERS_VERIFY_EMAIL)]);
 

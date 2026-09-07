@@ -307,7 +307,7 @@ def chk(k,cond):
 chk("js",len(OUT["js"])==0)
 chk("A_count",OUT["A_count"]==33)  # 32 static + users/:id dynamic
 chk("A_static",OUT["A_static_ok"]); chk("A_no_design",OUT["A_no_design"])
-chk("A_meta",OUT["A_meta_ok"] and OUT["A_impl_set"]==["ai-health","ai-providers","ai-route","analytics-ai","analytics-revenue","analytics-trading","analytics-users","billing-overview","integrations-email","integrations-metaapi","integrations-n8n","overview","security-audit","system-flags","system-health","system-logs","users"]); chk("A_u360",OUT["A_u360"])
+chk("A_meta",OUT["A_meta_ok"] and OUT["A_impl_set"]==["ai-health","ai-providers","ai-route","analytics-ai","analytics-revenue","analytics-trading","analytics-users","billing-overview","integrations-email","integrations-metaapi","integrations-n8n","overview","security-audit","system-flags","system-health","system-logs","users","users/:id"]); chk("A_u360",OUT["A_u360"])
 chk("B_routes",not OUT["B_bad"]); chk("B_events",OUT["B_events"])
 chk("C_nf",OUT["C_nf"]); chk("C_design",OUT["C_design"]); chk("C_deep",OUT["C_deep"]); chk("C_back",OUT["C_back"])
 chk("D_u360",OUT["D_u360"]); chk("D_nosidebar",OUT["D_nosidebar"])
