@@ -137,7 +137,7 @@ final class PasswordService
         // مصرف توکن و تغییر هش باید اتمیک باشند. نسخه قبلی پس از تغییر رمز، متد
         // ناموجود markUsed() را صدا می‌زد و با HTTP 500 خارج می‌شد؛ در نتیجه رمز
         // عوض می‌شد ولی پاسخ شکست می‌خورد. consume() قرارداد واقعی repository است.
-        \Velora\Core\Database::transaction(function () use ($reset, $tokenHash, $newPassword): void {
+        \Velora\Core\Database::transaction(function () use ($reset, $tokenHash, $newPassword, $user): void {
             if (!$this->resets->consume((int) $reset['id'], $tokenHash)) {
                 throw new ValidationException(
                     'لینک بازیابی نامعتبر است یا قبلاً استفاده شده است.',
@@ -146,6 +146,17 @@ final class PasswordService
             }
             $this->updatePasswordHash((int) $reset['user_id'], $newPassword);
             $this->resets->invalidateAllForUser((int) $reset['user_id']);
+            // Phase 2 (Admin Invite): an empty password hash exists ONLY for
+            // invited accounts. Consuming a one-time token delivered to the
+            // mailbox is ownership proof, so acceptance completes verification
+            // for those accounts (regular resets are unaffected — their users
+            // are already verified by definition of forgot-password).
+            if ((string) $user['password_hash'] === '') {
+                $stmt = \Velora\Core\Database::connection()->prepare(
+                    'UPDATE users SET email_verified_at = CURRENT_TIMESTAMP WHERE id = :id AND email_verified_at IS NULL'
+                );
+                $stmt->execute(['id' => (int) $reset['user_id']]);
+            }
         });
 
         // خروج از همه نشست‌ها

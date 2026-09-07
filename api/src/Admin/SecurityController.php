@@ -7,6 +7,7 @@ namespace Velora\Admin;
 use Velora\Core\Request;
 use Velora\Core\Response;
 use Velora\Auth\Role;
+use Velora\Auth\UserRepository;
 
 /**
  * Admin security view (Module C / Module I).
@@ -28,9 +29,19 @@ final class SecurityController
         $audit = new AdminAuditLogRepository();
         $recent = $audit->list(['actor' => $userId], 1, 8);
 
+        // Phase 2 identity enrichment: real fields from the canonical user
+        // record. Null stays null when genuinely missing (no fabrication);
+        // no other profile fields are exposed.
+        $user = (new UserRepository())->findById($userId);
+        $fullName = $user !== null ? trim((string) ($user['full_name'] ?? '')) : '';
+
         Response::json([
             'me' => [
                 'userId' => $userId,
+                'id' => $userId,
+                'name' => $fullName !== '' ? $fullName : null,
+                'fullName' => $fullName !== '' ? $fullName : null,
+                'email' => $user !== null ? (string) ($user['email'] ?? '') : null,
                 'role' => $role,
                 'isSuperAdmin' => $role === Role::SUPER_ADMIN,
                 'panel' => Role::isPanel($role),

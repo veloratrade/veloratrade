@@ -269,6 +269,43 @@ final class UserManagementController
     }
 
     /**
+     * Admin Invite (Phase 2) — POST /api/v1/admin/users/invitations
+     * RBAC: users.create via requirePermission in api/index.php; the service
+     * additionally requires users.change_role because invited roles are
+     * always privileged (Super Admin only). Audited (user.invite) with
+     * secret-free metadata; the acceptance token is NEVER returned here.
+     */
+    public function invite(Request $request, array $params): never
+    {
+        RateLimiter::hit('admin-user-invite', 10, 3600);
+
+        Validation::assert($request->body, [
+            'email' => 'required|string|email|max:255',
+            'fullName' => 'string|max:120',
+            'full_name' => 'string|max:120',
+            'role' => 'string|max:20',
+        ]);
+
+        $actorId = (int) ($request->attributes['user_id'] ?? 0);
+        $actorRole = (string) ($request->attributes['user_role'] ?? '');
+
+        $result = $this->service->inviteAdmin($request->body, $actorId, $actorRole);
+
+        $this->audit->record(
+            $actorId, $actorRole,
+            'user.invite',
+            'user', (int) $result['id'], 'success',
+            'Admin #' . $result['id'] . ' invited (' . $result['role'] . ')',
+            $request->clientIp() ?? null,
+            $request->headers['user-agent'] ?? null,
+            $request->contextId(),
+            ['role' => $result['role'], 'emailSent' => $result['emailSent']],
+        );
+
+        Response::json(['ok' => true, 'user' => $result], 201);
+    }
+
+    /**
      * Phase 3 B-1 (decision D1): POST /api/v1/admin/users/{id}/verify-email
      * RBAC: users.verify_email (admin + super_admin) via requirePermission in
      * api/index.php. Idempotent; audited as user.verify_email with

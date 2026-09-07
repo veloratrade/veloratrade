@@ -199,6 +199,44 @@ final class NotificationService
     }
 
     /**
+     * Admin invite (Phase 2): same template pipeline as the password-reset
+     * email, invite wording. Returns the honest send result; the token lives
+     * only in the URL fragment of $inviteUrl and is never logged here.
+     */
+    public static function sendAdminInviteEmail(string $email, string $fullName, string $inviteUrl, ?int $userId = null, ?string $notificationLocale = null): bool
+    {
+        $i18n = \Velora\Core\Locale\LocaleManager::getInstance();
+        $lang = $notificationLocale ?? $i18n->getLanguage();
+        $t = static fn (string $key, array $params = []): string => $i18n->translateFor($lang, $key, $params);
+
+        $nameSafe = htmlspecialchars(self::formatName($fullName, $email, $lang), ENT_QUOTES, 'UTF-8');
+        $emailSafe = htmlspecialchars($email, ENT_QUOTES, 'UTF-8');
+        $subject = $t('email.invite.subject');
+
+        $html = EmailTemplate::render(
+            $t('email.invite.badge'),
+            $t('email.invite.title'),
+            '<p style="margin:0 0 14px;color:#ffffff;font-size:16px;font-weight:bold;">' . $t('email.common.greeting', ['name' => $nameSafe]) . '</p>' .
+            '<p style="margin:0 0 14px;color:#f3f4f6;">' . $t('email.invite.intro') . '</p>' .
+            '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0;background:#141f32;border:1px solid #d4af37;border-radius:10px;box-shadow:0 4px 15px rgba(212,175,55,0.15);">' .
+            '<tr><td align="center" style="padding:14px 20px;font-family:Tahoma,Arial,sans-serif;font-size:16px;font-weight:bold;color:#d4af37;letter-spacing:0.5px;direction:ltr;">' . $emailSafe . '</td></tr>' .
+            '</table>' .
+            '<p style="margin:0 0 14px;color:#f3f4f6;">' . $t('email.invite.after') . '</p>',
+            $t('email.invite.cta'),
+            $inviteUrl,
+            $t('email.invite.notice'),
+            $t('email.common.subtitleSecurity'),
+            $notificationLocale,
+            'password-reset',
+            $t('email.invite.badge')
+        );
+
+        // Existing icon asset (password-reset) is reused for the visual; the
+        // notification-log event type remains distinct (ADMIN_INVITE).
+        return self::sendWithIcon($email, $subject, $html, 'password-reset', 'ADMIN_INVITE', $userId);
+    }
+
+    /**
      * ۴. ایمیل تغییر موفق رمز عبور (Password Changed Success)
      */
     public static function sendPasswordChangedEmail(string $email, string $fullName, ?int $userId = null, ?string $notificationLocale = null): bool
