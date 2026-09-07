@@ -31,6 +31,76 @@ final class AccountRepository
         return $stmt->fetchAll();
     }
 
+    public function searchGlobal(array $filters, array $page): array
+    {
+        $where = [];
+        $params = [];
+        if (!empty($filters['user_id'])) {
+            $where[] = 'user_id = :user_id';
+            $params['user_id'] = (int) $filters['user_id'];
+        }
+        if (!empty($filters['status'])) {
+            $where[] = 'sync_status = :status';
+            $params['status'] = (string) $filters['status'];
+        }
+        if (!empty($filters['platform'])) {
+            $where[] = 'platform = :platform';
+            $params['platform'] = (string) $filters['platform'];
+        }
+        if (!empty($filters['q'])) {
+            $where[] = '(label LIKE :q OR broker LIKE :q OR server LIKE :q OR mt_login LIKE :q OR account_number_masked LIKE :q)';
+            $params['q'] = '%' . (string) $filters['q'] . '%';
+        }
+
+        $whereSql = $where === [] ? '1=1' : implode(' AND ', $where);
+        $orderSql = match ($page['order'] ?? 'created_at') {
+            'balance' => 'balance DESC, id DESC',
+            'last_synced_at' => 'last_synced_at DESC, id DESC',
+            default => 'created_at DESC, id DESC',
+        };
+
+        $countStmt = Database::connection()->prepare(
+            "SELECT COUNT(*) FROM trading_accounts WHERE {$whereSql}"
+        );
+        $countStmt->execute($params);
+        $total = (int) $countStmt->fetchColumn();
+
+        $stmt = Database::connection()->prepare(
+            "SELECT " . self::PUBLIC_COLUMNS . "
+             FROM trading_accounts
+             WHERE {$whereSql}
+             ORDER BY {$orderSql}
+             LIMIT :limit OFFSET :offset"
+        );
+        $stmt->bindValue(':limit', $page['limit'], PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $page['offset'], PDO::PARAM_INT);
+        foreach ($params as $k => $v) {
+            $stmt->bindValue(':' . $k, $v);
+        }
+        $stmt->execute();
+
+        return ['items' => $stmt->fetchAll(), 'total' => $total];
+    }
+
+    /**
+     * Phase 4 — real platform-wide sync-status counts (the "platform
+     * summary" chips on the frozen Trading Accounts page). One GROUP BY over
+     * the small accounts table; never fabricated.
+     *
+     * @return array<string,int>
+     */
+    public function statusCounts(): array
+    {
+        $rows = Database::connection()
+            ->query('SELECT sync_status, COUNT(*) AS n FROM trading_accounts GROUP BY sync_status')
+            ->fetchAll();
+        $out = [];
+        foreach ($rows as $r) {
+            $out[(string) $r['sync_status']] = (int) $r['n'];
+        }
+        return $out;
+    }
+
     public function countByUser(int $userId): int
     {
         $stmt = Database::connection()->prepare(
