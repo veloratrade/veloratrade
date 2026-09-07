@@ -2229,7 +2229,23 @@ Object.assign(F3T.fa,{
  "bo.col.active":"فعال","bo.substatus":"وضعیت‌های اشتراک","bo.dist":"توزیع","bo.dist.plan":"توزیع پلن","bo.dist.sub":"توزیع وضعیت اشتراک",
  "bo.ent":"محدودیت‌ها","bo.acct":"سقف حساب به‌ازای کاربر","bo.budget":"سهمیهٔ AI ارائه‌دهنده","bo.limit":"سقف","bo.source":"منبع",
  "bo.history":"تاریخچهٔ صورت‌حساب","bo.hist.unavail":"تاریخچهٔ فاکتور/پرداخت وجود ندارد (بدون ارائه‌دهنده).",
- "bo.price.unavail":"قیمت معتبر نیست: منبع صورتحساب خارجی وجود ندارد."
+ "bo.price.unavail":"قیمت معتبر نیست: منبع صورتحساب خارجی وجود ندارد.",
+ /* Phase 6 (#/security-signups + #/security-logins) — fresh key namespaces; sl.* belongs to system-logs */
+ "su.desc":"تاریخچه ثبت‌نام‌ها — خوشه‌های هم‌منبع و شاخص‌های واقعی ثبت‌نام",
+ "su.kpi.total":"کل کاربران","su.kpi.new":"ثبت‌نام در بازه","su.kpi.verified":"تأییدشده در بازه","su.kpi.unverified":"تأییدنشده در بازه",
+ "su.clusters":"خوشه‌های ثبت‌نام هم‌منبع","su.cluster.members":"عضو",
+ "su.col.first":"اولین ثبت‌نام","su.col.last":"آخرین ثبت‌نام",
+ "su.empty":"خوشه‌ای یافت نشد","su.empty.desc":"در این بازه IP ثبت‌نام مشترک با بیش از یک کاربر وجود ندارد.",
+ "su.range":"بازه","su.range.7":"۷ روز","su.range.30":"۳۰ روز","su.range.90":"۹۰ روز",
+ "su.drawer.title":"اعضای خوشه","su.col.user":"کاربر","su.col.signedup":"زمان ثبت‌نام","su.col.status":"وضعیت ایمیل","su.verified":"تأییدشده","su.unverified":"تأییدنشده","su.open360":"مشاهده در User360","su.close":"بستن",
+ "su.privacy.note":"IP کامل و User-Agent تنها با مجوز audit.view_sensitive نمایش داده می‌شوند (سرور در غیر این صورت مقادیر را حذف یا ماسک می‌کند).",
+ "slh.desc":"تاریخچه ورود سراسری — از auth_events بک‌اند",
+ "slh.col.user":"کاربر","slh.col.event":"رویداد","slh.col.result":"نتیجه","slh.col.reason":"دلیل","slh.col.ip":"IP","slh.col.ua":"عامل کاربر","slh.col.time":"زمان",
+ "slh.result.all":"همهٔ نتایج","slh.result.success":"موفق","slh.result.failure":"ناموفق",
+ "slh.filter.user":"شناسه کاربر","slh.date.from":"از تاریخ","slh.date.to":"تا تاریخ","slh.apply":"اعمال",
+ "slh.empty":"رویدادی یافت نشد","slh.empty.desc":"با فیلترهای فعلی رویداد ورودی وجود ندارد.",
+ "slh.privacy.note":"ستون‌های IP/User-Agent تنها با مجوز audit.view_sensitive نمایش داده می‌شوند (سرور در غیر این صورت حذف‌شان می‌کند).",
+ "slh.unknown":"حساب ناشناس"
 });
 Object.assign(F3T.en,{
  "sh.desc":"Real infrastructure status from the backend","sh.sys":"Infrastructure","sh.lastcheck":"Last check",
@@ -2265,7 +2281,23 @@ Object.assign(F3T.en,{
  "bo.col.active":"Active","bo.substatus":"Subscription statuses","bo.dist":"Distribution","bo.dist.plan":"Plan distribution","bo.dist.sub":"Subscription-status distribution",
  "bo.ent":"Entitlements","bo.acct":"Trading accounts per user","bo.budget":"Provider AI budget","bo.limit":"Limit","bo.source":"Source",
  "bo.history":"Billing history","bo.hist.unavail":"No invoice/payment history exists (no billing provider).",
- "bo.price.unavail":"Price is not authoritative: no external billing/pricing source exists."
+ "bo.price.unavail":"Price is not authoritative: no external billing/pricing source exists.",
+ /* Phase 6 (#/security-signups + #/security-logins) — fresh key namespaces; sl.* belongs to system-logs */
+ "su.desc":"Signup history — shared-source clusters and real signup KPIs",
+ "su.kpi.total":"Total users","su.kpi.new":"Signups in range","su.kpi.verified":"Verified in range","su.kpi.unverified":"Unverified in range",
+ "su.clusters":"Shared-source signup clusters","su.cluster.members":"members",
+ "su.col.first":"First signup","su.col.last":"Last signup",
+ "su.empty":"No clusters found","su.empty.desc":"No signup IP with more than one user exists in this range.",
+ "su.range":"Range","su.range.7":"7 days","su.range.30":"30 days","su.range.90":"90 days",
+ "su.drawer.title":"Cluster members","su.col.user":"User","su.col.signedup":"Signed up","su.col.status":"Email status","su.verified":"Verified","su.unverified":"Unverified","su.open360":"Open in User360","su.close":"Close",
+ "su.privacy.note":"Full IP/User-Agent require the audit.view_sensitive permission (the server masks or omits them otherwise).",
+ "slh.desc":"Global login history — from backend auth_events",
+ "slh.col.user":"User","slh.col.event":"Event","slh.col.result":"Result","slh.col.reason":"Reason","slh.col.ip":"IP","slh.col.ua":"User agent","slh.col.time":"Time",
+ "slh.result.all":"All results","slh.result.success":"Success","slh.result.failure":"Failure",
+ "slh.filter.user":"User ID","slh.date.from":"From date","slh.date.to":"To date","slh.apply":"Apply",
+ "slh.empty":"No events found","slh.empty.desc":"No login events match the current filters.",
+ "slh.privacy.note":"IP/User-Agent columns require the audit.view_sensitive permission (the server strips them otherwise).",
+ "slh.unknown":"Unknown account"
 });
 
 /* ---------------- shared batch-3 helpers ---------------- */
@@ -2436,6 +2468,133 @@ function securityAuditPage(){
  }</tbody></table></div>`;
  if(!can("audit.view_sensitive"))h+=`<div class="note" style="margin-top:8px">${esc(t("sa.sensitive.note"))}</div>`;
  h+=b3pageNav({page:d.page||1,per:d.per_page||25,total:d.total||0},"f3AuditPage");
+ h+=`</div></div>`;
+ return h;
+}
+
+/* ---------------- Phase 6: security-signups / security-logins ----------------
+   Frozen pattern = securityAuditPage. Read-only listings over the EXISTING
+   endpoints; charts computed ONLY from backend trend arrays; the cluster
+   drawer is informational (D2: identity + navigate to User360, NO bulk
+   actions, NO review-state persistence). Sensitive ip/ua render ONLY when
+   the server actually returned them — D3 omission server-side is the
+   single source of truth (never a client-side hide). */
+const SG={data:null,st:"idle",err:null,days:30,cpage:1,cper:20};
+async function f6LoadSignups(){
+ SG.st="loading";f3RenderIf("security-signups");
+ try{const d=await VeloraData.request("/api/v1/admin/security/signups?days="+SG.days+"&page="+SG.cpage+"&per_page="+SG.cper);SG.data=d||{};SG.st="ok";}
+ catch(e){SG.err=e;SG.st="error";}
+ f3RenderIf("security-signups");
+}
+function f6SignupsDays(v){SG.days=+v||30;SG.cpage=1;f6LoadSignups()}
+function f6SignupsPage(d){SG.cpage=Math.max(1,SG.cpage+d);f6LoadSignups()}
+function f6SensBadge(){return SG.data&&SG.data.sensitiveVisible?bdot("ok","ip / user-agent"):bdot("neutral","audit.view_sensitive")}
+function f6SensRow(rows){return Array.isArray(rows)&&rows.length>0&&("ipAddress" in rows[0])}
+function f6MemberRows(cl){
+ const sens=f6SensRow(cl&&cl.members);
+ return ((cl&&Array.isArray(cl.members))?cl.members:[]).map(m=>`<tr>
+  <td class="cellsub">#${esc(String(m.userId))} · ${esc(String(m.email||"—"))}${m.fullName?` · ${esc(String(m.fullName))}`:""}</td>
+  <td class="cellsub">${esc(String(m.signupAt||"—"))}</td>
+  <td>${m.verified?bdot("ok",t("su.verified")):bdot("warn",t("su.unverified"))}</td>
+  ${sens?`<td class="mono cellsub">${m.ipAddress?esc(String(m.ipAddress)):"—"}</td><td class="mono cellsub">${m.userAgent?esc(String(m.userAgent)):"—"}</td>`:""}
+  <td><button class="btn sm" onclick="usrOpen360(${esc(String(m.userId))})">${esc(t("su.open360"))}</button></td></tr>`).join("");
+}
+function f6OpenDrawer(i){
+ const cl=((SG.data&&Array.isArray(SG.data.clusters))?SG.data.clusters:[])[i];if(!cl)return;
+ const sens=f6SensRow(cl.members);
+ f3OpenModal(`<div class="ch"><h3>${esc(t("su.drawer.title"))} — ${esc(String(cl.key||cl.keyMasked||"—"))}</h3><div class="right">${sens?bdot("ok","ip / user-agent"):bdot("neutral","audit.view_sensitive")}</div></div><div class="cb">
+  <div class="twrap"><table class="tbl" data-mstack><thead><tr><th>${esc(t("su.col.user"))}</th><th>${esc(t("su.col.signedup"))}</th><th>${esc(t("su.col.status"))}</th>${sens?`<th>${esc(t("slh.col.ip"))}</th><th>${esc(t("slh.col.ua"))}</th>`:""}<th></th></tr></thead><tbody>${f6MemberRows(cl)}</tbody></table></div>
+  <div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn sm" onclick="f3CloseModal()">${esc(t("su.close"))}</button></div></div>`);
+}
+function securitySignupsPage(){
+ if(SG.st==="idle")f6LoadSignups();
+ let h=pagehead(t("nav.security-signups"),t("su.desc"));
+ if(SG.st==="loading"&&!SG.data)return h+`<div class="card"><div class="cb">${f3skel(6)}</div></div>`;
+ if(SG.st==="error")return h+f3errBox(SG.err);
+ const d=SG.data||{};const cl=Array.isArray(d.clusters)?d.clusters:[];const tr=Array.isArray(d.trend)?d.trend:[];
+ const k=d.kpis||{};
+ h+=`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+  <select class="inp" aria-label="${esc(t("su.range"))}" onchange="f6SignupsDays(this.value)" style="max-width:180px">
+   <option value="7"${SG.days===7?" selected":""}>${esc(t("su.range.7"))}</option>
+   <option value="30"${SG.days===30?" selected":""}>${esc(t("su.range.30"))}</option>
+   <option value="90"${SG.days===90?" selected":""}>${esc(t("su.range.90"))}</option>
+  </select><span style="flex:1"></span>${f6SensBadge()}</div>`;
+ h+=`<div class="grid g2">
+  <div class="card"><div class="ch"><h3>${esc(t("su.kpi.total"))}</h3></div><div class="cb">
+   <div class="kpi"><div class="lbl">${esc(t("su.kpi.total"))}</div><div class="val num">${k.totalUsers!=null?esc(String(k.totalUsers)):f3unavail()}</div>${f3spark(tr)}</div>
+   <div class="kpi" style="margin-top:10px"><div class="lbl">${esc(t("su.kpi.new"))}</div><div class="val num">${k.newInRange!=null?esc(String(k.newInRange)):f3unavail()}</div></div>
+  </div></div>
+  <div class="card"><div class="ch"><h3>${esc(t("an.verified"))}</h3></div><div class="cb">
+   <div class="kpi"><div class="lbl">${esc(t("su.kpi.verified"))}</div><div class="val num">${k.verified!=null?esc(String(k.verified)):f3unavail()}</div></div>
+   <div class="kpi" style="margin-top:10px"><div class="lbl">${esc(t("su.kpi.unverified"))}</div><div class="val num">${k.unverified!=null?esc(String(k.unverified)):f3unavail()}</div></div>
+  </div></div>
+ </div>`+b3trendCard(tr);
+ h+=`<div class="card" style="margin-top:12px"><div class="ch"><h3>${esc(t("su.clusters"))}</h3></div><div class="cb">`;
+ if(!cl.length){h+=empty(VI.box,t("su.empty"),t("su.empty.desc"));h+="</div></div>";return h;}
+ h+=`<div class="grid g2">${cl.map((c,i)=>`<div class="card"><div class="ch"><h3 class="mono">${esc(String(c.key||c.keyMasked||"—"))}</h3><div class="right">${bdot(c.memberCount>=3?"err":(c.memberCount===2?"warn":"neutral"),esc(String(c.memberCount))+" "+esc(t("su.cluster.members")))}</div></div><div class="cb">
+  <div class="cellsub">${esc(t("su.col.first"))}: ${esc(String(c.firstSignupAt||"—"))} · ${esc(t("su.col.last"))}: ${esc(String(c.lastSignupAt||"—"))}</div>
+  <div style="margin-top:10px"><button class="btn sm" onclick="f6OpenDrawer(${esc(String(i))})">${esc(t("su.drawer.title"))}</button></div>
+ </div></div>`).join("")}</div>`;
+ h+=b3pageNav({page:(d.pagination||{}).page||1,per:(d.pagination||{}).per_page||20,total:(d.pagination||{}).total||0},"f6SignupsPage");
+ h+=`</div></div>`;
+ if(!can("audit.view_sensitive"))h+=`<div class="note" style="margin-top:8px">${esc(t("su.privacy.note"))}</div>`;
+ return h;
+}
+const SLG={data:null,st:"idle",err:null,page:1,result:"",user:"",from:"",to:""};
+function f6LoginQuery(){
+ const p=new URLSearchParams();
+ p.set("page",String(SLG.page));p.set("per_page","25");
+ if(SLG.result)p.set("result",SLG.result);
+ if(SLG.user)p.set("user_id",SLG.user);
+ if(SLG.from)p.set("date_from",SLG.from);
+ if(SLG.to)p.set("date_to",SLG.to);
+ return p.toString();
+}
+async function f6LoadLogins(){
+ SLG.st="loading";f3RenderIf("security-logins");
+ try{const d=await VeloraData.request("/api/v1/admin/security/logins?"+f6LoginQuery());SLG.data=d||{};SLG.st="ok";}
+ catch(e){SLG.err=e;SLG.st="error";}
+ f3RenderIf("security-logins");
+}
+function f6LoginApply(){
+ SLG.result=(($("#slhResult")||{}).value||"");
+ SLG.user=((($("#slhUser")||{}).value)||"").trim();
+ SLG.from=((($("#slhFrom")||{}).value)||"").trim();
+ SLG.to=((($("#slhTo")||{}).value)||"").trim();
+ SLG.page=1;f6LoadLogins();
+}
+function f6LoginsPage(d){SLG.page=Math.max(1,SLG.page+d);f6LoadLogins()}
+function securityLoginsPage(){
+ if(SLG.st==="idle")f6LoadLogins();
+ let h=pagehead(t("nav.security-logins"),t("slh.desc"));
+ if(SLG.st==="loading"&&!SLG.data)return h+`<div class="card"><div class="cb">${f3skel(6)}</div></div>`;
+ if(SLG.st==="error")return h+f3errBox(SLG.err);
+ const d=SLG.data||{};const ev=Array.isArray(d.events)?d.events:[];
+ const sens=f6SensRow(ev);
+ h+=`<div class="card"><div class="ch"><h3>${esc(t("nav.security-logins"))}</h3><div class="right">${sens?bdot("ok","ip / user-agent"):bdot("neutral","audit.view_sensitive")}</div></div><div class="cb">
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+   <select id="slhResult" class="inp" aria-label="${esc(t("slh.col.result"))}" style="max-width:170px">
+    <option value=""${SLG.result===""?" selected":""}>${esc(t("slh.result.all"))}</option>
+    <option value="success"${SLG.result==="success"?" selected":""}>${esc(t("slh.result.success"))}</option>
+    <option value="failure"${SLG.result==="failure"?" selected":""}>${esc(t("slh.result.failure"))}</option>
+   </select>
+   <input id="slhUser" class="inp" inputmode="numeric" aria-label="${esc(t("slh.filter.user"))}" placeholder="${esc(t("slh.filter.user"))}" value="${esc(SLG.user)}" style="max-width:150px">
+   <input id="slhFrom" class="inp" type="date" aria-label="${esc(t("slh.date.from"))}" value="${esc(SLG.from)}" style="max-width:170px">
+   <input id="slhTo" class="inp" type="date" aria-label="${esc(t("slh.date.to"))}" value="${esc(SLG.to)}" style="max-width:170px">
+   <button class="btn sm" onclick="f6LoginApply()">${esc(t("slh.apply"))}</button>
+  </div>`;
+ if(!ev.length){h+=empty(VI.box,t("slh.empty"),t("slh.empty.desc"));h+="</div></div>";return h;}
+ h+=`<div class="twrap"><table class="tbl" data-mstack><thead><tr><th>${esc(t("slh.col.user"))}</th><th>${esc(t("slh.col.event"))}</th><th>${esc(t("slh.col.result"))}</th><th>${esc(t("slh.col.reason"))}</th>${sens?`<th>${esc(t("slh.col.ip"))}</th><th>${esc(t("slh.col.ua"))}</th>`:""}<th>${esc(t("slh.col.time"))}</th></tr></thead><tbody>${
+  ev.map(r=>`<tr>
+   <td class="cellsub">${r.userId!=null?`#${esc(String(r.userId))} · ${esc(String(r.userEmail||"—"))}`:esc(t("slh.unknown"))}</td>
+   <td class="mono">${esc(String(r.eventType||"—"))}</td>
+   <td>${r.result==="success"?bdot("ok",t("slh.result.success")):bdot("err",t("slh.result.failure"))}</td>
+   <td class="mono cellsub">${r.reason?esc(String(r.reason)):"—"}</td>
+   ${sens?`<td class="mono cellsub">${r.ipAddress?esc(String(r.ipAddress)):"—"}</td><td class="mono cellsub">${r.userAgent?esc(String(r.userAgent)):"—"}</td>`:""}
+   <td class="cellsub">${esc(String(r.createdAt||"—"))}</td></tr>`).join("")
+ }</tbody></table></div>`;
+ if(!can("audit.view_sensitive"))h+=`<div class="note" style="margin-top:8px">${esc(t("slh.privacy.note"))}</div>`;
+ h+=b3pageNav({page:(d.pagination||{}).page||1,per:(d.pagination||{}).per_page||25,total:(d.pagination||{}).total||0},"f6LoginsPage");
  h+=`</div></div>`;
  return h;
 }
@@ -2638,11 +2797,13 @@ function billingOverviewPage(){
 }
 
 /* registry honesty: batch-3 routes are implemented now (extends batch 1+2) */
-["system-health","system-logs","security-audit","system-flags","analytics-users","analytics-trading","analytics-ai","analytics-revenue","billing-overview"].forEach(rt=>{const d=REG_BY_ROUTE[rt];if(d)d.status="implemented";});
+["system-health","system-logs","security-audit","security-signups","security-logins","system-flags","analytics-users","analytics-trading","analytics-ai","analytics-revenue","billing-overview"].forEach(rt=>{const d=REG_BY_ROUTE[rt];if(d)d.status="implemented";});
 Object.assign(PAGE_IMPL,{
  "system-health":systemHealthPage,
  "system-logs":systemLogsPage,
  "security-audit":securityAuditPage,
+ "security-signups":securitySignupsPage,
+ "security-logins":securityLoginsPage,
  "system-flags":systemFlagsPage,
  "analytics-users":analyticsUsersPage,
  "analytics-trading":analyticsTradingPage,
