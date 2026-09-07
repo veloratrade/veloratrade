@@ -224,6 +224,19 @@ CREATE TABLE IF NOT EXISTS user_devices (
     last_seen_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS auth_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NULL,
+    event_type TEXT NOT NULL DEFAULT 'login',
+    result TEXT NOT NULL,
+    reason TEXT NULL,
+    ip_address TEXT NULL,
+    user_agent TEXT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_auth_events_user_time ON auth_events (user_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_auth_events_result ON auth_events (result);
+
 CREATE TABLE IF NOT EXISTS password_resets (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,

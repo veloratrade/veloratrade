@@ -62,6 +62,21 @@ CREATE TABLE IF NOT EXISTS user_sessions (
 -- ----------------------------------------------------------------------------
 -- AUTHENTICATION, SECURITY, AND ACCOUNT-NOTIFICATION SUPPORT
 -- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS auth_events (
+    id          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    user_id     BIGINT UNSIGNED NULL,                                  -- NULL = unknown account at attempt time
+    event_type  VARCHAR(32)     NOT NULL DEFAULT 'login',              -- login (future: logout, refresh ...)
+    result      VARCHAR(16)     NOT NULL,                              -- success | failure
+    reason      VARCHAR(64)     NULL,                                  -- invalid_credentials | account_inactive | email_not_verified
+    ip_address  VARCHAR(45)     NULL,                                  -- IPv4/IPv6
+    user_agent  VARCHAR(250)    NULL,
+    created_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_auth_events_user_time (user_id, created_at),
+    KEY idx_auth_events_result (result),
+    CONSTRAINT fk_auth_events_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 CREATE TABLE IF NOT EXISTS password_resets (
     id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     user_id    BIGINT UNSIGNED NOT NULL,
