@@ -51,6 +51,67 @@ class H(SimpleHTTPRequestHandler):
             if m["mode"]=="users403": self._j(403,{"status":"error","error":{"code":"PERMISSION_DENIED"}}); return
             self._j(200,self._users(up.query)); return
         import re as _re
+        if up.path=="/api/v1/admin/trading-accounts":
+            # Phase 4 — contract mirror of GlobalTradingController::accounts
+            from urllib.parse import parse_qs as _pqs
+            m=loadmode(); q=_pqs(up.query)
+            if m.get("fail_trading"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
+            st=q.get("status",[None])[0]; pf=q.get("platform",[None])[0]; uid=q.get("user_id",[None])[0]; term=(q.get("q",[""])[0] or "").lower()
+            rows=[
+             {"id":201,"userId":2,"provider":"MT5","platform":"MT5","broker":"AlphaMarkets","server":"Alpha-Live","accountNumber":"***1234","syncStatus":"CONNECTED","lastSyncedAt":"2026-09-06 10:00:00","label":"Sara Main","currency":"USD"},
+             {"id":202,"userId":2,"provider":"MT4","platform":"MT4","broker":"BetaFX","server":"Beta-02","accountNumber":"777001","syncStatus":"DISCONNECTED","lastSyncedAt":None,"label":"Beta small","currency":"USD"},
+             {"id":203,"userId":3,"provider":"MT5","platform":"MT5","broker":"AlphaMarkets","server":"Alpha-Live","accountNumber":"***0555","syncStatus":"ERROR","lastSyncedAt":"2026-09-05 18:20:00","label":"Reza Prop","currency":"USD"},
+             {"id":204,"userId":3,"provider":"MANUAL","platform":"MANUAL","broker":None,"server":None,"accountNumber":None,"syncStatus":"CONNECTED","lastSyncedAt":None,"label":"Manual Journal","currency":"USD"},
+             {"id":205,"userId":5,"provider":"MT5","platform":"MT5","broker":"GammaMarkets","server":"Gamma-1","accountNumber":"***1000","syncStatus":"CONNECTED","lastSyncedAt":"2026-09-06 09:15:00","label":"Mina big","currency":"USD"}]
+            if st: rows=[r for r in rows if r["syncStatus"]==st]
+            if pf: rows=[r for r in rows if r["platform"]==pf]
+            if uid: rows=[r for r in rows if str(r["userId"])==uid]
+            if term: rows=[r for r in rows if term in (r["broker"] or "").lower() or term in (r["server"] or "").lower() or term in (r["label"] or "").lower()]
+            for r in rows:
+                u=self._find(r["userId"]); r["userEmail"]=u["email"] if u else None; r["userFullName"]=u["fullName"] if u else None
+            stats={}
+            for r2 in [{"syncStatus":"CONNECTED"},{"syncStatus":"CONNECTED"},{"syncStatus":"ERROR"},{"syncStatus":"DISCONNECTED"},{"syncStatus":"CONNECTED"}]:
+                stats[r2["syncStatus"]]=stats.get(r2["syncStatus"],0)+1
+            try: page=int(q.get("page",["1"])[0])
+            except: page=1
+            try: per=int(q.get("per_page",["10"])[0])
+            except: per=10
+            total=len(rows); chunk=rows[(page-1)*per:page*per]
+            self._j(200,{"accounts":chunk,"stats":{"byStatus":stats},"pagination":{"total":total,"page":page,"per_page":per,"has_more":page*per<total}}); return
+        if up.path=="/api/v1/admin/trades":
+            # Phase 4 — contract mirror of GlobalTradingController::trades
+            from urllib.parse import parse_qs as _pqs
+            m=loadmode(); q=_pqs(up.query)
+            if m.get("fail_trading"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
+            sym=q.get("symbol",[None])[0]; dr=q.get("direction",[None])[0]; uid=q.get("user_id",[None])[0]
+            aid=q.get("account_id",[None])[0]; order=q.get("order",["close_time"])[0]
+            rows=[
+             {"id":101,"userId":2,"accountId":201,"symbol":"XAUUSD","direction":"buy","entryPrice":"2400.10","exitPrice":"2412.60","volume":"0.50","profitLoss":"120.50","openTime":"2026-09-05 08:00:00","closeTime":"2026-09-05 10:00:00","strategyTag":"breakout","source":"manual"},
+             {"id":102,"userId":2,"accountId":201,"symbol":"EURUSD","direction":"sell","entryPrice":"1.08500","exitPrice":"1.08950","volume":"1.00","profitLoss":"-45.00","openTime":"2026-09-06 09:00:00","closeTime":"2026-09-06 12:30:00","strategyTag":"reversal","source":"manual"},
+             {"id":103,"userId":3,"accountId":203,"symbol":"XAUUSD","direction":"sell","entryPrice":"2415.00","exitPrice":"2389.00","volume":"1.00","profitLoss":"260.00","openTime":"2026-09-04 13:00:00","closeTime":"2026-09-04 15:00:00","strategyTag":"news-fade","source":"auto_sync"},
+             {"id":104,"userId":3,"accountId":203,"symbol":"BTCUSD","direction":"buy","entryPrice":"58000.0","exitPrice":"57690.0","volume":"0.10","profitLoss":"-310.25","openTime":"2026-09-06 15:00:00","closeTime":"2026-09-06 18:45:00","strategyTag":None,"source":"auto_sync"},
+             {"id":105,"userId":5,"accountId":None,"symbol":"USDJPY","direction":"buy","entryPrice":"142.500","exitPrice":"142.850","volume":"0.80","profitLoss":"75.10","openTime":"2026-09-01 07:00:00","closeTime":"2026-09-01 09:15:00","strategyTag":"trend","source":"manual"},
+             {"id":106,"userId":2,"accountId":202,"symbol":"GBPUSD","direction":"buy","entryPrice":"1.26500","exitPrice":"1.26650","volume":"0.40","profitLoss":"10.00","openTime":"2026-09-07 09:30:00","closeTime":"2026-09-07 11:00:00","strategyTag":None,"source":"manual"},
+             {"id":107,"userId":5,"accountId":None,"symbol":"XAUUSD","direction":"buy","entryPrice":"2390.00","exitPrice":"2401.30","volume":"0.30","profitLoss":"33.90","openTime":"2026-09-07 10:00:00","closeTime":"2026-09-07 12:10:00","strategyTag":"scalp","source":"manual"},
+             {"id":108,"userId":3,"accountId":203,"symbol":"US30","direction":"sell","entryPrice":"39400","exitPrice":"39310","volume":"0.20","profitLoss":"18.00","openTime":"2026-09-07 11:00:00","closeTime":"2026-09-07 13:05:00","strategyTag":None,"source":"manual"},
+             {"id":109,"userId":2,"accountId":201,"symbol":"EURUSD","direction":"buy","entryPrice":"1.08600","exitPrice":"1.08780","volume":"0.70","profitLoss":"12.60","openTime":"2026-09-07 12:00:00","closeTime":"2026-09-07 14:20:00","strategyTag":None,"source":"manual"},
+             {"id":110,"userId":3,"accountId":203,"symbol":"GBPJPY","direction":"sell","entryPrice":"189.500","exitPrice":"189.900","volume":"0.50","profitLoss":"-19.00","openTime":"2026-09-07 08:30:00","closeTime":"2026-09-07 15:00:00","strategyTag":"counter","source":"manual"},
+             {"id":111,"userId":5,"accountId":None,"symbol":"BTCUSD","direction":"sell","entryPrice":"57200","exitPrice":"56980","volume":"0.05","profitLoss":"11.00","openTime":"2026-09-07 09:00:00","closeTime":"2026-09-07 16:00:00","strategyTag":None,"source":"manual"},
+             {"id":112,"userId":2,"accountId":201,"symbol":"XAUUSD","direction":"sell","entryPrice":"2418.00","exitPrice":"2407.20","volume":"0.60","profitLoss":"64.80","openTime":"2026-09-07 10:30:00","closeTime":"2026-09-07 17:30:00","strategyTag":"reversal","source":"manual"}]
+            if sym: rows=[r for r in rows if r["symbol"]==sym]
+            if dr: rows=[r for r in rows if r["direction"]==dr]
+            if uid: rows=[r for r in rows if str(r["userId"])==uid]
+            if aid: rows=[r for r in rows if str(r["accountId"])==aid]
+            key={"open_time":lambda r:r["openTime"],"profit_loss":lambda r:float(r["profitLoss"])}.get(order,lambda r:r["closeTime"])
+            rows.sort(key=key,reverse=True)
+            for r in rows:
+                u=self._find(r["userId"]); r["userEmail"]=u["email"] if u else None; r["userFullName"]=u["fullName"] if u else None
+            try: page=int(q.get("page",["1"])[0])
+            except: page=1
+            try: per=int(q.get("per_page",["10"])[0])
+            except: per=10
+            total=len(rows); chunk=rows[(page-1)*per:page*per]
+            self._j(200,{"trades":chunk,"pagination":{"total":total,"page":page,"per_page":per,"has_more":page*per<total}}); return
         mm=_re.match(r"^/api/v1/admin/users/(\d+)/(sessions|devices|login-history)$",up.path)
         if mm:
             # Phase 3 User360 sections — mirror the real controller envelopes.
