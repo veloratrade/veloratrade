@@ -54,9 +54,9 @@
       },
       "landing": {
         "path": "fa/landing.json",
-        "messages": 380,
-        "bytes": 38002,
-        "sha256": "ad83dad93802c3734954d53b4a7c1e9d7501b180737446ad4e9b795ca7a1da8e"
+        "messages": 384,
+        "bytes": 38256,
+        "sha256": "0145719e7df116cddf9cba0a2083853ec11e6acec428ed7fa4232e0d3a67718a"
       },
       "markets": {
         "path": "fa/markets.json",
@@ -164,9 +164,9 @@
       },
       "landing": {
         "path": "en/landing.json",
-        "messages": 380,
-        "bytes": 29435,
-        "sha256": "c1c0e495596e360f1dd41ac1799c006fda51dd5031b3c50898a32a4cda308179"
+        "messages": 384,
+        "bytes": 29656,
+        "sha256": "efbc53c728e8b12eae0bf703724eb1273fbfb2b3f1364e0001e8bdccafe19a1d"
       },
       "markets": {
         "path": "en/markets.json",

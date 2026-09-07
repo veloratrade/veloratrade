@@ -1,8 +1,8 @@
-/* VELORA — Trading Intelligence Core · Phase 1 controller (ES module, no bundler)
+/* VELORA — Trading Intelligence Core · Phase 1 controller + Phase 2 continuity beats (ES module, no bundler)
    Tier detection → HTML chapter state (works without WebGL) → lazy Three.js scene → chapter-5 handoff
    into the real #dashboard .db-shell. Native scroll only: no wheel capture, no snap, no page lock.
    All user-facing text is HTML (data-i18n). This file contains no copy. */
-const VIC_VERSION = '2026.09.06.1';
+const VIC_VERSION = '2026.09.06.2';
 const html = document.documentElement;
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
@@ -97,6 +97,7 @@ function main() {
     if (step) {
       $$('.vic-hud > div', step).forEach((d, i) => d.classList.toggle('on', local > .08 + i * .12));
       $$('.vic-tag', step).forEach((t, i) => t.classList.toggle('on', local > .3 + i * .16));
+      if (c === 2) { const q = $('.vic-q', step), a = $('.vic-a', step); if (q) q.classList.toggle('on', local > .08); if (a) a.classList.toggle('on', local > .52); }   // question before the scan, answer after two patterns are labelled
       $$('.vic-ledger li', step).forEach((li, i) => li.classList.toggle('on', local > .70 + i * .054));   // 0.15 after the canvas row (ch4 beat 5)
     }
     return { c, local };
@@ -104,6 +105,18 @@ function main() {
 
   /* ---------- chapter 5 → runtime clone of the real dashboard ---------- */
   let mini = null, dockRects = null, revealed = false, framePx = null, frameSized = false, frameW = 0, frameH = 0;
+  /* B1: a one-shot guard — any anchor navigation to #dashboard (nav link, hero CTA, skip link, deep link, back/forward)
+     is a jump *past* the story, never a flight: the frame stays off and the real shell is revealed at once.
+     Cleared when the user scrolls back into the story (p ≤ .78), so a later forward scroll gets the full handoff. */
+  let anchored = false;
+  function armAnchor() {
+    anchored = true;
+    if (els.frame && els.frame.classList.contains('on')) { els.frame.classList.remove('on'); if (els.dashboard) els.dashboard.classList.remove('vic-handoff'); }
+    restoreSteps(); if (els.real) revealReal();
+  }
+  document.addEventListener('click', e => { const a = e.target.closest && e.target.closest('a[href]'); if (a && /#dashboard$/.test(a.getAttribute('href') || '') && !e.defaultPrevented) armAnchor(); });
+  addEventListener('hashchange', () => { if (location.hash === '#dashboard') armAnchor(); });
+  if (location.hash === '#dashboard') armAnchor();
   function buildClone() {
     if (!els.real || !els.frame || mini) return;
     const clone = els.real.cloneNode(true);
@@ -156,12 +169,18 @@ function main() {
   /* frame rect = lerp(stage-fit → real rect); every opacity is a function of scroll only (no CSS transitions) */
   function layoutFrame(p) {
     if (!els.real || !els.frame || tier === 'c' || reduced) { framePx = null; return; }
-    if (p <= .78) { framePx = null; if (els.frame.classList.contains('on')) { els.frame.classList.remove('on'); els.dashboard.classList.remove('vic-handoff'); } els.real.style.visibility = ''; if (sectionHead) sectionHead.style.opacity = ''; restoreSteps(); return; }
+    if (p <= .78) { framePx = null; anchored = false; if (els.frame.classList.contains('on')) { els.frame.classList.remove('on'); els.dashboard.classList.remove('vic-handoff'); } els.real.style.visibility = ''; if (sectionHead) sectionHead.style.opacity = ''; restoreSteps(); return; }
     const real = els.real.getBoundingClientRect(), st = els.stage.getBoundingClientRect();
     const total = Math.max(1, core.getBoundingClientRect().height - (innerHeight - headerH));
-    const pEnd = clamp(p + (real.top - innerHeight * .45) / total, 1.02, 1.6);   // p at which the real shell's top sits at 45% of the viewport
+    /* B1 (PR #117 review): the flight must be over wherever browser navigation can come to rest. Anchor navigation to
+       #dashboard stops with the section under the header (scroll-margin-top), i.e. with the real shell at `landTop`;
+       the reveal tick therefore happens at whichever comes first: 45% of the viewport or that anchored rest position. */
+    const anchorTop = parseFloat(getComputedStyle(els.dashboard).scrollMarginTop) || headerH;
+    const landTop = real.top - (els.dashboard.getBoundingClientRect().top - anchorTop);
+    const target = Math.max(innerHeight * .45, landTop);
+    const pEnd = clamp(p + (real.top - target) / total, 1.02, 1.6);
     const cons = clamp((p - .82) / .18), h = clamp((p - .97) / (pEnd - .97));
-    const on = p > .86 && h < .96;
+    const on = p > .86 && h < .96 && !anchored;
     if (on && !mini) buildClone();
     els.frame.classList.toggle('on', on);
     els.dashboard.classList.toggle('vic-handoff', on);
@@ -175,7 +194,7 @@ function main() {
     const e = smooth(clamp(h / .96));                 // reaches exactly 1 at h = .96 → frame rect == real rect on the reveal tick
     const r = { left: S(inStage.left, real.left, e), top: S(inStage.top, real.top, e), width: S(fw, real.width, e), height: S(fh, real.height, e) };
     framePx = { left: r.left - st.left, top: r.top - st.top, width: r.width, height: r.height };
-    if (!on) { restoreSteps(); if (h >= .96) revealReal(); return; }
+    if (!on) { restoreSteps(); if (h >= .96 || anchored) revealReal(); else { els.real.style.visibility = ''; if (sectionHead) sectionHead.style.opacity = ''; } return; }
     // Tier B: the frame's flight crosses the story column (stage sits above the text) → the story recedes as the dashboard leaves the stage
     if (tall && els.stepsBox) { els.stepsBox.style.willChange = 'opacity'; els.stepsBox.style.opacity = (1 - smooth(clamp(e / .18))).toFixed(3); }
     // the frame keeps the real shell's size and is placed/scaled with a transform only (compositor-only, no layout shift)
@@ -200,8 +219,40 @@ function main() {
     addEventListener('pointermove', e => { px = (e.clientX / innerWidth - .5) * 2; py = (e.clientY / innerHeight - .5) * 2; }, { passive: true });
   }
 
+  /* ---------- Phase 2 continuity beats (outside the pin): custom properties from scroll position only ----------
+     Two beats, both DOM-only and compositor-only (transform/opacity via CSS custom properties):
+       #ai       — the *answer* to the question asked in core chapter 3 settles into place as the panel enters
+                   (replaces the timed .reveal fade of the panel with a scroll-driven one; briefing stats follow in order)
+       #roadmap  — the timeline draws with scroll and nodes light in order
+     Off under reduced motion (properties cleared → CSS defaults == baseline). Cost: 2 rect reads per scrolled frame. */
+  const beats = (() => {
+    if (reduced) return null;
+    const aiPanel = $('#ai .ai-panel'), briefKids = $$('#ai .ai-briefing > *'), road = $('#roadmap .road'), roadLine = $('#roadmap .road-line'), dots = $$('#roadmap .road-node .dot');
+    const last = { va: -1, vr: -1 };
+    const set = (el, name, v) => { if (el) el.style.setProperty(name, v); };
+    return function update() {
+      if (reduced) return;
+      const vh = innerHeight;
+      /* #ai arrival: the answer settles as the panel enters (0 → 1 while its top travels from 92% to 45% of the viewport) */
+      if (aiPanel) {
+        const r = aiPanel.getBoundingClientRect();
+        const va = +smooth(clamp((vh * .92 - r.top) / (vh * .47))).toFixed(3);
+        if (va !== last.va) {
+          last.va = va; set(aiPanel, '--va', va);
+          briefKids.forEach((k, i) => set(k, '--va', smooth(clamp((va - .3 - i * .08) / .38)).toFixed(3)));   // all settled by va = 1
+        }
+      }
+      /* roadmap: the line draws with scroll, nodes light in order */
+      if (road && roadLine) {
+        const r = road.getBoundingClientRect();
+        const vr = +smooth(clamp((vh * .9 - r.top) / (vh * .55))).toFixed(3);
+        if (vr !== last.vr) { last.vr = vr; set(roadLine, '--vr', vr); dots.forEach((d, i) => set(d, '--vn', (vr > (i + .5) / dots.length ? 1 : 0))); }
+      }
+    };
+  })();
+
   /* ---------- rAF loop (reads scroll, never writes it) ---------- */
-  let running = true, sp = 0, lastNow = 0, dbgT = 0, lastP = -9, frames = 0;
+  let running = true, sp = 0, lastNow = 0, dbgT = 0, lastP = -9, frames = 0, lastY = -1, lastSH = -1;
   const debug = qs.get('vicdebug') === '1';
   let dbg = null;
   if (debug) { dbg = document.createElement('div'); dbg.className = 'vic-dbg'; dbg.setAttribute('aria-hidden', 'true'); document.body.appendChild(dbg); }
@@ -209,6 +260,7 @@ function main() {
     if (!running) return;
     const p = progress();
     const near = p > -1.5 && p < 1.3;
+    if (beats) { const y = scrollY | 0, sh = html.scrollHeight; if (y !== lastY || sh !== lastSH) { lastY = y; lastSH = sh; beats(); } }
     if (near || Math.abs(p - lastP) > 1e-4 || Math.abs(p - sp) > 1e-4) {
       lastP = p;
       if ((++frames & 31) === 0) syncHeader();
@@ -277,7 +329,9 @@ function main() {
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => measureDock());   // fonts settle after load → re-measure once
 
   /* ---------- live reduced-motion change → static, immediately ---------- */
+  function clearBeats() { $$('#ai .ai-panel,#ai .ai-briefing > *,#roadmap .road-line,#roadmap .road-node .dot').forEach(el => { ['--va', '--vr', '--vn'].forEach(n => el.style.removeProperty(n)); }); }
   rmq.addEventListener('change', e => {
+    if (e.matches) clearBeats();
     reduced = e.matches || qs.get('vicrm') === '1';
     html.setAttribute('data-vic-reduced', reduced ? '1' : '0');
     if (reduced) downgrade('reduced-motion');
