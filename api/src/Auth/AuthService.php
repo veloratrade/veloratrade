@@ -125,6 +125,15 @@ final class AuthService
         }
         $userId = $this->users->create($createData);
 
+        // Phase 6 (D1-A, owner-confirmed): persist ONE signup event for the
+        // signup-history/clustering feature ONLY (purpose-limited approval:
+        // user_id, timestamp, IP, User-Agent — nothing else). Written only
+        // after successful user creation (the unverified-duplicate retry
+        // path above returns earlier and never reaches this line, so
+        // retries never duplicate signup events). Best-effort like every
+        // auth_events write — registration must never depend on history.
+        (new AuthEventRepository())->record($userId, 'signup', 'success', null, $ip, $userAgent);
+
         $token = bin2hex(random_bytes(32));
         $this->verifications->invalidateAllForUser($userId);
         $this->verifications->create($userId, hash('sha256', $token), 86400);

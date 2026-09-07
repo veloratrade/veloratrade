@@ -216,6 +216,13 @@ $router->get('/api/v1/admin/users/{id}/devices', [\Velora\Admin\UserManagementCo
 $router->get('/api/v1/admin/users/{id}/login-history', [\Velora\Admin\UserManagementController::class, 'loginHistory'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_USERS_VIEW)]);
 // Phase 3 B-1: admin-triggered email verification (idempotent; audited user.verify_email).
 $router->post('/api/v1/admin/users/{id}/verify-email', [\Velora\Admin\UserManagementController::class, 'verifyEmail'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_USERS_VERIFY_EMAIL)]);
+// Phase 6: global signup history/clusters (#/security-signups) + global login
+// history (#/security-logins) — read-only listings over existing tables.
+// Gate = audit.view (frozen frontend VIEW_PERM). D3: raw ip/user_agent only
+// for P_AUDIT_SENSITIVE_VIEW holders; the API itself omits them otherwise.
+$router->get('/api/v1/admin/security/signups', [\Velora\Admin\SecurityAccessController::class, 'signups'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_AUDIT_VIEW)]);
+$router->get('/api/v1/admin/security/logins', [\Velora\Admin\SecurityAccessController::class, 'logins'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_AUDIT_VIEW)]);
+
 
 // Dispatch
 try {
