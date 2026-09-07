@@ -903,6 +903,15 @@
       "reason": "t() fallback labels + Persian OCR regexes + RC-3 bilingual partial-extraction warning (documented legacy t(fa,en)); migrate to central catalog",
       "resolution_pr": "PR-08c",
       "updated_at": "2026-08-30"
+    },
+    {
+      "id": "V3-VIC-01",
+      "file": "public/assets/vendor/three/three.module.min.js",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 137,
+      "category": "runtime-fallback",
+      "reason": "self-hosted, unmodified Three.js r170 ESM build (MIT, sha256 08fd7545…c39e7) used by the landing Trading Intelligence Core; residual literals are library warnings/shader tokens, never user-facing copy. Do not edit vendor source; bump this count only when the vendored revision changes.",
+      "resolution_pr": null
     }
   ],
   "baseline": {
