@@ -184,6 +184,7 @@ $router->get('/api/v1/admin/me', [\Velora\Admin\SecurityController::class, 'me']
 // Admin Create User (RBAC: users.create = admin + super_admin; privileged-role
 // creation additionally requires users.change_role, enforced in the service).
 $router->post('/api/v1/admin/users', [\Velora\Admin\UserManagementController::class, 'store'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_USERS_CREATE)]);
+$router->post('/api/v1/admin/users/invitations', [\Velora\Admin\UserManagementController::class, 'invite'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_USERS_CREATE)]);
 
 // Users list is defined above (Controller::users) under $admin; detail + actions below.
 $router->get('/api/v1/admin/users/{id}', [\Velora\Admin\UserManagementController::class, 'show'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_USERS_VIEW)]);

@@ -9,6 +9,7 @@ PERMS_ADMIN=[p for p in PERMS_SUPER if p not in ("users.change_role","audit.view
 PERMS_LIMITED=["overview.view","users.view"]
 PERMS_ADMIN_MINUS=[p for p in PERMS_ADMIN if p!="billing.view"]
 PERMS_CREATOR=PERMS_ADMIN+["users.create"]
+PERMS_INVITER=PERMS_SUPER
 class H(SimpleHTTPRequestHandler):
     def __init__(self,*a,**kw): super().__init__(*a,directory=REPO,**kw)
     def log_message(self,*a): pass
@@ -223,6 +224,7 @@ class H(SimpleHTTPRequestHandler):
             elif m["mode"]=="super": me={"userId":5,"role":"super_admin","isSuperAdmin":True,"panel":True,"name":"Arman Kaveh","email":"a.kaveh@veloratrade.ir","permissions":PERMS_SUPER,"recentAdminActions":[]}
             elif m["mode"]=="adminminus": me={"userId":6,"role":"admin","isSuperAdmin":False,"panel":True,"permissions":PERMS_ADMIN_MINUS,"recentAdminActions":[]}
             elif m["mode"]=="creator": me={"userId":8,"role":"admin","isSuperAdmin":False,"panel":True,"name":"Sahar Rahimi","email":"s.rahimi@veloratrade.ir","permissions":PERMS_CREATOR,"recentAdminActions":[]}
+            elif m["mode"]=="inviter": me={"userId":5,"role":"super_admin","isSuperAdmin":True,"panel":True,"name":"Arman Kaveh","email":"a.kaveh@veloratrade.ir","permissions":PERMS_INVITER,"recentAdminActions":[]}
             elif m["mode"]=="limited": me={"userId":7,"role":"admin","isSuperAdmin":False,"panel":True,"name":"Neda Karimi","email":"n.karimi@veloratrade.ir","permissions":PERMS_LIMITED,"recentAdminActions":[]}
             elif m["mode"]=="user403": self._j(403,{"status":"error","error":{"code":"ADMIN_REQUIRED"}}); return
             elif m["mode"]=="panel_false": me={"userId":9,"role":"user","isSuperAdmin":False,"panel":False,"permissions":[]}
@@ -257,6 +259,29 @@ class H(SimpleHTTPRequestHandler):
             self.server.db_users.append(dict(nu))
             self._j(201,{"status":"success","data":{"ok":True,"user":nu,"verificationRequired":True,
                         "emailSent": res!="notsent"},"error":None,"timestamp":"2026-09-07T10:00:00+00:00"}); return
+        if up.path=="/api/v1/admin/users/invitations":
+            # Invite Admin (Phase 2) — mirrors the real controller::invite shape.
+            m=loadmode()
+            length=int(self.headers.get("Content-Length") or 0)
+            body={}
+            if length:
+                try: body=json.loads(self.rfile.read(length) or b"{}")
+                except: body={}
+            m["invite_body"]=body; m["invite_calls"]=m.get("invite_calls",0)+1
+            json.dump(m,open(os.path.join(ROOT,"mode.json"),"w"))
+            res=m.get("invite_result","ok")
+            if res=="dup":
+                self._j(409,{"status":"error","error":{"code":"EMAIL_ALREADY_REGISTERED","message":"This email is already registered.","messageKey":"errors.auth.emailAlreadyRegistered","params":{},"details":None}}); return
+            if res=="invalid":
+                self._j(422,{"status":"error","error":{"code":"VALIDATION_FAILED","message":"Validation failed.","messageKey":"errors.validation","params":{},"details":{"fields":{"email":{"code":"INVALID_EMAIL","messageKey":"errors.validation.email","params":[]}}}}}); return
+            if res=="serverfail":
+                self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR","message":"Internal server error.","messageKey":"errors.http.500","params":{},"details":None}}); return
+            nu={"id":98,"email":body.get("email") or "invited@velora.test","fullName":body.get("fullName") or "Invited Admin",
+                "role":body.get("role") or "admin","status":"active","emailVerified":False,"emailVerifiedAt":None,
+                "createdAt":"2026-09-07 12:00:00","plan":"free","subscriptionStatus":"none"}
+            self.server.db_users.append(dict(nu))
+            self._j(201,{"status":"success","data":{"ok":True,"user":dict(nu,invitePending=True),
+                        "emailSent": res!="notsent"},"error":None,"timestamp":"2026-09-07T12:00:00+00:00"}); return
         mm=_re.match(r"^/api/v1/admin/users/(\d+)/(status|role|subscription|revoke-sessions|verify-email)$",up.path)
         if mm:
             uid=int(mm.group(1)); act=mm.group(2)

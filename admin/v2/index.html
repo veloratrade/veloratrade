@@ -1070,6 +1070,7 @@ const F3T={
   "usr.done.suspend":"کاربر مسدود شد","usr.done.activate":"کاربر فعال شد","usr.done.role":"نقش کاربر تغییر کرد","usr.done.plan":"اشتراک کاربر به‌روزرسانی شد","usr.done.revoke":"نشست‌های کاربر لغو شد",
   "usr.self.err":"این اقدام روی حساب خودتان مجاز نیست",
   "usr.act.create":"ایجاد کاربر","usr.md.create.title":"ایجاد کاربر","usr.md.create.email":"ایمیل","usr.md.create.name":"نام و نام خانوادگی","usr.md.create.password":"گذرواژه","usr.md.create.password.hint":"حداقل ۸ نویسه","usr.md.create.submit":"ایجاد","usr.done.create.sent":"کاربر ایجاد شد و ایمیل تأیید ارسال شد","usr.done.create.notsent":"کاربر ایجاد شد اما ارسال ایمیل تأیید ممکن نشد",
+  "usr.act.invite":"دعوت مدیر","usr.md.invite.title":"دعوت مدیر","usr.md.invite.email":"ایمیل","usr.md.invite.name":"نام و نام خانوادگی","usr.md.invite.role":"نقش","usr.md.invite.note":"لینک فعال‌سازی یک‌بارمصرف (۲۴ ساعت) ایمیل می‌شود و گذرواژه توسط خود کاربر تعیین می‌شود.","usr.md.invite.submit":"ارسال دعوت","usr.done.invite.sent":"دعوت ایجاد شد و ایمیل ارسال شد","usr.done.invite.notsent":"دعوت ایجاد شد اما ارسال ایمیل ممکن نشد",
   "aip.title.desc":"وضعیت واقعی ارائه‌دهندگان از بک‌اند","aip.provider":"ارائه‌دهنده","aip.available":"در دسترس","aip.unavailable":"در دسترس نیست",
   "aip.cred":"اعتبارنامه","aip.configured":"پیکربندی‌شده","aip.notconfigured":"پیکربندی نشده","aip.envkey":"نام متغیر محیطی","aip.caps":"قابلیت‌ها",
   "aip.relay":"مسیر رله (Gemini)","aip.relay.url":"URL رله","aip.relay.token":"توکن رله","aip.effroute":"مسیر مؤثر","aip.quota":"سهمیه",
@@ -1110,6 +1111,7 @@ const F3T={
   "usr.done.suspend":"User suspended","usr.done.activate":"User activated","usr.done.role":"User role changed","usr.done.plan":"User subscription updated","usr.done.revoke":"User sessions revoked",
   "usr.self.err":"This action is not allowed on your own account",
   "usr.act.create":"Create User","usr.md.create.title":"Create user","usr.md.create.email":"Email","usr.md.create.name":"Full name","usr.md.create.password":"Password","usr.md.create.password.hint":"At least 8 characters","usr.md.create.submit":"Create","usr.done.create.sent":"User created and verification email sent","usr.done.create.notsent":"User created but the verification email could not be sent",
+  "usr.act.invite":"Invite Admin","usr.md.invite.title":"Invite admin","usr.md.invite.email":"Email","usr.md.invite.name":"Full name","usr.md.invite.role":"Role","usr.md.invite.note":"A one-time activation link (valid 24 hours) will be emailed; the invitee chooses their own password.","usr.md.invite.submit":"Send invite","usr.done.invite.sent":"Invitation created and email sent","usr.done.invite.notsent":"Invitation created but the email could not be sent",
   "aip.title.desc":"Real provider state from the backend","aip.provider":"Provider","aip.available":"Available","aip.unavailable":"Unavailable",
   "aip.cred":"Credential","aip.configured":"Configured","aip.notconfigured":"Not configured","aip.envkey":"Env key name","aip.caps":"Capabilities",
   "aip.relay":"Relay route (Gemini)","aip.relay.url":"Relay URL","aip.relay.token":"Relay token","aip.effroute":"Effective route","aip.quota":"Quota",
@@ -1273,6 +1275,7 @@ function usersPage(){
    <option value="1"${US.verified==="1"?" selected":""}>${esc(t("usr.verified.yes"))}</option>
    <option value="0"${US.verified==="0"?" selected":""}>${esc(t("usr.verified.no"))}</option></select>
   ${can("users.create")?`<button class="btn sm primary" onclick="usrCreateOpen()" aria-haspopup="dialog">${esc(t("usr.act.create"))}</button>`:""}
+  ${can("users.change_role")?`<button class="btn sm primary" onclick="usrInviteOpen()" aria-haspopup="dialog">${esc(t("usr.act.invite"))}</button>`:""}
  </div></div>`;
  if(US.st==="loading"&&!US.data)return h+`<div class="card"><div class="cb">${f3skel(8)}</div></div>`;
  if(US.st==="error")return h+`<div class="card"><div class="cb">${f3errBox(US.err)}</div></div>`;
@@ -1350,6 +1353,39 @@ function usrPlan(id){
   <select id="f3subSel" class="inp" style="width:100%;margin-top:6px">${subs}</select><div id="f3acterr"></div></div>
   <div class="mf"><button class="btn" onclick="f3CloseModal()">${esc(t("act.cancel"))}</button>
   <button class="btn primary" onclick="usrDo('plan',${id})">${esc(t("usr.md.confirm"))}</button></div>`);
+}
+function usrInviteOpen(){
+ const roleOpt=r=>`<option value="${r}">${esc(f3RoleLbl(r))}</option>`;
+ f3OpenModal(`<div class="mh">${esc(t("usr.md.invite.title"))}<button class="tbtn" onclick="f3CloseModal()" aria-label="${esc(t("act.close"))}">${VI.x||"×"}</button></div>
+  <div class="mb">
+   <label class="cellsub" for="f3invEmail">${esc(t("usr.md.invite.email"))}</label>
+   <input id="f3invEmail" class="inp" type="email" autocomplete="off" style="width:100%;margin:6px 0 10px">
+   <label class="cellsub" for="f3invName">${esc(t("usr.md.invite.name"))}</label>
+   <input id="f3invName" class="inp" type="text" autocomplete="off" style="width:100%;margin:6px 0 10px">
+   <label class="cellsub" for="f3invRole">${esc(t("usr.md.invite.role"))}</label>
+   <select id="f3invRole" class="inp" style="width:100%;margin:6px 0 10px">${roleOpt("admin")}${roleOpt("super_admin")}</select>
+   <div class="note cellsub">${esc(t("usr.md.invite.note"))}</div>
+   <div id="f3acterr"></div></div>
+  <div class="mf"><button class="btn" onclick="f3CloseModal()">${esc(t("act.cancel"))}</button>
+  <button class="btn primary" id="f3actgo" onclick="usrInvite()">${esc(t("usr.md.invite.submit"))}</button></div>`);
+}
+let f3InviteBusy=false;
+async function usrInvite(){
+ if(f3InviteBusy)return;f3InviteBusy=true;
+ const g=$("#f3actgo");if(g)g.disabled=true;
+ try{
+  const r=await VeloraData.request("/api/v1/admin/users/invitations",{method:"POST",body:{
+   email:($("#f3invEmail")||{}).value||"",
+   fullName:($("#f3invName")||{}).value||"",
+   role:($("#f3invRole")||{}).value||"admin"}});
+  toast(r&&r.emailSent===false?t("usr.done.invite.notsent"):t("usr.done.invite.sent"));
+  f3CloseModal();US.st="refreshing";render();f3LoadUsers();   /* server-truthful refresh; no optimistic mutation */
+ }catch(e){
+  const code=e&&e.code||"";
+  toast((code?esc(code)+" · ":"")+(e&&e.message?t("f3.errprefix"):""),"err");
+  f3ActErr((code?code+" — ":"")+(e&&e.message?String(e.message):t("f3.load.err")));
+ }
+ f3InviteBusy=false;
 }
 function usrCreateOpen(){
  const roleOpt=r=>`<option value="${r}">${esc(f3RoleLbl(r))}</option>`;
