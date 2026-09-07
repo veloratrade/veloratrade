@@ -16,6 +16,13 @@ final class AIRequestRepository extends AIRepository
     private const TABLE = 'ai_requests';
 
     /**
+     * Explicit safe Admin projection for the Phase-5 global listing.
+     * `prompt_hash` is deliberately EXCLUDED (minimum-necessary: the drill-down
+     * never needs it), so no `SELECT *` can leak audit-only columns.
+     */
+    private const PUBLIC_COLUMNS = 'id, user_id, feature, provider, model, tokens_used, latency_ms, status, cost, created_at';
+
+    /**
      * Log AI request + response for audit, cost, debugging.
      *
      * @return int New ID
@@ -105,5 +112,86 @@ final class AIRequestRepository extends AIRepository
         } catch (\Throwable $e) {
             return [];
         }
+    }
+
+    /**
+     * Phase 5 — global Admin search across ALL users' AI requests (the route
+     * carries `aiManage`). Same additive, whitelisted conventions as the
+     * Phase-4 `searchGlobal` extensions: `user_id` becomes an OPTIONAL
+     * filter; feature/provider/status are exact-match whitelisted upstream by
+     * the controller; `model` is an exact-match bounded string; date bounds
+     * are validated Y-m-d upstream and widened to full days here. Order is
+     * match-whitelisted with an `id` tiebreaker (deterministic pagination).
+     * The projection is the explicit safe column list — `prompt_hash` is
+     * never returned and this table never stores prompt/response payloads.
+     * Existing per-user methods (`recentForUser`, `usageStats`) are untouched.
+     *
+     * @param array<string,mixed> $filters ['user_id'?, 'feature'?, 'provider'?, 'model'?, 'status'?, 'date_from'?, 'date_to'?]
+     * @param array{limit:int, offset:int, order?:string, dir?:string} $page
+     * @return array{items: array<int,array>, total: int}
+     */
+    public function searchGlobal(array $filters, array $page): array
+    {
+        $where = [];
+        $params = [];
+        if (!empty($filters['user_id'])) {
+            $where[] = 'user_id = :user_id';
+            $params['user_id'] = (int) $filters['user_id'];
+        }
+        if (!empty($filters['feature'])) {
+            $where[] = 'feature = :feature';
+            $params['feature'] = (string) $filters['feature'];
+        }
+        if (!empty($filters['provider'])) {
+            $where[] = 'provider = :provider';
+            $params['provider'] = (string) $filters['provider'];
+        }
+        if (!empty($filters['model'])) {
+            $where[] = 'model = :model';
+            $params['model'] = (string) $filters['model'];
+        }
+        if (!empty($filters['status'])) {
+            $where[] = 'status = :status';
+            $params['status'] = (string) $filters['status'];
+        }
+        if (!empty($filters['date_from'])) {
+            $where[] = 'created_at >= :date_from';
+            $params['date_from'] = (string) $filters['date_from'] . ' 00:00:00';
+        }
+        if (!empty($filters['date_to'])) {
+            $where[] = 'created_at <= :date_to';
+            $params['date_to'] = (string) $filters['date_to'] . ' 23:59:59';
+        }
+
+        $whereSql = $where === [] ? '1=1' : implode(' AND ', $where);
+        $dir = strtolower((string) ($page['dir'] ?? 'desc')) === 'asc' ? 'ASC' : 'DESC';
+        $orderCol = match ($page['order'] ?? 'created_at') {
+            'tokens_used' => 'tokens_used',
+            'latency_ms' => 'latency_ms',
+            'cost' => 'cost',
+            default => 'created_at',
+        };
+        $orderSql = "{$orderCol} {$dir}, id {$dir}";
+
+        $countStmt = $this->connection()->prepare(
+            "SELECT COUNT(*) FROM " . self::TABLE . " WHERE {$whereSql}"
+        );
+        $countStmt->execute($params);
+        $total = (int) $countStmt->fetchColumn();
+
+        $stmt = $this->connection()->prepare(
+            'SELECT ' . self::PUBLIC_COLUMNS . ' FROM ' . self::TABLE . "
+             WHERE {$whereSql}
+             ORDER BY {$orderSql}
+             LIMIT :limit OFFSET :offset"
+        );
+        $stmt->bindValue(':limit', $page['limit'], \PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $page['offset'], \PDO::PARAM_INT);
+        foreach ($params as $k => $v) {
+            $stmt->bindValue(':' . $k, $v);
+        }
+        $stmt->execute();
+
+        return ['items' => $stmt->fetchAll(), 'total' => $total];
     }
 }

@@ -122,6 +122,9 @@ $router->get('/api/v1/admin/ai/route', [\Velora\Admin\AiGlobalRouteController::c
 $router->put('/api/v1/admin/ai/route', [\Velora\Admin\AiGlobalRouteController::class, 'update'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_AI_ROUTE_MANAGE)]);
 $router->delete('/api/v1/admin/ai/route', [\Velora\Admin\AiGlobalRouteController::class, 'clear'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_AI_ROUTE_MANAGE)]);
 
+// ---- Phase 5: AI usage per-request drilldown (read-only; frozen #/ai-usage page; aiManage = frozen frontend gate) ----
+$router->get('/api/v1/admin/ai-usage', [\Velora\Admin\AiUsageController::class, 'usage'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_AI_MANAGE)]);
+
 // ---- Admin: Phase 1 + Phase 2 (effective config + provider credential verification) ----
 $router->get('/api/v1/admin/config/effective', [\Velora\Admin\EffectiveConfigController::class, 'show'], $admin);
 $router->post('/api/v1/admin/providers/{provider}/verify', [\Velora\Admin\AIConfigController::class, 'verifyCredential'], $admin);

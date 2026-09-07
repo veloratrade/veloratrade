@@ -1,5 +1,5 @@
 {
-  "version": "2026.09.07.1",
+  "version": "2026.09.07.2",
   "doc": "Runtime locale integrity allowlist. Values legitimately NOT localized, matched against application-owned UI text/attributes only. match: 'exact' (default) compares the whole trimmed value; 'regex' searches; contains:true allows a token inside a longer value. Every entry needs a category and a reason. NO broad bypasses (no 'allow all English/Persian', no per-file/per-route blanket rules).",
   "tokens": [
     {
@@ -165,6 +165,26 @@
       "category": "technical-identifier",
       "match": "regex",
       "reason": "Backend feature-flag identifiers rendered verbatim in the system-flags filter."
+    },
+    {
+      "value": "gemini",
+      "category": "provider-name",
+      "reason": "AI provider product name (rendered latin in both locales, like MetaAPI/Resend; used as filter option labels on #/ai-usage)."
+    },
+    {
+      "value": "tesseract",
+      "category": "provider-name",
+      "reason": "AI provider product name (rendered latin in both locales, like MetaAPI/Resend; used as filter option labels on #/ai-usage)."
+    },
+    {
+      "value": "openai",
+      "category": "provider-name",
+      "reason": "AI provider product name (rendered latin in both locales, like MetaAPI/Resend; used as filter option labels on #/ai-usage)."
+    },
+    {
+      "value": "claude",
+      "category": "provider-name",
+      "reason": "AI provider product name (rendered latin in both locales, like MetaAPI/Resend; used as filter option labels on #/ai-usage)."
     }
   ]
 }

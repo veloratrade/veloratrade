@@ -112,6 +112,42 @@ class H(SimpleHTTPRequestHandler):
             except: per=10
             total=len(rows); chunk=rows[(page-1)*per:page*per]
             self._j(200,{"trades":chunk,"pagination":{"total":total,"page":page,"per_page":per,"has_more":page*per<total}}); return
+        if up.path=="/api/v1/admin/ai-usage":
+            # Phase 5 — contract mirror of AiUsageController::usage over the
+            # ai_requests ledger (no prompt_hash / payload material ever).
+            from urllib.parse import parse_qs as _pqs
+            m=loadmode(); q=_pqs(up.query)
+            if m.get("fail_aiusage"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
+            uid=q.get("user_id",[None])[0]; feat=q.get("feature",[None])[0]; prov=q.get("provider",[None])[0]
+            model=q.get("model",[None])[0]; st=q.get("status",[None])[0]
+            dfrom=(q.get("date_from",[""])[0] or ""); dto=(q.get("date_to",[""])[0] or "")
+            order=q.get("order",["created_at"])[0] or "created_at"
+            rows=[
+             {"id":301,"userId":2,"feature":"extraction","provider":"gemini","model":"gemini-2.5-flash","status":"success","tokensUsed":1200,"latencyMs":3200,"cost":"0.000000","createdAt":"2026-09-05 08:10:00"},
+             {"id":302,"userId":2,"feature":"analysis","provider":"gemini","model":"gemini-2.5-flash","status":"success","tokensUsed":800,"latencyMs":2100,"cost":"0.000000","createdAt":"2026-09-06 09:30:00"},
+             {"id":303,"userId":3,"feature":"extraction","provider":"tesseract","model":"tesseract-5","status":"success","tokensUsed":0,"latencyMs":900,"cost":"0.000000","createdAt":"2026-09-04 11:00:00"},
+             {"id":304,"userId":5,"feature":"weekly_report","provider":"openai","model":"gpt-4o-mini","status":"success","tokensUsed":2600,"latencyMs":5400,"cost":"0.002600","createdAt":"2026-09-06 18:45:00"},
+             {"id":305,"userId":5,"feature":"extraction","provider":"gemini","model":"gemini-2.5-flash","status":"success","tokensUsed":1500,"latencyMs":2900,"cost":"0.000000","createdAt":"2026-09-03 07:15:00"},
+             {"id":306,"userId":3,"feature":"analysis","provider":"gemini","model":"gemini-2.5-flash","status":"quota_exhausted","tokensUsed":640,"latencyMs":1800,"cost":"0.000000","createdAt":"2026-09-02 21:40:00"}]
+            if uid: rows=[r for r in rows if str(r["userId"])==uid]
+            if feat: rows=[r for r in rows if r["feature"]==feat]
+            if prov: rows=[r for r in rows if r["provider"]==prov]
+            if model: rows=[r for r in rows if r["model"]==model]
+            if st: rows=[r for r in rows if r["status"]==st]
+            if dfrom: rows=[r for r in rows if r["createdAt"]>=dfrom+" 00:00:00"]
+            if dto: rows=[r for r in rows if r["createdAt"]<=dto+" 23:59:59"]
+            key={"tokens_used":lambda r:r["tokensUsed"],"latency_ms":lambda r:r["latencyMs"],"cost":lambda r:float(r["cost"])}.get(order,lambda r:r["createdAt"])
+            rows.sort(key=lambda r:(key(r),r["id"]),reverse=(q.get("dir",["desc"])[0] or "desc")!="asc")
+            for r in rows:
+                u=self._find(r["userId"]); r["userEmail"]=u["email"] if u else None; r["userFullName"]=u["fullName"] if u else None
+            try: page=int(q.get("page",["1"])[0])
+            except: page=1
+            try: per=int(q.get("per_page",["25"])[0])
+            except: per=25
+            total=len(rows); chunk=rows[(page-1)*per:page*per]
+            quotas=[{"provider":"gemini","dailyUsed":6,"quotaLimit":1500,"resetAt":"2026-09-07 00:00:00"},
+                    {"provider":"tesseract","dailyUsed":0,"quotaLimit":100000,"resetAt":"2026-09-07 00:00:00"}]
+            self._j(200,{"requests":chunk,"quotas":quotas,"pagination":{"total":total,"page":page,"per_page":per,"has_more":page*per<total}}); return
         mm=_re.match(r"^/api/v1/admin/users/(\d+)/(sessions|devices|login-history)$",up.path)
         if mm:
             # Phase 3 User360 sections — mirror the real controller envelopes.
