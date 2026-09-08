@@ -2249,7 +2249,16 @@ Object.assign(F3T.fa,{
  /* Phase 7 (#/settings-permissions + #/settings-admins) — fresh namespaces (sp and sad); the mockup-era sa keys were removed from catalog T (they shadowed security-audit) */
  "sp.desc":"نقش‌ها و مجوزهای سامانه — مستقیم از بک‌اند","sp.badge":"فقط‌خواندنی","sp.you":"نقش شما","sp.col.perm":"مجوز",
  "sp.readonly":"این ماتریس فقط‌خواندنی است؛ مرجع مجوزها سرور است و هر تغییر نقش فقط از مسیرهای موجود و شناسنامه‌دار انجام می‌شود.","sp.granted":"مجاز",
- "sad.desc":"حساب‌های مدیریتی، تغییر نقش و دعوت — از نقاط پایانی موجود و شناسنامه‌دار","sad.empty":"مدیری یافت نشد"
+ "sad.desc":"حساب‌های مدیریتی، تغییر نقش و دعوت — از نقاط پایانی موجود و شناسنامه‌دار","sad.empty":"مدیری یافت نشد",
+ /* Phase 8 (settings-config + system-diagnostics) — fresh namespaces (sc/sd) */
+ "sc.desc":"پیکربندی مؤثر و تنظیمات عملیاتی — مبنای منبع، بدون محرمانه‌ها","sc.badge.ro":"فقط‌خواندنی",
+ "sc.col.key":"کلید","sc.col.value":"مقدار","sc.col.source":"مبنا","sc.col.updated":"به‌روزرسانی","sc.col.actions":"عملیات",
+ "sc.src.admin":"مدیریت‌شده","sc.src.env":"محیط/پیش‌فرض","sc.env.note":"مقدار مؤثر از متغیر محیطی/پیش‌فرض می‌آید؛ ذخیره‌سازی در پایگاه‌داده تنها پس از ذخیره صریح اثر می‌کند.","sc.writable.note":"تنها کلیدهای فهرست مجاز قابل نوشتن‌اند؛ محرمانه‌ها هرگز از این مسیر تنظیم نمی‌شوند.","sc.managed.note":"کلیدهای متعلق به ماژول‌های دیگر فقط نمایش داده می‌شوند — ویرایش از ماژول مالک.",
+ "sc.act.save":"ذخیره","sc.act.reset":"بازگشت به محیط","sc.act.open":"ماژول مالک","sc.opt.fa":"فارسی","sc.opt.en":"انگلیسی",
+ "sc.md.set.title":"ذخیره تنظیم؟","sc.md.reset.title":"بازگشت تنظیم به محیط؟","sc.md.confirm":"تأیید و اجرا",
+ "sc.done.set":"تنظیم ذخیره شد","sc.done.reset":"تنظیم به محیط/پیش‌فرض بازگشت",
+ "sd.desc":"تشخیص عمق سامانه — پروب‌های محدود و موجود","sd.refresh":"بررسی مجدد","sd.refreshing":"در حال بررسی…",
+ "sd.col.component":"جزء","sd.col.status":"وضعیت","sd.col.detail":"جزئیات","sd.last":"آخرین بررسی","sd.note":"تشخیص فقط-خواندنی است؛ پروب‌های محدود موجود را اجرا می‌کند (بدون دستور، بدون دسترسی دلخواه)."
 });
 Object.assign(F3T.en,{
  "sh.desc":"Real infrastructure status from the backend","sh.sys":"Infrastructure","sh.lastcheck":"Last check",
@@ -2305,7 +2314,16 @@ Object.assign(F3T.en,{
  /* Phase 7 (#/settings-permissions + #/settings-admins) */
  "sp.desc":"System roles and permissions — straight from the backend","sp.badge":"Read-only","sp.you":"Your role","sp.col.perm":"Permission",
  "sp.readonly":"This matrix is read-only; the server owns permission truth and every role change goes through the existing audited endpoints.","sp.granted":"granted",
- "sad.desc":"Admin accounts, role changes and invitations — via the existing audited endpoints","sad.empty":"No admin accounts found"
+ "sad.desc":"Admin accounts, role changes and invitations — via the existing audited endpoints","sad.empty":"No admin accounts found",
+ /* Phase 8 (settings-config + system-diagnostics) — fresh namespaces (sc/sd) */
+ "sc.desc":"Effective configuration and operational settings — sourced, secret-free","sc.badge.ro":"Read-only",
+ "sc.col.key":"Key","sc.col.value":"Value","sc.col.source":"Source","sc.col.updated":"Updated","sc.col.actions":"Actions",
+ "sc.src.admin":"Admin-managed","sc.src.env":"Env/default","sc.env.note":"The effective value comes from the environment/default; a database value only takes effect once explicitly saved.","sc.writable.note":"Only allowlisted keys are writable; secrets can never be set through this surface.","sc.managed.note":"Keys owned by other modules are listed read-only — edit them in the owning module.",
+ "sc.act.save":"Save","sc.act.reset":"Revert to env","sc.act.open":"Owning module","sc.opt.fa":"Persian","sc.opt.en":"English",
+ "sc.md.set.title":"Save setting?","sc.md.reset.title":"Revert setting to env?","sc.md.confirm":"Confirm & run",
+ "sc.done.set":"Setting saved","sc.done.reset":"Setting reverted to env/default",
+ "sd.desc":"Deep system diagnostics — bounded, existing probes","sd.refresh":"Re-check","sd.refreshing":"Checking…",
+ "sd.col.component":"Component","sd.col.status":"Status","sd.col.detail":"Detail","sd.last":"Last check","sd.note":"Diagnostics is read-only; it runs the existing bounded probes only (no commands, no arbitrary access)."
 });
 
 /* ---------------- shared batch-3 helpers ---------------- */
@@ -2672,6 +2690,140 @@ function settingsAdminsPage(){
  return h;
 }
 
+/* ---------------- Phase 8 (8a): settings-config (Settings Write) + system-diagnostics ----------------
+   settings-config: supervisory inventory over the generic settings table. ONE
+   writable allowlisted key (platform.default_locale); module-managed keys are
+   listed read-only with their owner module. Writes go through the gated,
+   audited PUT/DELETE /admin/settings/{key} with confirm modals. Env values
+   are labeled honestly (env/default) per the precedence model.
+   system-diagnostics: renders the EXISTING bounded GET /admin/system/diagnostics
+   snapshot + the existing audited refresh endpoint. No new probes, no commands. */
+const SC={data:null,st:"idle",err:null,busy:false};
+async function f8LoadSettings(){
+ SC.st="loading";f3RenderIf("settings-config");
+ try{const d=await VeloraData.request("/api/v1/admin/settings");SC.data=d||{};SC.st="ok";}
+ catch(e){SC.err=e;SC.st="error";}
+ f3RenderIf("settings-config");
+}
+function scSrcBadge(row){
+ return row.source==="admin"?bdot("accent",t("sc.src.admin")):bdot("neutral",t("sc.src.env"));
+}
+function scValueCell(row){
+ return row.value!==null&&row.value!==undefined&&row.value!==""
+   ?`<span class="mono">${esc(String(row.value))}</span>`
+   :`<span class="cellsub mono">—</span> <span class="badge b-neutral">${esc(t("sc.src.env"))}</span>`;
+}
+function scConfirmSet(key,value){
+ f3OpenModal(`<div class="mh">${esc(t("sc.md.set.title"))}<button class="tbtn" onclick="f3CloseModal()" aria-label="${esc(t("act.close"))}">${VI.x||"\u00d7"}</button></div>
+  <div class="mb"><div class="note" style="margin-bottom:8px">${esc(t("sc.env.note"))}</div>
+  <div class="cellsub mono">${esc(key)}</div>
+  <label class="cellsub" for="scSel" style="display:block;margin-top:8px">${esc(t("sc.col.value"))}</label>
+  <select id="scSel" class="inp" style="margin-top:4px">
+   <option value="fa"${value==="fa"?" selected":""}>${esc(t("sc.opt.fa"))}</option>
+   <option value="en"${value==="en"?" selected":""}>${esc(t("sc.opt.en"))}</option>
+  </select></div>
+  <div class="mf"><button class="btn primary sm" onclick="scDoSet()">${esc(t("sc.md.confirm"))}</button></div>`);
+}
+async function scDoSet(){
+ const key="platform.default_locale",value=($("#scSel")||{}).value||"fa";
+ SC.busy=true;
+ try{
+  await VeloraData.request("/api/v1/admin/settings/"+key,{method:"PUT",body:{value}});
+  toast(t("sc.done.set"));f3CloseModal();f8LoadSettings();
+ }catch(e){
+  const code=e&&e.code||"";
+  toast((code?esc(code)+" \u00b7 ":"")+(e&&e.message?t("f3.errprefix"):""),"err");
+ }
+ SC.busy=false;
+}
+function scConfirmReset(key){
+ f3OpenModal(`<div class="mh">${esc(t("sc.md.reset.title"))}<button class="tbtn" onclick="f3CloseModal()" aria-label="${esc(t("act.close"))}">${VI.x||"\u00d7"}</button></div>
+  <div class="mb"><div class="note">${esc(t("sc.env.note"))}</div>
+  <div class="cellsub mono" style="margin-top:8px">${esc(key)}</div></div>
+  <div class="mf"><button class="btn warn sm" onclick="scDoReset()">${esc(t("sc.md.confirm"))}</button></div>`);
+}
+async function scDoReset(){
+ const key="platform.default_locale";
+ SC.busy=true;
+ try{
+  await VeloraData.request("/api/v1/admin/settings/"+key,{method:"DELETE"});
+  toast(t("sc.done.reset"));f3CloseModal();f8LoadSettings();
+ }catch(e){
+  const code=e&&e.code||"";
+  toast((code?esc(code)+" \u00b7 ":"")+(e&&e.message?t("f3.errprefix"):""),"err");
+ }
+ SC.busy=false;
+}
+function settingsConfigPage(){
+ if(SC.st==="idle")f8LoadSettings();
+ const canManage=can("system.settings.manage");
+ let h=pagehead(t("nav.settings-config"),t("sc.desc"),canManage?"":bdot("neutral",t("sc.badge.ro")));
+ if(SC.st==="loading"&&!SC.data)return h+`<div class="card"><div class="cb">${f3skel(8)}</div></div>`;
+ if(SC.st==="error")return h+f3errBox(SC.err);
+ const rows=Array.isArray(SC.data.settings)?SC.data.settings:[];
+ const write=rows.filter(r=>r.writable),managed=rows.filter(r=>!r.writable);
+ h+=`<div class="card"><div class="ch"><h3>${esc(t("nav.settings-config"))}</h3><div class="right"><span class="badge b-neutral num">${esc(String(rows.length))}</span></div></div><div class="cb">`;
+ h+=`<div class="note" style="margin-bottom:8px">${esc(t("sc.writable.note"))}</div>`;
+ if(!rows.length){h+=empty(VI.box,t("sad.empty"),"");h+="</div></div>";return h;}
+ h+=`<div class="twrap"><table class="tbl" data-mstack><thead><tr><th>${esc(t("sc.col.key"))}</th><th>${esc(t("sc.col.value"))}</th><th>${esc(t("sc.col.source"))}</th><th>${esc(t("sc.col.updated"))}</th>${canManage?`<th>${esc(t("sc.col.actions"))}</th>`:""}</tr></thead><tbody>${  write.map(r=>`<tr>
+   <td class="mono">${esc(String(r.key))}</td>
+   <td>${scValueCell(r)}</td>
+   <td>${scSrcBadge(r)}</td>
+   <td class="cellsub">${esc(String(r.updatedAt||"\u2014"))}</td>
+   ${canManage?`<td style="white-space:nowrap">
+    <button class="btn sm" onclick="scConfirmSet('${esc(String(r.key))}','${esc(String(r.value||"fa"))}')">${esc(t("sc.act.save"))}</button>
+    <button class="btn sm" onclick="scConfirmReset('${esc(String(r.key))}')">${esc(t("sc.act.reset"))}</button>
+   </td>`:""}
+  </tr>`).join("")
+ }${  managed.map(r=>`<tr>
+   <td class="mono cellsub">${esc(String(r.key))}</td>
+   <td>${scValueCell(r)}</td>
+   <td>${scSrcBadge(r)}</td>
+   <td class="cellsub">${esc(String(r.updatedAt||"\u2014"))}</td>
+   ${canManage?`<td><button class="btn sm" onclick="go('${esc(String(r.moduleEndpoint||"overview").replace("#/",""))}')">${esc(t("sc.act.open"))}</button></td>`:""}
+  </tr>`).join("")
+ }</tbody></table></div>
+  <div class="note" style="margin-top:8px">${esc(t("sc.env.note"))}</div></div></div>`;
+ return h;
+}
+const SD={data:null,st:"idle",err:null,busy:false};
+async function f8LoadDiag(){
+ SD.st="loading";f3RenderIf("system-diagnostics");
+ try{const d=await VeloraData.request("/api/v1/admin/system/diagnostics");SD.data=(d&&d.health)||{};SD.st="ok";}
+ catch(e){SD.err=e;SD.st="error";}
+ f3RenderIf("system-diagnostics");
+}
+async function sdRefresh(){
+ if(SD.busy)return;
+ SD.busy=true;f3RenderIf("system-diagnostics");
+ try{await VeloraData.request("/api/v1/admin/system/diagnostics/refresh",{method:"POST"});await f8LoadDiag();}
+ catch(e){SD.err=e;SD.st="error";f3RenderIf("system-diagnostics");}
+ SD.busy=false;
+}
+function sdStatusBadge(st){
+ const s=String(st||"").toUpperCase();
+ const k=(s==="HEALTHY"||s==="SUCCESS"||s==="VALID")?"ok":(s==="ERROR"||s==="FATAL"||s==="FAILED")?"err":(s==="DEGRADED"||s==="UNKNOWN")?"warn":"neutral";
+ return bdot(k,esc(String(st||"\u2014")));
+}
+function systemDiagnosticsPage(){
+ if(SD.st==="idle")f8LoadDiag();
+ let h=pagehead(t("nav.system-diagnostics"),t("sd.desc"),`<button class="btn sm" onclick="sdRefresh()" ${SD.busy?"disabled":""}>${esc(SD.busy?t("sd.refreshing"):t("sd.refresh"))}</button>`);
+ if(SD.st==="loading"&&!SD.data)return h+`<div class="card"><div class="cb">${f3skel(6)}</div></div>`;
+ if(SD.st==="error")return h+f3errBox(SD.err);
+ const comps=SD.data.components||{};
+ const keys=Object.keys(comps);
+ h+=`<div class="card"><div class="ch"><h3>${esc(t("nav.system-diagnostics"))}</h3><div class="right">${SD.data.checkedAt?`<span class="cellsub">${esc(t("sd.last"))}: ${esc(String(SD.data.checkedAt))}</span>`:""}</div></div><div class="cb">`;
+ if(!keys.length){h+=empty(VI.box,t("sd.col.component"),"");h+="</div></div>";return h;}
+ h+=`<div class="note" style="margin-bottom:8px">${esc(t("sd.note"))}</div>`;
+ h+=`<div class="twrap"><table class="tbl" data-mstack><thead><tr><th>${esc(t("sd.col.component"))}</th><th>${esc(t("sd.col.status"))}</th><th>${esc(t("sd.col.detail"))}</th></tr></thead><tbody>${  keys.map(k=>{const c=comps[k]||{};return `<tr>
+   <td class="mono">${esc(String(c.component||k))}</td>
+   <td>${sdStatusBadge(c.status)}</td>
+   <td class="cellsub">${esc(String(c.message||"\u2014"))}${c.latencyMs?` <span class="cellsub mono">${esc(String(c.latencyMs))}ms</span>`:""}</td>
+  </tr>`;}).join("")
+ }</tbody></table></div></div></div>`;
+ return h;
+}
+
 /* ---------------- system-flags ---------------- */
 const SF={data:null,st:"idle",err:null,busy:false,sel:"",enabled:false,rollout:""};
 async function f3LoadFlags(){
@@ -2870,7 +3022,7 @@ function billingOverviewPage(){
 }
 
 /* registry honesty: batch-3 routes are implemented now (extends batch 1+2) */
-["system-health","system-logs","security-audit","security-signups","security-logins","settings-permissions","settings-admins","system-flags","analytics-users","analytics-trading","analytics-ai","analytics-revenue","billing-overview"].forEach(rt=>{const d=REG_BY_ROUTE[rt];if(d)d.status="implemented";});
+["system-health","system-logs","security-audit","security-signups","security-logins","settings-permissions","settings-admins","settings-config","system-diagnostics","system-flags","analytics-users","analytics-trading","analytics-ai","analytics-revenue","billing-overview"].forEach(rt=>{const d=REG_BY_ROUTE[rt];if(d)d.status="implemented";});
 Object.assign(PAGE_IMPL,{
  "system-health":systemHealthPage,
  "system-logs":systemLogsPage,
@@ -2879,6 +3031,8 @@ Object.assign(PAGE_IMPL,{
  "security-logins":securityLoginsPage,
  "settings-permissions":settingsPermissionsPage,
  "settings-admins":settingsAdminsPage,
+ "settings-config":settingsConfigPage,
+ "system-diagnostics":systemDiagnosticsPage,
  "system-flags":systemFlagsPage,
  "analytics-users":analyticsUsersPage,
  "analytics-trading":analyticsTradingPage,
