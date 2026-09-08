@@ -243,8 +243,25 @@ class H(SimpleHTTPRequestHandler):
         if up.path=="/api/v1/admin/integrations/email":
             I=self.server.integ
             self._j(200,{"integration":dict(I["email"])}); return
+        if up.path=="/api/v1/admin/settings":
+            m=loadmode()
+            if m.get("fail_settings"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
+            if m["mode"] in ("noauth","user403","panel_false"): self._j(403,{"status":"error","error":{"code":"PERMISSION_DENIED"}}); return
+            mk=lambda k,v,src,ub,ua,w,mod,ep,env=None:{"key":k,"value":v,"source":src,"updatedBy":ub,"updatedAt":ua,"writable":w,"module":mod,"moduleEndpoint":ep,"envAlias":env}
+            self._j(200,{"settings":[
+              mk("ai_route_default","direct","admin",1,"2026-09-01 09:00:00",False,"ai-route","#/ai-route"),
+              mk("mail.driver","log","admin",1,"2026-09-02 10:00:00",False,"integrations-email","#/integrations-email"),
+              mk("mail.from","no-reply@velora.test","admin",1,"2026-09-02 10:00:00",False,"integrations-email","#/integrations-email"),
+              mk("mail.from_name","Velora","admin",1,"2026-09-02 10:00:00",False,"integrations-email","#/integrations-email"),
+              mk("mail.smtp_host",None,"env-default",None,None,False,"integrations-email","#/integrations-email"),
+              mk("mail.smtp_port",None,"env-default",None,None,False,"integrations-email","#/integrations-email"),
+              mk("mail.smtp_user",None,"env-default",None,None,False,"integrations-email","#/integrations-email"),
+              mk("metaapi.base_url",None,"env-default",None,None,False,"integrations-metaapi","#/integrations-metaapi"),
+              mk("platform.default_locale","fa",("admin" if m.get("settings_stored") else "env-default"),(1 if m.get("settings_stored") else None),("2026-09-08 10:00:00" if m.get("settings_stored") else None),True,"platform",None,"PLATFORM_DEFAULT_LOCALE"),
+            ]}); return
         if up.path=="/api/v1/admin/system/diagnostics":
             m=loadmode()
+            if m.get("fail_diag"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
             if m["mode"] in ("noauth","user403","panel_false"): self._j(403,{"status":"error","error":{"code":"PERMISSION_DENIED"}}); return
             lr=getattr(self.server,"last_refresh",None)
             integ_row=lambda name:({"status":"SUCCESS","latencyMs":120 if name=="metaapi" else 95,"errorCode":None,"message":None,"checkedAt":lr} if lr else {"status":"UNKNOWN","latencyMs":None,"errorCode":None,"message":None,"checkedAt":None})
@@ -568,6 +585,23 @@ class H(SimpleHTTPRequestHandler):
     def do_PUT(self):
         from urllib.parse import urlparse
         up=urlparse(self.path)
+        if up.path.startswith("/api/v1/admin/settings/"):
+            m=loadmode()
+            if m.get("fail_settings"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
+            if m["mode"]=="admin": self._j(403,{"status":"error","error":{"code":"PERMISSION_DENIED"}}); return
+            if m["mode"] in ("noauth","user403","panel_false"): self._j(403,{"status":"error","error":{"code":"PERMISSION_DENIED"}}); return
+            key=up.path.rsplit("/",1)[-1]
+            length=int(self.headers.get("Content-Length") or 0)
+            body={}
+            if length:
+                try: body=json.loads(self.rfile.read(length) or b"{}")
+                except: body={}
+            if key!="platform.default_locale":
+                self._j(422,{"status":"error","error":{"code":"VALIDATION_FAILED","details":{"key":{"code":"UNKNOWN_SETTING"}}}}); return
+            v=str(body.get("value") or "").lower().strip()
+            if v not in ("fa","en"):
+                self._j(422,{"status":"error","error":{"code":"VALIDATION_FAILED","details":{"value":{"code":"INVALID_CHOICE"}}}}); return
+            self._j(200,{"setting":{"key":key,"value":v,"source":"admin","writable":True}}); return
         if up.path=="/api/v1/admin/ai/route":
             m0=loadmode()
             if m0.get("fail_actions"): self._j(500,{"status":"error","error":{"code":"AI_ROUTE_PERSIST_FAILED"}}); return
@@ -633,6 +667,13 @@ class H(SimpleHTTPRequestHandler):
     def do_DELETE(self):
         from urllib.parse import urlparse
         up=urlparse(self.path)
+        if up.path.startswith("/api/v1/admin/settings/"):
+            m=loadmode()
+            if m["mode"] in ("noauth","user403","panel_false","admin"): self._j(403,{"status":"error","error":{"code":"PERMISSION_DENIED"}}); return
+            key=up.path.rsplit("/",1)[-1]
+            if key!="platform.default_locale":
+                self._j(422,{"status":"error","error":{"code":"VALIDATION_FAILED","details":{"key":{"code":"UNKNOWN_SETTING"}}}}); return
+            self._j(200,{"setting":{"key":key,"value":None,"source":"env-default","writable":True}}); return
         if up.path=="/api/v1/admin/ai/route":
             if loadmode().get("fail_actions"): self._j(500,{"status":"error","error":{"code":"AI_ROUTE_PERSIST_FAILED"}}); return
             self.server.ai_route=None

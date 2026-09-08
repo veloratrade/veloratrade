@@ -51,6 +51,19 @@ final class IntegrationSettingsRepository
         }
     }
 
+    /** All rows (supervisory inventory; non-secret keys only by caller contract). */
+    public function all(): array
+    {
+        try {
+            $stmt = self::database()->query(
+                'SELECT setting_key, setting_value, updated_by, updated_at FROM ' . self::TABLE . ' ORDER BY setting_key ASC'
+            );
+            return $stmt->fetchAll() ?: [];
+        } catch (\Throwable $e) {
+            return []; // Table unavailable (fresh pre-migration deployment) => empty inventory.
+        }
+    }
+
     /** Upsert a non-secret value; $updatedBy is the acting admin id (0 = system). */
     public function set(string $key, string $value, int $updatedBy = 0): bool
     {

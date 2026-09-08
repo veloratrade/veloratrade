@@ -187,6 +187,12 @@ $router->get('/api/v1/admin/me', [\Velora\Admin\SecurityController::class, 'me']
 // "route registration needed"). Read-only introspection of Role::permissionMap()
 // — the single server-side source of truth. No secrets; settings.view gated.
 $router->get('/api/v1/admin/permissions', [\Velora\Admin\SecurityController::class, 'permissions'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_SETTINGS_VIEW)]);
+// Phase 8 (8a): Settings Write — strict-allowlist operational settings over the
+// existing generic settings table. Read = settings.view; write/reset = the
+// reserved system.settings.manage (super_admin only, audited, rate-limited).
+$router->get('/api/v1/admin/settings', [\Velora\Admin\SettingsController::class, 'index'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_SETTINGS_VIEW)]);
+$router->put('/api/v1/admin/settings/{key}', [\Velora\Admin\SettingsController::class, 'update'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_SETTINGS_MANAGE)]);
+$router->delete('/api/v1/admin/settings/{key}', [\Velora\Admin\SettingsController::class, 'reset'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_SETTINGS_MANAGE)]);
 
 // Admin Create User (RBAC: users.create = admin + super_admin; privileged-role
 // creation additionally requires users.change_role, enforced in the service).
