@@ -269,15 +269,24 @@ class H(SimpleHTTPRequestHandler):
             m=loadmode()
             if m.get("fail_comm"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
             if m["mode"] in ("noauth","user403","panel_false"): self._j(403,{"status":"error","error":{"code":"PERMISSION_DENIED"}}); return
-            tid=up.path.rstrip("/").rsplit("/",1)[-1]
-            self._j(200,{"conversation":{"id":int(tid),"user_id":1,"subject":"MT5 account will not connect","status":"open",
-                        "waiting_for":"admin","priority":None,"first_reply_at":None,"last_message_at":"2026-09-08 10:01:00",
-                        "unread_admin_count":1,"unread_user_count":0,"created_at":"2026-09-08 09:50:00","updated_at":"2026-09-08 10:01:00",
+            tid=int(up.path.rstrip("/").rsplit("/",1)[-1])
+            _lk={1042:("MT5 account will not connect","open","admin",1),
+                 1043:("Deposit not reflected","pending","user",0),
+                 1044:("KYC question","closed","none",0)}
+            subj,stt,wfl,unr=_lk.get(tid,_lk[1042])
+            msgs=[{"id":1,"conversation_id":int(tid),"sender_type":"user","sender_user_id":1,
+                   "body":"I cannot connect my MT5 account #123456 since Monday. Error E-404.","message_type":"text",
+                   "metadata_json":None,"created_at":"2026-09-08 09:50:00","edited_at":None,"deleted_at":None}]
+            if m.get("comm_xss"):
+                subj="<img src=x onerror=window.__pwned=1>"
+                msgs.append({"id":2,"conversation_id":int(tid),"sender_type":"user","sender_user_id":1,
+                             "body":"<script>window.__pwned=2</script><img src=x onerror=window.__pwned=3> probe body","message_type":"text",
+                             "metadata_json":None,"created_at":"2026-09-08 09:52:00","edited_at":None,"deleted_at":None})
+            self._j(200,{"conversation":{"id":int(tid),"user_id":1,"subject":subj,"status":stt,
+                        "waiting_for":wfl,"priority":None,"first_reply_at":None,"last_message_at":"2026-09-08 10:01:00",
+                        "unread_admin_count":unr,"unread_user_count":0,"created_at":"2026-09-08 09:50:00","updated_at":"2026-09-08 10:01:00",
                         "user_email":"ali@velora.test","user_name":"Ali User","user_locale":"en","user_status":"active"},
-                        "messages":[
-                          {"id":1,"conversation_id":int(tid),"sender_type":"user","sender_user_id":1,
-                           "body":"I cannot connect my MT5 account #123456 since Monday. Error E-404.","message_type":"text",
-                           "metadata_json":None,"created_at":"2026-09-08 09:50:00","edited_at":None,"deleted_at":None}]})
+                        "messages":msgs})
             return
         if up.path=="/api/v1/admin/settings":
             m=loadmode()

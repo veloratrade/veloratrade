@@ -134,6 +134,27 @@ try:
         chk("K_translate_fallback", pg.evaluate("()=>document.querySelector('#view').innerText.length>0"))
         json.dump({"mode": "super"}, open(MODE, "w"))
 
+        # ===== M. deep links + User360 nav + admin-side XSS rendering =====
+        pg.evaluate("()=>{CM.ticket=null;CM.tkSt='idle';location.hash='#/comm-inbox?ticket=1043'}"); pg.wait_for_timeout(1800)
+        chk("M_deeplink_ticket", pg.evaluate("()=>!!CM.ticket&&CM.ticket.conversation.id===1043&&document.querySelector('#view').innerText.includes('Deposit not reflected')"))
+        reqs=[]
+        pg.on("request", lambda r: reqs.append(r.url) if "communications/tickets?" in r.url else None)
+        pg.evaluate("()=>{CM.ticket=null;CM.tkSt='idle';location.hash='#/comm-inbox?user=7'}"); pg.wait_for_timeout(1600)
+        chk("M_deeplink_user", any("user_id=7" in u for u in reqs))
+        pg.evaluate("()=>location.hash='#/users/2'"); pg.wait_for_timeout(1800)
+        btn=pg.evaluate("()=>{const b=[...document.querySelectorAll('#view button')].find(b=>(b.getAttribute('onclick')||'').includes('comm-inbox?user=2'));if(b)b.click();return !!b}")
+        pg.wait_for_timeout(1400)
+        chk("M_u360_nav", btn and ("#/comm-inbox?user=2" in pg.evaluate("()=>location.hash")) and any("user_id=2" in u for u in reqs))
+        json.dump({"mode":"super","comm_xss":True}, open(MODE, "w"))
+        pg.evaluate("()=>{CM.ticket=null;CM.tkSt='idle';location.hash='#/comm-inbox'}"); pg.wait_for_timeout(800)
+        pg.evaluate("()=>f9OpenTicket(1042)"); pg.wait_for_timeout(1600)
+        mx=pg.evaluate("""()=>({pwned:window.__pwned===undefined,pwned2:window.__pwned2===undefined,pwned3:window.__pwned3===undefined,
+             imgs:document.querySelectorAll('#view img').length,
+             subj:document.querySelector('#view').innerText.includes('<img src=x onerror=window.__pwned=1>'),
+             body:document.querySelector('#view').innerText.includes('probe body')})""")
+        chk("M_admin_xss", mx["pwned"] and mx["pwned2"] and mx["pwned3"] and mx["imgs"]==0 and mx["subj"] and mx["body"])
+        json.dump({"mode": "super"}, open(MODE, "w"))
+
         # ===== L. widths + a11y =====
         widths = [1440, 1280, 1024, 768, 430, 390, 360]
         ok_w = True

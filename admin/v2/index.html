@@ -3358,9 +3358,11 @@ function resolveRoute(p){
  return null;
 }
 function navTo(hash){if(location.hash===hash)return;location.hash=hash}
-function go(id){const d=REG_BY_ROUTE[id];
+function go(id){
+ const qi=id.indexOf("?");const qs=qi>=0?id.slice(qi+1):"";
+ const d=REG_BY_ROUTE[qi>=0?id.slice(0,qi):id];
  if(!d){navTo("#/_not-found");return}
- const target="#/"+(d.dynamic?d.route:id);
+ const target="#/"+(d.dynamic?d.route:(qi>=0?id.slice(0,qi):id))+(qs?"?"+qs:"");
  if(CURRENT.def&&CURRENT.def.route===d.route){render();return}   /* same route: no history entry */
  navTo(target);
 }
