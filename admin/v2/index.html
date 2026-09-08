@@ -761,7 +761,7 @@ const T={
  "sh.title":"سلامت و تشخیص","sh.desc":"وضعیت زندهٔ اجزای سیستم","sh.database":"پایگاه داده","sh.api":"API","sh.workers":"کارگرها (jobs)","sh.email":"ایمیل","sh.diag":"تشخیص خودکار","sh.last":"آخرین بررسی",
  "sl.title":"لاگ‌های سیستم","sl.desc":"ذخیره‌ساختار یگانهٔ لاگ — قرمز‌شده در زمان خواندن","sl.col.sev":"شدت","sl.col.src":"منبع","sl.col.msg":"پیام","sl.col.req":"Request ID",
  "fl.title":"پرچم‌های ویژگی","fl.desc":"وضعیت سرور-محور هر پرچم — ویرایش فقط super_admin","fl.col.feature":"قابلیت","fl.col.env":"محیط","fl.col.rollout":"انتشار","fl.col.st":"وضعیت","fl.col.updated":"به‌روزرسانی",
- "sa.title":"مدیران و دسترسی‌ها","sa.desc":"نقش‌ها و ماتریس دسترسی (فقط‌خواندنی در ماکاپ)","sa.matrix":"ماتریس دسترسی نقش‌ها","sa.roles":"نقش‌ها","sa.own.warn":"تنها مدیر فعال شما — عملیات روی خود، مسدود است (SELF_ACTION_DENIED)",
+ 
  "sg.title":"پیکربندی عمومی","sg.reserved":"ماژول پیکربندی عمومی هنوز پیاده‌سازی نشده است (settings.* رزرو شده) — جایگاه آن در IA آینده رزرو شده و خارج از دامنهٔ این ماکاپ است.",
  "ds.title":"سیستم طراحی","ds.desc":"توکن‌ها، اجزا و حالت‌ها — مرجع بصری فاز پیاده‌سازی","ds.colors":"رنگ‌های معنایی","ds.buttons":"دکمه‌ها","ds.badges":"نشان‌ها","ds.states":"حالت‌ها","ds.inputs":"ورودی‌ها","ds.alerts":"هشدارها",
  "md.test.title":"تست اتصال ارائه‌دهنده","md.test.running":"در حال برقراری ارتباط با ارائه‌دهنده…","md.test.ok":"اتصال موفق · تأخیر ۴۲۰ms · مدل gemini-3.6-flash پاسخ داد","md.suspend.title":"مسدودسازی کاربر؟","md.suspend.body":"کاربر «مینا رستمی» مسدود خواهد شد و همهٔ نشست‌های او لغو می‌شود. این عملیات در ردگیری ثبت می‌گردد.","md.confirm":"تأیید و اجرا",
@@ -798,7 +798,7 @@ const T={
  "sh.title":"Health & Diagnostics","sh.desc":"Live component status","sh.database":"Database","sh.api":"API","sh.workers":"Workers (jobs)","sh.email":"Email","sh.diag":"Automated diagnostics","sh.last":"Last check",
  "sl.title":"System Logs","sl.desc":"Single structured log store — redacted at read time","sl.col.sev":"Severity","sl.col.src":"Source","sl.col.msg":"Message","sl.col.req":"Request ID",
  "fl.title":"Feature Flags","fl.desc":"Server-authoritative flag state — edits are super_admin only","fl.col.feature":"Feature","fl.col.env":"Environment","fl.col.rollout":"Rollout","fl.col.st":"State","fl.col.updated":"Updated",
- "sa.title":"Admins & Permissions","sa.desc":"Roles and permission matrix (read-only in mockup)","sa.matrix":"Role permission matrix","sa.roles":"Roles","sa.own.warn":"Your only active admin — self-actions are blocked (SELF_ACTION_DENIED)",
+ 
  "sg.title":"General Configuration","sg.reserved":"General settings module is not implemented yet (settings.* reserved) — its place in the future IA is reserved and out of scope for this mockup.",
  "ds.title":"Design System","ds.desc":"Tokens, components and states — visual reference for implementation","ds.colors":"Semantic colors","ds.buttons":"Buttons","ds.badges":"Badges","ds.states":"States","ds.inputs":"Inputs","ds.alerts":"Alerts",
  "md.test.title":"Test provider connection","md.test.running":"Contacting provider…","md.test.ok":"Connection OK · 420ms · gemini-3.6-flash responded","md.suspend.title":"Suspend user?","md.suspend.body":"“Mina Rostami” will be blocked and all their sessions revoked. This action is audited.","md.confirm":"Confirm & run",
@@ -1496,7 +1496,7 @@ async function usrInvite(){
    fullName:($("#f3invName")||{}).value||"",
    role:($("#f3invRole")||{}).value||"admin"}});
   toast(r&&r.emailSent===false?t("usr.done.invite.notsent"):t("usr.done.invite.sent"));
-  f3CloseModal();US.st="refreshing";render();f3LoadUsers();   /* server-truthful refresh; no optimistic mutation */
+  f3CloseModal();US.st="refreshing";render();f3LoadUsers();if(typeof f7AdminsReload==="function")f7AdminsReload();   /* server-truthful refresh; no optimistic mutation */
  }catch(e){
   const code=e&&e.code||"";
   toast((code?esc(code)+" · ":"")+(e&&e.message?t("f3.errprefix"):""),"err");
@@ -1535,7 +1535,7 @@ async function usrCreate(){
    role:($("#f3cuRole")||{}).value||"user",
    plan:($("#f3cuPlan")||{}).value||"free"}});
   toast(r&&r.emailSent===false?t("usr.done.create.notsent"):t("usr.done.create.sent"));
-  f3CloseModal();US.st="refreshing";render();f3LoadUsers();   /* server-truthful refresh; no optimistic mutation */
+  f3CloseModal();US.st="refreshing";render();f3LoadUsers();if(typeof f7AdminsReload==="function")f7AdminsReload();   /* server-truthful refresh; no optimistic mutation */
  }catch(e){
   const code=e&&e.code||"";
   toast((code?esc(code)+" · ":"")+(e&&e.message?t("f3.errprefix"):""),"err");
@@ -1559,7 +1559,7 @@ async function usrDo(kind,id){
   const r=await VeloraData.request(path,body!==null?{method:"POST",body}:{method:"POST"});
   if(kind==="verify"){toast((r&&r.changed===false)?t("usr.done.verify.already"):t("usr.done.verify"))}
   else toast(okMsg);
-  f3CloseModal();US.st="refreshing";render();f3LoadUsers();   /* server-truthful refresh; no optimistic mutation */
+  f3CloseModal();US.st="refreshing";render();f3LoadUsers();if(typeof f7AdminsReload==="function")f7AdminsReload();   /* server-truthful refresh; no optimistic mutation */
  }catch(e){
   const code=e&&e.code||"";
   toast((code?esc(code)+" · ":"")+(e&&e.message?t("f3.errprefix"):""),"err");
@@ -2245,7 +2245,11 @@ Object.assign(F3T.fa,{
  "slh.filter.user":"شناسه کاربر","slh.date.from":"از تاریخ","slh.date.to":"تا تاریخ","slh.apply":"اعمال",
  "slh.empty":"رویدادی یافت نشد","slh.empty.desc":"با فیلترهای فعلی رویداد ورودی وجود ندارد.",
  "slh.privacy.note":"ستون‌های IP/User-Agent تنها با مجوز audit.view_sensitive نمایش داده می‌شوند (سرور در غیر این صورت حذف‌شان می‌کند).",
- "slh.unknown":"حساب ناشناس"
+ "slh.unknown":"حساب ناشناس",
+ /* Phase 7 (#/settings-permissions + #/settings-admins) — fresh namespaces (sp and sad); the mockup-era sa keys were removed from catalog T (they shadowed security-audit) */
+ "sp.desc":"نقش‌ها و مجوزهای سامانه — مستقیم از بک‌اند","sp.badge":"فقط‌خواندنی","sp.you":"نقش شما","sp.col.perm":"مجوز",
+ "sp.readonly":"این ماتریس فقط‌خواندنی است؛ مرجع مجوزها سرور است و هر تغییر نقش فقط از مسیرهای موجود و شناسنامه‌دار انجام می‌شود.","sp.granted":"مجاز",
+ "sad.desc":"حساب‌های مدیریتی، تغییر نقش و دعوت — از نقاط پایانی موجود و شناسنامه‌دار","sad.empty":"مدیری یافت نشد"
 });
 Object.assign(F3T.en,{
  "sh.desc":"Real infrastructure status from the backend","sh.sys":"Infrastructure","sh.lastcheck":"Last check",
@@ -2297,7 +2301,11 @@ Object.assign(F3T.en,{
  "slh.filter.user":"User ID","slh.date.from":"From date","slh.date.to":"To date","slh.apply":"Apply",
  "slh.empty":"No events found","slh.empty.desc":"No login events match the current filters.",
  "slh.privacy.note":"IP/User-Agent columns require the audit.view_sensitive permission (the server strips them otherwise).",
- "slh.unknown":"Unknown account"
+ "slh.unknown":"Unknown account",
+ /* Phase 7 (#/settings-permissions + #/settings-admins) */
+ "sp.desc":"System roles and permissions — straight from the backend","sp.badge":"Read-only","sp.you":"Your role","sp.col.perm":"Permission",
+ "sp.readonly":"This matrix is read-only; the server owns permission truth and every role change goes through the existing audited endpoints.","sp.granted":"granted",
+ "sad.desc":"Admin accounts, role changes and invitations — via the existing audited endpoints","sad.empty":"No admin accounts found"
 });
 
 /* ---------------- shared batch-3 helpers ---------------- */
@@ -2599,6 +2607,71 @@ function securityLoginsPage(){
  return h;
 }
 
+/* ---------------- Phase 7: settings-permissions / settings-admins ----------------
+   Read-only permission matrix + admin account management over EXISTING
+   server-owned endpoints (role change / invite reuse the exact audited
+   usrDo/usrInvite paths — no second implementation, no client-side
+   authorization). The server remains the only boundary (frozen rule);
+   sa.* belongs to security-audit (mockup-era shadow removed). */
+const SP={data:null,st:"idle",err:null};
+async function f7LoadPerms(){
+ SP.st="loading";f3RenderIf("settings-permissions");
+ try{const d=await VeloraData.request("/api/v1/admin/permissions");SP.data=d||{};SP.st="ok";}
+ catch(e){SP.err=e;SP.st="error";}
+ f3RenderIf("settings-permissions");
+}
+function settingsPermissionsPage(){
+ if(SP.st==="idle")f7LoadPerms();
+ let h=pagehead(t("nav.settings-permissions"),t("sp.desc"));
+ if(SP.st==="loading"&&!SP.data)return h+`<div class="card"><div class="cb">${f3skel(8)}</div></div>`;
+ if(SP.st==="error")return h+f3errBox(SP.err);
+ const m=(SP.data&&SP.data.permissions)||{};
+ const roles=["user","admin","super_admin"];
+ const rows=Array.isArray(m.super_admin)?m.super_admin:[];
+ h+=`<div class="card"><div class="ch"><h3>${esc(t("nav.settings-permissions"))}</h3><div class="right">${bdot("neutral",t("sp.badge"))}</div></div><div class="cb">
+  <div class="twrap"><table class="tbl" data-mstack><thead><tr><th>${esc(t("sp.col.perm"))}</th>${roles.map(r=>`<th>${esc(t("role."+r))}${ME.user&&ME.user.role===r?` ${bdot("accent",t("sp.you"))}`:""}<div class="num cellsub">${esc(String((m[r]||[]).length))}</div></th>`).join("")}</tr></thead><tbody>${
+  rows.map(p=>`<tr><td class="mono">${esc(String(p))}</td>${roles.map(r=>`<td class="num" aria-label="${esc(t("role."+r))} · ${esc((m[r]||[]).includes(p)?t("sp.granted"):"—")}">${(m[r]||[]).includes(p)?bdot("ok",""):`<span class="cellsub">—</span>`}</td>`).join("")}</tr>`).join("")
+ }</tbody></table></div>
+  <div class="note" style="margin-top:8px">${esc(t("sp.readonly"))}</div></div></div>`;
+ return h;
+}
+const SA7={data:null,st:"idle",err:null,total:0};
+async function f7LoadAdmins(){
+ SA7.st="loading";f3RenderIf("settings-admins");
+ try{
+  const a=await VeloraData.request("/api/v1/admin/users?role=admin&page=1&per_page=50");
+  const su=await VeloraData.request("/api/v1/admin/users?role=super_admin&page=1&per_page=50");
+  const au=(a&&a.users)||[];const suu=(su&&su.users)||[];
+  SA7.data=au.concat(suu).sort((x,y)=>String(y.createdAt||"").localeCompare(String(x.createdAt||"")));
+  SA7.total=(((a||{}).pagination||{}).total||0)+(((su||{}).pagination||{}).total||0);
+  SA7.st="ok";
+ }catch(e){SA7.err=e;SA7.st="error";}
+ f3RenderIf("settings-admins");
+}
+function f7AdminsReload(){if(typeof CURRENT!=="undefined"&&CURRENT.def&&CURRENT.def.route==="settings-admins")f7LoadAdmins();}
+function settingsAdminsPage(){
+ if(SA7.st==="idle")f7LoadAdmins();
+ const canRole=can("users.change_role"),canInvite=can("users.create");
+ let h=pagehead(t("nav.settings-admins"),t("sad.desc"),canInvite?`<button class="btn sm primary" onclick="usrInviteOpen()" aria-haspopup="dialog">${esc(t("usr.act.invite"))}</button>`:"");
+ if(SA7.st==="loading"&&!SA7.data)return h+`<div class="card"><div class="cb">${f3skel(6)}</div></div>`;
+ if(SA7.st==="error")return h+f3errBox(SA7.err);
+ const rows=Array.isArray(SA7.data)?SA7.data:[];
+ h+=`<div class="card"><div class="ch"><h3>${esc(t("nav.settings-admins"))}</h3><div class="right"><span class="badge b-neutral num">${esc(String(SA7.total||rows.length))}</span></div></div><div class="cb">`;
+ if(!rows.length){h+=empty(VI.box,t("sad.empty"),"");h+="</div></div>";return h;}
+ h+=`<div class="twrap"><table class="tbl" data-mstack><thead><tr><th>${esc(t("usr.col.user"))}</th><th>${esc(t("usr.col.role"))}</th><th>${esc(t("usr.col.status"))}</th><th>${esc(t("usr.col.created"))}</th><th>${esc(t("usr.col.actions"))}</th></tr></thead><tbody>${
+  rows.map(u=>`<tr>
+   <td class="cellsub">#${esc(String(u.id))} · ${esc(String(u.fullName||"—"))}<div class="mono cellsub">${esc(String(u.email||""))}</div></td>
+   <td>${bdot(u.role==="super_admin"?"accent":"info",t("role."+u.role))}</td>
+   <td class="mono cellsub">${esc(String(u.status||"—"))}</td>
+   <td class="cellsub">${esc(String(u.createdAt||"—"))}</td>
+   <td style="white-space:nowrap">
+    ${canRole?`<button class="btn sm" onclick="usrRole(${esc(String(u.id))},'${esc(String(u.role))}')">${esc(t("usr.act.role"))}</button>`:""}
+    <button class="btn sm" onclick="usrOpen360(${esc(String(u.id))})">${esc(t("nav.user360"))}</button>
+   </td></tr>`).join("")
+ }</tbody></table></div></div></div>`;
+ return h;
+}
+
 /* ---------------- system-flags ---------------- */
 const SF={data:null,st:"idle",err:null,busy:false,sel:"",enabled:false,rollout:""};
 async function f3LoadFlags(){
@@ -2797,13 +2870,15 @@ function billingOverviewPage(){
 }
 
 /* registry honesty: batch-3 routes are implemented now (extends batch 1+2) */
-["system-health","system-logs","security-audit","security-signups","security-logins","system-flags","analytics-users","analytics-trading","analytics-ai","analytics-revenue","billing-overview"].forEach(rt=>{const d=REG_BY_ROUTE[rt];if(d)d.status="implemented";});
+["system-health","system-logs","security-audit","security-signups","security-logins","settings-permissions","settings-admins","system-flags","analytics-users","analytics-trading","analytics-ai","analytics-revenue","billing-overview"].forEach(rt=>{const d=REG_BY_ROUTE[rt];if(d)d.status="implemented";});
 Object.assign(PAGE_IMPL,{
  "system-health":systemHealthPage,
  "system-logs":systemLogsPage,
  "security-audit":securityAuditPage,
  "security-signups":securitySignupsPage,
  "security-logins":securityLoginsPage,
+ "settings-permissions":settingsPermissionsPage,
+ "settings-admins":settingsAdminsPage,
  "system-flags":systemFlagsPage,
  "analytics-users":analyticsUsersPage,
  "analytics-trading":analyticsTradingPage,

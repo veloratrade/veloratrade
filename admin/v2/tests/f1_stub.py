@@ -385,6 +385,16 @@ class H(SimpleHTTPRequestHandler):
             except: per=25
             self._j(200,{"events":ev[(page-1)*per:page*per],"sensitiveVisible":sensitive,"pagination":{"total":len(ev),"page":page,"per_page":per,"has_more":page*per<len(ev)}})
             return
+        if up.path=="/api/v1/admin/permissions":
+            from urllib.parse import parse_qs as _sq7
+            m=loadmode()
+            if m["mode"]=="noauth": self._j(401,{"status":"error","error":{"code":"UNAUTHORIZED"}}); return
+            if m["mode"] in ("user403","panel_false"): self._j(403,{"status":"error","error":{"code":"PERMISSION_DENIED"}}); return
+            if m.get("fail_security"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
+            p16=["overview.view","users.view","users.suspend","users.activate","users.manage_subscription","users.verify_email","users.create","audit.view","system.health.view","system.logs.view","settings.view","feature_flags.view","billing.view","integrations.view","aiManage","analytics.view"]
+            p6=["users.change_role","audit.view_sensitive","system.settings.manage","feature_flags.edit","integrations.manage","aiRouteManage"]
+            self._j(200,{"permissions":{"user":[],"admin":p16,"super_admin":p16+p6}})
+            return
         if up.path=="/api/v1/admin/feature-flags":
             m=loadmode()
             if m["mode"] in ("noauth","user403","panel_false"): self._j(403,{"status":"error","error":{"code":"PERMISSION_DENIED"}}); return

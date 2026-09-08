@@ -1,10 +1,10 @@
 {
   "algorithm": "sha256",
-  "commitSha": "43a80e6",
+  "commitSha": "a37444b",
   "localizationVersion": "2026.08.30.2",
   "policyVersion": 2,
   "releaseHtmlSha256": "66d75031877e67d0bcb790ffc792446d5cec20cea81368dc65f0e4a11f689a25",
-  "releaseId": "phase6-signup-journal",
+  "releaseId": "phase7-rbac",
   "routeCount": 61,
   "routeManifestSha256": "77c267b42c509fae6a9f070298df1548d94a669176ed74999d28945504bdc251",
   "routes": {

@@ -183,6 +183,10 @@ $router->post('/api/v1/admin/system/diagnostics/refresh', [\Velora\Admin\SystemH
 $router->get('/api/v1/admin/logs/system', [\Velora\Admin\SystemLogController::class, 'index'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_SYSTEM_LOGS_VIEW)]);
 $router->get('/api/v1/admin/logs/audit', [\Velora\Admin\AuditLogController::class, 'index'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_AUDIT_VIEW)]);
 $router->get('/api/v1/admin/me', [\Velora\Admin\SecurityController::class, 'me'], $admin);
+// Phase 7 (A1): the permission-matrix method existed unrouted (frozen spec §7/§25
+// "route registration needed"). Read-only introspection of Role::permissionMap()
+// — the single server-side source of truth. No secrets; settings.view gated.
+$router->get('/api/v1/admin/permissions', [\Velora\Admin\SecurityController::class, 'permissions'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_SETTINGS_VIEW)]);
 
 // Admin Create User (RBAC: users.create = admin + super_admin; privileged-role
 // creation additionally requires users.change_role, enforced in the service).

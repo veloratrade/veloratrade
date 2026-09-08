@@ -70,7 +70,7 @@ try:
                 title:document.title,
                 active:(document.querySelector('.navitem.active')||{}).dataset?document.querySelector('.navitem.active').dataset.route:null}}""",
                 {"nf":NF,"badge":BADGE})
-            if st["nf"] or (rt not in ("overview","users","ai-providers","ai-route","ai-usage","integrations-n8n","integrations-metaapi","integrations-email","ai-health","system-health","system-logs","security-audit","security-signups","security-logins","system-flags","analytics-users","analytics-trading","analytics-ai","analytics-revenue","billing-overview","trading-accounts","trading-trades") and not st["badge"]):
+            if st["nf"] or (rt not in ("overview","users","ai-providers","ai-route","ai-usage","integrations-n8n","integrations-metaapi","integrations-email","ai-health","system-health","system-logs","security-audit","security-signups","security-logins","settings-permissions","settings-admins","system-flags","analytics-users","analytics-trading","analytics-ai","analytics-revenue","billing-overview","trading-accounts","trading-trades") and not st["badge"]):
                 bad.append((rt,"page",st))
             if not st["crumb"].strip().endswith(lbl[rt]) and rt!="overview":
                 bad.append((rt,"crumb:"+st["crumb"]))
@@ -248,7 +248,7 @@ try:
 
         # ---------- W. no fake data anywhere ----------
         wbad=[]
-        IMPL={"overview","users","ai-providers","ai-route","ai-usage","integrations-n8n","integrations-metaapi","integrations-email","ai-health","system-health","system-logs","security-audit","security-signups","security-logins","system-flags","analytics-users","analytics-trading","analytics-ai","analytics-revenue","billing-overview","trading-accounts","trading-trades"}
+        IMPL={"overview","users","ai-providers","ai-route","ai-usage","integrations-n8n","integrations-metaapi","integrations-email","ai-health","system-health","system-logs","security-audit","security-signups","security-logins","settings-permissions","settings-admins","system-flags","analytics-users","analytics-trading","analytics-ai","analytics-revenue","billing-overview","trading-accounts","trading-trades"}
         for rt in sorted(expected):
             pgp.evaluate(f"()=>location.hash='#/{rt}'"); pgp.wait_for_timeout(70)
             if rt in IMPL: continue  # F-3 batch1+2: wired pages (data-source proof in the F-3 suites)
@@ -307,7 +307,7 @@ def chk(k,cond):
 chk("js",len(OUT["js"])==0)
 chk("A_count",OUT["A_count"]==33)  # 32 static + users/:id dynamic
 chk("A_static",OUT["A_static_ok"]); chk("A_no_design",OUT["A_no_design"])
-chk("A_meta",OUT["A_meta_ok"] and OUT["A_impl_set"]==["ai-health","ai-providers","ai-route","ai-usage","analytics-ai","analytics-revenue","analytics-trading","analytics-users","billing-overview","integrations-email","integrations-metaapi","integrations-n8n","overview","security-audit","security-logins","security-signups","system-flags","system-health","system-logs","trading-accounts","trading-trades","users","users/:id"]); chk("A_u360",OUT["A_u360"])
+chk("A_meta",OUT["A_meta_ok"] and OUT["A_impl_set"]==["ai-health","ai-providers","ai-route","ai-usage","analytics-ai","analytics-revenue","analytics-trading","analytics-users","billing-overview","integrations-email","integrations-metaapi","integrations-n8n","overview","security-audit","security-logins","security-signups","settings-admins","settings-permissions","system-flags","system-health","system-logs","trading-accounts","trading-trades","users","users/:id"]); chk("A_u360",OUT["A_u360"])
 chk("B_routes",not OUT["B_bad"]); chk("B_events",OUT["B_events"])
 chk("C_nf",OUT["C_nf"]); chk("C_design",OUT["C_design"]); chk("C_deep",OUT["C_deep"]); chk("C_back",OUT["C_back"])
 chk("D_u360",OUT["D_u360"]); chk("D_nosidebar",OUT["D_nosidebar"])
