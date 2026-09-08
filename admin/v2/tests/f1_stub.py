@@ -261,15 +261,25 @@ class H(SimpleHTTPRequestHandler):
             ]}); return
         if up.path=="/api/v1/admin/system/diagnostics":
             m=loadmode()
+            if m.get("fail_diag"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
             if m["mode"] in ("noauth","user403","panel_false"): self._j(403,{"status":"error","error":{"code":"PERMISSION_DENIED"}}); return
             lr=getattr(self.server,"last_refresh",None)
             integ_row=lambda name:({"status":"SUCCESS","latencyMs":120 if name=="metaapi" else 95,"errorCode":None,"message":None,"checkedAt":lr} if lr else {"status":"UNKNOWN","latencyMs":None,"errorCode":None,"message":None,"checkedAt":None})
+            now=lr or "2026-09-08 12:00:00"
             self._j(200,{"health":{
-              "api":{"status":"HEALTHY","latencyMs":4,"message":"API responding"},
-              "database":{"status":"HEALTHY","latencyMs":3,"message":"Database reachable"},
-              "metaapi":integ_row("metaapi"),"email":integ_row("email"),
-              "ai":{"status":"HEALTHY","configured":True,"verifiedProviders":1,
-                    "providers":[{"provider":"gemini","status":"VALID","verified":True,"last_checked_at":"2026-09-05 20:58:00","error_code":None}]}}}); return
+              "checkedAt":now,
+              "components":{
+                "api":{"component":"api","status":"HEALTHY","latencyMs":4,"message":"API responding","checkedAt":now},
+                "database":{"component":"database","status":"HEALTHY","latencyMs":3,"message":"Database reachable","checkedAt":now},
+                "redis":{"component":"redis","status":"NOT_APPLICABLE","message":"No Redis in this architecture","checkedAt":now},
+                "workers":{"component":"workers","status":"HEALTHY","message":"Queue workers responsive","checkedAt":now},
+                "metaapi":dict(integ_row("metaapi"),component="metaapi"),
+                "n8n_relay":{"component":"n8n_relay","status":"NOT_APPLICABLE","message":"Relay is config-only by design","checkedAt":now},
+                "email":dict(integ_row("email"),component="email"),
+                "ai":{"component":"ai","status":"HEALTHY","configured":True,"verifiedProviders":1,
+                      "message":"Provider credentials verified",
+                      "providers":[{"provider":"gemini","status":"VALID","verified":True,"last_checked_at":"2026-09-05 20:58:00","error_code":None}],"checkedAt":now},
+              }}}); return
         if up.path in ("/api/v1/admin/analytics/users","/api/v1/admin/analytics/trading","/api/v1/admin/analytics/ai","/api/v1/admin/analytics/revenue"):
             m=loadmode()
             if m["mode"] in ("noauth","user403","panel_false"): self._j(403,{"status":"error","error":{"code":"PERMISSION_DENIED"}}); return
