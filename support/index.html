@@ -564,7 +564,7 @@ function toggleMobileSidebar() {
 <script>
 (function(){
 "use strict";
-function T(n,f){var key=window.__SUPKEYS&&window.__SUPKEYS[n];if(!key)return n;try{return (window.I18n&&I18n.t)?I18n.t(key,f||{}):(window.VeloraLocale&&VeloraLocale.t?VeloraLocale.t(key,f||{}):n);}catch(e){return n;}}
+function T(n,f){var key=window.__SUPKEYS&&window.__SUPKEYS[n];if(!key)return n;try{var r=(window.I18n&&I18n.t)?I18n.t(key,f||{}):((window.VeloraLocale&&VeloraLocale.t)?VeloraLocale.t(key,f||{}):n);return (r&&r!==key)?r:n;}catch(e){return n;}}
 function esc(x){var d=document.createElement("div");d.textContent=String(x==null?"":x);return d.innerHTML;}
 function body(x){return esc(x).replace(/\n/g,"<br>");}
 var cur=null,ticket=null,list=null;
