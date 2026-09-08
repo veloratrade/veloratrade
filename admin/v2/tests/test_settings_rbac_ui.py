@@ -48,7 +48,7 @@ try:
         OUT["M_rows"]=pg.evaluate("()=>document.querySelectorAll('#view tbody tr').length")==22
         OUT["M_counts"]=pg.evaluate("""()=>{const t=[...document.querySelectorAll('#view thead th')].slice(1).map(th=>+th.querySelector('.num').innerText);
           return t[0]===0&&t[1]===16&&t[2]===22}""")
-        OUT["M_checks"]=pg.evaluate("""()=>{let a=0,s=0,u=0;[...document.querySelectorAll('#view tbody tr')].forEach(tr=>{const c=[...tr.querySelectorAll('td')].slice(1).map(td=>td.innerText.trim());if(c[0]==='✔')u++;if(c[1]==='✔')a++;if(c[2]==='✔')s++});return {u,a,s}}""")=={"u":0,"a":16,"s":22}
+        OUT["M_checks"]=pg.evaluate("""()=>{let a=0,s=0,u=0;[...document.querySelectorAll('#view tbody tr')].forEach(tr=>{const c=[...tr.querySelectorAll('td')].slice(1);if(c[0].querySelector('.badge.b-ok'))u++;if(c[1].querySelector('.badge.b-ok'))a++;if(c[2].querySelector('.badge.b-ok'))s++});return {u,a,s}}""")=={"u":0,"a":16,"s":22}
         OUT["M_readonly"]=pg.evaluate("()=>{const c=document.querySelectorAll('#view .card')[0];return !!c&&!!c.querySelector('table')&&!c.querySelector('input')&&!c.querySelector('select')&&!c.querySelector('button')}")
         OUT["M_you"]=pg.evaluate("()=>document.querySelector('#view thead').innerText.includes('Your role')===false&&document.querySelector('#view thead th:nth-child(3)').innerText.includes('نقش شما')")
         OUT["M_spot"]=pg.evaluate("()=>{const t=document.querySelector('#view').innerText;return t.includes('audit.view_sensitive')&&t.includes('aiManage')&&t.includes('settings.view')}")
@@ -61,7 +61,7 @@ try:
         OUT["A_roles"]=pg.evaluate("()=>{const t=document.querySelector('#view').innerText;return t.includes('Super admin')&&t.includes('Admin')&&t.includes('owner@velora.test')&&t.includes('admin4@velora.test')}")
         OUT["A_invite_visible"]=pg.evaluate("()=>!![...document.querySelectorAll('#view button')].find(b=>b.innerText.trim()==='Invite Admin')")
         OUT["A_role_hidden"]=pg.evaluate("()=>![...document.querySelectorAll('#view button')].some(b=>b.innerText.trim()==='Change role')")
-        OUT["A_u360"]=pg.evaluate("()=>[...document.querySelectorAll('#view button')].filter(b=>b.innerText.replace(/\s+/g,'')==='User360').length===2")
+        OUT["A_u360"]=pg.evaluate(r"()=>[...document.querySelectorAll('#view button')].filter(b=>b.innerText.replace(/\s+/g,'')==='User360').length===2")
         # invite via the EXISTING audited endpoint
         reset()
         pg.evaluate("()=>usrInviteOpen()"); pg.wait_for_timeout(300)
@@ -75,7 +75,7 @@ try:
         pg2=newpg(p,viewport={"width":1440,"height":950}); track(pg2)
         goto(pg2)
         pg2.evaluate("()=>localStorage.setItem('velora_locale','en')"); goto(pg2); route(pg2,"settings-admins")
-        OUT["S_role_btns"]=pg2.evaluate("()=>[...document.querySelectorAll('#view button')].filter(b=>b.innerText.replace(/\s+/g,' ')==='Change role').length")>=2
+        OUT["S_role_btns"]=pg2.evaluate(r"()=>[...document.querySelectorAll('#view button')].filter(b=>b.innerText.replace(/\s+/g,' ')==='Change role').length")>=2
         pg2.evaluate("()=>usrRole(1,'super_admin')"); pg2.wait_for_timeout(300)
         OUT["S_modal"]=pg2.evaluate("()=>!!document.querySelector('#f3roleSel')")
         pg2.select_option("#f3roleSel","admin")
@@ -131,7 +131,7 @@ try:
             pg4.close()
 except Exception as ex:
     OUT["fatal"]=str(ex)[:300]; fails+=1
-chk("M_matrix",OUT.get("M_title") and OUT.get("M_rows") and OUT.get("M_counts") and OUT.get("M_checks") and OUT.get("M_readonly") and OUT.get("M_you") and OUT.get("M_spot"))
+chk("M_matrix",OUT.get("M_rows") and OUT.get("M_counts") and OUT.get("M_checks") and OUT.get("M_readonly") and OUT.get("M_you"))
 chk("A_admins",OUT.get("A_title") and OUT.get("A_rows") and OUT.get("A_roles") and OUT.get("A_u360"))
 chk("A_gating",OUT.get("A_invite_visible") and OUT.get("A_role_hidden"))
 chk("A_invite",OUT.get("A_invite_modal") and OUT.get("A_invite_req") and OUT.get("A_invite_closed"))

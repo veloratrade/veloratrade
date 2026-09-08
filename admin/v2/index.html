@@ -2248,7 +2248,7 @@ Object.assign(F3T.fa,{
  "slh.unknown":"حساب ناشناس",
  /* Phase 7 (#/settings-permissions + #/settings-admins) — fresh namespaces (sp and sad); the mockup-era sa keys were removed from catalog T (they shadowed security-audit) */
  "sp.desc":"نقش‌ها و مجوزهای سامانه — مستقیم از بک‌اند","sp.badge":"فقط‌خواندنی","sp.you":"نقش شما","sp.col.perm":"مجوز",
- "sp.readonly":"این ماتریس فقط‌خواندنی است؛ مرجع مجوزها سرور است و هر تغییر نقش فقط از مسیرهای موجود و شناسنامه‌دار انجام می‌شود.",
+ "sp.readonly":"این ماتریس فقط‌خواندنی است؛ مرجع مجوزها سرور است و هر تغییر نقش فقط از مسیرهای موجود و شناسنامه‌دار انجام می‌شود.","sp.granted":"مجاز",
  "sad.desc":"حساب‌های مدیریتی، تغییر نقش و دعوت — از نقاط پایانی موجود و شناسنامه‌دار","sad.empty":"مدیری یافت نشد"
 });
 Object.assign(F3T.en,{
@@ -2304,7 +2304,7 @@ Object.assign(F3T.en,{
  "slh.unknown":"Unknown account",
  /* Phase 7 (#/settings-permissions + #/settings-admins) */
  "sp.desc":"System roles and permissions — straight from the backend","sp.badge":"Read-only","sp.you":"Your role","sp.col.perm":"Permission",
- "sp.readonly":"This matrix is read-only; the server owns permission truth and every role change goes through the existing audited endpoints.",
+ "sp.readonly":"This matrix is read-only; the server owns permission truth and every role change goes through the existing audited endpoints.","sp.granted":"granted",
  "sad.desc":"Admin accounts, role changes and invitations — via the existing audited endpoints","sad.empty":"No admin accounts found"
 });
 
@@ -2629,8 +2629,8 @@ function settingsPermissionsPage(){
  const roles=["user","admin","super_admin"];
  const rows=Array.isArray(m.super_admin)?m.super_admin:[];
  h+=`<div class="card"><div class="ch"><h3>${esc(t("nav.settings-permissions"))}</h3><div class="right">${bdot("neutral",t("sp.badge"))}</div></div><div class="cb">
-  <div class="twrap"><table class="tbl" data-mstack><thead><tr><th>${esc(t("sp.col.perm"))}</th>${roles.map(r=>`<th><span class="mono">${esc(r)}</span>${ME.user&&ME.user.role===r?` ${bdot("accent",t("sp.you"))}`:""}<div class="num cellsub">${esc(String((m[r]||[]).length))}</div></th>`).join("")}</tr></thead><tbody>${
-  rows.map(p=>`<tr><td class="mono">${esc(String(p))}</td>${roles.map(r=>`<td class="num">${(m[r]||[]).includes(p)?"✔":`<span class="cellsub">—</span>`}</td>`).join("")}</tr>`).join("")
+  <div class="twrap"><table class="tbl" data-mstack><thead><tr><th>${esc(t("sp.col.perm"))}</th>${roles.map(r=>`<th>${esc(t("role."+r))}${ME.user&&ME.user.role===r?` ${bdot("accent",t("sp.you"))}`:""}<div class="num cellsub">${esc(String((m[r]||[]).length))}</div></th>`).join("")}</tr></thead><tbody>${
+  rows.map(p=>`<tr><td class="mono">${esc(String(p))}</td>${roles.map(r=>`<td class="num" aria-label="${esc(t("role."+r))} · ${esc((m[r]||[]).includes(p)?t("sp.granted"):"—")}">${(m[r]||[]).includes(p)?bdot("ok",""):`<span class="cellsub">—</span>`}</td>`).join("")}</tr>`).join("")
  }</tbody></table></div>
   <div class="note" style="margin-top:8px">${esc(t("sp.readonly"))}</div></div></div>`;
  return h;
