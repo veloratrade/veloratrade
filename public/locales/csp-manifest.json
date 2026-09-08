@@ -1,9 +1,9 @@
 {
   "algorithm": "sha256",
-  "commitSha": "9a1ec525b634d5e2fcad6eea1bec310ce440d4ca",
+  "commitSha": "900b5e54613e3cdaf4de12e0c10d000eee1de9dc",
   "localizationVersion": "2026.08.30.2",
   "policyVersion": 2,
-  "releaseHtmlSha256": "2c61b26e79e17238125561578f0c9693101bf07392b37504a1a9ca554a2e599f",
+  "releaseHtmlSha256": "2b0b348fc20468cce16fc2d5677900463ab1708790b710c547346f2f495196c2",
   "releaseId": "phase9-support-inbox",
   "routeCount": 61,
   "routeManifestSha256": "77c267b42c509fae6a9f070298df1548d94a669176ed74999d28945504bdc251",
@@ -793,14 +793,14 @@
         "sha256-xj5ye+wz4Qn/u5rzmD4hIjnPzs+h4ovCf6lZ4cd/knU="
       ],
       "file": "en/support/index.html",
-      "htmlSha256": "77e316c69d33aef150c139a65a506c249eeea915b1bff5da2fd2cde5d7b12b86",
+      "htmlSha256": "04ea04780f9d59d16c95d05b11b51769854db681a978a204e06b02d8470238c9",
       "inlineScriptCount": 5,
       "inlineScriptHashes": [
         "sha256-3P3heGI/XX1DguQD0oe5881ErY6c5wSNj5y70eKKrHA=",
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
         "sha256-BPo9AzCPtTVwrKrB1VZCiwWkWKUGtU+KtsQk2Ty8Xq4=",
-        "sha256-Sb1y3BxVWPmSTvGt82Bo/h67OvCgQnziZVQ4lV1uw9o=",
-        "sha256-VVSQj8uRcSoK3TViPfAjMxzXKy/AftAJIr3gt3bG4Pg="
+        "sha256-VVSQj8uRcSoK3TViPfAjMxzXKy/AftAJIr3gt3bG4Pg=",
+        "sha256-mBiOgPp8WI9LdG2/pCuYW2YKRW85K1WnSwxET02AwkY="
       ],
       "inlineStyleCount": 4,
       "inlineStyleHashes": [
@@ -1731,14 +1731,14 @@
         "sha256-xj5ye+wz4Qn/u5rzmD4hIjnPzs+h4ovCf6lZ4cd/knU="
       ],
       "file": "fa/support/index.html",
-      "htmlSha256": "3598abd6a99be73f752b78bf8f130eb5b2cdc74c6cd57aa3b4ba493febd477af",
+      "htmlSha256": "927fabde5733b24fb432f5933550c53ec06942f41e826e9ddab8d5343167c71c",
       "inlineScriptCount": 5,
       "inlineScriptHashes": [
         "sha256-3P3heGI/XX1DguQD0oe5881ErY6c5wSNj5y70eKKrHA=",
         "sha256-9cKjK49ENO2NLJdBQ/7kpcn+eVv0qyoRRQ8zyEHesjM=",
         "sha256-BPo9AzCPtTVwrKrB1VZCiwWkWKUGtU+KtsQk2Ty8Xq4=",
-        "sha256-Sb1y3BxVWPmSTvGt82Bo/h67OvCgQnziZVQ4lV1uw9o=",
-        "sha256-VVSQj8uRcSoK3TViPfAjMxzXKy/AftAJIr3gt3bG4Pg="
+        "sha256-VVSQj8uRcSoK3TViPfAjMxzXKy/AftAJIr3gt3bG4Pg=",
+        "sha256-mBiOgPp8WI9LdG2/pCuYW2YKRW85K1WnSwxET02AwkY="
       ],
       "inlineStyleCount": 4,
       "inlineStyleHashes": [
@@ -1945,5 +1945,5 @@
       ]
     }
   },
-  "sourceDigest": "4b2d50a49d4c6b1672507b74689291037bff5fe94c955bf47bd42a23b2df1e2c"
+  "sourceDigest": "32485b7c4128ae9549570526c17bb0752f4e61c886353229375545d9439e32ad"
 }
