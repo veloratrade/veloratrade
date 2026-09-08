@@ -475,6 +475,41 @@ class H(SimpleHTTPRequestHandler):
             else: self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
             rAA=[{"action":"user.verify_email","targetType":"user","targetId":2,"result":"success","summary":"User #2 email verified by admin","createdAt":"2026-09-05 20:30:00"}] if m["mode"]=="admin" else []
             self._j(200,{"me":me,"recentAdminActions":rAA}); return
+        # ---- Phase 9A user Support Center routes (mirror real controller envelopes) ----
+        if up.path=="/api/v1/support/tickets":
+            m=loadmode()
+            if m.get("sup_fail"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
+            def urow(i,subj,st,wf,uu):
+                return {"id":i,"subject":subj,"status":st,"waiting_for":wf,
+                        "last_message_at":"2026-09-08 09:%02d:00"%(i%60),
+                        "unread_user_count":uu,"created_at":"2026-09-07 09:%02d:00"%(i%60)}
+            tickets=[urow(1042,"MT5 account will not connect","open","admin",1),
+                     urow(1043,"Deposit not reflected","pending","user",0),
+                     urow(1044,"KYC question","closed","none",0)]
+            if m.get("sup_xss"):
+                tickets.append(urow(1045,"<img src=x onerror=window.__pwned=1>","open","admin",0))
+            if m.get("sup_empty"): tickets=[]
+            unread=sum(int(t["unread_user_count"]) for t in tickets)
+            self._j(200,{"tickets":tickets,"total":len(tickets),"page":1,"per_page":20,"unread_total":unread}); return
+        mm=_re.match(r"^/api/v1/support/tickets/(\d+)$",up.path)
+        if mm:
+            m=loadmode()
+            if m.get("sup_fail"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
+            tid=int(mm.group(1))
+            D={1042:{"conversation":{"id":1042,"subject":"MT5 account will not connect","status":"open","waiting_for":"admin","unread_user_count":1,"created_at":"2026-09-07 09:22:00"},
+                      "messages":[{"id":1,"sender_type":"user","body":"I cannot connect my MT5 account #123456 since Monday. Error E-404.","created_at":"2026-09-07 09:22:00"},
+                                  {"id":2,"sender_type":"admin","body":"Please reconnect your MT5 account and start a new synchronization.","created_at":"2026-09-08 09:10:00"}]},
+               1043:{"conversation":{"id":1043,"subject":"Deposit not reflected","status":"pending","waiting_for":"user","unread_user_count":0,"created_at":"2026-09-06 11:00:00"},
+                      "messages":[{"id":1,"sender_type":"user","body":"My deposit is missing.","created_at":"2026-09-06 11:00:00"},
+                                  {"id":2,"sender_type":"admin","body":"We credited the deposit; please refresh your wallet.","created_at":"2026-09-07 15:30:00"}]},
+               1044:{"conversation":{"id":1044,"subject":"KYC question","status":"closed","waiting_for":"none","unread_user_count":0,"created_at":"2026-09-05 08:00:00"},
+                      "messages":[{"id":1,"sender_type":"user","body":"Which documents do you need for KYC?","created_at":"2026-09-05 08:00:00"},
+                                  {"id":2,"sender_type":"admin","body":"KYC is completed; ticket closed.","created_at":"2026-09-05 12:00:00"}]}}
+            if m.get("sup_xss") and tid==1045:
+                D[1045]={"conversation":{"id":1045,"subject":"<img src=x onerror=window.__pwned=1>","status":"open","waiting_for":"admin","unread_user_count":0,"created_at":"2026-09-08 10:00:00"},
+                          "messages":[{"id":1,"sender_type":"user","body":"<script>window.__pwned=2</script> probe body","created_at":"2026-09-08 10:00:00"}]}
+            if tid not in D: self._j(404,{"status":"error","error":{"code":"TICKET_NOT_FOUND"}}); return
+            self._j(200,D[tid]); return
         super().do_GET()
     def do_POST(self):
         import re as _re
@@ -514,7 +549,32 @@ class H(SimpleHTTPRequestHandler):
                 self._j(200,{"status":st,"waiting_for":"none" if st in ("closed","archived") else ("user" if act=="reopen" else "admin")}); return
             self._j(404,{"status":"error","error":{"code":"NOT_FOUND"}}); return
         if up.path=="/api/v1/support/tickets":
+            m=loadmode()
+            length=int(self.headers.get("Content-Length") or 0)
+            body={}
+            if length:
+                try: body=json.loads(self.rfile.read(length) or b"{}")
+                except: body={}
+            m["sup_create_body"]=body; m["sup_create_calls"]=m.get("sup_create_calls",0)+1
+            json.dump(m,open(os.path.join(ROOT,"mode.json"),"w"))
+            if m.get("sup_create_result")=="422":
+                self._j(422,{"status":"error","error":{"code":"VALIDATION_FAILED","message":"Validation failed.",
+                    "messageKey":"errors.support.subjectInvalid","params":{},"details":{"fields":{"subject":{"code":"INVALID","messageKey":"errors.support.subjectInvalid","params":[]}}}}}); return
             self._j(201,{"ticket":{"id":1042}}); return
+        mm=_re.match(r"^/api/v1/support/tickets/(\d+)/messages$",up.path)
+        if mm:
+            m=loadmode()
+            if m.get("fail_sup"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
+            m["sup_reply_calls"]=m.get("sup_reply_calls",0)+1
+            json.dump(m,open(os.path.join(ROOT,"mode.json"),"w"))
+            self._j(201,{"message":{"id":99,"created_at":"2026-09-08 12:00:00"}}); return
+        mm=_re.match(r"^/api/v1/support/tickets/(\d+)/reopen$",up.path)
+        if mm:
+            m=loadmode()
+            if m.get("fail_sup"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
+            m["sup_reopen_calls"]=m.get("sup_reopen_calls",0)+1
+            json.dump(m,open(os.path.join(ROOT,"mode.json"),"w"))
+            self._j(200,{"status":"success","data":{"status":"open","waiting_for":"admin"}}); return
         if up.path=="/api/v1/admin/users":
             # Create User (Phase 1) — mirrors the real UserManagementController::store shape.
             m=loadmode()
