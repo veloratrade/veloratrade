@@ -194,6 +194,23 @@ $router->get('/api/v1/admin/settings', [\Velora\Admin\SettingsController::class,
 $router->put('/api/v1/admin/settings/{key}', [\Velora\Admin\SettingsController::class, 'update'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_SETTINGS_MANAGE)]);
 $router->delete('/api/v1/admin/settings/{key}', [\Velora\Admin\SettingsController::class, 'reset'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_SETTINGS_MANAGE)]);
 
+// Phase 9 (9A): Support Inbox — user-side own-ticket routes (session auth; ownership server-enforced).
+$router->post('/api/v1/support/tickets', [\Velora\Support\SupportController::class, 'createTicket'], $auth);
+$router->get('/api/v1/support/tickets', [\Velora\Support\SupportController::class, 'listMyTickets'], $auth);
+$router->get('/api/v1/support/tickets/{id}', [\Velora\Support\SupportController::class, 'myTicket'], $auth);
+$router->post('/api/v1/support/tickets/{id}/messages', [\Velora\Support\SupportController::class, 'myReply'], $auth);
+$router->post('/api/v1/support/tickets/{id}/read', [\Velora\Support\SupportController::class, 'markRead'], $auth);
+$router->post('/api/v1/support/tickets/{id}/reopen', [\Velora\Support\SupportController::class, 'reopen'], $auth);
+
+// Phase 9 (9A): Admin Communication Center — communication.view / communication.reply (server-side).
+$router->get('/api/v1/admin/communications/tickets', [\Velora\Support\SupportController::class, 'adminList'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_COMM_VIEW)]);
+$router->get('/api/v1/admin/communications/tickets/{id}', [\Velora\Support\SupportController::class, 'adminTicket'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_COMM_VIEW)]);
+$router->post('/api/v1/admin/communications/tickets/{id}/messages', [\Velora\Support\SupportController::class, 'adminReply'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_COMM_REPLY)]);
+$router->post('/api/v1/admin/communications/tickets/{id}/status', [\Velora\Support\SupportController::class, 'adminStatus'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_COMM_REPLY)]);
+$router->post('/api/v1/admin/communications/tickets/{id}/translate', [\Velora\Support\SupportController::class, 'translate'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_COMM_REPLY)]);
+$router->post('/api/v1/admin/communications/tickets/{id}/copilot', [\Velora\Support\SupportController::class, 'copilot'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_COMM_REPLY)]);
+$router->post('/api/v1/admin/communications/tickets/{id}/copilot/draft', [\Velora\Support\SupportController::class, 'copilotDraft'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_COMM_REPLY)]);
+
 // Admin Create User (RBAC: users.create = admin + super_admin; privileged-role
 // creation additionally requires users.change_role, enforced in the service).
 $router->post('/api/v1/admin/users', [\Velora\Admin\UserManagementController::class, 'store'], [...$admin, AuthMiddleware::requirePermission(\Velora\Auth\Role::P_USERS_CREATE)]);

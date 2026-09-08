@@ -521,28 +521,156 @@ function toggleMobileSidebar() {
 </div>
 </div>
 <section class="grid">
-<div class="card"><small data-i18n="pages.support.open.tickets.3a2abcb4">تیکت‌های باز</small><b data-i18n="pages.support.0.tickets.6508491c" style="color:#fce38a">0 تیکت</b></div>
-<div class="card"><small data-i18n="pages.support.service.status.13dfd977">وضعیت سرویس</small><b data-i18n="pages.support.online.responsive.4fa3a505" style="color:#4CD39A">آنلاین و پاسخگو</b></div>
-<div class="card"><small data-i18n="pages.support.avg.response.time.828bf414">میانگین زمان پاسخ</small><b data-i18n="pages.support.less.than.15.minutes.5f3f0a1e" style="color:#3B82F6">کمتر از 15 دقیقه</b></div>
+<div class="card"><small data-i18n="pages.support.open.tickets.3a2abcb4">تیکت‌های باز</small><b id="cmKpiOpen" style="color:#fce38a">0</b></div>
+<div class="card"><small data-i18n="pages.support.unread.30ab7999">خوانده‌نشده</small><b id="cmKpiUnread" style="color:#4CD39A">0</b></div>
+<div class="card"><small data-i18n="pages.support.closed.tickets.bac336a3">بسته‌شده</small><b id="cmKpiClosed" style="color:#3B82F6">0</b></div>
 </section>
-<section class="card panel" style="margin-top:16px;">
-<b data-i18n="pages.support.quick.account.connection.guide.and.dedicated.support.29ad7a33" style="font-size:16px;color:#fce38a;">راهنمای سریع اتصال حساب و پشتیبانی اختصاصی</b>
-<div style="margin-top:14px;display:grid;gap:12px;">
-<div style="padding:14px;background:rgba(212,175,55,0.08);border:1px solid rgba(212,175,55,0.28);border-radius:12px;">
-<b data-i18n="pages.support.email.title" style="color:#fce38a;font-size:14px;">ارتباط مستقیم با پشتیبانی</b>
-<p data-i18n="pages.support.email.description" style="font-size:13px;color:#cbd5e1;line-height:1.7;margin:8px 0 10px;">برای درخواست پشتیبانی، مستقیماً به ایمیل رسمی VELORA پیام بفرستید.</p>
-<a aria-label="ارسال ایمیل به پشتیبانی VELORA" data-i18n-aria-label="pages.support.email.aria" dir="ltr" href="mailto:support@veloratrade.ir" style="display:inline-flex;align-items:center;padding:9px 13px;border-radius:9px;border:1px solid rgba(252,227,138,0.55);background:rgba(255,255,255,0.05);color:#fce38a;text-decoration:none;font:700 13px Arial;">support@veloratrade.ir</a>
+<section class="card panel" id="cmNewCard" style="margin-top:16px;">
+<b data-i18n="pages.support.new.ticket.f4fd414b" style="font-size:16px;color:#fce38a;">تیکت جدید</b>
+<div style="margin-top:12px;display:grid;gap:10px;">
+<label style="font-size:12px;color:#cbd5e1;display:grid;gap:6px;" for="cmSubject"><span data-i18n="pages.support.subject.b8d87854">موضوع</span>
+<input id="cmSubject" dir="auto" maxlength="200" style="padding:11px 12px;border-radius:10px;border:1px solid rgba(212,175,55,.35);background:rgba(255,255,255,.05);color:#f8f7f3;font-size:13px;" type="text"></label>
+<label style="font-size:12px;color:#cbd5e1;display:grid;gap:6px;" for="cmBody"><span data-i18n="pages.support.message.c821412e">پیام</span>
+<textarea id="cmBody" dir="auto" maxlength="5000" rows="5" style="padding:11px 12px;border-radius:10px;border:1px solid rgba(212,175,55,.35);background:rgba(255,255,255,.05);color:#f8f7f3;font-size:13px;resize:vertical;"></textarea></label>
+<div style="display:flex;gap:10px;flex-wrap:wrap;">
+<button id="cmSubmit" onclick="cmCreate()" style="padding:11px 16px;border-radius:10px;border:1px solid rgba(252,227,138,.55);background:rgba(212,175,55,.18);color:#fce38a;font-weight:700;font-size:13px;cursor:pointer;" data-i18n="pages.support.submit.ticket.c650b9c3">ارسال تیکت</button>
+<button id="cmCancelNew" onclick="cmShowList()" style="display:none;padding:11px 16px;border-radius:10px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.06);color:#cbd5e1;font-size:13px;cursor:pointer;" data-i18n="pages.support.back.6e09f79e">بازگشت</button>
 </div>
-<div style="padding:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;">
-<b data-i18n="pages.support.how.do.i.connect.a.vittaverse.or.ed3f1278" style="color:#fce38a;font-size:14px;">چگونه حساب Vittaverse یا بروکر دیگر را متصل کنم؟</b>
-<p style="font-size:13px;color:#cbd5e1;line-height:1.7;margin:8px 0 0;"><span data-i18n="pages.support.to.page.00b02521">به صفحه</span> <b><svg fill="none" height="16" stroke="currentColor" stroke-linecap="round" stroke-width="2" viewbox="0 0 24 24" width="16"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"></path></svg> <span data-i18n="pages.support.connect.metatrader.70bab1b3">اتصال متاتریدر</span></b> <span data-i18n="pages.support.enter.your.account.number.login.and.read.328d1169">بروید، شماره حساب (Login) و پسورد اینوستور (Read-only) خود را وارد کنید. سیستم به طور خودکار سرور و بروکر را شناسایی و موجودی و اکویتی را همگام‌سازی می‌کند.</span></p>
+<div id="cmFormErr" style="color:#ff8e98;font-size:12px;display:none;"></div>
 </div>
-<div style="padding:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;">
-<b data-i18n="pages.support.do.i.need.my.main.account.password.cb75361e" style="color:#fce38a;font-size:14px;">آیا پسورد اصلی حساب من نیاز است؟</b>
-<p data-i18n="pages.support.no.velora.never.asks.for.your.main.96d8fb25" style="font-size:13px;color:#cbd5e1;line-height:1.7;margin:8px 0 0;">خیر، سیستم VELORA هرگز پسورد اصلی ترید شما را درخواست نمی‌کند. فقط پسورد سرمایه‌گذار (Investor Password) کافی است که قابلیت ترید ندارد و کاملاً امن است.</p>
+</section>
+<section class="card panel" id="cmListCard" style="margin-top:16px;">
+<b data-i18n="pages.support.open.tickets.b87e0a12" style="font-size:16px;color:#fce38a;">تیکت‌های باز</b>
+<div id="cmOpenList" style="margin-top:12px;display:grid;gap:8px;"></div>
+<b data-i18n="pages.support.closed.tickets.bac336a3" style="font-size:16px;color:#fce38a;margin-top:18px;display:block;">تیکت‌های بسته‌شده</b>
+<div id="cmClosedList" style="margin-top:12px;display:grid;gap:8px;"></div>
+<div id="cmListErr" style="color:#ff8e98;font-size:12px;display:none;margin-top:10px;"></div>
+</section>
+<section class="card panel" id="cmThreadCard" style="margin-top:16px;display:none;">
+<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+<button onclick="cmShowList()" style="padding:8px 12px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.06);color:#cbd5e1;font-size:12px;cursor:pointer;" data-i18n="pages.support.back.6e09f79e">بازگشت</button>
+<b id="cmThreadSubject" style="font-size:15px;color:#fce38a;"></b>
+<span id="cmThreadStatus"></span>
+<span id="cmThreadWf"></span>
+<span id="cmThreadUnread"></span>
+<button id="cmReopenBtn" onclick="cmReopen()" style="display:none;padding:8px 12px;border-radius:9px;border:1px solid rgba(252,227,138,.5);background:rgba(212,175,55,.15);color:#fce38a;font-size:12px;cursor:pointer;" data-i18n="pages.support.reopen.ticket.f90abadf">بازگشایی تیکت</button>
 </div>
+<div id="cmMsgs" style="margin-top:14px;display:grid;gap:10px;"></div>
+<div id="cmReplyWrap" style="margin-top:14px;display:grid;gap:10px;">
+<textarea id="cmReply" dir="auto" maxlength="5000" rows="4" placeholder="" data-i18n-placeholder="pages.support.write.your.reply.bae79571" style="padding:11px 12px;border-radius:10px;border:1px solid rgba(212,175,55,.35);background:rgba(255,255,255,.05);color:#f8f7f3;font-size:13px;resize:vertical;"></textarea>
+<button id="cmReplyBtn" onclick="cmSendReply()" style="justify-self:start;padding:10px 16px;border-radius:10px;border:1px solid rgba(252,227,138,.55);background:rgba(212,175,55,.18);color:#fce38a;font-weight:700;font-size:13px;cursor:pointer;" data-i18n="pages.support.send.reply.17d2fbcd">ارسال پاسخ</button>
 </div>
 </section></main></div>
+<script>
+(function(){
+"use strict";
+function T(n,f){var key=window.__SUPKEYS&&window.__SUPKEYS[n];if(!key)return n;try{return (window.I18n&&I18n.t)?I18n.t(key,f||{}):(window.VeloraLocale&&VeloraLocale.t?VeloraLocale.t(key,f||{}):n);}catch(e){return n;}}
+function esc(x){var d=document.createElement("div");d.textContent=String(x==null?"":x);return d.innerHTML;}
+function body(x){return esc(x).replace(/\n/g,"<br>");}
+var cur=null,ticket=null,list=null;
+function $(id){return document.getElementById(id)}
+window.__SUPKEYS={"Support Center": "pages.support.support.center.1e502bac", "New ticket": "pages.support.new.ticket.f4fd414b", "Subject": "pages.support.subject.b8d87854", "Message": "pages.support.message.c821412e", "Submit ticket": "pages.support.submit.ticket.c650b9c3", "Enter the ticket subject": "pages.support.enter.the.ticket.subject.23b25511", "Describe your issue…": "pages.support.describe.your.issue.c4f11b78", "Open tickets": "pages.support.open.tickets.b87e0a12", "Closed tickets": "pages.support.closed.tickets.bac336a3", "Open": "pages.support.open.5d90433f", "Awaiting your reply": "pages.support.awaiting.your.reply.6495c4ea", "Awaiting support": "pages.support.awaiting.support.c6643503", "Closed": "pages.support.closed.ae90ec2a", "Archived": "pages.support.archived.2b103bfe", "Unread": "pages.support.unread.30ab7999", "Back": "pages.support.back.6e09f79e", "Send reply": "pages.support.send.reply.17d2fbcd", "Write your reply…": "pages.support.write.your.reply.bae79571", "Reopen ticket": "pages.support.reopen.ticket.f90abadf", "You": "pages.support.you.c86109fb", "Support": "pages.support.support.152185b4", "Created": "pages.support.created.12d55b7b", "Last message": "pages.support.last.message.f968bf1d", "You have no open tickets yet. Use “New ticket”.": "pages.support.you.have.no.open.tickets.yet.use.new.ticket.dd93980d", "No closed tickets.": "pages.support.no.closed.tickets.58baeceb", "Subject and message are required.": "pages.support.subject.and.message.are.required.e8467f28", "Load failed; please retry.": "pages.support.load.failed.please.retry.46f2318a", "Your ticket has been created.": "pages.support.your.ticket.has.been.created.c7657df4", "Reply sent.": "pages.support.reply.sent.558dad39", "Status updated.": "pages.support.status.updated.e4ecdec1", "Ticket reopened; support will review it.": "pages.support.ticket.reopened.support.will.review.it.94f7f111", "Ticket": "pages.support.ticket.97ae7ada", "Clear form": "pages.support.clear.form.045b9361", "خوانده‌نشده": "pages.support.unread.30ab7999", "خطا در بارگذاری؛ دوباره تلاش کنید.": "pages.support.load.failed.please.retry.46f2318a", "پشتیبانی": "pages.support.support.152185b4", "پاسخ ارسال شد.": "pages.support.reply.sent.558dad39", "هنوز تیکت بازی ندارید. از دکمه «تیکت جدید» استفاده کنید.": "pages.support.you.have.no.open.tickets.yet.use.new.ticket.dd93980d", "موضوع و پیام الزامی است.": "pages.support.subject.and.message.are.required.e8467f28", "شما": "pages.support.you.c86109fb", "در انتظار پشتیبانی": "pages.support.awaiting.support.c6643503", "در انتظار پاسخ شما": "pages.support.awaiting.your.reply.6495c4ea", "تیکت": "pages.support.ticket.97ae7ada", "تیکت شما ثبت شد.": "pages.support.your.ticket.has.been.created.c7657df4", "تیکت بسته‌شده‌ای وجود ندارد.": "pages.support.no.closed.tickets.58baeceb", "تیکت بازگشایی شد و منتظر بررسی پشتیبانی است.": "pages.support.ticket.reopened.support.will.review.it.94f7f111"};
+function statusBadge(st){
+ var c=st==="open"?"#4CD39A":st==="pending"?"#ffb703":"#8fa0c0";
+ var LBL={open:"Open",pending:"Awaiting your reply",closed:"Closed",archived:"Archived"};
+ return '<span style="padding:3px 9px;border-radius:999px;border:1px solid '+c+'66;color:'+c+';font-size:11px;font-weight:700;">'+esc(T(LBL[st]||st))+'</span>';
+}
+function wfBadge(w){
+ if(w==="none")return "";
+ var txt=w==="admin"?T("در انتظار پشتیبانی"):T("در انتظار پاسخ شما");
+ var c=w==="admin"?"#3B82F6":"#ffb703";
+ return '<span style="padding:3px 9px;border-radius:999px;border:1px solid '+c+'66;color:'+c+';font-size:11px;font-weight:700;">'+esc(txt)+'</span>';
+}
+function loadList(){
+ VeloraData.request("/api/v1/support/tickets").then(function(d){
+  list=(d&&d.tickets)||[];
+  var open=0,closed=0,unread=0;
+  list.forEach(function(t){if(t.status==="closed"||t.status==="archived"){closed++;}else{open++;}unread+=Number(t.unread_user_count||0);});
+  if(d&&typeof d.unread_total==="number")unread=d.unread_total;
+  $("cmKpiOpen").textContent=String(open);$("cmKpiClosed").textContent=String(closed);$("cmKpiUnread").textContent=String(unread);
+  renderLists();
+ }).catch(function(e){$("cmListErr").style.display="block";$("cmListErr").textContent=esc(T("خطا در بارگذاری؛ دوباره تلاش کنید."));});
+}
+function ticketRow(t){
+ var unread=Number(t.unread_user_count||0)>0;
+ return '<div role="button" tabindex="0" data-ticket="'+t.id+'" style="padding:12px;border:1px solid '+(unread?"rgba(252,227,138,.5)":"rgba(255,255,255,.1)")+';border-radius:12px;background:rgba(255,255,255,.04);cursor:pointer;" class="cm-row">'
+  +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">'
+  +'<b style="color:#fce38a;font-size:13px;">#'+esc(t.id)+' — '+esc(t.subject||"")+'</b>'
+  +statusBadge(t.status)+wfBadge(t.waiting_for)
+  +(unread?'<span style="padding:3px 9px;border-radius:999px;background:rgba(255,142,152,.15);color:#ff8e98;font-size:11px;font-weight:700;">'+esc(T("خوانده‌نشده"))+'</span>':"")
+  +'<span style="color:#8fa0c0;font-size:11px;margin-inline-start:auto;" dir="ltr">'+esc(t.last_message_at||"")+'</span></div></div>';
+}
+function renderLists(){
+ var openL=$("cmOpenList"),closedL=$("cmClosedList");openL.innerHTML="";closedL.innerHTML="";
+ var open=[],closed=[];
+ (list||[]).forEach(function(t){(t.status==="closed"||t.status==="archived"?closed:open).push(t);});
+ openL.innerHTML=open.length?open.map(ticketRow).join(""):'<div style="color:#8fa0c0;font-size:12px;">'+esc(T("هنوز تیکت بازی ندارید. از دکمه «تیکت جدید» استفاده کنید."))+'</div>';
+ closedL.innerHTML=closed.length?closed.map(ticketRow).join(""):'<div style="color:#8fa0c0;font-size:12px;">'+esc(T("تیکت بسته‌شده‌ای وجود ندارد."))+'</div>';
+ Array.prototype.forEach.call(document.querySelectorAll(".cm-row"),function(el){
+  var open_=function(){openTicket(parseInt(el.getAttribute("data-ticket"),10));};
+  el.addEventListener("click",open_);el.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();open_();}});
+ });
+}
+window.cmShowList=function(){ticket=null;$("cmThreadCard").style.display="none";$("cmNewCard").style.display="block";$("cmListCard").style.display="block";$("cmCancelNew").style.display="none";loadList();};
+window.cmCreate=function(){
+ var s=$("cmSubject").value.trim(),b=$("cmBody").value.trim();
+ if(!s||!b){$("cmFormErr").style.display="block";$("cmFormErr").textContent=esc(T("موضوع و پیام الزامی است."));return;}
+ $("cmFormErr").style.display="none";$("cmSubmit").disabled=true;
+ VeloraData.request("/api/v1/support/tickets",{method:"POST",body:JSON.stringify({subject:s,message:b})}).then(function(){
+  $("cmSubmit").disabled=false;$("cmSubject").value="";$("cmBody").value="";
+  window.VeloraDialog&&VeloraDialog.toast?VeloraDialog.toast(T("تیکت شما ثبت شد.")):null;
+  loadList();
+ }).catch(function(e){$("cmSubmit").disabled=false;$("cmFormErr").style.display="block";$("cmFormErr").textContent=esc((e&&e.message)||T("خطا در بارگذاری؛ دوباره تلاش کنید."));});
+};
+function openTicket(id){
+ VeloraData.request("/api/v1/support/tickets/"+id).then(function(d){
+  ticket=d;$("cmNewCard").style.display="none";$("cmListCard").style.display="none";$("cmThreadCard").style.display="block";$("cmCancelNew").style.display="inline-block";
+  var c=d.conversation;
+  $("cmThreadSubject").textContent="#"+c.id+" — "+(c.subject||"");
+  $("cmThreadStatus").innerHTML=statusBadge(c.status);
+  $("cmThreadWf").innerHTML=wfBadge(c.waiting_for);
+  $("cmThreadUnread").innerHTML=Number(c.unread_user_count||0)>0?'<span style="padding:3px 9px;border-radius:999px;background:rgba(255,142,152,.15);color:#ff8e98;font-size:11px;font-weight:700;">'+esc(T("خوانده‌نشده"))+'</span>':"";
+  $("cmReopenBtn").style.display=(c.status==="closed"||c.status==="archived")?"inline-block":"none";
+  $("cmReplyWrap").style.display=(c.status==="closed"||c.status==="archived")?"none":"grid";
+  var msgs=d.messages||[];$("cmMsgs").innerHTML=msgs.map(function(m){
+   var mine=m.sender_type==="user";
+   var who=mine?T("شما"):(m.sender_type==="admin"?T("پشتیبانی"):T("تیکت"));
+   var col=mine?"#fce38a":"#4CD39A";
+   return '<div style="padding:12px;border:1px solid '+(mine?"rgba(252,227,138,.3)":"rgba(76,211,154,.3)")+';border-radius:12px;background:rgba(255,255,255,.04);">'
+    +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><b style="color:'+col+';font-size:12px;">'+esc(who)+'</b>'
+    +'<span style="color:#8fa0c0;font-size:11px;" dir="ltr">'+esc(m.created_at||"")+'</span></div>'
+    +'<div style="margin-top:8px;font-size:13px;line-height:1.8;color:#e8eef7;">'+body(m.body)+'</div></div>';
+  }).join("");
+ }).catch(function(){window.cmShowList();});
+}
+function openTicketWrap(id){openTicket(id)}
+window.openTicket=openTicket;
+window.cmSendReply=function(){
+ if(!ticket)return;var b=$("cmReply").value.trim();if(!b)return;
+ $("cmReplyBtn").disabled=true;
+ VeloraData.request("/api/v1/support/tickets/"+ticket.conversation.id+"/messages",{method:"POST",body:JSON.stringify({message:b})}).then(function(){
+  $("cmReplyBtn").disabled=false;$("cmReply").value="";
+  window.VeloraDialog&&VeloraDialog.toast?VeloraDialog.toast(T("پاسخ ارسال شد.")):null;
+  openTicket(ticket.conversation.id);loadList();
+ }).catch(function(e){$("cmReplyBtn").disabled=false;alert((e&&e.message)||"");});
+};
+window.cmReopen=function(){
+ if(!ticket)return;
+ VeloraData.request("/api/v1/support/tickets/"+ticket.conversation.id+"/reopen",{method:"POST"}).then(function(){
+  window.VeloraDialog&&VeloraDialog.toast?VeloraDialog.toast(T("تیکت بازگشایی شد و منتظر بررسی پشتیبانی است.")):null;
+  openTicket(ticket.conversation.id);loadList();
+ }).catch(function(e){alert((e&&e.message)||"");});
+};
+var params=new URLSearchParams(location.search);
+if(VeloraData&&VeloraData.getUser){
+ var u=VeloraData.getUser();
+ if(u&&u.fullName)$("userName").textContent=u.fullName;
+ if(u&&u.email)$("userEmail").textContent=u.email;
+}
+loadList();
+if(params.get("ticket"))openTicket(parseInt(params.get("ticket"),10)||0);
+})();
+</script>
 <script src="/public/assets/velora-ui-sound.js?v=2026.08.13.2"></script>
 <script src="/public/assets/velora-dialog.js?v=2026.08.22.1"></script>
 </body></html>

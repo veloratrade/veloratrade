@@ -5,7 +5,7 @@ REPO=os.path.abspath(os.path.join(os.path.dirname(__file__),"..","..",".."))
 ROOT=os.path.dirname(os.path.abspath(__file__))
 def loadmode(): return json.load(open(os.path.join(ROOT,"mode.json")))
 def u_find(self,uid): return self._find(uid)
-PERMS_SUPER=["overview.view","users.view","users.suspend","users.activate","users.manage_subscription","users.verify_email","audit.view","audit.view_sensitive","system.health.view","system.logs.view","settings.view","feature_flags.view","billing.view","integrations.view","aiManage","analytics.view","users.change_role","system.settings.manage","feature_flags.edit","integrations.manage","aiRouteManage"]
+PERMS_SUPER=["communication.view","communication.reply","overview.view","users.view","users.suspend","users.activate","users.manage_subscription","users.verify_email","audit.view","audit.view_sensitive","system.health.view","system.logs.view","settings.view","feature_flags.view","billing.view","integrations.view","aiManage","analytics.view","users.change_role","system.settings.manage","feature_flags.edit","integrations.manage","aiRouteManage"]
 PERMS_ADMIN=[p for p in PERMS_SUPER if p not in ("users.change_role","audit.view_sensitive","system.settings.manage","feature_flags.edit","integrations.manage","aiRouteManage")]
 PERMS_LIMITED=["overview.view","users.view"]
 PERMS_ADMIN_MINUS=[p for p in PERMS_ADMIN if p!="billing.view"]
@@ -243,6 +243,42 @@ class H(SimpleHTTPRequestHandler):
         if up.path=="/api/v1/admin/integrations/email":
             I=self.server.integ
             self._j(200,{"integration":dict(I["email"])}); return
+        if up.path=="/api/v1/admin/communications/tickets":
+            m=loadmode()
+            if m.get("fail_comm"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
+            if m["mode"] in ("noauth","user403","panel_false"): self._j(403,{"status":"error","error":{"code":"PERMISSION_DENIED"}}); return
+            from urllib.parse import parse_qs as _pqs2
+            q=_pqs2(up.query)
+            def crow(i,subj,st,wf,unread):
+                return {"id":i,"user_id":1,"subject":subj,"status":st,"waiting_for":wf,"priority":None,
+                        "last_message_at":"2026-09-08 10:0%d:00"%(i%60),"unread_admin_count":unread,"unread_user_count":0,
+                        "created_at":"2026-09-08 09:5%d:00"%(i%60),"updated_at":"2026-09-08 10:0%d:00"%(i%60),
+                        "user_email":"ali@velora.test","user_name":"Ali User","user_locale":"en"}
+            items=[crow(1042,"MT5 account will not connect","open","admin",1),
+                   crow(1043,"Deposit not reflected","pending","user",0),
+                   crow(1044,"KYC question","closed","none",0)]
+            def q1(k):
+                v=q.get(k); return (v[0] if isinstance(v,list) and v else "") if v is not None else ""
+            if q1("waiting_for")=="admin": items=[items[0]]
+            elif q1("status")=="pending": items=[items[1]]
+            elif q1("status")=="closed": items=[items[2]]
+            if m.get("comm_empty"): items=[]
+            self._j(200,{"items":items,"total":len(items),"page":1,"per_page":20,
+                          "counters":{"inbox":1,"open":1,"pending":1,"closed":1}}); return
+        if up.path.startswith("/api/v1/admin/communications/tickets/"):
+            m=loadmode()
+            if m.get("fail_comm"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
+            if m["mode"] in ("noauth","user403","panel_false"): self._j(403,{"status":"error","error":{"code":"PERMISSION_DENIED"}}); return
+            tid=up.path.rstrip("/").rsplit("/",1)[-1]
+            self._j(200,{"conversation":{"id":int(tid),"user_id":1,"subject":"MT5 account will not connect","status":"open",
+                        "waiting_for":"admin","priority":None,"first_reply_at":None,"last_message_at":"2026-09-08 10:01:00",
+                        "unread_admin_count":1,"unread_user_count":0,"created_at":"2026-09-08 09:50:00","updated_at":"2026-09-08 10:01:00",
+                        "user_email":"ali@velora.test","user_name":"Ali User","user_locale":"en","user_status":"active"},
+                        "messages":[
+                          {"id":1,"conversation_id":int(tid),"sender_type":"user","sender_user_id":1,
+                           "body":"I cannot connect my MT5 account #123456 since Monday. Error E-404.","message_type":"text",
+                           "metadata_json":None,"created_at":"2026-09-08 09:50:00","edited_at":None,"deleted_at":None}]})
+            return
         if up.path=="/api/v1/admin/settings":
             m=loadmode()
             if m.get("fail_settings"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
@@ -445,6 +481,40 @@ class H(SimpleHTTPRequestHandler):
         from urllib.parse import urlparse
         up=urlparse(self.path)
         m0=loadmode()
+        if up.path.startswith("/api/v1/admin/communications/tickets/"):
+            m=loadmode()
+            length=int(self.headers.get("Content-Length") or 0)
+            body={}
+            if length:
+                try: body=json.loads(self.rfile.read(length) or b"{}")
+                except: body={}
+            if m["mode"] in ("noauth","user403","panel_false"): self._j(403,{"status":"error","error":{"code":"PERMISSION_DENIED"}}); return
+            if up.path.endswith("/copilot"):
+                if m.get("ai_down"): self._j(200,{"copilot":{"available":False,"likely_issue":None,"confidence":"low","evidence":[],"recommended_action":None,"suggested_reply":None,"provider":None,"error":"copilot unavailable"}}); return
+                self._j(200,{"copilot":{"available":True,"likely_issue":"Initial MT5 synchronization failed.","confidence":"high",
+                    "evidence":["Account connection exists","Last synchronization failed","Trades imported: 0"],
+                    "recommended_action":"Ask the user to reconnect the MT5 account and retry synchronization.",
+                    "suggested_reply":"Hello Ali, we checked your account and the initial synchronization did not complete. Please reconnect your MT5 account and run a sync; if it still fails, send us the exact error text.","provider":"stub","error":None}}); return
+            if up.path.endswith("/copilot/draft"):
+                if m.get("ai_down"): self._j(200,{"draft":{"available":False,"text":None,"provider":None,"error":"copilot unavailable"}}); return
+                self._j(200,{"draft":{"available":True,"text":"Dear Ali, we have reviewed your connection issue and prepared the steps below. Kindly reconnect your account and start a fresh synchronization.","provider":"stub","error":None}}); return
+            if up.path.endswith("/translate"):
+                if m.get("ai_down"): self._j(200,{"translation":{"available":False,"error":"Translation unavailable","translated_body":"","provider":None,"source_language":"en","target_language":"fa","confidence":"unavailable"}}); return
+                if "message_id" in body:
+                    self._j(200,{"translation":{"source_language":"en","target_language":"fa","translated_body":"نمی\u200cتوانم حساب MT5 خود را متصل کنم. خطای E-404.","provider":"stub","model":None,"confidence":"translated"}}); return
+                self._j(200,{"translation":{"source_language":"fa","target_language":"en","translated_body":"Please reconnect your MT5 account and retry the synchronization.","provider":"stub","model":None,"confidence":"translated"}}); return
+            if up.path.endswith("/messages"):
+                if m.get("fail_comm"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
+                m["comm_reply_calls"]=m.get("comm_reply_calls",0)+1
+                json.dump(m,open(os.path.join(ROOT,"mode.json"),"w"))
+                self._j(200,{"message":{"id":99,"created_at":"2026-09-08 10:05:00"}}); return
+            if up.path.endswith("/status"):
+                act=(body or {}).get("action","")
+                st="closed" if act=="close" else ("archived" if act=="archive" else ("pending" if act=="reopen" else "open"))
+                self._j(200,{"status":st,"waiting_for":"none" if st in ("closed","archived") else ("user" if act=="reopen" else "admin")}); return
+            self._j(404,{"status":"error","error":{"code":"NOT_FOUND"}}); return
+        if up.path=="/api/v1/support/tickets":
+            self._j(201,{"ticket":{"id":1042}}); return
         if up.path=="/api/v1/admin/users":
             # Create User (Phase 1) — mirrors the real UserManagementController::store shape.
             m=loadmode()

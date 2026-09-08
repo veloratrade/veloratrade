@@ -48,7 +48,8 @@ try:
          "billing-overview","billing-plans","billing-subs","security-signups","security-logins",
          "security-sessions","security-devices","security-audit","security-events",
          "system-health","system-logs","system-diagnostics","system-flags",
-         "settings-admins","settings-permissions","settings-config"}
+         "settings-admins","settings-permissions","settings-config",
+         "comm-inbox","comm-open","comm-pending","comm-closed"}  # Phase 9A: +4 Communication Center routes
         statics={d["route"] for d in R if not d["dynamic"]}
         OUT["A_count"]=len(R)
         OUT["A_static_ok"]=statics==expected
@@ -70,7 +71,7 @@ try:
                 title:document.title,
                 active:(document.querySelector('.navitem.active')||{}).dataset?document.querySelector('.navitem.active').dataset.route:null}}""",
                 {"nf":NF,"badge":BADGE})
-            if st["nf"] or (rt not in ("overview","users","ai-providers","ai-route","ai-usage","integrations-n8n","integrations-metaapi","integrations-email","ai-health","system-health","system-logs","security-audit","security-signups","security-logins","settings-permissions","settings-admins","settings-config","system-diagnostics","system-flags","analytics-users","analytics-trading","analytics-ai","analytics-revenue","billing-overview","trading-accounts","trading-trades") and not st["badge"]):
+            if st["nf"] or (rt not in ("overview","users","ai-providers","ai-route","ai-usage","integrations-n8n","integrations-metaapi","integrations-email","ai-health","system-health","system-logs","security-audit","security-signups","security-logins","settings-permissions","settings-admins","settings-config","system-diagnostics","system-flags","analytics-users","analytics-trading","analytics-ai","analytics-revenue","billing-overview","trading-accounts","trading-trades","comm-inbox","comm-open","comm-pending","comm-closed") and not st["badge"]):
                 bad.append((rt,"page",st))
             if not st["crumb"].strip().endswith(lbl[rt]) and rt!="overview":
                 bad.append((rt,"crumb:"+st["crumb"]))
@@ -248,7 +249,7 @@ try:
 
         # ---------- W. no fake data anywhere ----------
         wbad=[]
-        IMPL={"overview","users","ai-providers","ai-route","ai-usage","integrations-n8n","integrations-metaapi","integrations-email","ai-health","system-health","system-logs","security-audit","security-signups","security-logins","settings-permissions","settings-admins","settings-config","system-diagnostics","system-flags","analytics-users","analytics-trading","analytics-ai","analytics-revenue","billing-overview","trading-accounts","trading-trades"}
+        IMPL={"overview","users","ai-providers","ai-route","ai-usage","integrations-n8n","integrations-metaapi","integrations-email","ai-health","system-health","system-logs","security-audit","security-signups","security-logins","settings-permissions","settings-admins","settings-config","system-diagnostics","system-flags","analytics-users","analytics-trading","analytics-ai","analytics-revenue","billing-overview","trading-accounts","trading-trades","comm-inbox","comm-open","comm-pending","comm-closed"}
         for rt in sorted(expected):
             pgp.evaluate(f"()=>location.hash='#/{rt}'"); pgp.wait_for_timeout(70)
             if rt in IMPL: continue  # F-3 batch1+2: wired pages (data-source proof in the F-3 suites)
@@ -305,9 +306,9 @@ fails=[]
 def chk(k,cond):
     if not cond: fails.append(k)
 chk("js",len(OUT["js"])==0)
-chk("A_count",OUT["A_count"]==33)  # 32 static + users/:id dynamic
+chk("A_count",OUT["A_count"]==37)  # 36 static (32 + 4 comm, Phase 9A) + users/:id dynamic
 chk("A_static",OUT["A_static_ok"]); chk("A_no_design",OUT["A_no_design"])
-chk("A_meta",OUT["A_meta_ok"] and OUT["A_impl_set"]==["ai-health","ai-providers","ai-route","ai-usage","analytics-ai","analytics-revenue","analytics-trading","analytics-users","billing-overview","integrations-email","integrations-metaapi","integrations-n8n","overview","security-audit","security-logins","security-signups","settings-admins","settings-config","settings-permissions","system-diagnostics","system-flags","system-health","system-logs","trading-accounts","trading-trades","users","users/:id"]); chk("A_u360",OUT["A_u360"])
+chk("A_meta",OUT["A_meta_ok"] and OUT["A_impl_set"]==["ai-health","ai-providers","ai-route","ai-usage","analytics-ai","analytics-revenue","analytics-trading","analytics-users","billing-overview","comm-closed","comm-inbox","comm-open","comm-pending","integrations-email","integrations-metaapi","integrations-n8n","overview","security-audit","security-logins","security-signups","settings-admins","settings-config","settings-permissions","system-diagnostics","system-flags","system-health","system-logs","trading-accounts","trading-trades","users","users/:id"]); chk("A_u360",OUT["A_u360"])
 chk("B_routes",not OUT["B_bad"]); chk("B_events",OUT["B_events"])
 chk("C_nf",OUT["C_nf"]); chk("C_design",OUT["C_design"]); chk("C_deep",OUT["C_deep"]); chk("C_back",OUT["C_back"])
 chk("D_u360",OUT["D_u360"]); chk("D_nosidebar",OUT["D_nosidebar"])
@@ -318,7 +319,7 @@ chk("G_single",OUT["G_single_switch"]); chk("G_group_nav",OUT["G_group_after_nav
 chk("H_drawer",OUT["H_closed"]); chk("H_focus",OUT["H_focus"]); chk("H_route",OUT["H_route"])
 chk("I_open",OUT["I_open"] and OUT["I_focus"]); chk("I_esc",OUT["I_esc"]); chk("I_btn",OUT["I_btn"])
 chk("J_fa",OUT["J_fa"]); chk("J_en",OUT["J_en"]); chk("J_kw",OUT["J_kw"]); chk("J_group",OUT["J_group"]); chk("J_empty",OUT["J_empty"])
-chk("K_count",OUT["K_count"]==32); chk("K_idx2",OUT["K_idx2"]); chk("K_home",OUT["K_home"]); chk("K_end",OUT["K_end"])
+chk("K_count",OUT["K_count"]==36)  # Phase 9A: +4 comm routes in palette; chk("K_idx2",OUT["K_idx2"]); chk("K_home",OUT["K_home"]); chk("K_end",OUT["K_end"])
 chk("K_enter",OUT["K_enter_nav"]=="#/settings-config"); chk("K_focus",OUT["K_focus_restored"])
 chk("L_hidden",OUT["L_hidden"]); chk("L_denied",OUT["L_denied"]); chk("L_reload",OUT["L_denied_after_reload"]); chk("L_pal",OUT["L_palette_omits"])
 chk("M_api",OUT["M_api"]==["/api/v1/admin/me","/api/v1/admin/overview","/api/v1/admin/system/health","/api/v1/auth/refresh"])  # F-3: permitted page fetches only — no billing/ai calls for adminminus

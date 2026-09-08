@@ -14,7 +14,7 @@ use Velora\Core\Request;
  *
  * Covers: GET /api/v1/admin/permissions (settings.view gate via the REAL
  * middleware closures — user denied, guest 401, admin+super allowed), exact
- * response shape == Role::permissionMap() (server-owned truth, 22 permissions,
+ * response shape == Role::permissionMap() (server-owned truth, 24 permissions,
  * super_admin ⊇ admin, user = []), no secret material, single route
  * registration statically verified, deny-by-default helpers (unknown
  * role/permission), and the existing audited role-change path (plain admin:
@@ -75,8 +75,8 @@ if (!in_array(getenv('VELORA_TEST_CHILD'), ['1', 'true'], true)) {
     $map = $j['data']['permissions'] ?? [];
     check(array_keys($map) === ['user', 'admin', 'super_admin'], 'response shape: exactly the three stored roles');
     check(count($map['user'] ?? [1]) === 0, 'user role has zero permissions (deny-by-default)');
-    check(count($map['admin'] ?? []) === 16, 'admin role carries exactly 16 permissions');
-    check(count($map['super_admin'] ?? []) === 22, 'super_admin carries exactly 22 permissions');
+    check(count($map['admin'] ?? []) === 18, 'admin role carries exactly 18 permissions');
+    check(count($map['super_admin'] ?? []) === 24, 'super_admin carries exactly 24 permissions');
     check(empty(array_diff($map['admin'] ?? ['x'], $map['super_admin'] ?? [])), 'super_admin is a superset of admin');
     $expected = json_decode(spawn($SELF, $ROOT, 'map_expected')['out'], true) ?: [];
     check($map === $expected && $expected !== [], 'returned matrix is EXACTLY Role::permissionMap() (single server-side source of truth)');
@@ -88,7 +88,7 @@ if (!in_array(getenv('VELORA_TEST_CHILD'), ['1', 'true'], true)) {
     check(($j['unknownRoleCan'] ?? true) === false, 'Role::can with UNKNOWN role -> deny');
     check(($j['unknownPermCan'] ?? true) === false, 'Role::can with UNKNOWN permission -> deny');
     check(($j['userRoleCan'] ?? true) === false, 'Role::can(user, users.view) -> deny');
-    check(count($j['allPerms'] ?? []) === 22 && count(array_unique($j['allPerms'] ?? [])) === 22, 'permission inventory = 22 unique identifiers');
+    check(count($j['allPerms'] ?? []) === 24 && count(array_unique($j['allPerms'] ?? [])) === 24, 'permission inventory = 24 unique identifiers');
 
     // ===== route registration (static, test_issue1 style) =====
     $r = spawn($SELF, $ROOT, 'route_line');

@@ -44,8 +44,8 @@ for emoji in ("✉️", "✔", "📊", "🏆"):
     if emoji in notification:
         raise SystemExit(f"legacy emoji remains in NotificationService: {emoji}")
 
-if notification.count("return self::sendWithIcon(") != 8:
-    raise SystemExit("all eight transactional methods must use sendWithIcon")
+if notification.count("return self::sendWithIcon(") != 10:
+    raise SystemExit("all ten transactional methods must use sendWithIcon")
 if 'src="cid:{$iconCidSafe}"' not in template:
     raise SystemExit("EmailTemplate CID image contract missing")
 if "'content_id' => mb_substr((string) $cid" not in mailer:
