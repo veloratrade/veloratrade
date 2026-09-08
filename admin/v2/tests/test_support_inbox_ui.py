@@ -164,6 +164,23 @@ try:
             if o > 1: ok_w = False
         chk("L_widths", ok_w)
         chk("L_labels", pg.evaluate("()=>{const t=document.querySelector('#cmReply');return !t||!!t.getAttribute('aria-label')||!!t.closest('label');}"))
+
+        # single-submit: three synchronous sends must produce exactly one POST (CM.busy guard)
+        json.dump({"mode": "super"}, open(MODE, "w"))
+        pg.evaluate("()=>f9OpenTicket(1042)"); pg.wait_for_timeout(1400)
+        pg.fill("#cmReply", "x")
+        pg.evaluate("()=>{f9SendReply();f9SendReply();f9SendReply();}"); pg.wait_for_timeout(1400)
+        chk("L_send_single_submit", int(json.load(open(MODE)).get("comm_reply_calls", 0)) == 1)
+
+        # FA/rtl widths on comm-inbox (L group above ran LTR/EN)
+        pg.evaluate("()=>localStorage.setItem('velora_locale','fa')"); pg.goto(URL); pg.wait_for_timeout(1600)
+        pg.evaluate("()=>location.hash='#/comm-inbox'"); pg.wait_for_timeout(1500)
+        ok_fa = pg.evaluate("()=>document.documentElement.dir==='rtl'")
+        for w in widths:
+            pg.set_viewport_size({"width": w, "height": 950}); pg.wait_for_timeout(450)
+            o = pg.evaluate("()=>document.documentElement.scrollWidth-document.documentElement.clientWidth")
+            if o > 1: ok_fa = False
+        chk("L_widths_fa_rtl", ok_fa)
         pg.close()
 finally:
     srv.terminate()

@@ -186,6 +186,30 @@ try:
             ov = pg2.evaluate("()=>document.documentElement.scrollWidth-document.documentElement.clientWidth")
             if ov > 1: ok_w = False
         chk("P_widths", ok_w)
+
+        # ===== Q. double-submit protection: triple synchronous click -> exactly one POST =====
+        boot(mode="super", user_locale="en")
+        pg2.reload(); pg2.wait_for_timeout(1800)
+        open_row(pg2, 1042)
+        pg2.fill("#cmReply", "ping")
+        pg2.evaluate("()=>{const b=document.getElementById('cmReplyBtn');b.click();b.click();b.click();}")
+        pg2.wait_for_timeout(1200)
+        chk("Q_no_double_submit", int(mode_read().get("sup_reply_calls", 0)) == 1)
+
+        # ===== R. FA canonical widths under rtl =====
+        # A signed-in fa user must stay rtl: the R2 post-paint sync adopts the
+        # session's user.locale (velora:user-locale) on any non-prefixed URL, so
+        # the session locale (not just the baked attribute) decides. Boot the
+        # session with user_locale=fa AND persist the client choice to match.
+        boot(mode="super", user_locale="fa")
+        pg2.evaluate("()=>{document.cookie='velora_locale=fa;path=/';localStorage.setItem('velora.locale','fa');}")
+        pg2.goto(FA); pg2.wait_for_timeout(2400)
+        ok_fa = pg2.evaluate("()=>document.documentElement.dir==='rtl'")
+        for w in (1440, 768, 390, 360):
+            pg2.set_viewport_size({"width": w, "height": 950}); pg2.wait_for_timeout(450)
+            ov = pg2.evaluate("()=>document.documentElement.scrollWidth-document.documentElement.clientWidth")
+            if ov > 1: ok_fa = False
+        chk("R_fa_widths_rtl", ok_fa)
         pg2.close()
 finally:
     try:
