@@ -6,6 +6,7 @@ namespace Velora\Auth;
 
 use PDO;
 use Velora\Core\Database;
+use Velora\Core\PlatformSettings;
 
 /**
  * Data access for the users table.
@@ -47,7 +48,11 @@ final class UserRepository
      */
     public function create(array $data): int
     {
-        $locale = $data['locale'] ?? 'fa';
+        // Phase 8 (8a): platform default locale (admin-managed, env-inheritable,
+        // default 'fa' — the pre-Phase-8 hard-coded value) instead of a literal.
+        $locale = isset($data['locale']) && trim((string) $data['locale']) !== ''
+            ? (string) $data['locale']
+            : PlatformSettings::defaultLocale();
         $source = $data['locale_source'] ?? 'default';
         $stmt = Database::connection()->prepare(
             'INSERT INTO users (email, password_hash, full_name, timezone, locale, locale_source)
@@ -86,7 +91,7 @@ final class UserRepository
             'plan' => $data['plan'] ?? 'free',
             'subscription_status' => $data['subscription_status'] ?? 'none',
             'timezone' => $data['timezone'] ?? 'UTC',
-            'locale' => $data['locale'] ?? 'fa',
+            'locale' => isset($data['locale']) && trim((string) $data['locale']) !== '' ? (string) $data['locale'] : PlatformSettings::defaultLocale(),
             'source' => 'default',
             'plan_started_at' => ($data['plan'] ?? 'free') === 'pro' ? gmdate('Y-m-d H:i:s') : null,
             'plan_updated_at' => ($data['plan'] ?? 'free') === 'pro' ? gmdate('Y-m-d H:i:s') : null,
