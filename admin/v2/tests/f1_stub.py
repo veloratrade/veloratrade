@@ -645,8 +645,9 @@ class H(SimpleHTTPRequestHandler):
                 ident={"admin":(4,"Sahar Rahimi","s.rahimi@veloratrade.ir"),
                        "super":(5,"Arman Kaveh","a.kaveh@veloratrade.ir"),
                        "limited":(7,"Neda Karimi","n.karimi@veloratrade.ir")}
-                _id,_fn,_em=ident.get(loadmode()["mode"],(4,None,None))
-                _u={"id":_id,"role":"admin","locale":"fa"}
+                m=loadmode()
+                _id,_fn,_em=ident.get(m["mode"],(4,None,None))
+                _u={"id":_id,"role":"admin","locale":m.get("user_locale","fa")}   # user_locale mode flag: optional EN post-paint sync proof
                 if _fn: _u["fullName"]=_fn; _u["email"]=_em
                 self._j(200,{"tokens":{"accessToken":"stub-token","user":_u}})
         elif self.path.startswith("/api/v1/auth/logout"):
