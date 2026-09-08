@@ -2810,7 +2810,7 @@ function systemDiagnosticsPage(){
  let h=pagehead(t("nav.system-diagnostics"),t("sd.desc"),`<button class="btn sm" onclick="sdRefresh()" ${SD.busy?"disabled":""}>${esc(SD.busy?t("sd.refreshing"):t("sd.refresh"))}</button>`);
  if(SD.st==="loading"&&!SD.data)return h+`<div class="card"><div class="cb">${f3skel(6)}</div></div>`;
  if(SD.st==="error")return h+f3errBox(SD.err);
- const comps=SD.data.components||{};
+ const comps=(SD.data&&(SD.data.components||SD.data))||{}; /* nested (real) or flat (legacy diagnostics consumers) */
  const keys=Object.keys(comps);
  h+=`<div class="card"><div class="ch"><h3>${esc(t("nav.system-diagnostics"))}</h3><div class="right">${SD.data.checkedAt?`<span class="cellsub">${esc(t("sd.last"))}: ${esc(String(SD.data.checkedAt))}</span>`:""}</div></div><div class="cb">`;
  if(!keys.length){h+=empty(VI.box,t("sd.col.component"),"");h+="</div></div>";return h;}

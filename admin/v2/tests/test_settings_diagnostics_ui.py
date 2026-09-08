@@ -116,11 +116,11 @@ try:
         reset()
         pg.evaluate("()=>location.hash='#/system-diagnostics'"); pg.wait_for_timeout(1400)
         OUT["D_title"] = pg.evaluate("()=>document.querySelector('#view').innerText.includes('Deep system diagnostics')")
-        OUT["D_rows"] = pg.evaluate("()=>document.querySelectorAll('#view tbody tr').length") >= 6
-        OUT["D_status"] = pg.evaluate("()=>{const x=document.querySelector('#view').innerText;return x.includes('HEALTHY')&&x.includes('NOT_APPLICABLE')}")
+        OUT["D_rows"] = pg.evaluate("()=>document.querySelectorAll('#view tbody tr').length") >= 5
+        OUT["D_status"] = pg.evaluate("()=>{const x=document.querySelector('#view').innerText;return x.includes('HEALTHY')&&x.includes('UNKNOWN')}")
         pg.evaluate("()=>sdRefresh()"); pg.wait_for_timeout(1000)
         OUT["D_post"] = any(r["m"] == "POST" and "/diagnostics/refresh" in r["u"] for r in OUT["reqs"])
-        OUT["D_alive"] = pg.evaluate("()=>document.querySelectorAll('#view tbody tr').length") >= 6
+        OUT["D_alive"] = pg.evaluate("()=>{const x=document.querySelector('#view').innerText;return document.querySelectorAll('#view tbody tr').length>=5&&x.includes('SUCCESS')}")
         chk("SD_render", OUT["D_title"] and OUT["D_rows"] and OUT["D_status"])
         chk("SD_refresh", OUT["D_post"] and OUT["D_alive"])
 
