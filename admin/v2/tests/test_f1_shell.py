@@ -138,13 +138,13 @@ def chk(k,cond):
     if not cond: fails.append(k)
 chk("js",len(OUT["js"])==0)
 chk("A_conn",OUT["A_conn"]=="متصل"); chk("A_env",OUT["A_envchip"] in ("LIVE","LOCAL"))  # shell refinement: env chip = real backend-connection state (never a hostname)
-chk("A_nav",OUT["A_navitems_admin"]==32)  # user360 not in NAV by frozen design (33 routes, 32 nav entries)
+chk("A_nav",OUT["A_navitems_admin"]==36)  # user360 not in NAV by frozen design; Phase 9A: 37 routes, 36 nav entries (+4 comm)
 chk("A_overview_real",OUT["A_overview_real"])
 chk("A_users_pending",OUT["A_users_pending"])
 chk("A_gated",OUT["A_gated_hidden"]["analytics_hidden"] and OUT["A_gated_hidden"]["billing_hidden"] and OUT["A_gated_hidden"]["settings_hidden"] and OUT["A_gated_hidden"]["users_visible"] and OUT["A_gated_hidden"]["count"]==6)
 chk("A_aria",OUT["A_aria_current"]=="page")
-chk("B_super",OUT["B_navitems_super"]==32)
-chk("B_pal",OUT["B_pal_items"]==32 and OUT["B_pal_no_design"])
+chk("B_super",OUT["B_navitems_super"]==36)  # Phase 9A: +4 comm
+chk("B_pal",OUT["B_pal_items"]==36 and OUT["B_pal_no_design"])  # Phase 9A: +4 comm
 chk("B_palnav",OUT["B_pal_nav"]=="#/system-flags")
 chk("C_401",OUT["C_401_redirect"] is True)
 chk("D_403",OUT["D_403_panel"]); chk("E_panel",OUT["E_panel_false"])

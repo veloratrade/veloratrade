@@ -2,12 +2,13 @@
   "_meta": {
     "purpose": "Baseline allowlist for existing localization-quality exceptions. CI blocks any new exceptions beyond this approved set.",
     "generated_from": "main@f65eb5c",
-    "updated_at": "2026-08-24",
+    "updated_at": "2026-09-09",
     "notes": [
       "en.empty is allowlisted only for intentional landing-page title suffix keys.",
       "fa.en.identical is allowlisted only for approved do-not-translate brand, product, version, or token strings.",
       "orphanKeys baselines current repository debt; any new orphan key or stale allowlist entry fails CI.",
-      "The 11 pages.trades.new.p05.session_* keys are RESERVED for the proposed trading-session selector (Phase 3G). Phase 3G is NOT APPROVED and NOT active (MarketSessionSpec::APPROVED = false, zero configured windows), so no template references them yet. They are allowlisted by exact key until 3G is approved and wired, or removed if rejected; they are not wildcarded and do not relax detection of any other orphan."
+      "The 11 pages.trades.new.p05.session_* keys are RESERVED for the proposed trading-session selector (Phase 3G). Phase 3G is NOT APPROVED and NOT active (MarketSessionSpec::APPROVED = false, zero configured windows), so no template references them yet. They are allowlisted by exact key until 3G is approved and wired, or removed if rejected; they are not wildcarded and do not relax detection of any other orphan.",
+      "The 15 pages.support.* keys orphaned by the Phase 9A support landing replacement (Support Ticket System) are intentionally retained legacy inventory: the 12 hashed keys remain pinned in the frozen-hash registry and the 3 email.* keys are legacy direct-email landing strings; none has a live consumer. Future removal must be a dedicated cleanup updating catalogs, chunks, artifacts, fixtures and frozen inventory consistently, pruning these entries at the same time."
     ]
   },
   "catalogAnomalies": {
@@ -214,6 +215,21 @@
     "pages.privacy.at.velora.the.privacy.of.your.personal.69e490ab",
     "pages.privacy.privacy.velora.e060e8ab",
     "pages.privacy.we.never.disclose.your.account.information.strategies.1af0a81a",
+    "pages.support.0.tickets.6508491c",
+    "pages.support.avg.response.time.828bf414",
+    "pages.support.connect.metatrader.70bab1b3",
+    "pages.support.do.i.need.my.main.account.password.cb75361e",
+    "pages.support.email.aria",
+    "pages.support.email.description",
+    "pages.support.email.title",
+    "pages.support.enter.your.account.number.login.and.read.328d1169",
+    "pages.support.how.do.i.connect.a.vittaverse.or.ed3f1278",
+    "pages.support.less.than.15.minutes.5f3f0a1e",
+    "pages.support.no.velora.never.asks.for.your.main.96d8fb25",
+    "pages.support.online.responsive.4fa3a505",
+    "pages.support.quick.account.connection.guide.and.dedicated.support.29ad7a33",
+    "pages.support.service.status.13dfd977",
+    "pages.support.to.page.00b02521",
     "pages.terms.all.velora.intellectual.property.and.brand.rights.a613eb1e",
     "pages.terms.terms.velora.debcf7e0",
     "pages.terms.using.velora.s.trading.platform.and.ai.50f2c39a",

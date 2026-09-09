@@ -903,6 +903,24 @@
       "reason": "t() fallback labels + Persian OCR regexes + RC-3 bilingual partial-extraction warning (documented legacy t(fa,en)); migrate to central catalog",
       "resolution_pr": "PR-08c",
       "updated_at": "2026-08-30"
+    },
+    {
+      "id": "V3-036",
+      "file": "localized/en/support/index.html",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 39,
+      "category": "runtime-fallback",
+      "reason": "the support page keeps a window.__SUPKEYS label->catalog-key dictionary plus Persian-label fallback keys for its T() runtime lookup (frozen single-file design); these literals are i18n infrastructure (dictionary keys), not user-facing hardcoded copy — every rendered string resolves through pages.support.* catalog keys in both locales",
+      "resolution_pr": null
+    },
+    {
+      "id": "V3-037",
+      "file": "localized/fa/support/index.html",
+      "pattern": "[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]",
+      "count": 39,
+      "category": "runtime-fallback",
+      "reason": "the support page keeps a window.__SUPKEYS label->catalog-key dictionary plus Persian-label fallback keys for its T() runtime lookup (frozen single-file design); these literals are i18n infrastructure (dictionary keys), not user-facing hardcoded copy — every rendered string resolves through pages.support.* catalog keys in both locales",
+      "resolution_pr": null
     }
   ],
   "baseline": {
@@ -911,5 +929,5 @@
     "frozen_hashed_keys": 879,
     "note": "Allowlist integrity audit narrowed broad literal rules, removed stale matches, and added reason/source metadata. Baseline now counts only real remaining hardcoded UI literals plus reviewed technical exemptions."
   },
-  "updated_note": "2026-08-30: V3-025 count 26->27 (RC-3 partial-extraction bilingual warning, documented allowlisted legacy dictionary; not a new unallowlisted violation)"
+  "updated_note": "Phase 9A: V3-036/V3-037 document the support-page __SUPKEYS dictionary (39 filtered literals each) added by the support ticket system."
 }

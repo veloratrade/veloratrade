@@ -5,7 +5,7 @@ REPO=os.path.abspath(os.path.join(os.path.dirname(__file__),"..","..",".."))
 ROOT=os.path.dirname(os.path.abspath(__file__))
 def loadmode(): return json.load(open(os.path.join(ROOT,"mode.json")))
 def u_find(self,uid): return self._find(uid)
-PERMS_SUPER=["overview.view","users.view","users.suspend","users.activate","users.manage_subscription","users.verify_email","audit.view","audit.view_sensitive","system.health.view","system.logs.view","settings.view","feature_flags.view","billing.view","integrations.view","aiManage","analytics.view","users.change_role","system.settings.manage","feature_flags.edit","integrations.manage","aiRouteManage"]
+PERMS_SUPER=["communication.view","communication.reply","overview.view","users.view","users.suspend","users.activate","users.manage_subscription","users.verify_email","audit.view","audit.view_sensitive","system.health.view","system.logs.view","settings.view","feature_flags.view","billing.view","integrations.view","aiManage","analytics.view","users.change_role","system.settings.manage","feature_flags.edit","integrations.manage","aiRouteManage"]
 PERMS_ADMIN=[p for p in PERMS_SUPER if p not in ("users.change_role","audit.view_sensitive","system.settings.manage","feature_flags.edit","integrations.manage","aiRouteManage")]
 PERMS_LIMITED=["overview.view","users.view"]
 PERMS_ADMIN_MINUS=[p for p in PERMS_ADMIN if p!="billing.view"]
@@ -243,6 +243,51 @@ class H(SimpleHTTPRequestHandler):
         if up.path=="/api/v1/admin/integrations/email":
             I=self.server.integ
             self._j(200,{"integration":dict(I["email"])}); return
+        if up.path=="/api/v1/admin/communications/tickets":
+            m=loadmode()
+            if m.get("fail_comm"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
+            if m["mode"] in ("noauth","user403","panel_false"): self._j(403,{"status":"error","error":{"code":"PERMISSION_DENIED"}}); return
+            from urllib.parse import parse_qs as _pqs2
+            q=_pqs2(up.query)
+            def crow(i,subj,st,wf,unread):
+                return {"id":i,"user_id":1,"subject":subj,"status":st,"waiting_for":wf,"priority":None,
+                        "last_message_at":"2026-09-08 10:0%d:00"%(i%60),"unread_admin_count":unread,"unread_user_count":0,
+                        "created_at":"2026-09-08 09:5%d:00"%(i%60),"updated_at":"2026-09-08 10:0%d:00"%(i%60),
+                        "user_email":"ali@velora.test","user_name":"Ali User","user_locale":"en"}
+            items=[crow(1042,"MT5 account will not connect","open","admin",1),
+                   crow(1043,"Deposit not reflected","pending","user",0),
+                   crow(1044,"KYC question","closed","none",0)]
+            def q1(k):
+                v=q.get(k); return (v[0] if isinstance(v,list) and v else "") if v is not None else ""
+            if q1("waiting_for")=="admin": items=[items[0]]
+            elif q1("status")=="pending": items=[items[1]]
+            elif q1("status")=="closed": items=[items[2]]
+            if m.get("comm_empty"): items=[]
+            self._j(200,{"items":items,"total":len(items),"page":1,"per_page":20,
+                          "counters":{"inbox":1,"open":1,"pending":1,"closed":1}}); return
+        if up.path.startswith("/api/v1/admin/communications/tickets/"):
+            m=loadmode()
+            if m.get("fail_comm"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
+            if m["mode"] in ("noauth","user403","panel_false"): self._j(403,{"status":"error","error":{"code":"PERMISSION_DENIED"}}); return
+            tid=int(up.path.rstrip("/").rsplit("/",1)[-1])
+            _lk={1042:("MT5 account will not connect","open","admin",1),
+                 1043:("Deposit not reflected","pending","user",0),
+                 1044:("KYC question","closed","none",0)}
+            subj,stt,wfl,unr=_lk.get(tid,_lk[1042])
+            msgs=[{"id":1,"conversation_id":int(tid),"sender_type":"user","sender_user_id":1,
+                   "body":"I cannot connect my MT5 account #123456 since Monday. Error E-404.","message_type":"text",
+                   "metadata_json":None,"created_at":"2026-09-08 09:50:00","edited_at":None,"deleted_at":None}]
+            if m.get("comm_xss"):
+                subj="<img src=x onerror=window.__pwned=1>"
+                msgs.append({"id":2,"conversation_id":int(tid),"sender_type":"user","sender_user_id":1,
+                             "body":"<script>window.__pwned=2</script><img src=x onerror=window.__pwned=3> probe body","message_type":"text",
+                             "metadata_json":None,"created_at":"2026-09-08 09:52:00","edited_at":None,"deleted_at":None})
+            self._j(200,{"conversation":{"id":int(tid),"user_id":1,"subject":subj,"status":stt,
+                        "waiting_for":wfl,"priority":None,"first_reply_at":None,"last_message_at":"2026-09-08 10:01:00",
+                        "unread_admin_count":unr,"unread_user_count":0,"created_at":"2026-09-08 09:50:00","updated_at":"2026-09-08 10:01:00",
+                        "user_email":"ali@velora.test","user_name":"Ali User","user_locale":"en","user_status":"active"},
+                        "messages":msgs})
+            return
         if up.path=="/api/v1/admin/settings":
             m=loadmode()
             if m.get("fail_settings"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
@@ -439,12 +484,106 @@ class H(SimpleHTTPRequestHandler):
             else: self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
             rAA=[{"action":"user.verify_email","targetType":"user","targetId":2,"result":"success","summary":"User #2 email verified by admin","createdAt":"2026-09-05 20:30:00"}] if m["mode"]=="admin" else []
             self._j(200,{"me":me,"recentAdminActions":rAA}); return
+        # ---- Phase 9A user Support Center routes (mirror real controller envelopes) ----
+        if up.path=="/api/v1/support/tickets":
+            m=loadmode()
+            if m.get("sup_fail"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
+            def urow(i,subj,st,wf,uu):
+                return {"id":i,"subject":subj,"status":st,"waiting_for":wf,
+                        "last_message_at":"2026-09-08 09:%02d:00"%(i%60),
+                        "unread_user_count":uu,"created_at":"2026-09-07 09:%02d:00"%(i%60)}
+            tickets=[urow(1042,"MT5 account will not connect","open","admin",1),
+                     urow(1043,"Deposit not reflected","pending","user",0),
+                     urow(1044,"KYC question","closed","none",0)]
+            if m.get("sup_xss"):
+                tickets.append(urow(1045,"<img src=x onerror=window.__pwned=1>","open","admin",0))
+            if m.get("sup_empty"): tickets=[]
+            unread=sum(int(t["unread_user_count"]) for t in tickets)
+            self._j(200,{"tickets":tickets,"total":len(tickets),"page":1,"per_page":20,"unread_total":unread}); return
+        mm=_re.match(r"^/api/v1/support/tickets/(\d+)$",up.path)
+        if mm:
+            m=loadmode()
+            if m.get("sup_fail"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
+            tid=int(mm.group(1))
+            D={1042:{"conversation":{"id":1042,"subject":"MT5 account will not connect","status":"open","waiting_for":"admin","unread_user_count":1,"created_at":"2026-09-07 09:22:00"},
+                      "messages":[{"id":1,"sender_type":"user","body":"I cannot connect my MT5 account #123456 since Monday. Error E-404.","created_at":"2026-09-07 09:22:00"},
+                                  {"id":2,"sender_type":"admin","body":"Please reconnect your MT5 account and start a new synchronization.","created_at":"2026-09-08 09:10:00"}]},
+               1043:{"conversation":{"id":1043,"subject":"Deposit not reflected","status":"pending","waiting_for":"user","unread_user_count":0,"created_at":"2026-09-06 11:00:00"},
+                      "messages":[{"id":1,"sender_type":"user","body":"My deposit is missing.","created_at":"2026-09-06 11:00:00"},
+                                  {"id":2,"sender_type":"admin","body":"We credited the deposit; please refresh your wallet.","created_at":"2026-09-07 15:30:00"}]},
+               1044:{"conversation":{"id":1044,"subject":"KYC question","status":"closed","waiting_for":"none","unread_user_count":0,"created_at":"2026-09-05 08:00:00"},
+                      "messages":[{"id":1,"sender_type":"user","body":"Which documents do you need for KYC?","created_at":"2026-09-05 08:00:00"},
+                                  {"id":2,"sender_type":"admin","body":"KYC is completed; ticket closed.","created_at":"2026-09-05 12:00:00"}]}}
+            if m.get("sup_xss") and tid==1045:
+                D[1045]={"conversation":{"id":1045,"subject":"<img src=x onerror=window.__pwned=1>","status":"open","waiting_for":"admin","unread_user_count":0,"created_at":"2026-09-08 10:00:00"},
+                          "messages":[{"id":1,"sender_type":"user","body":"<script>window.__pwned=2</script> probe body","created_at":"2026-09-08 10:00:00"}]}
+            if tid not in D: self._j(404,{"status":"error","error":{"code":"TICKET_NOT_FOUND"}}); return
+            self._j(200,D[tid]); return
         super().do_GET()
     def do_POST(self):
         import re as _re
         from urllib.parse import urlparse
         up=urlparse(self.path)
         m0=loadmode()
+        if up.path.startswith("/api/v1/admin/communications/tickets/"):
+            m=loadmode()
+            length=int(self.headers.get("Content-Length") or 0)
+            body={}
+            if length:
+                try: body=json.loads(self.rfile.read(length) or b"{}")
+                except: body={}
+            if m["mode"] in ("noauth","user403","panel_false"): self._j(403,{"status":"error","error":{"code":"PERMISSION_DENIED"}}); return
+            if up.path.endswith("/copilot"):
+                if m.get("ai_down"): self._j(200,{"copilot":{"available":False,"likely_issue":None,"confidence":"low","evidence":[],"recommended_action":None,"suggested_reply":None,"provider":None,"error":"copilot unavailable"}}); return
+                self._j(200,{"copilot":{"available":True,"likely_issue":"Initial MT5 synchronization failed.","confidence":"high",
+                    "evidence":["Account connection exists","Last synchronization failed","Trades imported: 0"],
+                    "recommended_action":"Ask the user to reconnect the MT5 account and retry synchronization.",
+                    "suggested_reply":"Hello Ali, we checked your account and the initial synchronization did not complete. Please reconnect your MT5 account and run a sync; if it still fails, send us the exact error text.","provider":"stub","error":None}}); return
+            if up.path.endswith("/copilot/draft"):
+                if m.get("ai_down"): self._j(200,{"draft":{"available":False,"text":None,"provider":None,"error":"copilot unavailable"}}); return
+                self._j(200,{"draft":{"available":True,"text":"Dear Ali, we have reviewed your connection issue and prepared the steps below. Kindly reconnect your account and start a fresh synchronization.","provider":"stub","error":None}}); return
+            if up.path.endswith("/translate"):
+                if m.get("ai_down"): self._j(200,{"translation":{"available":False,"error":"Translation unavailable","translated_body":"","provider":None,"source_language":"en","target_language":"fa","confidence":"unavailable"}}); return
+                if "message_id" in body:
+                    self._j(200,{"translation":{"source_language":"en","target_language":"fa","translated_body":"نمی\u200cتوانم حساب MT5 خود را متصل کنم. خطای E-404.","provider":"stub","model":None,"confidence":"translated"}}); return
+                self._j(200,{"translation":{"source_language":"fa","target_language":"en","translated_body":"Please reconnect your MT5 account and retry the synchronization.","provider":"stub","model":None,"confidence":"translated"}}); return
+            if up.path.endswith("/messages"):
+                if m.get("fail_comm"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
+                m["comm_reply_calls"]=m.get("comm_reply_calls",0)+1
+                json.dump(m,open(os.path.join(ROOT,"mode.json"),"w"))
+                self._j(200,{"message":{"id":99,"created_at":"2026-09-08 10:05:00"}}); return
+            if up.path.endswith("/status"):
+                act=(body or {}).get("action","")
+                st="closed" if act=="close" else ("archived" if act=="archive" else ("pending" if act=="reopen" else "open"))
+                self._j(200,{"status":st,"waiting_for":"none" if st in ("closed","archived") else ("user" if act=="reopen" else "admin")}); return
+            self._j(404,{"status":"error","error":{"code":"NOT_FOUND"}}); return
+        if up.path=="/api/v1/support/tickets":
+            m=loadmode()
+            length=int(self.headers.get("Content-Length") or 0)
+            body={}
+            if length:
+                try: body=json.loads(self.rfile.read(length) or b"{}")
+                except: body={}
+            m["sup_create_body"]=body; m["sup_create_calls"]=m.get("sup_create_calls",0)+1
+            json.dump(m,open(os.path.join(ROOT,"mode.json"),"w"))
+            if m.get("sup_create_result")=="422":
+                self._j(422,{"status":"error","error":{"code":"VALIDATION_FAILED","message":"Validation failed.",
+                    "messageKey":"errors.support.subjectInvalid","params":{},"details":{"fields":{"subject":{"code":"INVALID","messageKey":"errors.support.subjectInvalid","params":[]}}}}}); return
+            self._j(201,{"ticket":{"id":1042}}); return
+        mm=_re.match(r"^/api/v1/support/tickets/(\d+)/messages$",up.path)
+        if mm:
+            m=loadmode()
+            if m.get("fail_sup"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
+            m["sup_reply_calls"]=m.get("sup_reply_calls",0)+1
+            json.dump(m,open(os.path.join(ROOT,"mode.json"),"w"))
+            self._j(201,{"message":{"id":99,"created_at":"2026-09-08 12:00:00"}}); return
+        mm=_re.match(r"^/api/v1/support/tickets/(\d+)/reopen$",up.path)
+        if mm:
+            m=loadmode()
+            if m.get("fail_sup"): self._j(500,{"status":"error","error":{"code":"INTERNAL_ERROR"}}); return
+            m["sup_reopen_calls"]=m.get("sup_reopen_calls",0)+1
+            json.dump(m,open(os.path.join(ROOT,"mode.json"),"w"))
+            self._j(200,{"status":"success","data":{"status":"open","waiting_for":"admin"}}); return
         if up.path=="/api/v1/admin/users":
             # Create User (Phase 1) — mirrors the real UserManagementController::store shape.
             m=loadmode()
@@ -575,8 +714,9 @@ class H(SimpleHTTPRequestHandler):
                 ident={"admin":(4,"Sahar Rahimi","s.rahimi@veloratrade.ir"),
                        "super":(5,"Arman Kaveh","a.kaveh@veloratrade.ir"),
                        "limited":(7,"Neda Karimi","n.karimi@veloratrade.ir")}
-                _id,_fn,_em=ident.get(loadmode()["mode"],(4,None,None))
-                _u={"id":_id,"role":"admin","locale":"fa"}
+                m=loadmode()
+                _id,_fn,_em=ident.get(m["mode"],(4,None,None))
+                _u={"id":_id,"role":"admin","locale":m.get("user_locale","fa")}   # user_locale mode flag: optional EN post-paint sync proof
                 if _fn: _u["fullName"]=_fn; _u["email"]=_em
                 self._j(200,{"tokens":{"accessToken":"stub-token","user":_u}})
         elif self.path.startswith("/api/v1/auth/logout"):

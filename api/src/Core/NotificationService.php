@@ -442,4 +442,89 @@ final class NotificationService
         // کلید ناشناخته: متن fallbackِ همان locale، نه کلید خام
         return $i18n->translateFor($lang, $fallbackKey);
     }
+
+    /**
+     * Phase 9A — SUPPORT_NEW_TICKET event email (admin-facing).
+     * Event-based: fired exactly once per ticket creation, after commit.
+     * Contains only safe operational data: ticket reference, user label, subject, bounded preview.
+     */
+    public static function sendSupportNewTicketEmail(
+        int $ownerUserId,
+        int $ticketId,
+        string $subject,
+        string $userLabel,
+        string $userEmail,
+        ?string $userLocale = null,
+        string $preview = ''
+    ): bool {
+        $i18n = \Velora\Core\Locale\LocaleManager::getInstance();
+        $lang = self::resolveEmailLocale('en', $userLocale) ?? $i18n->getLanguage();
+        $t = static fn (string $key, array $params = []): string => $i18n->translateFor($lang, $key, $params);
+        $subjectSafe = htmlspecialchars(mb_substr($subject, 0, 160), ENT_QUOTES, 'UTF-8');
+        $userSafe = htmlspecialchars(mb_substr($userLabel, 0, 120), ENT_QUOTES, 'UTF-8');
+        $previewSafe = htmlspecialchars(mb_substr(trim($preview), 0, 200), ENT_QUOTES, 'UTF-8');
+        $adminUrl = rtrim((string) (\Velora\Core\Config::env('FRONTEND_URL', '') ?: ''), '/') . '/admin/v2/index.html#/comm-inbox?ticket=' . (int) $ticketId;
+
+        $htmlSubject = $t('email.support.newTicket.subject', ['id' => (string) $ticketId]);
+        $html = EmailTemplate::render(
+            $t('email.support.badge'),
+            $t('email.support.newTicket.title'),
+            '<p style="margin:0 0 14px;color:#f3f4f6;">' . $t('email.support.newTicket.intro', ['user' => $userSafe]) . '</p>' .
+            '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0;background:#141f32;border-radius:10px;border:1px solid #d4af37;">' .
+            '<tr><td style="padding:16px 20px;color:#e2e8f0;font-size:14px;line-height:2;">' .
+            '<div style="color:#d4af37;font-weight:bold;">#' . (int) $ticketId . ' — ' . $subjectSafe . '</div>' .
+            ($previewSafe !== '' ? '<div style="margin-top:8px;color:#f3f4f6;">' . $previewSafe . '</div>' : '') .
+            '</td></tr></table>',
+            $t('email.support.newTicket.cta'),
+            $adminUrl,
+            $t('email.support.notice'),
+            $t('email.common.subtitleAnalytics'),
+            $lang,
+            'support',
+            $t('email.support.badge')
+        );
+        $desk = trim((string) \Velora\Core\Config::env('SUPPORT_NOTIFY_EMAIL', 'support@veloratrade.ir')) ?: 'support@veloratrade.ir';
+        return self::sendWithIcon($desk, $htmlSubject, $html, 'security', 'SUPPORT_NEW_TICKET', $ownerUserId);
+    }
+
+    /**
+     * Phase 9A — SUPPORT_FIRST_REPLY event email (user-facing).
+     * Fired once per ticket on the first admin text reply (first_reply_at sentinel).
+     */
+    public static function sendSupportReplyEmail(
+        int $ownerUserId,
+        int $ticketId,
+        string $subject,
+        string $userLabel,
+        string $userEmail,
+        ?string $userLocale = null,
+        string $preview = ''
+    ): bool {
+        $i18n = \Velora\Core\Locale\LocaleManager::getInstance();
+        $lang = self::resolveEmailLocale('fa', $userLocale) ?? $i18n->getLanguage();
+        $t = static fn (string $key, array $params = []): string => $i18n->translateFor($lang, $key, $params);
+        $subjectSafe = htmlspecialchars(mb_substr($subject, 0, 160), ENT_QUOTES, 'UTF-8');
+        $previewSafe = htmlspecialchars(mb_substr(trim($preview), 0, 200), ENT_QUOTES, 'UTF-8');
+        $supportUrl = rtrim((string) (\Velora\Core\Config::env('FRONTEND_URL', '') ?: ''), '/') . '/support/index.html?ticket=' . (int) $ticketId;
+
+        $htmlSubject = $t('email.support.reply.subject', ['id' => (string) $ticketId]);
+        $html = EmailTemplate::render(
+            $t('email.support.badge'),
+            $t('email.support.reply.title'),
+            '<p style="margin:0 0 14px;color:#f3f4f6;">' . $t('email.support.reply.intro', ['name' => htmlspecialchars($userLabel, ENT_QUOTES, 'UTF-8')]) . '</p>' .
+            '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0;background:#141f32;border-radius:10px;border:1px solid #d4af37;">' .
+            '<tr><td style="padding:16px 20px;color:#e2e8f0;font-size:14px;line-height:2;">' .
+            '<div style="color:#d4af37;font-weight:bold;">#' . (int) $ticketId . ' — ' . $subjectSafe . '</div>' .
+            ($previewSafe !== '' ? '<div style="margin-top:8px;color:#f3f4f6;">' . $previewSafe . '</div>' : '') .
+            '</td></tr></table>',
+            $t('email.support.reply.cta'),
+            $supportUrl,
+            $t('email.support.notice'),
+            $t('email.common.subtitleAnalytics'),
+            $lang,
+            'support',
+            $t('email.support.badge')
+        );
+        return self::sendWithIcon($userEmail, $htmlSubject, $html, 'security', 'SUPPORT_FIRST_REPLY', $ownerUserId);
+    }
 }

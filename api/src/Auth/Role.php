@@ -54,6 +54,8 @@ final class Role
     public const P_SYSTEM_LOGS_VIEW = 'system.logs.view';
     public const P_SETTINGS_VIEW = 'settings.view';               // reserved (Module K)
     public const P_SETTINGS_MANAGE = 'system.settings.manage';     // Super Admin only (reserved)
+    public const P_COMM_VIEW = 'communication.view';               // Phase 9A: Admin Communication Center (view)
+    public const P_COMM_REPLY = 'communication.reply';             // Phase 9A: reply / ticket state changes
     // Billing + Subscription (Phase G). Observable local subscription state +
     // real, runtime-backed entitlements; NO payment provider, NO fake financial
     // data. VIEW = admin + super_admin (read-only observability; subscription
@@ -102,6 +104,8 @@ final class Role
                 self::P_SYSTEM_HEALTH_VIEW,
                 self::P_SYSTEM_LOGS_VIEW,
                 self::P_SETTINGS_VIEW,
+                self::P_COMM_VIEW,
+                self::P_COMM_REPLY,
                 self::P_FEATURE_FLAGS_VIEW,
                 self::P_BILLING_VIEW,
                 self::P_INTEGRATIONS_VIEW,
@@ -123,6 +127,8 @@ final class Role
                 self::P_SYSTEM_LOGS_VIEW,
                 self::P_SETTINGS_VIEW,
                 self::P_SETTINGS_MANAGE,
+                self::P_COMM_VIEW,
+                self::P_COMM_REPLY,
                 self::P_FEATURE_FLAGS_VIEW,
                 self::P_FEATURE_FLAGS_EDIT,
                 self::P_BILLING_VIEW,

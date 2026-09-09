@@ -42,9 +42,9 @@
       },
       "errors": {
         "path": "fa/errors.json",
-        "messages": 83,
-        "bytes": 8085,
-        "sha256": "146732223367cb1dab62ffac65e9feff4cb65f0237eb80c0e853e9668b03e1c4"
+        "messages": 88,
+        "bytes": 8606,
+        "sha256": "256dcf801025a85405f3a9866884c7a1006f6fa98527efeec0379093b1335e6f"
       },
       "intelligence": {
         "path": "fa/intelligence.json",
@@ -90,9 +90,9 @@
       },
       "support": {
         "path": "fa/support.json",
-        "messages": 17,
-        "bytes": 2068,
-        "sha256": "8926a6b11e9f643cd220b17d6dd9b56cfe43def1f96ab1e106e3ba426839e40d"
+        "messages": 35,
+        "bytes": 2377,
+        "sha256": "37e008dfe1a02c107ad9f2241a030afd0137f6b94bf318d1921b45a8ee6b7494"
       },
       "terms": {
         "path": "fa/terms.json",
@@ -152,9 +152,9 @@
       },
       "errors": {
         "path": "en/errors.json",
-        "messages": 83,
-        "bytes": 5888,
-        "sha256": "d76a43010943c866beec0043b3974ef07da0f35dde3a3aabff47fd42abe0b1c2"
+        "messages": 88,
+        "bytes": 6249,
+        "sha256": "555da13f8208d3e2c3e1bf2c566cb67a2a376ed4ec14e1d925993ea39187976f"
       },
       "intelligence": {
         "path": "en/intelligence.json",
@@ -200,9 +200,9 @@
       },
       "support": {
         "path": "en/support.json",
-        "messages": 17,
-        "bytes": 1601,
-        "sha256": "23acfa76a5d12394858ba6a22d93d3f557c8634d8839d8ccc6e35f67a44ba1c9"
+        "messages": 35,
+        "bytes": 1899,
+        "sha256": "40a674b9043baa81e39451144701a33fcaf8f81fa66be86a17c5ad5589de0147"
       },
       "terms": {
         "path": "en/terms.json",
