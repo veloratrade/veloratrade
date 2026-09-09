@@ -225,6 +225,37 @@ class ExecutorSafetyTests(unittest.TestCase):
         self.assertEqual(hosts, {"staging.veloratrade.ir"})
 
 
+class GateScopeRegressionTests(unittest.TestCase):
+    """Regression for failed APPLY run 34368464761: needs.* context is not
+    available in JOB-level env (evaluates empty at runtime, so the gate
+    failed closed). Backup evidence must be supplied via STEP-level env."""
+
+    def test_18_no_needs_context_in_any_job_level_env(self):
+        for jn, job in WF_YAML["jobs"].items():
+            for k, v in (job.get("env") or {}).items():
+                self.assertNotIn("needs.", str(v),
+                                 f"job-level env {jn}.{k} uses needs context (empty at runtime)")
+
+    def test_19_gate_step_env_supplies_all_six_evidence_vars(self):
+        gate = [s for s in WF_YAML["jobs"]["migrate"]["steps"] if "BACKUP GATE" in (s.get("name") or "")][0]
+        env = gate.get("env") or {}
+        for key, out in (("BACKUP_ID", "backup_id"), ("RELEASE_TAG", "release_tag"),
+                         ("SHA256", "sha256"), ("SOURCE_COMMIT_SHA", "source_commit_sha"),
+                         ("VERIFICATION_STATUS", "verification_status"),
+                         ("ENVIRONMENT", "environment")):
+            self.assertEqual(env.get(key), "${{ needs.backup.outputs.%s }}" % out,
+                             f"gate step env missing {key}")
+        self.assertEqual(env.get("EXPECTED_ENV"), "staging")
+
+    def test_19b_probe_audit_step_env_supplies_backup_evidence_vars(self):
+        probe = [s for s in WF_YAML["jobs"]["migrate"]["steps"] if "one-use probe" in (s.get("name") or "")][0]
+        env = probe.get("env") or {}
+        for key in ("BACKUP_ID", "RELEASE_TAG", "BACKUP_SHA256",
+                    "BACKUP_SOURCE_SHA", "BACKUP_VERIFICATION", "BACKUP_ENVIRONMENT"):
+            self.assertIn("needs.backup.outputs", str(env.get(key)),
+                          f"probe/audit step env missing {key}")
+
+
 class StructuralTests(unittest.TestCase):
     def test_15_workflow_yaml_parses(self):
         d = WF_YAML
