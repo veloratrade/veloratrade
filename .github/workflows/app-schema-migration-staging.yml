@@ -1,0 +1,288 @@
+name: App Schema Migration (Staging) — v1.7 auth_events + v1.8 support tickets
+
+# ============================================================================
+# STAGING-ONLY dedicated mechanism for the v1.7/v1.8 app-schema migration
+# generation (additive, idempotent). Deliberately SEPARATE from the existing
+# admin-migration-staging.yml (which remains hard-coded to v1.3 + v1.5 and is
+# NOT repurposed) so no unrelated migration can ever be executed by accident.
+#
+# Migration selection is a HARD-CODED ALLOWLIST in repository code:
+#   migration = v1.7 -> api/database/migrations/v1.7_auth_events.sql
+#   migration = v1.8 -> api/database/migrations/v1.8_support_tickets.sql
+#   migration = both -> v1.7 THEN v1.8 (canonical order; enforced again
+#                       inside the probe before any DB access)
+# No user-provided filesystem path or arbitrary filename is ever accepted.
+#
+# The SQL files themselves are authoritative: the one-use probe receives their
+# exact bytes (sha256-verified) as a render-time payload; no DDL is duplicated
+# here and no arbitrary SQL/PHP/command is possible.
+#
+# modes:
+#   check -> strictly read-only schema verification (no backup required);
+#   apply -> BACKUP GATE (fresh INTEGRITY_VERIFIED staging backup via the
+#            reusable velora-db-backup-staging.yml + ops/velora-mgmt/
+#            backup_gate.py) -> exact confirmation phrase -> allowlisted SQL
+#            executed in order -> post-apply schema verification (fail-closed).
+#   NO VERIFIED BACKUP -> NO APPLY. No skip/bypass/force flags exist.
+# Uses STAGING_FTP_* / staging host only; production is unreachable from here.
+# ============================================================================
+
+on:
+  workflow_call:
+    inputs:
+      mode:
+        description: 'check (report only) or apply (additive migration)'
+        type: string
+        required: true
+        default: check
+      migration:
+        description: 'v1.7 | v1.8 | both (strict allowlist; both runs v1.7 then v1.8)'
+        type: string
+        required: true
+        default: both
+      confirm:
+        description: 'must be APPLY-APP-SCHEMA-MIGRATION when mode=apply'
+        type: string
+        required: false
+        default: ''
+    outputs:
+      result:
+        value: ${{ jobs.migrate.outputs.result }}
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Mode: check (report only) or apply (additive migration)'
+        required: true
+        default: check
+        type: choice
+        options: [check, apply]
+      migration:
+        description: 'Migration selector (strict allowlist): v1.7, v1.8 or both'
+        required: true
+        default: both
+        type: choice
+        options: [v1.7, v1.8, both]
+      confirm:
+        description: 'Type APPLY-APP-SCHEMA-MIGRATION to confirm apply on STAGING'
+        required: false
+        default: ''
+
+permissions: { contents: read }
+
+concurrency:
+  group: app-schema-migration-staging
+  cancel-in-progress: false
+
+jobs:
+  # ── BACKUP GATE (mandatory, machine-enforced): apply-mode mutations require a
+  # FRESH verified staging DB backup (INTEGRITY_VERIFIED) BEFORE the probe runs.
+  # check mode mutates nothing → backup intentionally skipped. No skip flags.
+  backup:
+    if: ${{ (inputs.mode || github.event.inputs.mode) == 'apply' }}
+    secrets: inherit
+    uses: ./.github/workflows/velora-db-backup-staging.yml
+
+  migrate:
+    name: App-schema (v1.7/v1.8) check/apply on STAGING
+    needs: [backup]
+    # apply → backup MUST have succeeded; check → backup must be (intentionally) skipped.
+    if: ${{ !cancelled() && (((inputs.mode || github.event.inputs.mode) == 'apply') && needs.backup.result == 'success' || ((inputs.mode || github.event.inputs.mode) != 'apply') && needs.backup.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      result: ${{ steps.runsql.outputs.state }}
+    env:
+      FTP_SERVER:   ${{ secrets.STAGING_FTP_SERVER }}
+      FTP_USERNAME: ${{ secrets.STAGING_FTP_USERNAME }}
+      FTP_PASSWORD: ${{ secrets.STAGING_FTP_PASSWORD }}
+      BASE: https://staging.veloratrade.ir
+      DOCROOT: public_html/staging.veloratrade.ir
+      INPUT_MODE: ${{ inputs.mode || github.event.inputs.mode }}
+      INPUT_MIG: ${{ inputs.migration || github.event.inputs.migration }}
+      INPUT_CONFIRM: ${{ inputs.confirm || github.event.inputs.confirm }}
+      BACKUP_ID:           ${{ needs.backup.outputs.backup_id }}
+      RELEASE_TAG:         ${{ needs.backup.outputs.release_tag }}
+      BACKUP_SHA256:       ${{ needs.backup.outputs.sha256 }}
+      BACKUP_SOURCE_SHA:   ${{ needs.backup.outputs.source_commit_sha }}
+      BACKUP_VERIFICATION: ${{ needs.backup.outputs.verification_status }}
+      BACKUP_ENVIRONMENT:  ${{ needs.backup.outputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: BACKUP GATE — verified fresh backup evidence required for apply (fail-closed)
+        if: ${{ (inputs.mode || github.event.inputs.mode) == 'apply' }}
+        env:
+          EXPECTED_ENV: staging
+        run: |
+          set -euo pipefail
+          # Canonical gate implementation: the mutating probe below may only run
+          # when THIS step proves a fresh INTEGRITY_VERIFIED backup exists.
+          python3 ops/velora-mgmt/backup_gate.py
+
+      - name: Install lftp
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -q lftp >/dev/null
+
+      - name: Guard — staging-only, mode, allowlisted migration selector, apply confirmation
+        run: |
+          set -euo pipefail
+          [ -n "${FTP_SERVER:-}" ] && [ -n "${FTP_USERNAME:-}" ] && [ -n "${FTP_PASSWORD:-}" ] \
+            || { echo "::error::missing STAGING_FTP_* secrets (staging-only)"; exit 1; }
+          case "$INPUT_MODE" in
+            check) echo "mode=check (read-only; no schema change)";;
+            apply)
+              [ "$INPUT_CONFIRM" = "APPLY-APP-SCHEMA-MIGRATION" ] \
+                || { echo "::error::for apply mode, confirm must be exactly APPLY-APP-SCHEMA-MIGRATION"; exit 1; }
+              echo "mode=apply (STAGING; additive, idempotent)";;
+            *) echo "::error::mode must be check|apply"; exit 1;;
+          esac
+          # Strict allowlist: only these three selectors exist; nothing free-form.
+          case "$INPUT_MIG" in
+            v1.7) echo "migration=v1.7_auth_events.sql";;
+            v1.8) echo "migration=v1.8_support_tickets.sql";;
+            both) echo "migration=v1.7_auth_events.sql + v1.8_support_tickets.sql (canonical order)";;
+            *) echo "::error::migration selector must be v1.7|v1.8|both (strict allowlist)"; exit 1;;
+          esac
+
+      - name: Render, upload, invoke, and remove one-use probe (allowlisted migrations only)
+        id: runsql
+        run: |
+          set -euo pipefail
+          NAME="_velora_asmig_$(openssl rand -hex 8).php"
+          TOKEN="$(openssl rand -hex 32)"
+          HASH="$(printf '%s' "$TOKEN" | sha256sum | awk '{print $1}')"
+          echo "::add-mask::$NAME"; echo "::add-mask::$TOKEN"; echo "::add-mask::$HASH"
+          export NAME HASH
+          # ---- Build the sha256-verified SQL payload from the AUTHORITATIVE
+          # ---- repository migration files (strict allowlist + fixed order).
+          export MIGRATIONS_B64="$(python3 - <<'PY'
+          import base64, hashlib, json, os, pathlib
+          ALLOW = {
+              'v1.7':  ['api/database/migrations/v1.7_auth_events.sql'],
+              'v1.8':  ['api/database/migrations/v1.8_support_tickets.sql'],
+              'both':  ['api/database/migrations/v1.7_auth_events.sql',
+                        'api/database/migrations/v1.8_support_tickets.sql'],  # canonical order
+          }
+          KNOWN_IDS = {'v1.7_auth_events', 'v1.8_support_tickets'}
+          sel = os.environ['INPUT_MIG']
+          assert sel in ALLOW, f'migration selector not allowlisted: {sel!r}'
+          payload = []
+          for path in ALLOW[sel]:
+              data = pathlib.Path(path).read_bytes()
+              mig_id = path.rsplit('/', 1)[-1][:-len('.sql')]
+              assert mig_id in KNOWN_IDS, f'unexpected migration id: {mig_id!r}'
+              payload.append({'id': mig_id, 'file': path,
+                              'sha256': hashlib.sha256(data).hexdigest(),
+                              'sql': data.decode('utf-8')})
+          print(base64.b64encode(json.dumps(payload).encode()).decode())
+          PY
+          )"
+          python3 - <<'PY'
+          import os, pathlib
+          tpl = pathlib.Path('ops/velora-mgmt/probe/app_schema_migration_probe.php.tmpl').read_text()
+          tpl = (tpl.replace('__HASH__', os.environ['HASH'])
+                     .replace('__MODE__', os.environ['INPUT_MODE'])
+                     .replace('__ENV__', 'staging')
+                     .replace('__MIGRATIONS_B64__', os.environ['MIGRATIONS_B64']))
+          assert '__HASH__' not in tpl and '__MIGRATIONS_B64__' not in tpl, 'template render failed'
+          pathlib.Path('/tmp/probe.php').write_text(tpl)
+          PY
+          cleanup() {
+            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+              -e "set ftp:ssl-allow no; set net:max-retries 1; set net:timeout 20; glob -a rm -f $DOCROOT/public/_velora_asmig_*.php; bye" >/dev/null 2>&1 || true
+            shred -u /tmp/probe.php /tmp/status.json 2>/dev/null || rm -f /tmp/probe.php /tmp/status.json
+          }
+          trap cleanup EXIT
+          uploaded=0
+          for attempt in $(seq 1 15); do
+            if lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
+              -e "set ftp:ssl-allow no; set net:max-retries 2; set net:timeout 30; glob -a rm -f $DOCROOT/public/_velora_asmig_*.php; put /tmp/probe.php -o $DOCROOT/public/$NAME; bye"; then
+              uploaded=1; break
+            fi
+            sleep 5
+          done
+          [ "$uploaded" = 1 ] || { echo "::error::probe upload failed"; exit 1; }
+          code=$(curl -sS -o /tmp/status.json -w '%{http_code}' --max-time 120 -H "X-Velora-Mig: $TOKEN" "$BASE/public/$NAME")
+          echo "probe HTTP: $code"
+          [ "$code" = 200 ] || { echo "::error::migration probe HTTP $code"; cat /tmp/status.json; exit 1; }
+          cp /tmp/status.json app-schema-migration-result.json
+          python3 - <<'PY'
+          import json, sys
+          d = json.load(open('app-schema-migration-result.json'))
+          assert d.get('env') == 'staging', 'probe did not report staging'
+          assert d.get('ok') is True, f"probe reported failure: {d.get('errors')}"
+          assert d.get('errors') == [], d.get('errors')
+          print("=== App Schema Migration (%s, selector=%s) ===" % (d.get('mode'), __import__('os').environ['INPUT_MIG']))
+          for m in d.get('migrations', []):
+              print(f"- {m['id']} ({m['file']}): sha256_verified={m['sha256_verified']} "
+                    f"complete_before={m['before']} executed={m['executed']} complete_after={m['after']}")
+              for t, ts in (m.get('state') or {}).get('tables', {}).items():
+                  print(f"    {t}: exists={ts['exists']} complete={ts['complete']}"
+                        + (f" missing_cols={ts['missing_columns']}" if ts['missing_columns'] else '')
+                        + (f" missing_idx={ts['missing_indexes']}" if ts['missing_indexes'] else '')
+                        + (f" missing_fks={ts['missing_fks']}" if ts['missing_fks'] else ''))
+          if d.get('mode') == 'apply':
+              # fail closed: every selected migration MUST be complete after apply
+              for m in d.get('migrations', []):
+                  if m.get('after') is not True:
+                      sys.exit(f"::error::{m['id']}: schema not verified complete after apply")
+          print("PASS: app-schema migration probe ok (mode=%s)" % d.get('mode'))
+          PY
+          # emit a compact post-state for reusable-workflow callers
+          python3 - <<'PY'
+          import json, os
+          d = json.load(open('app-schema-migration-result.json'))
+          line = "mode=%s mig=%s ok=%s migrations=%s" % (
+              d.get('mode'), os.environ['INPUT_MIG'], d.get('ok'),
+              ",".join("%s:%s" % (m['id'], m.get('after')) for m in d.get('migrations', [])))
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write("state=" + line.replace('\n', ' ') + "\n")
+          PY
+          # ---- Machine-readable audit/provenance record (no secrets) ----
+          python3 - <<'PY'
+          import json, os, subprocess
+          d = json.load(open('app-schema-migration-result.json'))
+          mode = os.environ['INPUT_MODE']
+          audit = {
+              "schema": "velora-app-schema-migration-audit/1",
+              "environment": "staging",
+              "mode": mode,
+              "migration_selector": os.environ['INPUT_MIG'],
+              "migrations": [{"id": m['id'], "file": m['file'],
+                              "sha256_verified": m['sha256_verified'],
+                              "executed": m['executed'],
+                              "complete_before": m.get('before'),
+                              "complete_after": m.get('after')} for m in d.get('migrations', [])],
+              "source_commit_sha": os.environ['GITHUB_SHA'],
+              "workflow_run_id": os.environ['GITHUB_RUN_ID'],
+              "timestamp_utc": subprocess.run(["date","-u","+%Y-%m-%dT%H:%M:%SZ"],
+                                              capture_output=True, text=True).stdout.strip(),
+              "verification": {"probe_ok": d.get('ok'),
+                               "schema_verified": all(m.get('after') is True for m in d.get('migrations', []))
+                                                   if d.get('migrations') else False,
+                               "backup_gate": "PASS" if mode == "apply" else "NOT_REQUIRED(check)"},
+              "backup_evidence": ({"backup_id": os.environ['BACKUP_ID'],
+                                   "release_tag": os.environ['RELEASE_TAG'],
+                                   "sha256": os.environ['BACKUP_SHA256'],
+                                   "source_commit_sha": os.environ['BACKUP_SOURCE_SHA'],
+                                   "verification_status": os.environ['BACKUP_VERIFICATION'],
+                                   "environment": os.environ['BACKUP_ENVIRONMENT']}
+                                  if mode == "apply" else None),
+              "final_status": "SUCCESS" if d.get('ok') else "FAILED",
+          }
+          with open('app-schema-migration-audit.json', 'w') as f:
+              json.dump(audit, f, indent=2)
+          PY
+
+      - name: Keep migration result + audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-schema-migration-staging-${{ github.run_id }}
+          path: |
+            app-schema-migration-result.json
+            app-schema-migration-audit.json
+          if-no-files-found: ignore
+          retention-days: 14

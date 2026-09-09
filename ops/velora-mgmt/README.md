@@ -9,6 +9,11 @@ deployment and database management. One architecture, strict environment isolati
 - **BACKUP GATE (mandatory, 2026-09-09):** no staging deploy or DB migration may
   run without a fresh `INTEGRITY_VERIFIED` backup — see `backup_gate.py` and
   `BACKUP_POLICY.md` §9. Machine-verifiable outputs only; no bypass flags.
+- **APP-SCHEMA MIGRATIONS v1.7/v1.8 (2026-09-09):** dedicated staging mechanism
+  (`app-schema-migration-staging.yml` + `probe/app_schema_migration_probe.php.tmpl`):
+  strict v1.7/v1.8 allowlist, `check` = read-only, `apply` = BACKUP GATE +
+  `APPLY-APP-SCHEMA-MIGRATION` + canonical v1.7→v1.8 order + post-apply schema
+  verification (fail-closed). See `BACKUP_POLICY.md` §10.
 - **Transport (proven):** GitHub Actions → environment-scoped FTP → one-time randomized
   token-gated PHP probe → HTTPS → `Database::connection()` → MySQL → result → probe
   self-deletes + FTP cleanup. Reference working run: staging inspect/plan run
@@ -19,6 +24,9 @@ deployment and database management. One architecture, strict environment isolati
   CLI: `inspect | plan | verify | backup-discover`. No network; consumes probe metadata
   JSON / a read-only GitHub artifact listing.
 - `backup_gate.py` — canonical BACKUP GATE validator (deploy/migration evidence;
+- `probe/app_schema_migration_probe.php.tmpl` — one-use probe for the v1.7/v1.8
+  app-schema generation (sha256-verified SQL payload from the authoritative repo
+  files; strict allowlist + canonical order; check=read-only, apply=fail-closed).
   CLI via env vars; used by deploy-staging and all *-migration-staging workflows).
 - `backup.py` — backup discovery, verification ladder (CREATED→INTEGRITY_VERIFIED→
   RESTORE_VERIFIED / UNVERIFIED), mutation backup gate, approval↔backup-id binding, and

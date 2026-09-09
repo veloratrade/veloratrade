@@ -179,3 +179,48 @@ NO VERIFIED BACKUP → STOP
 
 Tests: `ops/velora-mgmt/tests/test_backup_gate.py` (gate module + static workflow
 law) and the updated structural tests in `tests/test_staging_backup_law.py`.
+
+## 10. APP-SCHEMA MIGRATIONS v1.7/v1.8 — DEDICATED STAGING MECHANISM (2026-09-09)
+
+Permanent sequence for the v1.7 (`auth_events`) and v1.8 (`support_*`) application-schema
+generation, executed ONLY by the dedicated mechanism:
+
+```
+DISCOVERY → BACKUP → VERIFY BACKUP → CHECK → APPLY → VERIFY SCHEMA → DEPLOY
+                                        ↑                ↑
+                     read-only, no backup required   requires BACKUP GATE (PASS)
+```
+
+**NO VERIFIED BACKUP → NO APPLY.**
+
+- Dedicated workflow: `.github/workflows/app-schema-migration-staging.yml`
+  (`mode = check|apply`, `migration = v1.7|v1.8|both`, apply confirm phrase
+  `APPLY-APP-SCHEMA-MIGRATION`). The existing v1.3/v1.5 admin migration workflow
+  (`admin-migration-staging.yml`) remains UNCHANGED and is NOT repurposed.
+- Strict allowlist hard-coded in repository code: only
+  `api/database/migrations/v1.7_auth_events.sql` and
+  `api/database/migrations/v1.8_support_tickets.sql`; no user-provided path or
+  arbitrary filename/SQL/PHP is ever accepted. `both` always executes
+  v1.7 → v1.8 (canonical order re-proven inside the probe before any DB access).
+- The SQL files themselves are authoritative: the one-use probe receives their
+  exact bytes as a sha256-verified render-time payload (integrity re-checked
+  probe-side); no DDL is duplicated anywhere. Both migrations are additive and
+  idempotent (`CREATE TABLE IF NOT EXISTS`).
+- `check` mode is strictly read-only (reports which expected objects exist/are
+  missing; never creates, alters, inserts, updates, deletes, drops, truncates
+  or backfills; no backup required).
+- `apply` mode: BACKUP GATE (fresh `INTEGRITY_VERIFIED` staging backup via the
+  reusable `velora-db-backup-staging.yml` + `backup_gate.py`) → staging-only
+  target + exact confirmation → allowlisted SQL executed in order → post-apply
+  schema verification (fail-closed: success is never claimed unless every
+  expected table/column/index/FK/`uq_smt_msg` is present). Fresh verified backup
+  per APPLY; the historical 2026-09-09 backup is evidence only, never a bypass.
+- Production migration is NOT part of this workflow (staging-only target;
+  production unreachable from it).
+- Audit artifact (`app-schema-migration-audit.json`): environment, selector,
+  migration files, source commit SHA, run ID, mode, timestamp, backup evidence
+  (apply only), verification result, final status — never secrets.
+
+Tests: `ops/velora-mgmt/tests/test_app_schema_migration.py` (allowlist, ordering,
+read-only check, gate enforcement, confirmation, additivity, verification, secrets,
+bypass flags).

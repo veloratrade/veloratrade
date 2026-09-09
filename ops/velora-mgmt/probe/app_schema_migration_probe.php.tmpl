@@ -1,0 +1,309 @@
+<?php
+/**
+ * VELORA — ONE-USE APP-SCHEMA MIGRATION probe (STAGING only):
+ * v1.7 auth_events + v1.8 support_tickets (additive application-schema generation).
+ *
+ * SAFETY MODEL (identical to the admin/trade migration probes):
+ *   - token-gated (hash_equals timing-safe), random filename, single execution,
+ *     self-deletes immediately on authorized execution;
+ *   - fixed operation and fixed environment (__ENV__ = staging); fails closed
+ *     with a generic 400 if ever rendered with another environment;
+ *   - SINGLE SOURCE OF TRUTH: this probe contains NO DDL of its own. The exact
+ *     SQL of api/database/migrations/v1.7_auth_events.sql and
+ *     v1.8_support_tickets.sql is embedded by the workflow at render time as an
+ *     integrity-checked base64 payload (sha256 per file, verified here before
+ *     any execution). The repository SQL files remain authoritative.
+ *   - STRICT ALLOWLIST + ORDER: only v1.7_auth_events and v1.8_support_tickets
+ *     are accepted, and always in canonical order (v1.7 before v1.8); the probe
+ *     refuses any other id or ordering before touching the database;
+ *   - ADDITIVE + IDEMPOTENT ONLY: the migration files use CREATE TABLE IF NOT
+ *     EXISTS, so re-running is a no-op; nothing is dropped, truncated, deleted
+ *     or backfilled by this probe;
+ *   - __MODE__ = check  -> report schema state only, change nothing;
+ *     __MODE__ = apply  -> execute the allowlisted SQL files in order, then
+ *     re-verify the expected schema; any unexpected condition fails closed and
+ *     aborts before later migrations run.
+ *
+ * Prints JSON metadata only (no credentials/DSN/row data).
+ */
+declare(strict_types=1);
+
+$expected = '__HASH__';
+$provided = (string)($_SERVER['HTTP_X_VELORA_MIG'] ?? '');
+if ($provided === '' || !hash_equals($expected, hash('sha256', $provided))) {
+    http_response_code(404);
+    exit('Not found');
+}
+@unlink(__FILE__); // single-use
+
+require dirname(__DIR__) . '/api/src/bootstrap.php';
+
+use Velora\Core\Database;
+
+header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store');
+
+$MODE = '__MODE__';   // check | apply
+$ENV  = '__ENV__';    // HARD-LOCKED to staging (this probe is staging-only)
+
+$result = ['probe' => 'velora-app-schema-migration', 'mode' => $MODE, 'env' => $ENV,
+           'migrations' => [], 'errors' => [], 'ok' => true];
+
+if (!in_array($MODE, ['check', 'apply'], true) || $ENV !== 'staging') {
+    // This app-schema migration probe is STAGING-ONLY. It must never execute
+    // against production even if a future caller accidentally renders it with
+    // another environment — fail closed with a generic 400 and no DB access.
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'error' => 'bad mode/env (staging-only probe)'],
+                     JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
+// ---- Strict migration allowlist + canonical order (mirror of the workflow) ----
+const ASM_ALLOWLIST = ['v1.7_auth_events', 'v1.8_support_tickets'];
+const ASM_RANK = ['v1.7_auth_events' => 1, 'v1.8_support_tickets' => 2];
+
+$raw = base64_decode('__MIGRATIONS_B64__', true);
+if ($raw === false) {
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'error' => 'bad payload encoding'], JSON_UNESCAPED_SLASHES);
+    exit;
+}
+$migs = json_decode($raw, true);
+if (!is_array($migs) || $migs === []) {
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'error' => 'bad payload'], JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
+// Allowlist + ordering proof BEFORE any DB access: ids must be allowlisted and
+// form a strictly ascending subsequence of the canonical order (v1.7 -> v1.8).
+$prevRank = 0;
+foreach ($migs as $m) {
+    $id = is_array($m) ? (string)($m['id'] ?? '') : '';
+    if (!in_array($id, ASM_ALLOWLIST, true)
+        || !isset(ASM_RANK[$id], $m['file'], $m['sha256'], $m['sql'])
+        || ASM_RANK[$id] <= $prevRank) {
+        http_response_code(400);
+        echo json_encode(['ok' => false,
+                          'error' => 'migration id/order rejected (strict allowlist: ' . implode(',', ASM_ALLOWLIST) . ')'],
+                         JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+    $prevRank = ASM_RANK[$id];
+}
+
+/**
+ * Quote-aware SQL statement splitter. Splits on ';' that is outside single
+ * quotes, double quotes and backticks, and drops -- comments that sit outside
+ * quotes. (The authoritative files contain ';' inside string literals, e.g.
+ * COMMENT 'safe operational metadata; never secrets', so a naive explode()
+ * would corrupt the statements.)
+ */
+function asm_split_sql(string $sql): array {
+    $out = [];
+    $cur = '';
+    $len = strlen($sql);
+    $q = null;                 // current quote char or null
+    for ($i = 0; $i < $len; $i++) {
+        $ch = $sql[$i];
+        if ($q !== null) {
+            $cur .= $ch;
+            if ($ch === $q) {           // closing quote (handles '' escape naturally)
+                $q = null;
+            }
+            continue;
+        }
+        if ($ch === "'" || $ch === '"' || $ch === '`') {
+            $q = $ch;
+            $cur .= $ch;
+            continue;
+        }
+        if ($ch === '-' && $i + 1 < $len && $sql[$i + 1] === '-') {
+            while ($i < $len && $sql[$i] !== "\n") { $i++; }   // strip -- comment to EOL
+            $cur .= "\n";
+            continue;
+        }
+        if ($ch === ';') {
+            $t = trim($cur);
+            if ($t !== '') { $out[] = $t; }
+            $cur = '';
+            continue;
+        }
+        $cur .= $ch;
+    }
+    $t = trim($cur);
+    if ($t !== '') { $out[] = $t; }
+    return $out;
+}
+
+// ---- Expected-schema verification spec (verification metadata only — the DDL
+// ---- itself lives exclusively in the authoritative repository SQL files). ----
+function asm_spec(string $id): array {
+    switch ($id) {
+        case 'v1.7_auth_events':
+            return [
+                'tables' => [
+                    'auth_events' => [
+                        'columns' => ['id','user_id','event_type','result','reason','ip_address','user_agent','created_at'],
+                        'indexes' => ['PRIMARY','idx_auth_events_user_time','idx_auth_events_result'],
+                        'fks'     => ['fk_auth_events_user' => 'users'],
+                    ],
+                ],
+            ];
+        case 'v1.8_support_tickets':
+            return [
+                'tables' => [
+                    'support_conversations' => [
+                        'columns' => ['id','user_id','subject','status','waiting_for','assigned_admin_id','priority','first_reply_at','last_message_at','unread_admin_count','unread_user_count','created_at','updated_at'],
+                        'indexes' => ['PRIMARY','idx_sc_user','idx_sc_status','idx_sc_waiting','idx_sc_lastmsg','idx_sc_admin'],
+                        'fks'     => ['fk_sc_user' => 'users', 'fk_sc_assigned' => 'users'],
+                    ],
+                    'support_messages' => [
+                        'columns' => ['id','conversation_id','sender_type','sender_user_id','body','message_type','metadata_json','created_at','edited_at','deleted_at'],
+                        'indexes' => ['PRIMARY','idx_sm_conv','idx_sm_sender'],
+                        'fks'     => ['fk_sm_conv' => 'support_conversations', 'fk_sm_sender' => 'users'],
+                    ],
+                    'support_message_translations' => [
+                        'columns' => ['id','message_id','source_language','target_language','translated_body','provider','model','created_at'],
+                        'indexes' => ['PRIMARY','uq_smt_msg'],
+                        'fks'     => ['fk_smt_msg' => 'support_messages'],
+                    ],
+                ],
+            ];
+    }
+    return [];
+}
+
+function asm_table_exists(PDO $pdo, string $t): bool {
+    $st = $pdo->prepare('SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=?');
+    $st->execute([$t]);
+    return (int)$st->fetchColumn() === 1;
+}
+function asm_missing_columns(PDO $pdo, string $t, array $cols): array {
+    $st = $pdo->prepare('SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=?');
+    $st->execute([$t]);
+    $have = array_map('strval', $st->fetchAll(PDO::FETCH_COLUMN));
+    return array_values(array_diff($cols, $have));
+}
+function asm_missing_indexes(PDO $pdo, string $t, array $idx): array {
+    $st = $pdo->prepare('SELECT DISTINCT INDEX_NAME FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=?');
+    $st->execute([$t]);
+    $have = array_map('strval', $st->fetchAll(PDO::FETCH_COLUMN));
+    return array_values(array_diff($idx, $have));
+}
+function asm_missing_fks(PDO $pdo, string $t, array $fks): array {
+    $st = $pdo->prepare('SELECT CONSTRAINT_NAME, REFERENCED_TABLE_NAME FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA=DATABASE() AND TABLE_NAME=?');
+    $st->execute([$t]);
+    $have = [];
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $have[(string)$row['CONSTRAINT_NAME']] = (string)$row['REFERENCED_TABLE_NAME'];
+    }
+    $missing = [];
+    foreach ($fks as $name => $ref) {
+        if (($have[$name] ?? null) !== $ref) { $missing[] = $name; }
+    }
+    return $missing;
+}
+function asm_snapshot(PDO $pdo, string $id): array {
+    $state = [];
+    $complete = true;
+    foreach (asm_spec($id)['tables'] as $table => $spec) {
+        $exists = asm_table_exists($pdo, $table);
+        $missCols = $exists ? asm_missing_columns($pdo, $table, $spec['columns']) : $spec['columns'];
+        $missIdx  = $exists ? asm_missing_indexes($pdo, $table, $spec['indexes']) : $spec['indexes'];
+        $missFks  = $exists ? asm_missing_fks($pdo, $table, $spec['fks']) : array_keys($spec['fks']);
+        $ok = $exists && $missCols === [] && $missIdx === [] && $missFks === [];
+        $complete = $complete && $ok;
+        $state[$table] = ['exists' => $exists, 'missing_columns' => $missCols,
+                          'missing_indexes' => $missIdx, 'missing_fks' => $missFks, 'complete' => $ok];
+    }
+    return ['complete' => $complete, 'tables' => $state];
+}
+
+try {
+    $pdo = Database::connection();
+    if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) !== 'mysql') {
+        // Non-mysql (CI/SQLite) — report and stop without mutating.
+        echo json_encode(['ok' => false, 'env' => $ENV, 'error' => 'app-schema migration requires mysql driver'],
+                         JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
+    foreach ($migs as $m) {
+        $id     = (string)$m['id'];
+        $file   = (string)$m['file'];
+        $sha    = (string)$m['sha256'];
+        $sql    = (string)$m['sql'];
+        $entry  = ['id' => $id, 'file' => $file, 'sha256_verified' => false,
+                   'executed' => false, 'statements' => 0, 'applied' => [],
+                   'before' => null, 'after' => null];
+
+        // Payload integrity: the executed bytes must be exactly the repository
+        // SQL file the workflow read (render-time sha256, re-verified here).
+        if (!hash_equals(strtolower($sha), hash('sha256', $sql))) {
+            $result['errors'][] = "$id: payload sha256 mismatch — aborting before any execution";
+            $result['ok'] = false;
+            break;
+        }
+        $entry['sha256_verified'] = true;
+
+        $entry['before'] = asm_snapshot($pdo, $id)['complete'];
+
+        if ($MODE === 'apply') {
+            if ($entry['before'] !== true) {
+                $stmts = asm_split_sql($sql);
+                $entry['statements'] = count($stmts);
+                try {
+                    foreach ($stmts as $one) {
+                        $pdo->exec($one);
+                    }
+                    $entry['executed'] = true;
+                    $entry['applied'][] = "$id: executed " . count($stmts) . ' statements from ' . $file;
+                } catch (Throwable $e) {
+                    error_log('velora-app-schema-migration probe: ' . $id . ' failed: ' . $e->getMessage());
+                    $result['errors'][] = "$id: statement execution failed (internal error) — later migrations aborted";
+                    $result['ok'] = false;
+                    $result['migrations'][] = $entry;
+                    break;   // fail closed: never continue to a later migration
+                }
+            } else {
+                $entry['applied'][] = "$id: schema already complete (idempotent no-op)";
+            }
+
+            // Post-apply verification: success may only be claimed when the
+            // expected schema is fully present (fail closed otherwise).
+            $after = asm_snapshot($pdo, $id);
+            $entry['after'] = $after['complete'];
+            if ($after['complete'] !== true) {
+                foreach ($after['tables'] as $tname => $ts) {
+                    if ($ts['complete'] !== true) {
+                        $result['errors'][] = "$id: schema incomplete after apply — $tname" .
+                            ($ts['exists'] ? '' : ' (table missing)') .
+                            ($ts['missing_columns'] ? ' cols:' . implode(',', $ts['missing_columns']) : '') .
+                            ($ts['missing_indexes'] ? ' indexes:' . implode(',', $ts['missing_indexes']) : '') .
+                            ($ts['missing_fks'] ? ' fks:' . implode(',', $ts['missing_fks']) : '');
+                    }
+                }
+                $result['ok'] = false;
+                $result['migrations'][] = $entry;
+                break;
+            }
+            $entry['state'] = $after;
+        } else {
+            // check mode: read-only snapshot, no execution ever
+            $snap = asm_snapshot($pdo, $id);
+            $entry['after'] = $snap['complete'];
+            $entry['state'] = $snap;
+        }
+
+        $result['migrations'][] = $entry;
+    }
+} catch (Throwable $e) {
+    error_log('velora-app-schema-migration probe: fatal: ' . $e->getMessage());
+    $result['errors'][] = 'fatal (internal error)';
+    $result['ok'] = false;
+}
+
+$result['created_utc'] = gmdate('Y-m-d\TH:i:s\Z');
+echo json_encode($result, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
