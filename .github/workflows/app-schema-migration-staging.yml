@@ -100,18 +100,21 @@ jobs:
       INPUT_MODE: ${{ inputs.mode || github.event.inputs.mode }}
       INPUT_MIG: ${{ inputs.migration || github.event.inputs.migration }}
       INPUT_CONFIRM: ${{ inputs.confirm || github.event.inputs.confirm }}
-      BACKUP_ID:           ${{ needs.backup.outputs.backup_id }}
-      RELEASE_TAG:         ${{ needs.backup.outputs.release_tag }}
-      BACKUP_SHA256:       ${{ needs.backup.outputs.sha256 }}
-      BACKUP_SOURCE_SHA:   ${{ needs.backup.outputs.source_commit_sha }}
-      BACKUP_VERIFICATION: ${{ needs.backup.outputs.verification_status }}
-      BACKUP_ENVIRONMENT:  ${{ needs.backup.outputs.environment }}
+      # NOTE: needs.* context is NOT available in job-level env (evaluates empty
+      # at runtime — see failed run 34368464761). The six backup-evidence values
+      # are supplied via STEP-level env below (gate step + probe/audit step).
     steps:
       - uses: actions/checkout@v4
 
       - name: BACKUP GATE — verified fresh backup evidence required for apply (fail-closed)
         if: ${{ (inputs.mode || github.event.inputs.mode) == 'apply' }}
         env:
+          BACKUP_ID:           ${{ needs.backup.outputs.backup_id }}
+          RELEASE_TAG:         ${{ needs.backup.outputs.release_tag }}
+          SHA256:              ${{ needs.backup.outputs.sha256 }}
+          SOURCE_COMMIT_SHA:   ${{ needs.backup.outputs.source_commit_sha }}
+          VERIFICATION_STATUS: ${{ needs.backup.outputs.verification_status }}
+          ENVIRONMENT:         ${{ needs.backup.outputs.environment }}
           EXPECTED_ENV: staging
         run: |
           set -euo pipefail
@@ -148,6 +151,13 @@ jobs:
 
       - name: Render, upload, invoke, and remove one-use probe (allowlisted migrations only)
         id: runsql
+        env:
+          BACKUP_ID:           ${{ needs.backup.outputs.backup_id }}
+          RELEASE_TAG:         ${{ needs.backup.outputs.release_tag }}
+          BACKUP_SHA256:       ${{ needs.backup.outputs.sha256 }}
+          BACKUP_SOURCE_SHA:   ${{ needs.backup.outputs.source_commit_sha }}
+          BACKUP_VERIFICATION: ${{ needs.backup.outputs.verification_status }}
+          BACKUP_ENVIRONMENT:  ${{ needs.backup.outputs.environment }}
         run: |
           set -euo pipefail
           NAME="_velora_asmig_$(openssl rand -hex 8).php"
