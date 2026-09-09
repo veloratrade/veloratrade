@@ -594,3 +594,11 @@ BACKUP MECHANISM EXISTS ≠ BACKUP WAS SUCCESSFULLY CREATED FOR THIS OPERATION
 «بکاپ تأییدشده برای همین عملیات» نیست. تنها مورد دوم گیت را پاس می‌کند.
 هیچ فلگ دورزدن (SKIP/IGNORE/FORCE) وجود ندارد؛ اگر عملیات بدون گیت سبز درخواست
 شد: توقف فوری، گزارش دلیل، و انتظار برای مجوز صریح مالک.
+
+### 14.1. سازوکار اختصاصی مهاجرت‌های v1.7/v1.8 (App-Schema — ۲۰۲۶-۰۹-۰۹)
+
+مهاجرت‌های `v1.7_auth_events` و `v1.8_support_tickets` فقط و فقط از طریق
+`.github/workflows/app-schema-migration-staging.yml` اجرا می‌شوند (سازوکار
+v1.3/v1.5 دست‌نخورده است). `check` فقط‌خواندنی است؛ `apply` نیازمند BACKUP GATE
+سبز + عبارت تأیید دقیق `APPLY-APP-SCHEMA-MIGRATION` است و همیشه به‌ترتیب
+v1.7 → v1.8 اجرا می‌شود. Production از این سازوکار غیرقابل دسترسی است.
