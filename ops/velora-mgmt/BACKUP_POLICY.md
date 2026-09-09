@@ -130,3 +130,52 @@ versa; production additionally requires the protected GitHub environment reviewe
 | Database restore test | staging & production | **UNVERIFIED** (never performed) |
 | Production DB migration | — | **LOCKED** (needs verified backup + approval + protected env) |
 | Staging DB migration | — | **BLOCKED** (needs verified backup/rollback) |
+
+## 9. BACKUP GATE — MANDATORY (machine-enforced, 2026-09-09)
+
+**PERMANENT RULE:** NO DEPLOY OR DATABASE MIGRATION MAY PROCEED WITHOUT A
+SUCCESSFULLY CREATED AND VERIFIED BACKUP. This is enforced by workflow logic and
+`ops/velora-mgmt/backup_gate.py` — it is never a prompt/documentation-only rule.
+
+Documented operational sequence:
+
+```
+BACKUP → VERIFY → OFFICIAL STORAGE → VERIFY STORAGE → DEPLOY / MIGRATE
+NO VERIFIED BACKUP → STOP
+```
+
+- **Canonical mechanism:** `velora-db-backup-staging.yml` is the single staging DB
+  backup mechanism. It is invokable independently via `workflow_dispatch`
+  (backup + verification + official storage ONLY — it structurally contains no
+  deploy or migration jobs) and via `workflow_call` from deploy/migration
+  workflows. The temporary server-side dump under `velora_private_staging/backups/`
+  is never the canonical backup; the verified artifact is the Release Asset in
+  **veloratrade/velora-backups**.
+- **Valid evidence (machine-verifiable only):** the reusable workflow's outputs —
+  `backup_id` (`db-backup-staging-*`), `release_tag`, `sha256` (64-hex),
+  `source_commit_sha`, `verification_status == INTEGRITY_VERIFIED`, `environment`.
+  An AI agent or operator MUST NOT treat "we have a backup system", a log message,
+  an assumption, an old backup, or a timestamp as proof.
+  **BACKUP MECHANISM EXISTS ≠ BACKUP WAS SUCCESSFULLY CREATED FOR THIS OPERATION.**
+- **Enforcement points:**
+  - `deploy-staging.yml` — `db_backup` job is unconditional; the deploy job runs
+    only on `needs.db_backup.result == 'success'` and re-proves the evidence with
+    `backup_gate.py` before any packaging/upload step.
+  - `admin-migration-staging.yml`, `trade-migration-staging.yml`,
+    `ai-migration-staging.yml` — apply-mode runs require a fresh verified backup
+    job + `backup_gate.py` check before the mutating probe; read-only `check`
+    runs skip the backup intentionally (they mutate nothing).
+  - `velora-db-backup-staging.yml` — internal all-or-fail gate step emits
+    `verification_status=INTEGRITY_VERIFIED` only after probe assertions,
+    gzip/SHA-256/size verification, official upload, and byte-verification pass.
+- **Fail-closed matrix:** any backup failure, verification failure, missing/invalid
+  SHA-256 or backup_id, upload failure, or `verification_status != INTEGRITY_VERIFIED`
+  → NO deploy, NO migration. There are NO override flags (`SKIP_BACKUP`,
+  `IGNORE_BACKUP`, `FORCE_DEPLOY` are banned). Emergency bypasses must be raised
+  with the owner and documented — never improvised.
+- **Idempotency/duplicates:** every backup has a unique `db-backup-staging-*` id
+  bound to its run; new backups never overwrite or delete previous verified
+  backups (release assets accumulate; retention per backup lifecycle policy).
+
+Tests: `ops/velora-mgmt/tests/test_backup_gate.py` (gate module + static workflow
+law) and the updated structural tests in `tests/test_staging_backup_law.py`.

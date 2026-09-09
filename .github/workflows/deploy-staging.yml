@@ -21,7 +21,7 @@ on:
   workflow_dispatch:
     inputs:
       with_db_backup_gate:
-        description: "Run a FRESH verified staging DB backup (private repo release asset) and gate the deploy on it"
+        description: "DEPRECATED: the staging DB backup gate is MANDATORY and always runs; this input is ignored (accepted only for backward compatibility)"
         required: true
         type: boolean
         default: false
@@ -71,8 +71,9 @@ jobs:
     needs: quality_gate
     uses: ./.github/workflows/csp-guard.yml
 
-  # ── بکاپ تازه و راستی‌آزمایی‌شده‌ی دیتابیس STAGING (اختیاری، opt-in) ──
-  # با ورودی with_db_backup_gate فعال می‌شود. از reusable workflow مختص staging
+  # ── بکاپ تازه و راستی‌آزمایی‌شده‌ی دیتابیس STAGING (اجباری — BACKUP GATE) ──
+  # همیشه و بدون استثنا اجرا می‌شود (ورودی قدیمی with_db_backup_gate منسوخ است و
+  # نادیده گرفته می‌شود). از reusable workflow مختص staging
   # استفاده می‌کند (velora-db-backup-staging.yml) که فقط با STAGING_FTP_* و آدرس
   # staging.veloratrade.ir کار می‌کند و دامپ را به‌صورت Release Asset در ریپوی
   # PRIVATE veloratrade/velora-backups ذخیره و بایت‌به‌بایت راستی‌آزمایی می‌کند.
@@ -80,7 +81,9 @@ jobs:
   db_backup:
     name: بکاپ تازه‌ی دیتابیس staging → ریپوی private
     needs: guard
-    if: ${{ inputs.with_db_backup_gate }}
+    # BACKUP GATE (mandatory, machine-enforced): every staging deploy requires a
+    # FRESH verified backup. Unconditional — the old opt-in input is ignored and
+    # there is no skip flag. If this job fails, the deploy below cannot proceed.
     secrets: inherit
     uses: ./.github/workflows/velora-db-backup-staging.yml
 
@@ -113,11 +116,28 @@ jobs:
     # A FAILED or CANCELLED backup/migration blocks the deploy; jobs that are
     # intentionally off (mode=off) report 'skipped' and MUST NOT block. Only
     # success and skipped proceed. Fail closed on failure/cancelled.
-    if: ${{ !cancelled() && github.repository == 'veloratrade/veloratrade' && needs.guard.result == 'success' && (needs.db_backup.result == 'success' || needs.db_backup.result == 'skipped') && (needs.db_migration_check.result == 'success' || needs.db_migration_check.result == 'skipped') && (needs.db_migration_apply.result == 'success' || needs.db_migration_apply.result == 'skipped') }}
+    if: ${{ !cancelled() && github.repository == 'veloratrade/veloratrade' && needs.guard.result == 'success' && needs.db_backup.result == 'success' && (needs.db_migration_check.result == 'success' || needs.db_migration_check.result == 'skipped') && (needs.db_migration_apply.result == 'success' || needs.db_migration_apply.result == 'skipped') }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+
+      - name: BACKUP GATE — verified fresh backup evidence is MANDATORY (fail-closed)
+        env:
+          BACKUP_ID: ${{ needs.db_backup.outputs.backup_id }}
+          RELEASE_TAG: ${{ needs.db_backup.outputs.release_tag }}
+          SHA256: ${{ needs.db_backup.outputs.sha256 }}
+          SOURCE_COMMIT_SHA: ${{ needs.db_backup.outputs.source_commit_sha }}
+          VERIFICATION_STATUS: ${{ needs.db_backup.outputs.verification_status }}
+          ENVIRONMENT: ${{ needs.db_backup.outputs.environment }}
+          EXPECTED_ENV: staging
+        run: |
+          set -euo pipefail
+          # Canonical gate implementation. Consumes the reusable backup workflow's
+          # machine-verifiable outputs — never log messages, assumptions, or old
+          # backups. Any missing/invalid item aborts the deploy here.
+          python3 ops/velora-mgmt/backup_gate.py
+          echo "Deploy is authorized by backup $BACKUP_ID (release ${RELEASE_TAG:-?}, sha256 ${SHA256:-?})"
 
       - name: ساخت docroot استیجینگ
         run: |

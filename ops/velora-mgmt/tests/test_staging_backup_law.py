@@ -55,11 +55,33 @@ class StagingBackupWorkflowTests(unittest.TestCase):
         cls.doc, cls.text = load("velora-db-backup-staging.yml")
         cls.jobs = cls.doc["jobs"]
 
-    def test_01_reusable_call_only(self):
+    def test_01_reusable_call_and_manual_dispatch(self):
+        # BACKUP GATE law (2026-09-09): the staging DB backup workflow is the
+        # single canonical mechanism and MUST be both reusable (deploy/migration
+        # gating) and independently dispatchable (manual verified backup with
+        # no deploy and no migration). Pull-request/push automation stays off.
         on = self.doc.get("on", self.doc.get(True))
         self.assertIn("workflow_call", on)
+        self.assertIn("workflow_dispatch", on)
         self.assertNotIn("pull_request", on)
         self.assertNotIn("push", on)
+
+    def test_01b_manual_dispatch_is_backup_only(self):
+        # Manual execution performs ONLY backup + verification + official storage:
+        # the workflow must contain exactly one job and no deploy/migration steps.
+        self.assertEqual(list(self.jobs.keys()), ["backup"])
+        for step in self.jobs["backup"].get("steps", []) or []:
+            name = (step.get("name") or step.get("uses") or "").lower()
+            self.assertNotIn("deploy", name)
+            self.assertNotIn("migrat", name)
+
+    def test_01c_gate_outputs_are_machine_verifiable(self):
+        outputs = self.jobs["backup"].get("outputs") or {}
+        for key in ("backup_id", "release_tag", "sha256", "source_commit_sha",
+                    "verification_status", "environment"):
+            self.assertIn(key, outputs)
+        self.assertIn("BACKUP GATE", self.text)
+        self.assertIn("ops/velora-mgmt/backup_gate.py", self.text)
 
     def test_02_uses_staging_ftp_secrets_never_production(self):
         self.assertIn("secrets.STAGING_FTP_SERVER", self.text)
@@ -183,15 +205,22 @@ class DeployStagingWiringTests(unittest.TestCase):
         needs = [needs] if isinstance(needs, str) else needs
         self.assertIn("db_backup", needs)
 
-    def test_15_failed_backup_skips_deploy(self):
-        # deploy runs only on success/skipped (allowlist) — a failed/cancelled
-        # backup is therefore never matched, so the deploy is skipped (fail closed).
+    def test_15_failed_backup_blocks_deploy(self):
+        # BACKUP GATE law (2026-09-09): the backup job is UNCONDITIONAL and the
+        # deploy may proceed ONLY on needs.db_backup.result == 'success'. A
+        # failed/cancelled backup blocks the deploy; a skipped backup is no
+        # longer possible at all (no opt-in). Migration jobs may still be
+        # intentionally skipped (mode=off) without blocking.
         cond = self.jobs["deploy-staging"].get("if", "")
-        self.assertIn("db_backup.result", cond)
-        self.assertIn("'success'", cond)
-        self.assertIn("'skipped'", cond)
+        self.assertIn("needs.db_backup.result == 'success'", cond)
+        self.assertNotIn("db_backup.result == 'skipped'", cond)
         self.assertNotIn("'failure'", cond)
         self.assertNotIn("'cancelled'", cond)
+        # the backup itself is unconditional (no skip path)
+        self.assertIsNone(self.jobs["db_backup"].get("if"))
+        # the deploy job re-proves the evidence via the canonical gate module
+        self.assertIn("BACKUP GATE", self.text)
+        self.assertIn("ops/velora-mgmt/backup_gate.py", self.text)
 
     def test_16_postdeploy_verify_after_deploy_when_enabled(self):
         self.assertIn("db_verify", self.jobs)
@@ -200,12 +229,15 @@ class DeployStagingWiringTests(unittest.TestCase):
         self.assertIn("deploy-staging", needs)
         self.assertIn("with_postdeploy_db_verify", self.jobs["db_verify"].get("if", ""))
 
-    def test_17_default_off_so_existing_deploys_unaffected(self):
+    def test_17_backup_gate_is_mandatory_not_opt_in(self):
+        # BACKUP GATE law (2026-09-09): the legacy opt-in input remains declared
+        # ONLY for dispatch backward-compatibility and is IGNORED — the backup
+        # always runs and there is no bypass flag (SKIP/IGNORE/FORCE are banned).
         inp = self.doc[True]["workflow_dispatch"]["inputs"]
         self.assertIn("with_db_backup_gate", inp)
-        self.assertIn("with_postdeploy_db_verify", inp)
-        self.assertEqual(inp["with_db_backup_gate"].get("default"), False)
-        self.assertEqual(inp["with_postdeploy_db_verify"].get("default"), False)
+        self.assertIn("DEPRECATED", inp["with_db_backup_gate"].get("description", ""))
+        # the deprecated input is never functionally referenced anywhere in the jobs
+        self.assertNotIn("inputs.with_db_backup_gate", self.text.split("jobs:")[1])
 
 
 class StagingMigrationWiringTests(unittest.TestCase):
