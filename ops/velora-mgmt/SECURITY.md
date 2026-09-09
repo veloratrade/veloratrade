@@ -55,3 +55,18 @@ Path: **GitHub Actions → environment-scoped FTP → temporary randomized PHP �
 ## Cleanup verification
 - Throwaway validation branch deleted; `main` unchanged at `117ab67`; temporary probes
   self-delete and are FTP-cleaned; no workflows/endpoints persist beyond the feature branch.
+
+## BACKUP GATE security notes (2026-09-09)
+
+- The BACKUP GATE (`ops/velora-mgmt/backup_gate.py`) enforces backup EVIDENCE, not
+  transport security. It does not weaken, alter, or mask any TLS/FTP setting.
+- **Documented transport distinction (unchanged):** the generic management engine
+  (`velora-mgmt.yml` + `mgmt_probe.php.tmpl`) enforces strict FTPS
+  (`ssl:verify-certificate yes`) and failed against the staging FTP endpoint's
+  untrusted certificate (run 34299123683, 2026-09-09). The operational workflows
+  (deploy/backup/migrations) use the long-established `ftp:ssl-allow no` transport
+  with one-time token-gated probes. The gate does not depend on pretending either
+  transport is more secure than it is; resolving the management engine's
+  certificate trust remains a separate owner decision.
+- Backup evidence identifiers (backup_id, release_tag, sha256, commit SHA) are
+  non-secret by design; the gate module never handles credentials.

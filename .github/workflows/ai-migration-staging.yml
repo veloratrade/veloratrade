@@ -22,8 +22,19 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # ── BACKUP GATE (mandatory, machine-enforced): apply-mode mutations require a
+  # FRESH verified staging DB backup (INTEGRITY_VERIFIED) BEFORE the probe runs.
+  # check mode mutates nothing → backup intentionally skipped. No skip flags.
+  backup:
+    if: ${{ github.event.inputs.mode == 'apply' }}
+    secrets: inherit
+    uses: ./.github/workflows/velora-db-backup-staging.yml
+
   migrate:
     name: AI migration check/apply on staging
+    needs: [backup]
+    # apply → backup MUST have succeeded; check → backup must be (intentionally) skipped.
+    if: ${{ !cancelled() && ((github.event.inputs.mode == 'apply' && needs.backup.result == 'success') || (github.event.inputs.mode != 'apply' && needs.backup.result == 'skipped')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -34,6 +45,22 @@ jobs:
       INPUT_MODE: ${{ github.event.inputs.mode }}
       INPUT_CONFIRM: ${{ github.event.inputs.confirm }}
     steps:
+      - name: BACKUP GATE — verified fresh backup evidence required for apply (fail-closed)
+        if: ${{ github.event.inputs.mode == 'apply' }}
+        env:
+          BACKUP_ID: ${{ needs.backup.outputs.backup_id }}
+          RELEASE_TAG: ${{ needs.backup.outputs.release_tag }}
+          SHA256: ${{ needs.backup.outputs.sha256 }}
+          SOURCE_COMMIT_SHA: ${{ needs.backup.outputs.source_commit_sha }}
+          VERIFICATION_STATUS: ${{ needs.backup.outputs.verification_status }}
+          ENVIRONMENT: ${{ needs.backup.outputs.environment }}
+          EXPECTED_ENV: staging
+        run: |
+          set -euo pipefail
+          # Canonical gate implementation: the mutating probe below may only run
+          # when THIS step proves a fresh INTEGRITY_VERIFIED backup exists.
+          python3 ops/velora-mgmt/backup_gate.py
+
       - name: Create, upload, execute, and remove one-use probe
         run: |
           set -euo pipefail

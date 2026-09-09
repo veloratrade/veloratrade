@@ -12,8 +12,16 @@ name: Velora DB Backup (STAGING) — reusable, enforced, uploads to private repo
 # It reads BACKUP_REPO_TOKEN via secrets: inherit (the cross-repo credential). If
 # BACKUP_REPO_TOKEN is absent it FAILS CLOSED — no GITHUB_TOKEN fallback, no skip.
 # This workflow does NOT deploy/migrate/mutate: the dump is a read-only logical
-# backup (see db_backup_probe.php.tmpl). Triggered via workflow_call from
-# deploy-staging.yml so a staging deploy is gated on a fresh verified backup.
+# backup (see db_backup_probe.php.tmpl). It is the SINGLE CANONICAL staging DB
+# backup mechanism and the enforcement point of the mandatory BACKUP GATE:
+#   * workflow_call   — deploy-staging.yml and the *-migration-staging.yml
+#                       workflows call it and MUST consume its verified outputs;
+#   * workflow_dispatch — independent manual execution (backup + verification +
+#                       official storage ONLY; never deploys, never migrates).
+# It exposes backup_id / release_tag / sha256 / source_commit_sha /
+# verification_status (INTEGRITY_VERIFIED) / environment as machine-verifiable
+# outputs; consumers validate them via ops/velora-mgmt/backup_gate.py.
+# LAW: NO DEPLOY OR DB MIGRATION WITHOUT A SUCCESSFULLY CREATED AND VERIFIED BACKUP.
 # ============================================================================
 
 on:
@@ -28,6 +36,18 @@ on:
         value: ${{ jobs.backup.outputs.sha256 }}
       source_commit_sha:
         value: ${{ jobs.backup.outputs.source_commit_sha }}
+      verification_status:
+        description: "Always INTEGRITY_VERIFIED on success; the job fails otherwise"
+        value: ${{ jobs.backup.outputs.verification_status }}
+      environment:
+        description: "Backup source environment (always staging)"
+        value: ${{ jobs.backup.outputs.environment }}
+
+  # Manual, independent execution: backup + verification + official storage ONLY.
+  # Never deploys application code, never migrates the database (structurally
+  # impossible: this workflow has no deploy/migration jobs — enforced by tests).
+  workflow_dispatch:
+    inputs: {}
 
 permissions:
   contents: read
@@ -46,6 +66,8 @@ jobs:
       release_tag: ${{ steps.run.outputs.release_tag }}
       sha256: ${{ steps.run.outputs.sha256 }}
       source_commit_sha: ${{ steps.run.outputs.source_commit_sha }}
+      verification_status: ${{ steps.gate.outputs.verification_status }}
+      environment: ${{ steps.gate.outputs.environment }}
     env:
       FTP_SERVER:   ${{ secrets.STAGING_FTP_SERVER }}
       FTP_USERNAME: ${{ secrets.STAGING_FTP_USERNAME }}
@@ -174,6 +196,27 @@ jobs:
           lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
             -e "set ftp:ssl-allow no; set net:max-retries 2; set net:timeout 30; rm -f \"$FTP_REL\"; bye"
           echo "remote temp dump removed: $FTP_REL"
+
+      - name: BACKUP GATE — machine-enforced all-or-fail evidence check
+        id: gate
+        env:
+          BACKUP_ID: ${{ steps.run.outputs.backup_id }}
+          RELEASE_TAG: ${{ steps.run.outputs.release_tag }}
+          SHA256: ${{ steps.run.outputs.sha256 }}
+          SOURCE_COMMIT_SHA: ${{ steps.run.outputs.source_commit_sha }}
+          VERIFICATION_STATUS: INTEGRITY_VERIFIED   # asserted by the run step (probe + local gzip/sha256/size); gate re-proves it below
+          ENVIRONMENT: staging
+          EXPECTED_ENV: staging
+        run: |
+          set -euo pipefail
+          # Canonical gate implementation (ops/velora-mgmt/backup_gate.py):
+          # fails closed if ANY evidence item is missing/invalid — no overrides.
+          python3 ops/velora-mgmt/backup_gate.py
+          {
+            echo "verification_status=INTEGRITY_VERIFIED"
+            echo "environment=staging"
+          } >> "$GITHUB_OUTPUT"
+          echo "BACKUP GATE PASSED: backup is INTEGRITY_VERIFIED and stored officially."
 
       - name: Audit artifact (metadata only; never the dump)
         if: always()

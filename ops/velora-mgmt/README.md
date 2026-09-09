@@ -6,6 +6,9 @@ deployment and database management. One architecture, strict environment isolati
 - **Targets (always explicit):** `staging` | `production` — never inferred, never fallback.
 - **Modes:** `inspect` (read-only) · `plan` (read-only) · `verify` (read-only) ·
   `backup` · `migrate` · `deploy` (mutating; gated).
+- **BACKUP GATE (mandatory, 2026-09-09):** no staging deploy or DB migration may
+  run without a fresh `INTEGRITY_VERIFIED` backup — see `backup_gate.py` and
+  `BACKUP_POLICY.md` §9. Machine-verifiable outputs only; no bypass flags.
 - **Transport (proven):** GitHub Actions → environment-scoped FTP → one-time randomized
   token-gated PHP probe → HTTPS → `Database::connection()` → MySQL → result → probe
   self-deletes + FTP cleanup. Reference working run: staging inspect/plan run
@@ -15,6 +18,8 @@ deployment and database management. One architecture, strict environment isolati
 - `velora_mgmt.py` — pure-logic engine (normalize, compare, plan, plan-hash, approval).
   CLI: `inspect | plan | verify | backup-discover`. No network; consumes probe metadata
   JSON / a read-only GitHub artifact listing.
+- `backup_gate.py` — canonical BACKUP GATE validator (deploy/migration evidence;
+  CLI via env vars; used by deploy-staging and all *-migration-staging workflows).
 - `backup.py` — backup discovery, verification ladder (CREATED→INTEGRITY_VERIFIED→
   RESTORE_VERIFIED / UNVERIFIED), mutation backup gate, approval↔backup-id binding, and
   retention lifecycle (multiple history; cleanup only after success; never delete newest
