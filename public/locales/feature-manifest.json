@@ -91,8 +91,8 @@
       "support": {
         "path": "fa/support.json",
         "messages": 35,
-        "bytes": 2604,
-        "sha256": "e87eaff8f3ab7f8b7245c6639120484963f9c0a83664742106086a7a4d52eca6"
+        "bytes": 2377,
+        "sha256": "37e008dfe1a02c107ad9f2241a030afd0137f6b94bf318d1921b45a8ee6b7494"
       },
       "terms": {
         "path": "fa/terms.json",
@@ -201,8 +201,8 @@
       "support": {
         "path": "en/support.json",
         "messages": 35,
-        "bytes": 2126,
-        "sha256": "8b9392f13744e236e93e96e6b08d29ecb7ed8c5065524fbdaec3dcd9d91ab0e3"
+        "bytes": 1899,
+        "sha256": "40a674b9043baa81e39451144701a33fcaf8f81fa66be86a17c5ad5589de0147"
       },
       "terms": {
         "path": "en/terms.json",
