@@ -170,7 +170,7 @@ Agent **باید** پیش از هر تغییر، فایل `docs/N8N_ARCHIVE_AGEN
 
 ## 2.3 سیاست اتصال n8n و اینستنس‌های یکبارمصرف (n8n Connection & Disposable Instance Policy)
 
-اگر مأموریت مربوط به اتصال یا مهاجرت workflow یا Data Table بین اینستنس‌های n8n باشد، Agent باید `docs/N8N_INSTANCE_MIGRATION.md` را بخواند و فقط از `tools/n8n_migrate/` استفاده کند — نه از `tools/n8n_archive/`.
+اگر مأموریت مربوط به اتصال یا مهاجرت workflow یا Data Table بین اینستنس‌های n8n باشد، Agent باید `docs/N8N_INSTANCE_MIGRATION.md` (قرارداد مهاجرت OLD → NEW) را بخواند و فقط طبق آن — اتصال مستقیم Claude به APIهای OLD و NEW با توکنِ ارائه‌شده توسط مالک — عمل کند. ابزار مهاجرت قدیمی (`tools/n8n_migrate/`) بازنشسته و حذف شده و نباید بازسازی شود. از `tools/n8n_archive/` برای مهاجرت اینستنس استفاده نکن (آرشیو سیستم جداست).
 
 ### 2.3.1 اتصال n8n
 
@@ -198,7 +198,7 @@ Agent **باید** پیش از هر تغییر، فایل `docs/N8N_ARCHIVE_AGEN
 
 فقط اطلاعات غیر-Secure قابل persist است:
 
-- سیاست مهاجرت، ابزار مهاجرت، مستندات
+- سیاست مهاجرت، مستندات (ابزار مهاجرت قدیمی بازنشسته شده؛ منطق مهاجرت در رویهٔ Agent است، نه در مخزن)
 - تعریف‌های workflow امن
 - تعریف‌های Data Table امن
 - schemaها
@@ -216,7 +216,7 @@ Agent **باید** پیش از هر تغییر، فایل `docs/N8N_ARCHIVE_AGEN
 - private keys
 - webhook secrets
 
-### 2.3.4 سیاست مهاجرت (SOURCE → TARGET)
+### 2.3.4 سیاست مهاجرت (OLD → NEW)
 
 وقتی مالک صریحاً مهاجرت را مجاز کرد:
 
@@ -248,8 +248,8 @@ Agent **باید** پیش از هر تغییر، فایل `docs/N8N_ARCHIVE_AGEN
 
 پیش از مهاجرت:
 
-- SOURCE را بازرسی کن
-- TARGET را بازرسی کن
+- OLD را بازرسی کن
+- NEW را بازرسی کن
 - workflowها را مقایسه کن
 - Data Tableها و schemaها را مقایسه کن
 - IDهای جاری را کشف کن
@@ -308,7 +308,7 @@ Agent فقط مجاز است گزارش دهد:
 
 - نام credential
 - نوع credential
-- وجود یا عدم وجود روی TARGET
+- وجود یا عدم وجود روی NEW
 
 Agent هرگز نباید secret را استخراج یا مهاجرت کند.
 
