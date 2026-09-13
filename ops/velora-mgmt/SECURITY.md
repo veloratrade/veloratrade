@@ -60,13 +60,34 @@ Path: **GitHub Actions → environment-scoped FTP → temporary randomized PHP �
 
 - The BACKUP GATE (`ops/velora-mgmt/backup_gate.py`) enforces backup EVIDENCE, not
   transport security. It does not weaken, alter, or mask any TLS/FTP setting.
-- **Documented transport distinction (unchanged):** the generic management engine
-  (`velora-mgmt.yml` + `mgmt_probe.php.tmpl`) enforces strict FTPS
-  (`ssl:verify-certificate yes`) and failed against the staging FTP endpoint's
-  untrusted certificate (run 34299123683, 2026-09-09). The operational workflows
-  (deploy/backup/migrations) use the long-established `ftp:ssl-allow no` transport
-  with one-time token-gated probes. The gate does not depend on pretending either
-  transport is more secure than it is; resolving the management engine's
-  certificate trust remains a separate owner decision.
+- **Historical record (2026-09-09) — SUPERSEDED on 2026-09-14, see below.** The generic
+  management engine (`velora-mgmt.yml` + `mgmt_probe.php.tmpl`) then enforced strict FTPS
+  (`ssl:verify-certificate yes`) and failed against the staging FTP endpoint's untrusted
+  certificate (run 34299123683, 2026-09-09) — the probe was never uploaded and never
+  reached the database. The operational workflows (deploy/backup/migrations) use the
+  long-established `ftp:ssl-allow no` transport with one-time token-gated probes. The gate
+  does not depend on pretending either transport is more secure than it is. This note
+  originally left the management engine's certificate trust open as an owner decision;
+  **that question is now closed — do not treat it as outstanding.**
+- **RESOLVED OWNER DECISION (2026-09-14) — authoritative record:
+  `docs/adr/ADR-014-census-probe-transport.md`.** For the temporary Census probe transport:
+  - **TLS remains MANDATORY.** `ftp:ssl-allow yes` + `ftp:ssl-force yes` +
+    `ftp:ssl-protect-data yes` are retained; if TLS cannot be negotiated the transfer
+    **fails closed**.
+  - **Certificate trust verification is INTENTIONALLY DISABLED**
+    (`ssl:verify-certificate no`). This is a deliberate, approved configuration — not a
+    defect, not an oversight, and not an unresolved requirement. Certificate *authenticity*
+    is independent of *encryption*; relaxing trust keeps credentials encrypted in transit.
+  - **Plaintext FTP is NOT ALLOWED on this path.** `ftp:ssl-allow no` (as used by the
+    operational workflows) was explicitly rejected for Census because it would expose FTP
+    credentials in transit.
+  - **Database behaviour is unchanged:** `inspect`/`plan`/`verify` remain strictly
+    read-only, token-gated, self-deleting, and limited to repository-defined queries.
+  - **Residual risk (accepted):** the FTP session is encrypted but unauthenticated and
+    therefore MITM-capable. Mitigate by rotating `FTP_*` secrets if compromise is suspected.
+  - **Do not revert this decision** on the basis of the older 2026-09-09 note above, or of
+    any general "strict FTPS" guidance elsewhere in this document. Certificate verification
+    must NOT be reintroduced as a mandatory prerequisite for the Census probe transport.
+    Any change to this posture requires superseding ADR-014 by explicit owner decision.
 - Backup evidence identifiers (backup_id, release_tag, sha256, commit SHA) are
   non-secret by design; the gate module never handles credentials.
