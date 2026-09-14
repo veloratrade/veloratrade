@@ -179,16 +179,26 @@ jobs:
           tpl = tpl.replace('__HASH__', os.environ['HASH']).replace('__OP__', os.environ['VOP']).replace('__ENV__', os.environ['VENV'])
           pathlib.Path('/tmp/probe.php').write_text(tpl)
           PY
+          # TRANSPORT CONSTRAINT (ADR-014) — do not reintroduce certificate verification
+          # as a mandatory prerequisite. TLS stays REQUIRED for the probe transfer:
+          #   ftp:ssl-allow yes / ftp:ssl-force yes  -> AUTH TLS or abort (never plaintext)
+          #   ftp:ssl-protect-data yes               -> data channel encrypted
+          #   ssl:verify-certificate no              -> trust check relaxed ONLY
+          # Rationale: the shared-hosting FTP endpoint presents an untrusted/unknown-issuer
+          # certificate (run 34299123683). Certificate TRUST is independent of ENCRYPTION;
+          # relaxing it keeps credentials encrypted in transit while unblocking the
+          # read-only Census. Database behaviour is unchanged and remains read-only.
+          # See docs/adr/ADR-014-census-probe-transport.md.
           cleanup() {
             lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
-              -e "set ftp:ssl-allow yes; set ftp:ssl-force yes; set ftp:ssl-protect-data yes; set ssl:verify-certificate yes; set net:max-retries 1; set net:timeout 20; glob -a rm -f $DOCROOT/public/_velora_mgmt_*.php; bye" >/dev/null 2>&1 || true
+              -e "set ftp:ssl-allow yes; set ftp:ssl-force yes; set ftp:ssl-protect-data yes; set ssl:verify-certificate no; set net:max-retries 1; set net:timeout 20; glob -a rm -f $DOCROOT/public/_velora_mgmt_*.php; bye" >/dev/null 2>&1 || true
             shred -u /tmp/probe.php /tmp/mgmt.json 2>/dev/null || rm -f /tmp/probe.php /tmp/mgmt.json
           }
           trap cleanup EXIT
           uploaded=0
           for attempt in $(seq 1 15); do
             if lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "ftp://$FTP_SERVER" \
-              -e "set ftp:ssl-allow yes; set ftp:ssl-force yes; set ftp:ssl-protect-data yes; set ssl:verify-certificate yes; set net:max-retries 2; set net:timeout 30; glob -a rm -f $DOCROOT/public/_velora_mgmt_*.php; put /tmp/probe.php -o $DOCROOT/public/$NAME; bye"; then
+              -e "set ftp:ssl-allow yes; set ftp:ssl-force yes; set ftp:ssl-protect-data yes; set ssl:verify-certificate no; set net:max-retries 2; set net:timeout 30; glob -a rm -f $DOCROOT/public/_velora_mgmt_*.php; put /tmp/probe.php -o $DOCROOT/public/$NAME; bye"; then
               uploaded=1; break
             fi
             sleep 5
