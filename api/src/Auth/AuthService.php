@@ -10,6 +10,7 @@ use Velora\Core\Exceptions\ConflictException;
 use Velora\Core\Exceptions\UnauthorizedException;
 use Velora\Core\Exceptions\ValidationException;
 use Velora\Core\Jwt;
+use Velora\Core\Mailer;
 use Velora\Core\NotificationService;
 use Velora\Core\UserAchievementRepository;
 
@@ -96,7 +97,11 @@ final class AuthService
                         $uid,
                         $emailLocale,
                     );
-                } catch (\Throwable $e) {}
+                } catch (\Throwable $e) {
+                    // Delivery must never break the request, but silence hides real
+                    // outages: surface the reason in the server error log.
+                    error_log('[velora][auth] verification email failed (resend path): ' . $e->getMessage());
+                }
 
                 return [
                     'verificationRequired' => true,
@@ -140,14 +145,23 @@ final class AuthService
         $verifyUrl = rtrim((string) Config::get('frontend_url', 'https://veloratrade.ir'), '/') . '/verify-email#token=' . rawurlencode($token);
 
         try {
-            NotificationService::sendVerificationEmail(
+            $emailSent = NotificationService::sendVerificationEmail(
                 $email,
                 $fullName !== '' ? $fullName : $email,
                 $verifyUrl,
                 $userId,
                 NotificationService::resolveEmailLocale(null, $notificationLocale),
             );
-        } catch (\Throwable $e) {}
+            if ($emailSent === false) {
+                // The mailer reports failure by return value, not by throwing.
+                error_log('[velora][auth] verification email NOT delivered (register path) for user #'
+                    . $userId . ': ' . (Mailer::$lastError ?? 'unknown reason'));
+            }
+        } catch (\Throwable $e) {
+            // Delivery must never break the request, but silence hides real
+            // outages: surface the reason in the server error log.
+            error_log('[velora][auth] verification email failed (register path): ' . $e->getMessage());
+        }
 
         return ['verificationRequired' => true, 'email' => $email];
     }
@@ -310,7 +324,11 @@ final class AuthService
                 $userId,
                 NotificationService::resolveEmailLocale($user['locale'] ?? null, $notificationLocale),
             );
-        } catch (\Throwable $e) {}
+        } catch (\Throwable $e) {
+            // Delivery must never break the request, but silence hides real
+            // outages: surface the reason in the server error log.
+            error_log('[velora][auth] password reset email failed: ' . $e->getMessage());
+        }
 
         return [
             // BUG-A7: حتی پس از ارسال واقعی، پیام عمومیِ ضد-enumeration برمی‌گردد

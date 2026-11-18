@@ -46,8 +46,8 @@ jobs:
         run: |
           python3 <<'PY'
           import re
-          lines = open('/tmp/error_log', encoding='utf-8', errors='replace').read().splitlines()[-160:]
-          patterns = re.compile(r'(fatal|error|exception|trace|uncaught|warning|verify|notification|resend)', re.I)
+          lines = open('/tmp/error_log', encoding='utf-8', errors='replace').read().splitlines()[-2000:]
+          patterns = re.compile(r'(fatal|error|exception|trace|uncaught|warning|verify|notification|resend|velora|failed|quota|insert|denied|crashed|duplicate|foreign|state)', re.I)
           shown = 0
           for line in lines:
               if not patterns.search(line):
